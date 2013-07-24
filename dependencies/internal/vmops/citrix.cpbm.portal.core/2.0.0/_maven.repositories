@@ -1,0 +1,5 @@
+#NOTE: This is an internal implementation file, its format can be changed without prior notice.
+#Wed Jul 24 18:56:47 GMT+05:30 2013
+citrix.cpbm.portal.core-2.0.0.jar>=
+citrix.cpbm.portal.core-2.0.0-tests.jar>=
+citrix.cpbm.portal.core-2.0.0.pom>=

@@ -1,0 +1,1 @@
+<!-- This is a blank jsp. Created intentionally. Purpose is to change the locale for anonymous pages when CAS is  enabled.-->

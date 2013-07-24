@@ -1,0 +1,5 @@
+#NOTE: This is an internal implementation file, its format can be changed without prior notice.
+#Wed Jul 24 18:56:20 GMT+05:30 2013
+vmops.core-2.0.0-tests.jar>=
+vmops.core-2.0.0.jar>=
+vmops.core-2.0.0.pom>=

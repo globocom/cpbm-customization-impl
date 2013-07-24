@@ -1,0 +1,1605 @@
+/* Copyright (C) 2011 Citrix Systems, Inc. All rights reserved. */
+package citrix.cpbm.portal.fragment.controllers;
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.TimeZone;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
+import org.apache.commons.lang.LocaleUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.util.WebUtils;
+
+import citrix.cpbm.access.proxy.CustomProxy;
+
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
+import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
+import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
+import com.citrix.cpbm.platform.spi.CloudConnector;
+import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
+import com.citrix.cpbm.platform.spi.View;
+import com.citrix.cpbm.platform.util.CssdkConstants;
+import com.vmops.internal.service.CustomFieldService;
+import com.vmops.internal.service.EmailService.EmailTemplate;
+import com.vmops.internal.service.EventService;
+import com.vmops.internal.service.NotificationService;
+import com.vmops.internal.service.PrivilegeService;
+import com.vmops.internal.service.SubscriptionService;
+import com.vmops.internal.service.TelephoneVerificationService;
+import com.vmops.model.AccountHolder;
+import com.vmops.model.AuditLog;
+import com.vmops.model.Country;
+import com.vmops.model.Event.Category;
+import com.vmops.model.Event.Scope;
+import com.vmops.model.Event.Severity;
+import com.vmops.model.Event.Source;
+import com.vmops.model.Profile;
+import com.vmops.model.Service;
+import com.vmops.model.ServiceInstance;
+import com.vmops.model.SpendAlertSubscription;
+import com.vmops.model.Tenant;
+import com.vmops.model.Tenant.State;
+import com.vmops.model.User;
+import com.vmops.model.UserAlertPreferences;
+import com.vmops.model.UserAlertPreferences.AlertType;
+import com.vmops.model.UserHandle;
+import com.vmops.portal.config.Configuration;
+import com.vmops.portal.config.Configuration.Names;
+import com.vmops.service.ChannelService;
+import com.vmops.service.ProfileService;
+import com.vmops.service.SupportService;
+import com.vmops.service.UserAlertPreferencesService;
+import com.vmops.service.UserService;
+import com.vmops.service.UserService.Handle;
+import com.vmops.service.exceptions.InvalidAjaxRequestException;
+import com.vmops.service.exceptions.NoSuchUserException;
+import com.vmops.utils.DateTimeUtils;
+import com.vmops.utils.URL;
+import com.vmops.web.controllers.AbstractAuthenticatedController;
+import com.vmops.web.controllers.menu.Page;
+import com.vmops.web.forms.CustomAlertForm;
+import com.vmops.web.forms.UserAlertEmailForm;
+import com.vmops.web.forms.UserForm;
+import com.vmops.web.interceptors.UserContextInterceptor;
+import com.vmops.web.validators.MyProfileValidator;
+import com.vmops.web.validators.UserStep1Validator;
+
+/**
+ * Controller that handles all user pages.
+ * 
+ * @author vijay
+ */
+public abstract class AbstractUsersController extends AbstractAuthenticatedController {
+
+  @Autowired
+  private UserService userService;
+
+  @Autowired
+  private ProfileService profileService;
+
+  // TODO: Move profile access to profile service
+  @Autowired
+  private PrivilegeService privilegeService;
+
+  @Autowired
+  private NotificationService notificationService;
+
+  @Autowired
+  private EventService eventService;
+
+  @Autowired
+  private UserAlertPreferencesService userAlertPreferencesService;
+
+  @Autowired
+  ConnectorManagementService connectorManagmentService;
+
+  @Autowired
+  private CustomFieldService customFieldService;
+
+  @Autowired
+  private SubscriptionService subscriptionService;
+
+  @Autowired
+  private ChannelService channelService;
+
+  @Autowired
+  private SupportService supportService;
+
+  @Autowired
+  private Configuration config;
+
+  @Autowired
+  private ConnectorConfigurationManager connectorConfigurationManager;
+
+  /**
+   * Logger.
+   */
+  private static Logger logger = Logger.getLogger(AbstractUsersController.class);
+
+  private enum AuditAction {
+    Login
+  };
+
+  @RequestMapping(value = "/{userParam}", method = RequestMethod.GET)
+  public String show(@PathVariable String userParam, ModelMap map) {
+    // setPage(map, Page.ALL_USERS);
+    User user = userService.get(userParam);
+    customFieldService.populateCustomFields(user);
+    customFieldService.populateCustomFields(user.getTenant());
+    map.addAttribute("user", user);
+    map.addAttribute("userLocale", this.getLocaleDisplayName(user.getLocale()));
+    if (!isAllowedToAddUser(user.getTenant())) {
+      map.addAttribute("isUsersMaxReached", "Y");
+    }
+
+    Map<ServiceInstance, Boolean> registrationStatus = userService.getTenantEnabledCloudServiceInstanceStatusMap(user);
+    Collection<Boolean> regStatus = registrationStatus.values();
+    map.put("showEnableServiceLink", Boolean.FALSE);
+
+    for (Boolean status : regStatus) {
+      if (!status) {// if user is not enabled for any service we have to show the enable service link, so set a flag
+// here
+        map.put("showEnableServiceLink", Boolean.TRUE);
+        break;
+      }
+    }
+
+    map.put("serviceRegistrationStatus", registrationStatus);
+    return "user.show";
+  }
+
+  @SuppressWarnings("unchecked")
+  @RequestMapping(value = {
+      "", "/listusersforaccount"
+  }, method = RequestMethod.GET)
+  public String listUsersForAccount(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "showAll", required = false, defaultValue = "false") boolean showAll,
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session,
+      @RequestParam(value = "user", required = false) String userParam,
+      @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+      @RequestParam(value = "showAddNewUserWizard", required = false) String showAddNewUserWizard, HttpServletRequest request) {
+
+    logger.debug("###Entering in list(tenant,showAll,tenantId,map) method @GET");
+
+    int perPage = getDefaultPageSize();
+    map.addAttribute("defaultPageSize", getDefaultPageSize());
+    if (showAddNewUserWizard != null) {
+      map.addAttribute("showAddNewUserWizard", showAddNewUserWizard);
+    }
+    session.setAttribute("currentPerPagesize", perPage);
+    int totalUsers = 0;
+
+    map.addAttribute("isShowingAll", showAll);
+    List<User> results;
+    String view = "users.list_with_admin_menu";
+    if (isAdmin() && showAll) {
+      results = userService.list(page, perPage, null, null, false, null, null, null);
+      totalUsers = userService.count(null, null, null, null);
+      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(getCurrentUser()));
+    } else if (isAdmin() && (Boolean) request.getAttribute("isSurrogatedTenant")) {
+      tenant = tenantService.get(tenantParam);
+      results = userService.list(0, 0, null, null, false, null, tenant.getId().toString(), null);
+      totalUsers = userService.count(null, null, tenant.getId().toString(), null);
+      map.addAttribute("showUserProfile", true);
+      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(tenant.getOwner()));
+      setPage(map, Page.CRM_ALL_USERS);
+      view = "users.list_with_user_menu";
+    } else {
+      User currentUser = this.getCurrentUser();
+      if (!userService.hasAuthority(currentUser, "ROLE_ACCOUNT_CRUD")) {
+        view = "users.nonroot.list_with_user_menu";
+        setPage(map, Page.USERS_ALL_USERS);
+      }
+      if (userParam != null) {
+        results = new ArrayList<User>();
+        results.add(userService.get(userParam));
+        totalUsers = 1;
+      } else {
+        results = userService.list(page, perPage, null, null, false, null, tenant.getId().toString(), null);
+        totalUsers = userService.count(null, null, tenant.getId().toString(), null);
+      }
+      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(currentUser));
+      setPage(map, Page.ADMIN_ALL_USERS);
+    }
+    if (results != null && results.size() > 0) {
+      customFieldService.populateCustomFields(results.get(0));
+      customFieldService.populateCustomFields(results.get(0).getTenant());
+    }
+
+    map.addAttribute("tenant", tenant);
+    map.addAttribute("users", results);
+    map.addAttribute("size", results != null ? results.size() : 0);
+
+    map.addAttribute("selectedUser", userParam);
+    // get session data having any error messages
+    String errormsg = (String) session.getAttribute("errormsg");
+    session.removeAttribute("errormsg");
+    if (errormsg != null && errormsg.equals("true")) {
+      List<String> globalErrors = (List<String>) session.getAttribute("globalErrors");
+      if (globalErrors != null) {
+        map.addAttribute("globalErrors", globalErrors);
+      }
+      List<String> errorMsgList = (List<String>) session.getAttribute("errorMsgList");
+      if (errorMsgList != null) {
+        map.addAttribute("errorMsgList", errorMsgList);
+      }
+      map.addAttribute("errormsg", errormsg);
+
+      session.removeAttribute("errorMsgList");
+      session.removeAttribute("globalErrors");
+    }
+    // check user limit
+    // check user limit
+    if (!isAllowedToAddUser(tenant)) {
+      map.addAttribute("isUsersMaxReached", "Y");
+    }
+
+    map.addAttribute("enable_next", "False");
+
+    if (totalUsers - (page * perPage) > 0) {
+      map.addAttribute("enable_next", "True");
+    } else
+      map.addAttribute("enable_next", "False");
+    map.addAttribute("current_page", page);
+
+    logger.debug("###Exiting list(req,map,session) method");
+    return view;
+  }
+
+  /**
+   * This method returns back the list of users, belonging to a particular tenant. The method also paginates the users
+   * based on the pagination parameters provided. Finally it also filters the users based on the letter range provided.
+   * 
+   * @param tenant -- owning account
+   * @param currentPage
+   * @param perPage
+   * @param size
+   * @param charRange -- range of chars for start and end for filtering
+   * @param showAll
+   * @param tenantId -- owning account id
+   * @param map -- model map
+   * @param session -- http session obj
+   * @return
+   */
+  @SuppressWarnings("unchecked")
+  @RequestMapping(value = {
+    "/account_userpopup"
+  }, method = RequestMethod.GET)
+  public String listUsersPerTenantWithPagination(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "currentPage", required = false, defaultValue = "1") String currentPage,
+      @RequestParam(value = "perPage", required = false, defaultValue = "6") String perPage,
+      @RequestParam(value = "size", required = false) String size,
+      @RequestParam(value = "charRange", required = false, defaultValue = "All") String charRange,
+      @RequestParam(value = "showAll", required = false, defaultValue = "false") boolean showAll,
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session) {
+    logger.debug("###Entering in list(tenant,showAll,tenantId,map) method @GET");
+    // setPage(map, Page.ACCOUNT_MGMT_ALL_USERS);
+    int currentPageValue = Integer.parseInt(currentPage);
+    int perPageValue = Integer.parseInt(perPage);
+    map.addAttribute("isShowingAll", showAll);
+    List<User> results;
+    if (isAdmin() && showAll) {
+      results = userService.list(0, 0, null, null, false, null, null, null);
+    } else if (isAdmin() && tenantParam != null) {
+      tenant = tenantService.get(tenantParam);
+      results = userService.list(currentPageValue, perPageValue, null, null, false, null, tenant.getId().toString(),
+          charRange);
+    } else {
+      results = userService.list(currentPageValue, perPageValue, null, null, false, null, tenant.getId().toString(),
+          charRange);
+    }
+    int sizeInt = 0;
+    if (size == null || size.equals("")) {
+      sizeInt = userService.count(null, null, tenant.getId().toString(), charRange);
+    } else {
+      sizeInt = Integer.parseInt(size);
+    }
+    map.addAttribute("tenant", tenant);
+    map.addAttribute("users", results);
+    map.addAttribute("size", results != null ? results.size() : 0);
+    // get session data having any error messages
+    String errormsg = (String) session.getAttribute("errormsg");
+    session.removeAttribute("errormsg");
+    if (errormsg != null && errormsg.equals("true")) {
+      List<String> globalErrors = (List<String>) session.getAttribute("globalErrors");
+      if (globalErrors != null) {
+        map.addAttribute("globalErrors", globalErrors);
+      }
+      List<String> errorMsgList = (List<String>) session.getAttribute("errorMsgList");
+      if (errorMsgList != null) {
+        map.addAttribute("errorMsgList", errorMsgList);
+      }
+      map.addAttribute("errormsg", errormsg);
+
+      session.removeAttribute("errorMsgList");
+      session.removeAttribute("globalErrors");
+    }
+    // check user limit
+    if (!isAllowedToAddUser(tenant)) {
+      map.addAttribute("isUsersMaxReached", "Y");
+    }
+
+    setPaginationValues(map, perPageValue, currentPageValue, sizeInt, charRange);
+    logger.debug("###Exiting list(req,map,session) method");
+    return "users1.list";
+  }
+
+  @RequestMapping(value = "/new/step1", method = RequestMethod.GET)
+  public String createStepOne(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session, HttpServletRequest request) {
+    logger.debug("Entering user create: createStepOne ");
+    UserForm user = new UserForm();
+    user.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    map.addAttribute("user", user);
+    Tenant userTenant = tenant;
+    if (isAdmin() && (Boolean) request.getAttribute("isSurrogatedTenant")) {
+      userTenant = tenantService.get(tenantParam);
+      setPage(map, Page.CRM_USER_ADD);
+      map.addAttribute("showUserProfile", true);
+    } else if (isAdmin() && !(Boolean) request.getAttribute("isSurrogatedTenant")) {
+      userTenant = tenantService.get(tenantParam);
+      setPage(map, Page.ADMIN_ALL_USERS);
+      map.addAttribute("showUserProfile", true);
+    } else {
+      setPage(map, Page.USER_ADD);
+    }
+    map.addAttribute("userTenant", CustomProxy.newInstance(userTenant));
+    map.addAttribute("tenant", CustomProxy.newInstance(userTenant));
+
+    // verify for max users. if not allowed then move to not authorize page
+    if (!isAllowedToAddUser(userTenant)) {
+      String msg = messageSource.getMessage("max.users.reached.popup.message", null, null,
+          LocaleUtils.toLocale(config.getDefaultLocale()));
+      throw new InvalidAjaxRequestException(msg);
+    }
+
+    user.setUserProfile(privilegeService.getUserProfile().getId()); // defaults to user.
+    List<Profile> valideProfiles = profileService.listValidProfiles(userTenant, null);
+    user.setValidProfiles(valideProfiles);
+    logger.debug("Exiting user create: createStepOne ");
+
+    /*
+     * Currently no need to display channel while creating user. User currentUser = getCurrentUser(); boolean
+     * displayChannel = !isSurrogatedTenant(tenant, tenantParam) && userHasPrivilegeOf(currentUser,
+     * Authority.Type.ROLE_ACCOUNT_CRUD) && userHasPrivilegeOf(currentUser, Authority.Type.ROLE_USER_CRUD);
+     * map.addAttribute("displayChannel", displayChannel);
+     */
+    map.addAttribute("displayChannel", false);
+    map.addAttribute("channels", channelService.getChannels());
+    map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+    map.addAttribute("defaultLocale", getDefaultLocale());
+    session.setAttribute("currentStep", "newUserCreationStep1");
+    String showImportFromDirectoryServiceButton = "false";
+    if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
+        && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
+      showImportFromDirectoryServiceButton = "true";
+    }
+    map.addAttribute("showImportAdButton", showImportFromDirectoryServiceButton);
+    return "users.new.step1";
+
+  }
+
+  /**
+   * @param username
+   * @return
+   */
+  private boolean isValidUserName(final String username) {
+    try {
+      privilegeService.runAsPortal(new PrivilegedAction<Void>() {
+
+        public Void run() {
+          userService.getUserByParam("username", username, false);
+          return null;
+        }
+      });
+    } catch (NoSuchUserException ex) {
+      return Boolean.TRUE;
+    }
+    return Boolean.FALSE;
+  }
+
+  /**
+   * @author amitpals This method combines the functionality of step2 and step3 of previous wizard for user creation
+   *         called from Finish Button of usercreation at step1
+   * @param form
+   * @param result
+   * @param tenant
+   * @param map
+   * @param request
+   * @return
+   * @throws ConnectorManagementServiceException
+   */
+  @RequestMapping(value = "/new/step1", method = RequestMethod.POST)
+  public String createUserStepTwo(@ModelAttribute("user") UserForm form, BindingResult result,
+      @ModelAttribute("userTenant") citrix.cpbm.access.Tenant tenant, ModelMap map, HttpServletRequest request, HttpSession session)
+      throws ConnectorManagementServiceException {
+    logger.debug("### Entering user create : createUserStepTwo");
+    boolean validationError = false;
+    // validate user
+    // HttpSession session = request.getSession();
+    session.setAttribute("currentStep", "newUserCreationStep1");// This attribute decides(createnewuser.jsp) the
+                                                                // stepNumber to be shown.
+    // set it default to step1 in case of any error in form submition step one be shown
+
+    UserStep1Validator validator = new UserStep1Validator();
+    validator.validate(form, result);
+    if (result.hasErrors()) {
+      validationError = true;
+    } else if (!isValidUserName(form.getUser().getUsername())) { // if the values entered are OK check lastly check
+                                                                 // username in DB
+      result.rejectValue("user.username", "js.errors.register.user.usernameRemote");
+      validationError = true;
+    }
+
+    if (validationError) {
+      // Attributes to populate the dropdowns
+      map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+      map.addAttribute("defaultLocale", getDefaultLocale());
+      return "users.new.step1";
+
+    }
+
+    String email = form.getUser().getEmail();
+    map.addAttribute("userTenant", tenant);
+    map.addAttribute("tenant", tenant);
+
+    if (isEmailBlacklisted(email.toLowerCase())) {
+      map.addAttribute("signuperror", "emaildomainblacklisted");
+      if (isAdmin() && isSurrogatedTenant(getCurrentUser().getTenant(), tenant.getParam())) {
+        setPage(map, Page.CRM_USER_ADD);
+        map.addAttribute("showUserProfile", true);
+      } else if (isAdmin() && !isSurrogatedTenant(getCurrentUser().getTenant(), tenant.getParam())) {
+        setPage(map, Page.ADMIN_ALL_USERS);
+        map.addAttribute("showUserProfile", true);
+      } else {
+        setPage(map, Page.USER_ADD);
+      }
+      // verify for max users. if not allowed then move to not authorize page
+      if (!isAllowedToAddUser(tenant.getObject())) {
+        String msg = messageSource.getMessage("max.users.reached.popup.message", null, null,
+            LocaleUtils.toLocale(config.getDefaultLocale()));
+        throw new InvalidAjaxRequestException(msg);
+      }
+      map.addAttribute("displayChannel", false);
+      map.addAttribute("channels", channelService.getChannels());
+      return "users.new.step1";
+
+    }
+    String channelParam = form.getChannelParam();
+    User currentUser = getCurrentUser();
+    boolean isSystemRoot = currentUser.equals(userService.getSystemUser(Handle.ROOT));
+    if (isSystemRoot && channelParam != null) {
+      form.getUser().setSourceChannel(channelService.getChannel(channelParam)); // XXX Gaurav
+    }
+    if (isAdmin() && tenant.getParam().equals(getTenant().getParam())) {
+      setPage(map, Page.ADMIN_ALL_USERS);
+    } else if (tenant.getParam().equals(getTenant().getParam())) {
+      setPage(map, Page.USER_ADD);
+    } else {
+      setPage(map, Page.CRM_USER_ADD);
+      map.addAttribute("showUserProfile", true);
+    }
+
+    map.addAttribute("user", form);
+    // step3 merged
+    if (!request.getParameter("submitButtonEmail").equals("CustomeEmail")) {// finish button pressed
+
+      // Check the flow once more
+      logger.debug("### User creation : request Finish");
+      citrix.cpbm.access.User user = form.getUser();
+      user.setLocale(form.getUserLocale());
+      if (form.getTimeZone() != null && form.getTimeZone() != "") {
+        user.setTimeZone(form.getTimeZone());
+      } else {
+        user.setTimeZone(config.getValue(Names.com_citrix_cpbm_portal_settings_default_timezone));
+      }
+      user.getObject().setCreatedBy(getCurrentUser());
+      if (form.getUserProfile() != null) {
+        user.setProfile(profileService.getProfile(form.getUserProfile()));
+      }
+      userService.createUserInTenant(user, tenant, result);
+      if(result.hasErrors()){
+        map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+        map.addAttribute("defaultLocale", getDefaultLocale());
+       /* List<String> errorMsgList = new ArrayList<String>();
+        for (ObjectError objectError : result.getAllErrors()) {
+          errorMsgList.add(objectError.getCode());
+        }
+        if (errorMsgList.size() > 0) {
+          map.addAttribute("errorMsgList", errorMsgList);
+          map.addAttribute("errormsg", true);
+        }*/
+        return "users.new.step1";
+      }
+      map.addAttribute("tenant", tenant);
+      String message = "create.user";
+      String messageArgs = user.getUsername() + "," + tenant.getName();
+      eventService.createEvent(new Date(), tenant.getObject(), message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
+          Category.ACCOUNT, Severity.INFORMATION, true);
+      session.setAttribute("currentStep", "newUserCreationStep3");// User successfully created show next step
+      setNewUserPageCount(session, tenant.getObject());
+      return "users.newuserregistration.finish";
+
+    } else {
+      setNewUserPageCount(session, tenant.getObject());
+      Map<String, Object> model = new HashMap<String, Object>();
+      String userLocale;
+      model.put("user", form.getUser());
+      model.put("custom", true);
+      if (form.getUserLocale() == null) {
+        userLocale = getDefaultLocale().toString();
+      } else {
+        userLocale = form.getUserLocale().toString();
+      }
+      String emailText = userService.getEmailTemplateAsStringByLocale(EmailTemplate.VERIFY_EMAIL, model, userLocale);
+      map.addAttribute("emailText", emailText);
+      logger.debug("### User creation : Customize Welcome EMail");
+      session.setAttribute("currentStep", "newUserCreationStep2");// User successfully created show next step
+      return "users.newuser.customemail";
+
+    }
+
+  }
+
+  public void setNewUserPageCount(HttpSession session, final Tenant tenant) {
+
+    int totalUsers = userService.count(null, null, tenant.getId().toString(), null);
+    logger.debug("Toatal Users= " + totalUsers);
+    Integer sdefaultPageSize = (Integer) session.getAttribute("currentPerPagesize");
+
+    int defaultPerPage = 0;
+    if (sdefaultPageSize == null) {
+      defaultPerPage = getDefaultPageSize();
+    } else {
+      defaultPerPage = sdefaultPageSize;
+    }
+    int newUserPage = (totalUsers + 1) / defaultPerPage;
+    if ((totalUsers) % defaultPerPage == 0) {
+      newUserPage = (totalUsers) / defaultPerPage;
+
+    } else {
+      newUserPage = ((totalUsers) / defaultPerPage + 1);
+    }
+    session.setAttribute("newUsersPageCount", newUserPage);
+
+  }
+
+  /**
+   * called from Click on finish Button of Custom Email message page
+   * 
+   * @throws ConnectorManagementServiceException
+   */
+
+  @RequestMapping(value = "/new/step2", method = RequestMethod.POST)
+  public String createStepThree(@ModelAttribute("user") UserForm form, BindingResult result, @ModelAttribute("userTenant") Tenant tenant,
+      ModelMap map, HttpServletRequest request) throws ConnectorManagementServiceException {
+    logger.debug("### Entering user create : createStepThree");
+    if (isAdmin() && tenant.getParam().equals(getTenant().getParam())) {
+      setPage(map, Page.ADMIN_ALL_USERS);
+    } else if (tenant.getParam().equals(getTenant().getParam())) {
+      setPage(map, Page.USER_ADD);
+    } else {
+      setPage(map, Page.CRM_USER_ADD);
+      map.addAttribute("showUserProfile", true);
+    }
+    citrix.cpbm.access.Tenant proxyTenant = (citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
+    map.addAttribute("user", form);
+    map.addAttribute("userTenant", proxyTenant);
+    map.addAttribute("tenant", proxyTenant);
+    Map<String, String> customEmailInfo = null;
+    if (form.getCustomEmailSubject() != null || form.getEmailText() != null) {
+      logger.debug("### User creation : User creation with Custom Email");
+      customEmailInfo = new HashMap<String, String>();
+      customEmailInfo.put("customSubject", form.getCustomEmailSubject());
+      customEmailInfo.put("customEmailText", form.getEmailText());
+    }
+    citrix.cpbm.access.User user = form.getUser();
+    user.setLocale(form.getUserLocale());
+    if (form.getTimeZone() != null && form.getTimeZone() != "") {
+      user.setTimeZone(form.getTimeZone());
+    } else {
+      user.setTimeZone(config.getValue(Names.com_citrix_cpbm_portal_settings_default_timezone));
+    }
+    user.getObject().setCreatedBy(getCurrentUser());
+    if (form.getUserProfile() != null) {
+      user.setProfile(profileService.getProfile(form.getUserProfile()));
+    }
+
+    userService.createUserInTenant(user, proxyTenant, customEmailInfo, result);
+    logger.debug("### Exiting user create : createStepThree");
+
+    HttpSession session = request.getSession();
+    session.setAttribute("currentStep", "newUserCreationStep3");// User successfully created show next step
+    return "users.newuserregistration.finish";
+
+  }
+
+  @RequestMapping(value = {
+      "/{userParam}/edit", "/{userParam}/myprofile"
+  }, method = RequestMethod.GET)
+  public String edit(@RequestParam(value = "activeTab", required = false) String currentTab,
+      @PathVariable String userParam, HttpServletRequest request, ModelMap map) {
+    logger.debug("###Entering in edit(userId,map) method @GET");
+
+    User user = userService.get(userParam);
+    citrix.cpbm.access.User userProxy = (citrix.cpbm.access.User)CustomProxy.newInstance(user);
+    User logedInUser = getCurrentUser(true);
+    if (isAdmin() && isSurrogatedTenant(getCurrentUser().getTenant(), user.getTenant().getParam())) {
+      if (userService.hasAuthority(logedInUser, "ROLE_USER_CRUD")) {
+        map.addAttribute("showUserProfile", true);
+      } else {
+        throw new AccessDeniedException("Not Authorized");
+      }
+    }
+
+    customFieldService.populateCustomFields(user);
+    customFieldService.populateCustomFields(user.getTenant());
+    UserForm form = new UserForm((citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    
+    TelephoneVerificationService tele_verification_service = (TelephoneVerificationService) connectorManagementService
+        .getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION);
+
+    if (tele_verification_service != null && tele_verification_service.isEnabled()) {
+      form.setPhoneVerificationEnabled(true);
+      Random rnd = new Random();
+      int n = 99999 - 1000;
+      form.setGeneratedPhoneVerificationPin("" + rnd.nextInt(n));
+      request.getSession().setAttribute("phoneVerificationPin", "" + rnd.nextInt(n));
+    }
+
+    // Since we have no way to get the country from country code so in case of isd code 1 we are hardcoding it to "US".
+    Country country = null;
+    String isdCode = userProxy.getCountryCode();
+    if (isdCode == null) {
+      country = countryService.locateCountryByCode(user.getTenant().getAddress().getCountry());
+    } else {
+      if (isdCode.trim().equals("1")) {
+        country = countryService.locateCountryByCode("US");
+      } else {
+        List<Country> countryList = countryService.locateCountryByIsdCode(isdCode);
+        if (countryList.size() > 0) {
+          country = countryList.get(0);
+        } else {
+          country = countryService.locateCountryByCode("US");
+        }
+      }
+    }
+    if (form.getCountryCode() == null || form.getCountryCode().equals("")) {
+      form.setCountryCode(country.getIsdCode());
+    }
+    map.addAttribute("country_code_XX", country.getCountryCode2());
+    
+    // add cloud servcies and cloud for left menu
+    List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
+    map.addAttribute("services", services);
+    map.addAttribute("categories",
+        connectorConfigurationManager.getAllCategories(CssdkConstants.CLOUD));
+    map.addAttribute("countPerCategory", connectorConfigurationManager.getServiceCountPerCategory(services));
+
+    // Phone number is mandatory for the owner of the tenant.
+    if (user.getTenant().getOwner().equals(user)) {
+      map.addAttribute("PhoneNumberMandatory", true);
+    } else {
+      map.addAttribute("PhoneNumberMandatory", false);
+    }
+
+    try {
+      form.setUserClone((citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
+    } catch (CloneNotSupportedException e) {
+      logger.debug("Cloning of user failed", e);
+    }
+    String view = "users.edit";
+    // verifying for myprofile page
+    if (request.getPathInfo() != null && request.getPathInfo().contains("myprofile")) {
+      view = "users.edit.myprofile";
+    } else {
+      List<Profile> valideProfiles = profileService.listValidProfiles(user.getTenant(), null);
+      // get user profile id
+      Long profileId = null;
+      for (Profile profile : valideProfiles) {
+        if (profile.getName().equals("User")) {
+          profileId = profile.getId();
+          break;
+        }
+      }
+      if (userProxy.getProfile().isOperationsProfile()) {
+        valideProfiles.remove(profileService.getProfile(profileId));
+      }
+      form.setValidProfiles(valideProfiles);
+    }
+    // audit logs processing
+    List<AuditLog> auditLogs = auditLogService.getAuditLogsByTypeId(user);
+    int count = auditLogService.getLoginCount(user.getId());
+    long loginCount = 0;
+    Date lastLogin = null;
+    if (auditLogs != null) {
+      List<Date> auditLoginDates = new ArrayList<Date>();
+      for (AuditLog log : auditLogs) {
+        if (log.getAction().equals(AuditAction.Login.toString())) {
+          auditLoginDates.add(log.getCreationDate());
+        }
+      }
+      if (auditLoginDates.size() > 0) {
+        Collections.sort(auditLoginDates);
+        Collections.reverse(auditLoginDates);
+        lastLogin = auditLoginDates.get(0);
+      }
+      loginCount = count;
+    }
+
+    List<Country> filteredCountryList = getFilteredCountryList(form.getCountryList());
+    map.addAttribute("filteredCountryList", filteredCountryList);
+
+    map.addAttribute("logins", loginCount);
+    map.addAttribute("lastLogin", lastLogin);
+    // audit log processing ends
+
+    // create the gravatar url
+    String gravatarUrl = generateGravatarUrl(user.getEmail());
+    map.addAttribute("isprofilepage", "true");
+    map.addAttribute("isUserRoot", userIsRoot(user));
+    map.addAttribute("gravatarUrl", gravatarUrl);
+    map.addAttribute("user", form);
+    map.addAttribute("tenant", CustomProxy.newInstance(user.getTenant()));
+    map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+    map.addAttribute("userLocale", this.getLocaleDisplayName(userProxy.getLocale()));
+    map.addAttribute("cloudstackEndPoint", this.getCloudStackEndPointUrl());
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
+    String doNotShowPasswordEditLink = "false";
+    if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
+        && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
+      doNotShowPasswordEditLink = "true";
+    }
+    map.addAttribute("doNotShowPasswordEditLink", doNotShowPasswordEditLink);
+    List<UserAlertPreferences> alertsPrefs = new ArrayList<UserAlertPreferences>();
+    try {
+      alertsPrefs = userAlertPreferencesService.listAllUserAlertPreferences(user);
+      map.addAttribute("alertsPrefs", alertsPrefs);
+
+      map.addAttribute("alertsPrefsSize", alertsPrefs.size());
+      map.addAttribute("addAlertEmailLimit",
+          config.getIntValue(Names.com_citrix_cpbm_accountManagement_resourceLimits_registered_emailAddresses));
+
+      List<UserAlertPreferences> verifiedAlertPrefs = new ArrayList<UserAlertPreferences>();
+      UserAlertPreferences alertPref = null;
+      Iterator<UserAlertPreferences> alertPrefIt = alertsPrefs.iterator();
+      while (alertPrefIt.hasNext()) {
+        alertPref = alertPrefIt.next();
+        if (alertPref.isEmailVerified())
+          verifiedAlertPrefs.add(alertPref);
+      }
+      if (verifiedAlertPrefs.size() > 0)
+        map.addAttribute("showChangePrimaryEmailLink", "true");
+      map.addAttribute("activeTab", currentTab);
+      map.addAttribute("userAlertEmailForm", new UserAlertEmailForm(user, AlertType.USER_ALERT_EMAIL));
+      prepareServiceViewForUser(map, user);
+    } catch (Exception e) {
+      logger.error(e);
+    }
+
+    setPage(map, Page.USER_PERSONAL_PROFILE);
+    logger.debug("###Exiting edit(userId,map) method @GET");
+    return view;
+  }
+
+  @RequestMapping(value = "/{userParam}/validateemail", method = RequestMethod.GET)
+  @ResponseBody
+  public String validateemail(@PathVariable String userParam,
+      @RequestParam(value = "email", required = false) String email, HttpServletRequest request, ModelMap map) {
+    if (email != null && email.length() > 0 && isEmailBlacklisted(email.toLowerCase())) {
+      return "false";
+    }
+    return "true";
+  }
+
+  /**
+   * This method is the helper for the gravatar url generation This method gets the user email, trims it for leading and
+   * trailing white spaces and generates an md5 hash of this email address, finally returning this newly generated
+   * gravatar url in the format http://www.gravatar.com/avatar/<md5 hash>
+   */
+  private String generateGravatarUrl(String emailAddress) {
+    String trimmedEmailAddress = emailAddress.toLowerCase().trim();
+    StringBuilder gravatarUrl = new StringBuilder("http://www.gravatar.com/avatar/");
+    String md5Hash = md5Hex(trimmedEmailAddress);
+    gravatarUrl.append(md5Hash);
+    // this part appends the default img
+    gravatarUrl.append("?d=http://www.gravatar.com/avatar/6a33002708e4e19578cbadaaae09507d.png");
+
+    return gravatarUrl.toString();
+  }
+
+  /**
+   * Hex representation of the incoming email address string
+   * 
+   * @param array -- email address byte array
+   * @return -- hex rep string
+   */
+  private String hex(byte[] array) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < array.length; ++i) {
+      sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
+    }
+    return sb.toString();
+  }
+
+  /**
+   * This method represents the MD5 Hash of the input message
+   * 
+   * @param message
+   * @return -- md5 encoded string
+   */
+  private String md5Hex(String message) {
+    try {
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      return hex(md.digest(message.getBytes("CP1252")));
+    } catch (NoSuchAlgorithmException e) {
+    } catch (UnsupportedEncodingException e) {
+    }
+    return null;
+  }
+
+  /**
+   * This method returns back the gravatar url of a user, given his user id/email address The gravatar url is of the
+   * format: http://www.gravatar.com/avatar/<email hash>
+   * 
+   * @param form
+   * @param result
+   * @param map
+   * @param status
+   * @return
+   */
+  @RequestMapping(value = {
+      "/{userParam}/edit", "/{userParam}/myprofile"
+  }, method = RequestMethod.POST)
+  public String edit(@PathVariable String userParam, @Valid @ModelAttribute("user") UserForm form,
+      BindingResult result, HttpServletRequest request, ModelMap map, SessionStatus status) {
+    logger.debug("###Entering in edit(form,result,map,status) method @POST");
+    citrix.cpbm.access.User user = form.getUser();
+
+    MyProfileValidator validator = new MyProfileValidator();
+    validator.validate(form, result);
+    if (result.hasErrors()) {
+      if (result.getErrorCount() == 1 && result.getAllErrors().get(0).getCode().equals("Size")
+          && form.getUser().getUsername().equals("root")) {
+      } else {
+        displayErrors(result);
+        // TODO to return the edit page with errors
+        return "redirect:/portal/users/" + userParam + "/myprofile";
+      }
+    }
+    User logedInUser = this.getCurrentUser(true);
+    if (isEmailBlacklisted(user.getEmail().toLowerCase())) {
+      logger.info("Email Id : " + form.getUser().getEmail()
+          + " rejected because it is not on the whitelist or part of the blacklist. Kindly contact support");
+      result.rejectValue("user.email", "signup.emaildomain.blacklist.error");
+      return edit(null, user.getObject().getUuid(), request, map);
+    }
+    if (form.getClearPassword() != null && !form.getClearPassword().isEmpty()) { // password reset
+      if (form.getOldPassword() == null) {
+        result.addError(new FieldError(result.getObjectName(), "oldPassword", null, false, new String[] {
+          "errors.password.required"
+        }, null, null));
+      } else if (!user.getObject().authenticate(form.getOldPassword())) {
+        result.addError(new FieldError(result.getObjectName(), "oldPassword", null, false, new String[] {
+          "errors.password.invalid"
+        }, null, null));
+      } else {
+        user.getObject().setClearPassword(form.getClearPassword());
+      }
+    }
+    citrix.cpbm.access.User userClone = form.getUserClone();
+    // TODO need to do Validation(Once fix this then remove @Ignore annotation against testUpdateUserFail from Test
+    // Suit.
+    form.setPhone(form.getPhone().replaceAll(PHONE_NUMBER_REGEX, "")); // removing all characters from phone number
+    String oldPhone = userClone.getPhoneWithoutIsdCode() != null ? userClone.getPhoneWithoutIsdCode() : "";
+    if (!(form.getPhone()).equals(oldPhone.replaceAll(PHONE_NUMBER_REGEX, ""))
+        || (!(form.getCountryCode().toString().equals(user.getCountryCode())))) {
+
+      boolean phoneVerificationEnabled = false;
+
+      if (connectorManagementService.getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION) != null
+          && ((TelephoneVerificationService) connectorManagementService
+              .getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION)).isEnabled())
+        phoneVerificationEnabled = true;
+
+      if (phoneVerificationEnabled && !(userService.hasAuthority(logedInUser, "ROLE_ACCOUNT_CRUD"))) {
+        String generatedPhoneVerificationPin = (String) request.getSession().getAttribute("phoneVerificationPin");
+        String actualPhoneNumber = (String) request.getSession().getAttribute("phoneNumber");
+        if (form.getUserEnteredPhoneVerificationPin() == null
+            || !form.getUserEnteredPhoneVerificationPin().equals(generatedPhoneVerificationPin)
+            || !areDigitsInPhoneNosEqual(form.getPhone(), actualPhoneNumber)) {
+          map.addAttribute("userEditError", "phoneVerfication.error");
+          result.rejectValue("phone", "phoneVerfication.error");
+          parseResult(result, map);
+          return edit(null, user.getObject().getUuid(), request, map);
+        }
+      }
+
+    }
+    String phoneNo = form.getCountryCode().replaceAll(PHONE_NUMBER_REGEX, "") + COUNTRY_CODE_TO_PHONE_NUMBER_SEPERATOR
+        + form.getPhone().replaceAll(PHONE_NUMBER_REGEX, "");
+    // Set the phone number
+    user.setPhone(phoneNo);
+
+    if ((user.getObject().getTenant().getState() == State.ACTIVE || user.getObject().getTenant().getState() == State.LOCKED || user.getObject().getTenant()
+        .getState() == State.SUSPENDED) && !user.getEmail().equals(userClone.getEmail())) {
+      userAlertPreferencesService.createUserAlertPreference(user.getObject(), user.getEmail(), AlertType.USER_EMAIL);
+      // set email so that it wont be updated in users table and other places
+      user.setEmail(userClone.getEmail());
+      user.setEmailVerified(true);
+    }
+    user = userService.save(user, result);
+    form.setUser(user);
+    map.addAttribute("user", form);
+    setPage(map, Page.USER_PERSONAL_PROFILE);
+    status.setComplete();
+    logger.debug("###Exiting edit(form,result,map,status) method @POST");
+    map.clear();
+    // verifying for myprofile page
+    if (request.getPathInfo() != null && request.getPathInfo().contains("myprofile")) {
+      return "redirect:/portal/users/" + user.getObject().getParam() + "/myprofile";
+    } else {
+      return "redirect:/portal/users/" + user.getObject().getParam() + "/edit";
+    }
+
+  }
+
+  /**
+   * This method is invoked when we try to change the password from the MyProfile Page
+   * 
+   * @param form
+   * @param result
+   * @param request
+   * @param map
+   * @param status
+   * @param userParam
+   * @return String - success/failure
+   */
+
+  @RequestMapping(value = {
+    "/changePassword"
+  }, method = RequestMethod.POST)
+  @ResponseBody
+  public String changePassword(@Valid @ModelAttribute("user") UserForm form, BindingResult result,
+      HttpServletRequest request, ModelMap map, SessionStatus status, @RequestParam("userParam") String userParam) {
+    citrix.cpbm.access.User user = form.getUser();
+    if ((user.getObject().getOldPassword()).equals(userService.get(userParam).getPassword())) {
+      user.setPassword(form.getUser().getPassword());
+      user = userService.save(user, result);
+      return "success";
+    }
+
+    return "failure";
+  }
+
+  @RequestMapping("/search")
+  public String search(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "term", required = true) String term,
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
+    if (isAdmin() && tenantParam != null) {
+      tenant = tenantService.get(tenantParam);
+    }
+    map.addAttribute("users", userService.list(0, 0, term, null, true, null, tenant.getId().toString(), null));
+    return "users.search_results";
+  }
+
+  @RequestMapping(value = "/cloud_login", method = RequestMethod.GET)
+  @ResponseBody
+  public String login(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "tenant", required = false) String tenantParam,
+      @RequestParam(value = "manage", required = false) String manage,
+      @RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID, ModelMap map)
+      throws ConnectorManagementServiceException {
+    logger.debug("###Entering in login(tenantId,map) method @GET");
+    String url = null;
+    Tenant userTenant = tenant;
+
+    if (isAdmin() && tenantParam != null) {
+      userTenant = tenantService.get(tenantParam);
+    }
+    url = getConsoleURL(userTenant, map, serviceInstanceUUID);
+    if (url == null) {
+      throw new NoSuchUserException("Invalid user for params");
+    }
+    if (manage != null && manage.length() > 0) {
+      url = url + "&lp=" + manage;
+    }
+    logger.debug("###Exiting login(tenantId,map) method @GET");
+    map.clear();
+    return url;
+  }
+
+  /**
+   * @param tenantId
+   * @param map
+   * @return
+   */
+  private String getConsoleURL(Tenant tenant, ModelMap map, String serviceInstanceUUID) {
+    String returnVal = null;
+    // if user has CMgmt role, then login as user
+    User user = getCurrentUser();
+    View view = null;
+    CloudConnector cloudConnector = (CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID);
+    if (userService.getUserHandleByServiceInstanceUuid(user.getUuid(), serviceInstanceUUID) == null
+        && userService.getUserHandleByServiceInstanceUuid(user.getTenant().getOwner().getUuid(), serviceInstanceUUID) != null) {
+      view = cloudConnector.getViewResolver().getConsoleView(user.getTenant().getOwner());
+    } else {
+      view = cloudConnector.getViewResolver().getConsoleView(user);
+    }
+    returnVal = (view != null) ? view.getURL() : null;
+    return returnVal;
+  }
+
+  /**
+   * list the alerts
+   * 
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/alert_prefs", method = RequestMethod.GET)
+  public String viewAlertsDeliveryOptions(ModelMap map) {
+    logger.debug("###Entering in viewAlertsDeliveryOptions(map) method @GET");
+    setPage(map, Page.DASHBOARD_ALL_ALERTS);
+    User user = getCurrentUser();
+    map.addAttribute("user", user);
+
+    List<UserAlertPreferences> alertsPrefs = new ArrayList<UserAlertPreferences>();
+    try {
+      alertsPrefs = userAlertPreferencesService.listUserAlertPreferences(user);
+      map.addAttribute("alertsPrefs", alertsPrefs);
+      map.addAttribute("alertsPrefsSize", alertsPrefs.size());
+      map.addAttribute("addAlertEmailLimit",
+          config.getIntValue(Names.com_citrix_cpbm_accountManagement_resourceLimits_registered_emailAddresses));
+    } catch (Exception e) {
+      logger.error(e);
+    }
+    logger.debug("###Exiting viewAlertsDeliveryOptions(map) method @GET");
+    return "users.alerts.delivery_opts";
+  }
+
+  /**
+   * list the alerts
+   * 
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/alert_prefs", method = RequestMethod.POST)
+  @ResponseBody
+  public String saveAlertsDeliveryOptions(@RequestParam(value = "newEmail", required = false) String emailAddress,
+      ModelMap map) {
+    logger.debug("###Entering in viewAlertsDeliveryOptions(map) method @GET");
+
+    User user = getCurrentUser();
+    map.addAttribute("user", user);
+    try {
+      userAlertPreferencesService.createUserAlertPreference(user, emailAddress, AlertType.USER_ALERT_EMAIL);
+    } catch (Exception e) {
+      logger.debug("###Exiting viewAlertsDeliveryOptions(map) method @POST - failure");
+      return "failure";
+    }
+
+    logger.debug("###Exiting viewAlertsDeliveryOptions(map) method @POST - success");
+    return "success";
+  }
+
+  /**
+   * edit timezone and preferred language
+   * 
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/edit_prefs", method = RequestMethod.POST)
+  @ResponseBody
+  public Map<String, String> editPrefs(@ModelAttribute("user") UserForm form, BindingResult result,
+      @RequestParam(value = "timeZone", required = false) String timeZone,
+      @RequestParam(value = "locale", required = false) String locale, ModelMap map, HttpServletRequest request) {
+    logger.debug("####Entering in editPrefs() method @POST with TimeZone: " + timeZone);
+    Map<String, String> returnMap = new HashMap<String, String>();
+    citrix.cpbm.access.User user = form.getUser();
+    // audit logs processing
+    List<AuditLog> auditLogs = auditLogService.getAuditLogsByTypeId(user.getObject());
+    Date lastLogin = null;
+    if (auditLogs != null) {
+      List<Date> auditLoginDates = new ArrayList<Date>();
+      for (AuditLog log : auditLogs) {
+        if (log.getAction().equals(AuditAction.Login.toString())) {
+          auditLoginDates.add(log.getCreationDate());
+        }
+      }
+      if (auditLoginDates.size() > 0) {
+        Collections.sort(auditLoginDates);
+        Collections.reverse(auditLoginDates);
+        lastLogin = auditLoginDates.get(0);
+      }
+    }
+    boolean localeChange = false;
+    String oldLocale = user.getLocale() != null ? user.getLocale().toString() : null;
+    try {
+      if (timeZone != null && timeZone != "") {
+        user.setTimeZone(timeZone);
+      } else {
+        user.setTimeZone(config.getValue(Names.com_citrix_cpbm_portal_settings_default_timezone));
+      }
+      if (locale != null && !(locale.equals("")) && !(locale.equals(oldLocale))) {
+        user.setLocale(LocaleUtils.toLocale(locale));
+        localeChange = true;
+      }
+      if (locale == null) {
+        user.setLocale(null);
+      }
+      user = userService.save(user, result);
+      form.setUser(user);
+    } catch (Exception e) {
+      logger.debug("###Exiting editPrefs(String,map) method @POST - failure");
+      returnMap.put("failure", "failure");
+      localeChange = false;
+      returnMap.put("localeChange", "false");
+      return returnMap;
+    }
+    // Changing the locale value in session to get effective across the portal . No need to login and logout.
+    if (localeChange && user.getObject().getParam().equals(getCurrentUser().getParam())) {
+      WebUtils.setSessionAttribute(request, SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, user.getLocale());
+      returnMap.put("localeChange", "true");
+    }
+    map.addAttribute("userLocale", this.getLocaleDisplayName(user.getLocale()));
+    returnMap.put("timeZone", timeZone);
+    returnMap.put("locale", this.getLocaleDisplayName(user.getLocale()));
+    if (timeZone != null) {
+      returnMap.put("lastLogin", ""
+          + (lastLogin != null ? (lastLogin.getTime() + TimeZone.getTimeZone(timeZone).getOffset(lastLogin.getTime()))
+              : ""));
+    } else {
+      returnMap.put("lastLogin", "" + (lastLogin != null ? lastLogin.getTime() : ""));
+    }
+    logger.debug("###Exiting editPrefs(String, map) method @POST - success");
+    return returnMap;
+
+  }
+
+  /**
+   * Verify if password is correct for the current user
+   * 
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/verify_password", method = RequestMethod.POST)
+  @ResponseBody
+  public Map<String, Object> verifyPassword(@RequestParam(value = "password", required = true) final String password, HttpServletRequest request) {
+
+    Map<String, Object> mapresult = new HashMap<String, Object>();
+    logger.debug("###Entering in verifyPassword(password,session) method @POST");
+    User user = getCurrentUser(true);
+    boolean authenticated = false;
+    if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
+        && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
+      authenticated = true;
+    } else {
+      authenticated = user.authenticate(password);
+    }
+    if (authenticated) {
+      Set<UserHandle> handles = user.getUserHandles();
+      List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
+      Iterator<UserHandle> handlesIterator = handles.iterator();
+      while (handlesIterator.hasNext()) {
+        UserHandle handle = handlesIterator.next();
+        Map<String, String> credentialMap = handle.getApiCredentials();
+        if (credentialMap != null) {
+          String serviceInstanceUuid = handle.getServiceInstanceUuid();
+          try {
+            ServiceInstance instance = connectorConfigurationManager.getInstance(serviceInstanceUuid);
+            String instanceName = instance.getName();
+            Service service = instance.getService();
+            String serviceName = service.getServiceName();
+            serviceName = messageSource.getMessage(serviceName + ".service.name", null, getSessionLocale(request));
+            credentialMap.put("ServiceName", serviceName);
+            credentialMap.put("ServiceUuid", service.getUuid());
+            credentialMap.put("InstanceName", instanceName);
+            credentialList.add(credentialMap);
+          } catch (Exception e) {
+            logger.error(e);
+          }
+        }
+      }
+      mapresult.put("userCredentialList", credentialList);
+      mapresult.put("success", true);
+    }
+    logger.debug("###Exiting verifyPassword(password,map) method @POST returning " + authenticated + " for "
+        + user.getName());
+
+    return mapresult;
+  }
+
+  /**
+   * list the subscriptions
+   * 
+   * @param map
+   * @return string
+   */
+  @RequestMapping(value = "/subscribe", method = RequestMethod.GET)
+  public String viewSpendAlertSubscriptions(ModelMap map) {
+    logger.debug("###Entering in viewSubscriptions(map) method @GET");
+    List<SpendAlertSubscription> subscriptions = new ArrayList<SpendAlertSubscription>();
+    setPage(map, Page.SUBSCRIPTIONS);
+    User user = getCurrentUser();
+    subscriptions = notificationService.getUserSubscriptions(user);
+    map.addAttribute("subscriptions", subscriptions);
+    map.addAttribute("size", subscriptions.size());
+
+    logger.debug("###Exiting viewSubscriptions(map) method @GET");
+    return "users.subscriptions";
+  }
+
+  /**
+   * creates subscriptions
+   * 
+   * @param form
+   * @param map
+   * @return string
+   */
+  @RequestMapping(value = "/subscribe/new", method = RequestMethod.GET)
+  public String createSpendAlertSubscription(ModelMap map) {
+    logger.debug("###Entering in createSubscription(map) method @GET");
+    setPage(map, Page.HOME);
+    // map.addAttribute(Level3.Dashboard.getName(), "");
+    // map.addAttribute(Level3.Subscriptions.getName(), "on");
+    User user = getCurrentUser();
+    CustomAlertForm subscriptionForm = new CustomAlertForm(user);
+    map.addAttribute("subscriptionForm", subscriptionForm);
+    map.addAttribute("currency", user.getTenant().getCurrency());
+    return "users.subscriptions.create";
+  }
+
+  /**
+   * creates subscriptions
+   * 
+   * @param form
+   * @param map
+   * @return string
+   */
+  @RequestMapping(value = "/subscribe/new", method = RequestMethod.POST)
+  public String createSpendAlertSubscription(@ModelAttribute("subscriptionForm") CustomAlertForm form, ModelMap map) {
+    logger.debug("###Entering in createSubscription(form,result,map) method @POST");
+    setPage(map, Page.HOME);
+    // map.addAttribute(Level3.Dashboard.getName(), "");
+    // map.addAttribute(Level3.Subscriptions.getName(), "on");
+    User user = getCurrentUser();
+    int subscriptionType = 1; // Spend Limit money value type
+    SpendAlertSubscription subscription = new SpendAlertSubscription();
+    subscription.setSubscriptionType(subscriptionType);
+    AccountHolder accountHolder = null;
+    subscription.setAccountHolder(accountHolder);
+    subscription.setUser(user);
+    // add new subscription
+    notificationService.saveSubscription(subscription);
+
+    logger.debug("###Exiting createSubscription(form,result,map) method @POST");
+    return "redirect:/portal/users/subscribe";
+  }
+
+  /**
+   * deletes subscription
+   * 
+   * @param subscriptionId
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/{subscriptionId}/subscribe/delete", method = RequestMethod.POST)
+  public String removeSpendAlertSubscription(@PathVariable String subscriptionId, ModelMap map) {
+    setPage(map, Page.HOME);
+    // map.addAttribute(Level3.Dashboard.getName(), "");
+    // map.addAttribute(Level3.Subscriptions.getName(), "on");
+    SpendAlertSubscription subscription = notificationService.getSpendAlertSubscription(new Long(subscriptionId));
+    // removes subscription
+    notificationService.removeSubscription(subscription);
+
+    return "redirect:/portal/users/subscribe";
+  }
+
+  @RequestMapping(value = "/{userParam}/resetPassword", method = RequestMethod.POST)
+  public void requestReset(@ModelAttribute("user") UserForm form, HttpServletRequest request, ModelMap map) {
+    logger.debug("###Entering in requestReset(username,request) method @POST");
+    try {
+      citrix.cpbm.access.User user = form.getUser();
+      if (user.isEmailVerified()) {
+        userService.sendResetPasswordMail(user.getObject(), "reset.password", user.getUsername());
+      }
+    } catch (NoSuchUserException ex) {
+      logger.debug(ex.fillInStackTrace());
+    }
+    logger.debug("###Exiting requestReset(username,request) method @POST");
+  }
+
+  @RequestMapping(value = "/{userParam}/audit_log", method = RequestMethod.POST)
+  public String getAuditLog(@PathVariable String userParam, ModelMap map) {
+    logger.debug("###Entering in getAuditLog(userId,map) method @GET");
+    User user = userService.get(userParam);
+    map.addAttribute("auditLogs", auditLogService.getAuditLogsByTypeId(user));
+    logger.debug("###Exiting getAuditLog(userId,map) method @GET");
+    return "auditlog.show";
+  }
+
+  @RequestMapping(value = "/{userParam}/delete", method = RequestMethod.GET)
+  @ResponseBody
+  public String delete(@PathVariable String userParam, ModelMap map) throws NoSuchUserException,
+      ConnectorManagementServiceException {
+    User user = userService.get(userParam);
+    Tenant tenant = user.getTenant();
+    if (tenant.getState().equals(State.ACTIVE)) {
+      String userNameWithoutId = user.getUsername();
+      userService.deleteUser(user, getCurrentUser());
+      map.clear();
+      String message = "delete.user";
+      String messageArgs = userNameWithoutId + "," + tenant.getName();
+      eventService.createEvent(new Date(), tenant, message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
+          Category.ACCOUNT, Severity.INFORMATION, true);
+    }
+    return null;
+  }
+
+  @RequestMapping(value = "/{userParam}/deactivate", method = RequestMethod.GET)
+  public String deactivate(@PathVariable String userParam,
+      @RequestParam(value = "action", required = false) String action, ModelMap map) {
+    User user = userService.get(userParam);
+    map.addAttribute("user", user);
+    String view = "redirect:/portal/users/" + userParam + "/myprofile";
+    if (action != null && action.equals("ajax")) {
+      String profileName = user.getProfile().getName();
+      map.addAttribute("profileName", profileName);
+      view = "user.show";
+    }
+    return view;
+  }
+
+  @RequestMapping(value = "/{userParam}/deactivateUser", method = RequestMethod.POST)
+  @ResponseBody
+  public User deactivateUser(@PathVariable String userParam, ModelMap map) {
+    User user = userService.get(userParam);
+    userService.disable(user);
+    map.addAttribute("user", user);
+    userService.sendDeactivationMail(user);
+    return user;
+  }
+
+  @RequestMapping(value = "/{userParam}/activate", method = RequestMethod.GET)
+  public String Activate(@PathVariable String userParam,
+      @RequestParam(value = "action", required = false) String action, ModelMap map) {
+    User user = userService.get(userParam);
+    map.addAttribute("user", user);
+    String view = "redirect:/portal/users/" + userParam + "/myprofile";
+    if (action != null && action.equals("ajax")) {
+      String profileName = user.getProfile().getName();
+      map.addAttribute("profileName", profileName);
+      view = "user.show";
+    }
+    return view;
+
+  }
+
+  @RequestMapping(value = "/{userParam}/activateUser", method = RequestMethod.POST)
+  @ResponseBody
+  public User activateUser(@PathVariable String userParam, ModelMap map) {
+    User user = userService.get(userParam);
+    userService.enable(user);
+    map.addAttribute("user", user);
+    userService.sendActivationMail(user, "activation.email.sent", user.getUsername());
+    return user;
+  }
+
+  @RequestMapping(value = "/{userParam}/resendverification", method = RequestMethod.GET)
+  public String resendVerificationail(@PathVariable String userParam,
+      @RequestParam(value = "action", required = false) String action, ModelMap map) {
+    User user = userService.get(userParam);
+    userService.resendVerificationEmail(user);
+
+    map.addAttribute("user", user);
+    String view = "redirect:/portal/users/" + userParam + "/myprofile";
+    if (action != null && action.equals("ajax")) {
+      String profileName = user.getProfile().getName();
+      map.addAttribute("profileName", profileName);
+      view = "user.show";
+    }
+    return view;
+  }
+
+  /**
+   * Validates for max custom spend alerts
+   * 
+   * @param id
+   * @return
+   */
+  @RequestMapping(value = "/subscribe/verify_max_subscriptions")
+  @ResponseBody
+  public String verifyMaxSubscription(@RequestParam(value = "projectMembershipId", required = false) final String id,
+      @RequestParam(value = "tenantId", required = false) String tenantId) {
+    logger.debug("In verifyMaxSubscription() method start and projectMembershipId is : " + id);
+    Boolean result = notificationService.verifyMaxSubscription(id, tenantId, getCurrentUser());
+    return result.toString();
+  }
+
+  // @RequestMapping(value = "/subscribeToCloudStorage", method = RequestMethod.GET)
+  // public String subscribeToCloudStorage(ModelMap map) throws Exception {
+  // logger.debug("###Entering in subscribeToCloudStorage(map) method @GET");
+  //
+  // User user = getCurrentUser();
+  // atmosService.createAtmosAccount(user);
+  // map.addAttribute("showSubscribedToAtmosPopUp", "Y");
+  //
+  // logger.debug("###Exiting subscribeToCloudStorage(map) method @GET");
+  // return "main.home";
+  // }
+
+  private void parseResult(BindingResult result, ModelMap map) {
+
+    if (result.getFieldErrors().size() > 0) {
+      List<String> errorMsgList = new ArrayList<String>();
+      for (FieldError fieldError : result.getFieldErrors()) {
+        String fieldName = fieldError.getField();
+        if (fieldName.contains(".")) {
+          fieldName = fieldName.substring(fieldName.lastIndexOf(".") + 1);
+        }
+        errorMsgList.add(fieldName + " field value '" + fieldError.getRejectedValue() + "' is not valid.");
+      }
+
+      map.addAttribute("errorMsgList", errorMsgList);
+      map.addAttribute("errormsg", "true");
+    }
+    if (result.hasGlobalErrors()) {
+      List<ObjectError> errorList = result.getGlobalErrors();
+      if (errorList.size() > 0) {
+        List<String> globalErrors = new ArrayList<String>();
+        for (ObjectError error : errorList) {
+          globalErrors.add(error.getCode());
+
+        }
+        map.addAttribute("globalErrors", globalErrors);
+        map.addAttribute("errormsg", "true");
+      }
+
+    }
+  }
+
+  private boolean isAllowedToAddUser(Tenant tenant) {
+    int userLimit;
+    if (tenant.getMaxUsers() != null) {
+      userLimit = tenant.getMaxUsers().intValue();
+    } else {
+      userLimit = tenant.getAccountType().getMaxUsers().intValue();
+    }
+
+    List<User> usersUnderTenant = userService.list(0, 0, null, null, false, null, tenant.getId().toString(), null);
+    int noOfUsers = usersUnderTenant.size();
+    if (userLimit >= 0 && noOfUsers >= userLimit) {
+      return false;
+    }
+    return true;
+  }
+
+  class DateCompare implements Comparator<Date> {
+
+    @Override
+    public int compare(Date arg0, Date arg1) {
+      return arg0.compareTo(arg1);
+    }
+
+  }
+
+  @RequestMapping(value = "/userTimezoneOffset", method = RequestMethod.GET)
+  @ResponseBody
+  public String getUserTimezoneOffset(@ModelAttribute("currentTenant") Tenant currentTenant,
+      @RequestParam(value = "tenant", required = false) String tenantParam, HttpServletRequest request) {
+    logger.debug("### getUserTimezoneOffset method starting...(GET)");
+    String userTimeZoneOffset = "0";
+    Tenant effectiveTenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
+    
+    User user = getCurrentUser(true);
+    if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
+      user = effectiveTenant.getOwner();
+    }
+    if (user.getTimeZone() != null) {
+      userTimeZoneOffset = DateTimeUtils.getOffset(user.getTimeZone());
+    } else {
+      userTimeZoneOffset = DateTimeUtils.getOffset(Calendar.getInstance().getTimeZone().getID());
+    }
+
+    logger.debug("### getUserTimezoneOffset method ending...(GET)");
+    return userTimeZoneOffset;
+  }
+
+  @RequestMapping(value = "/ISDCodeByCountryCode", method = RequestMethod.GET)
+  @ResponseBody
+  public String getISDCodeByCounty(@RequestParam(value = "countyCode", required = true) String countyCode) {
+    Country country = countryService.locateCountryByCode(countyCode);
+    return country.getIsdCode();
+  }
+
+  private boolean areDigitsInPhoneNosEqual(String phoneNo1, String phoneNo2) {
+    if (phoneNo1.replaceAll(PHONE_NUMBER_REGEX, "").equals(phoneNo2.replaceAll(PHONE_NUMBER_REGEX, ""))) {
+      return true;
+    }
+    return false;
+  }
+
+  private String getCloudStackEndPointUrl() {
+    URL baseURL = new URL(config.getPublicHost(), config.getPublicPort(), config.getContextPath(), "",
+        config.isSecure());
+    return baseURL.toString() + "/client/api";
+  }
+
+  @RequestMapping(value = {
+    "importfromad.json"
+  }, method = RequestMethod.GET)
+  @ResponseBody
+  public HashMap<String, String> getAdUserInfo(@RequestParam(value = "username", required = true) String userName) {
+    logger.debug("### getAdUserInfo method starting...(GET)");
+    HashMap<String, String> adUserInfo = null;
+    try {
+      adUserInfo = userService.locateUserInAd(userName, true);
+    } catch (NoSuchUserException e) {
+      throw new InvalidAjaxRequestException(e.getMessage());
+    }
+    logger.debug("### getAdUserInfo method ending...(GET)");
+    return adUserInfo;
+  }
+
+  @RequestMapping(value = "/resolveViewForSettings", method = RequestMethod.GET)
+  @ResponseBody
+  public View resolveViewForSettingFromServiceInstance(@ModelAttribute("currentTenant") Tenant currentTenant,
+      @RequestParam(value = "tenantParam", required = true) String tenantParam,
+      @RequestParam(value = "instanceUuid", required = true) String instanceUuid) {
+    View returnView = null;
+    logger.debug("Enter.. resolveViewForSettingFromServiceInstance::" + instanceUuid);
+    CloudConnector connector = (CloudConnector) connectorManagementService.getServiceInstance(instanceUuid);
+    if (connector != null) {
+      logger.debug("Found Connector for " + instanceUuid);
+      User user = getCurrentUser();
+      returnView = connector.getViewResolver().resolveUserSettingsView(user);
+    } else {
+      logger.error("error: not found Connector for " + instanceUuid);
+    }
+    /*
+     * if(returnView==null){ returnView = new View("dummyView", "http://www.espncricinfo.com/", ViewMode.IFRAME); }
+     */
+    logger.debug("Exit.. resolveViewForSettingFromServiceInstance:::" + returnView);
+    return returnView;
+  }
+
+  @RequestMapping(value = "/resolveViewForAccountSettings", method = RequestMethod.GET)
+  @ResponseBody
+  public View resolveViewForAccountSettingFromServiceInstance(
+      @RequestParam(value = "tenantParam", required = true) String tenantParam,
+      @RequestParam(value = "instanceUuid", required = true) String instanceUuid) {
+     return resolveViewForAccountSettingsFromServiceInstance(tenantParam, instanceUuid);
+  }
+}

@@ -1,0 +1,30 @@
+#NOTE: This is an internal implementation file, its format can be changed without prior notice.
+#Wed Jul 24 18:24:45 GMT+05:30 2013
+http\://repository.springsource.com/maven/libraries/release/.lastUpdated=1374670483606
+http\://repository.springsource.com/maven/bundles/release/.lastUpdated=1374670480802
+http\://repository.springsource.com/maven/bundles/external/.lastUpdated=1374670481517
+http\://repository.springsource.com/maven/bundles/snapshot/.lastUpdated=1374670482875
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cpbm/../dependencies/internal/.error=
+http\://repository.springsource.com/maven/bundles/milestone/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cpbm/../dependencies/internal/.lastUpdated=1374669958498
+file\:${project.basedir}/../dependencies/internal/.error=Could not transfer artifact vmops\:vmops.admin\:pom\:2.0.0 from/to cpbm-internal (file\:${project.basedir}/../dependencies/internal)\: Repository path ${project.basedir}/../dependencies/internal does not exist, and cannot be created.
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cloud.cloudplatform/../sdk.dependencies/.lastUpdated=1374669940491
+default-file\:${project.basedir}/../sdk.dependencies/.lastUpdated=1374669948023
+http\://mirrors.ibiblio.org/pub/mirrors/maven2/.lastUpdated=1374670485280
+http\://repo.maven.apache.org/maven2/.lastUpdated=1374670485499
+file\:${project.basedir}/../sdk.dependencies/.error=Could not transfer artifact vmops\:vmops.admin\:pom\:2.0.0 from/to internal (file\:${project.basedir}/../sdk.dependencies)\: Repository path ${project.basedir}/../sdk.dependencies does not exist, and cannot be created.
+http\://repo.maven.apache.org/maven2/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cloud.cloudplatform/../dependencies/internal/.lastUpdated=1374669940541
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cloud.cloudplatform/../dependencies/internal/.error=
+http\://repository.springsource.com/maven/libraries/release/.error=
+http\://repository.springsource.com/maven/bundles/external/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.portal/../dependencies/internal/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.common/../dependencies/internal/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cloud.cloudplatform/../sdk.dependencies/.error=
+default-file\:${project.basedir}/../dependencies/internal/.lastUpdated=1374669717535
+http\://mirrors.ibiblio.org/pub/mirrors/maven2/.error=
+http\://repository.springsource.com/maven/bundles/snapshot/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.portal/../dependencies/internal/.lastUpdated=1374669717499
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.common/../dependencies/internal/.lastUpdated=1374669948817
+http\://repository.springsource.com/maven/bundles/release/.error=
+http\://repository.springsource.com/maven/bundles/milestone/.lastUpdated=1374670482143

@@ -1,0 +1,18 @@
+#NOTE: This is an internal implementation file, its format can be changed without prior notice.
+#Fri Mar 22 12:24:29 GMT+05:30 2013
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/vmops.portal/../dependencies/internal/.error=
+http\://mirrors.ibiblio.org/pub/mirrors/maven2/.error=
+http\://mirrors.ibiblio.org/pub/mirrors/maven2/.lastUpdated=1363935268716
+http\://repository.springsource.com/maven/libraries/release/.error=
+http\://repo.maven.apache.org/maven2/.lastUpdated=1363935269574
+http\://repository.springsource.com/maven/bundles/release/.error=
+http\://repository.springsource.com/maven/bundles/external/.error=
+file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/vmops.portal/../dependencies/internal/.lastUpdated=1363935269577
+http\://repository.springsource.com/maven/bundles/snapshot/.error=
+http\://repo.maven.apache.org/maven2/.error=
+http\://repository.springsource.com/maven/bundles/snapshot/.lastUpdated=1363935266865
+http\://repository.springsource.com/maven/bundles/milestone/.error=
+http\://repository.springsource.com/maven/bundles/external/.lastUpdated=1363935265380
+http\://repository.springsource.com/maven/bundles/milestone/.lastUpdated=1363935266143
+http\://repository.springsource.com/maven/bundles/release/.lastUpdated=1363935264633
+http\://repository.springsource.com/maven/libraries/release/.lastUpdated=1363935267652
