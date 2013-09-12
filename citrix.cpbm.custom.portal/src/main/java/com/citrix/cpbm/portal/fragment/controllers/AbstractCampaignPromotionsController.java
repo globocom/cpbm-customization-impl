@@ -33,6 +33,7 @@ import com.vmops.service.CurrencyValueService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.PromotionService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
+import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.service.exceptions.TokenGenerationException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
@@ -240,8 +241,12 @@ public abstract class AbstractCampaignPromotionsController extends AbstractAuthe
       }
     }
     promotion.setCode(form.getPromoCode());
-    promotion = promotionService.editCampaignPromotion(promotion, channelIds, form.getDiscountAmountMap());
-
+    try {
+      promotion = promotionService.editCampaignPromotion(promotion, channelIds, form.getDiscountAmountMap());
+    } catch (IllegalArgumentException e) {
+      logger.debug(e, e);
+      throw new InvalidAjaxRequestException(e);
+    }
     logger.debug("### edit method ending...");
     map.clear();
     return promotion;

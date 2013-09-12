@@ -102,7 +102,7 @@
 										<div class="workflow_statusicon success"></div>
 									</c:when>
 									<c:when
-										test="${activity.status == 'ERROR' || activity.status == 'FAILURE'}">
+										test="${activity.status == 'ERROR' || activity.status == 'FAILURE' ||  activity.status == 'TERMINATED'}">
 										<div class="workflow_statusicon error"></div>
 									</c:when>
 									<c:otherwise>
@@ -133,7 +133,7 @@
 															code="label.workflow.activity.state.complete" /></span>
 												</c:when>
 												<c:when
-													test="${activity.status == 'ERROR' || activity.status == 'FAILURE'}">
+													test="${activity.status == 'ERROR' || activity.status == 'FAILURE' || activity.status == 'TERMINATED'}">
 													<span class="status">
 														<c:choose>
 															<c:when test="${not empty workflow.memo}">
@@ -154,7 +154,7 @@
 											</c:choose>
 										</div>
 									</div>
-									<c:if test="${not empty workflow.memo  and (activity.status == 'ERROR' or activity.status == 'FAILURE')}">
+									<c:if test="${not empty workflow.memo  and (activity.status == 'ERROR' or activity.status == 'FAILURE' or activity.status == 'TERMINATED')}">
 										<div class="error" style="display:none;">
 											${workflow.memo}
 										</div>

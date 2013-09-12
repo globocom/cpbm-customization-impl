@@ -71,7 +71,6 @@ import com.vmops.model.Event;
 import com.vmops.model.Profile;
 import com.vmops.model.PromotionSignup;
 import com.vmops.model.PromotionToken;
-import com.vmops.model.ResourceLimit;
 import com.vmops.model.Service;
 import com.vmops.model.SpendAlertSubscription;
 import com.vmops.model.Tenant;
@@ -106,13 +105,11 @@ import com.vmops.service.exceptions.TenantStateChangeFailedException;
 import com.vmops.utils.DateUtils;
 import com.vmops.web.forms.BillingInfoForm;
 import com.vmops.web.forms.CustomAlertForm;
-import com.vmops.web.forms.ResourceLimitForm;
 import com.vmops.web.forms.SearchForm;
 import com.vmops.web.forms.SetAccountTypeForm;
 import com.vmops.web.forms.TenantLogoForm;
 import com.vmops.web.forms.UserAlertEmailForm;
 import com.vmops.web.interceptors.UserContextInterceptor;
-
 import common.MockCloudInstance;
 
 public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
@@ -142,7 +139,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Autowired
   TenantService tenantService;
-  
+
   @Autowired
   PromotionService promotionService;
 
@@ -215,7 +212,6 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   /*
    * (non-Javadoc)
-   *
    * @see common.ServiceTestsBase#prepareMock()
    */
   @Override
@@ -225,10 +221,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     CloudConnector connector = instance.getCloudConnector();
 
     AccountLifecycleHandler alh = instance.getAccountLifecycleHandler();
-    EasyMock.expect(alh.getControls(EasyMock.anyObject(Tenant.class)))
-        .andReturn(getResourceMap()).anyTimes();
-    alh.setControls(EasyMock.anyObject(Tenant.class),
-        EasyMock.<Map<String, String>> anyObject());
+    EasyMock.expect(alh.getControls(EasyMock.anyObject(Tenant.class))).andReturn(getResourceMap()).anyTimes();
+    alh.setControls(EasyMock.anyObject(Tenant.class), EasyMock.<Map<String, String>> anyObject());
     EasyMock.expectLastCall().anyTimes();
 
     alh.update(EasyMock.anyObject(Tenant.class));
@@ -241,26 +235,19 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     EasyMock.expectLastCall().anyTimes();
 
     EasyMock.replay(alh);
-    
+
     EasyMock.expect(connector.getServiceInstanceUUID()).andReturn("12345-786").anyTimes();
     EasyMock.replay(connector);
 
     ossConnector = EasyMock.createMock(PaymentGatewayService.class);
-    EasyMock.expect(ossConnector.getAccountLifeCycleHandler())
-        .andReturn(mockAccountLifecycleHandler).anyTimes();
-    EasyMock.expect(ossConnector.getUserLifeCycleHandler())
-        .andReturn(mockUserLifecycleHandler).anyTimes();
+    EasyMock.expect(ossConnector.getAccountLifeCycleHandler()).andReturn(mockAccountLifecycleHandler).anyTimes();
+    EasyMock.expect(ossConnector.getUserLifeCycleHandler()).andReturn(mockUserLifecycleHandler).anyTimes();
     final Capture<BigDecimal> amount = new Capture<BigDecimal>();
-    EasyMock.expect(
-        ossConnector.authorize(EasyMock.anyObject(Tenant.class),
-            EasyMock.capture(amount)))
+    EasyMock.expect(ossConnector.authorize(EasyMock.anyObject(Tenant.class), EasyMock.capture(amount)))
         .andAnswer(new IAnswer<PaymentTransaction>() {
 
           public PaymentTransaction answer() throws Throwable {
-            return new PaymentTransaction(
-                new Tenant(),
-                0,
-                com.vmops.model.billing.PaymentTransaction.State.COMPLETED,
+            return new PaymentTransaction(new Tenant(), 0, com.vmops.model.billing.PaymentTransaction.State.COMPLETED,
                 com.vmops.model.billing.PaymentTransaction.Type.CAPTURE);
           }
         }).anyTimes();
@@ -279,15 +266,13 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     return spendAlert;
   }
 
-  
   @Test
   public void testValidTrialCode() throws Exception {
-    String response = controller.validatePromotionCodeforTenant("INVALID",
-        "");
+    String response = controller.validatePromotionCodeforTenant("INVALID", "");
     Assert.assertEquals("false", response);
 
-    PromotionSignup promotionSignup = new PromotionSignup("test"
-        + random.nextInt(), "Citrix", "PromotionSignUp@citrix.com");
+    PromotionSignup promotionSignup = new PromotionSignup("test" + random.nextInt(), "Citrix",
+        "PromotionSignUp@citrix.com");
     promotionSignup.setCreateBy(getRootUser());
     promotionSignup.setCurrency(Currency.getInstance("USD"));
     promotionSignup.setPhone("9999999999");
@@ -298,305 +283,245 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     campaignPromotion.setUpdateBy(getRootUser());
     campaignPromotion.setTrial(true);
     campaignPromotion.setCampaignPromotionsInChannels(new HashSet<CampaignPromotionsInChannels>());
-    campaignPromotion =  cmpdao.save(campaignPromotion);
+    campaignPromotion = cmpdao.save(campaignPromotion);
 
-   
-    PromotionToken promotionToken = new PromotionToken(campaignPromotion,
-        "TESTPROMOCODE");
+    PromotionToken promotionToken = new PromotionToken(campaignPromotion, "TESTPROMOCODE");
     promotionToken.setCreateBy(getRootUser());
     tokendao.save(promotionToken);
 
     promotionSignup.setPromotionToken(promotionToken);
 
-    String[] currencyValueList = { "USD", "EUR" };
-    Channel newChannel = channelController.createChannel("Channel",
-        "ToTestValidPromoCode", "PROMOCODE", currencyValueList, map,
-        new MockHttpServletResponse());
+    String[] currencyValueList = {
+        "USD", "EUR"
+    };
+    Channel newChannel = channelController.createChannel("Channel", "ToTestValidPromoCode", "PROMOCODE",
+        currencyValueList, map, new MockHttpServletResponse());
     Set<CampaignPromotionsInChannels> campPromoChannelSet = new HashSet<CampaignPromotionsInChannels>();
-    campPromoChannelSet.add(new CampaignPromotionsInChannels(
-        campaignPromotion, newChannel));
+    campPromoChannelSet.add(new CampaignPromotionsInChannels(campaignPromotion, newChannel));
     campaignPromotion.setCampaignPromotionsInChannels(campPromoChannelSet);
     cmpdao.save(campaignPromotion);
-    response = controller.validatePromotionCodeforTenant("TESTPROMOCODE",
-        newChannel.getParam());
+    response = controller.validatePromotionCodeforTenant("TESTPROMOCODE", newChannel.getParam());
     Assert.assertEquals("true", response);
 
   }
-  
+
   @Test
   public void testRouting() throws Exception {
     logger.debug("Testing routing....");
     DispatcherTestServlet servlet = this.getServletInstance();
-    Class<? extends TenantsController> controllerClass = controller
-        .getClass();
-    Method expected = locateMethod(
-        controllerClass,
-        "listPopup",
-        new Class[] { ModelMap.class, String.class, String.class,
-            String.class, String.class, String.class, String.class });
-    Method handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/"));
-    Assert.assertEquals(expected, handler);
-
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(controllerClass, "show", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/viewtenant"));
+    Class<? extends TenantsController> controllerClass = controller.getClass();
+    Method expected = locateMethod(controllerClass, "show", new Class[] {
+        String.class, ModelMap.class
+    });
+    Method handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/viewtenant"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "edit", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/edit"));
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/edit"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "edit", new Class[] {
-        TenantForm.class, BindingResult.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/edit"));
+        TenantForm.class, BindingResult.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/edit"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editCurrentTenant",
-        new Class[] { String.class, String.class, String.class,
-            ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/editcurrent"));
+    expected = locateMethod(controllerClass, "editCurrentTenant", new Class[] {
+        String.class, String.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/editcurrent"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "searchlist", new Class[] {
-        ModelMap.class, String.class, String.class, String.class,
-        String.class, String.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/searchlist"));
+        ModelMap.class, String.class, String.class, String.class, String.class, String.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/searchlist"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "list", new Class[] {
-        String.class, String.class, String.class, String.class,
-        String.class, String.class, String.class, ModelMap.class,
-        HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/list"));
+        String.class, String.class, String.class, String.class, String.class, String.class, String.class,
+        ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/list"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "create", new Class[] {
-        ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/new"));
+        ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/new"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "create", new Class[] {
-        TenantForm.class, BindingResult.class, ModelMap.class,
-        SessionStatus.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants"));
+        TenantForm.class, BindingResult.class, ModelMap.class, SessionStatus.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "changeState", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/1/changeState"));
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/1/changeState"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "changeState", new Class[] {
-        String.class, State.class, String.class,
-        HttpServletResponse.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/1/changeState"));
+        String.class, State.class, String.class, HttpServletResponse.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/1/changeState"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "issueCredit", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/issueCredit"));
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/issueCredit"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "issueCredit", new Class[] {
-        String.class, String.class, String.class,
-        HttpServletRequest.class, HttpServletResponse.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/1/add_credit"));
+        String.class, String.class, String.class, HttpServletRequest.class, HttpServletResponse.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/1/add_credit"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "search", new Class[] {
-        SearchForm.class, BindingResult.class, String.class,
-        String.class, String.class, String.class, String.class,
-        ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/search"));
+        SearchForm.class, BindingResult.class, String.class, String.class, String.class, String.class, String.class,
+        ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/search"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "getAuditLog", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/1/audit_log"));
+    expected = locateMethod(controllerClass, "getAccountType", new Class[] {
+      String.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/get_account_type"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "showResourceLimits",
-        new Class[] { String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/1/resource_limit"));
+    expected = locateMethod(controllerClass, "listNotifications", new Class[] {
+        Tenant.class, String.class, String.class, String.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/notifications"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "showResourceLimit",
-        new Class[] { String.class, ResourceLimitForm.class,
-            HttpServletResponse.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/1/resource_limit"));
+    expected = locateMethod(controllerClass, "viewNotification", new Class[] {
+        Tenant.class, String.class, String.class, String.class, String.class, String.class, ModelMap.class,
+        HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/view_notification"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "getAccountType",
-        new Class[] { String.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/get_account_type"));
+    expected = locateMethod(controllerClass, "viewAlertsDeliveryOptions", new Class[] {
+        String.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alert_prefs"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "listNotifications",
-        new Class[] { Tenant.class, String.class, String.class,
-            String.class, String.class, ModelMap.class,
-            HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/notifications"));
+    expected = locateMethod(controllerClass, "saveAlertsDeliveryOptions", new Class[] {
+        UserAlertEmailForm.class, BindingResult.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/alert_prefs"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "viewNotification",
-        new Class[] { Tenant.class, String.class, String.class,
-            String.class, String.class, String.class,
-            ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/view_notification"));
+    expected = locateMethod(controllerClass, "deleteAlertsDeliveryOptions", new Class[] {
+        Long.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/alert_prefs/1/delete"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "viewAlertsDeliveryOptions",
-        new Class[] { String.class, String.class, ModelMap.class,
-            HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alert_prefs"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(controllerClass, "saveAlertsDeliveryOptions",
-        new Class[] { UserAlertEmailForm.class, BindingResult.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/alert_prefs"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(controllerClass, "deleteAlertsDeliveryOptions",
-        new Class[] { Long.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/alert_prefs/1/delete"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(
-        controllerClass,
-        "listSubscriptions",
-        new Class[] { Tenant.class, String.class, String.class,
-            String.class, ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alerts"));
+    expected = locateMethod(controllerClass, "listSubscriptions", new Class[] {
+        Tenant.class, String.class, String.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alerts"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "viewAlert", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alerts/view"));
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alerts/view"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass,
-        "createSpendAlertSubscription",
-        new Class[] { Tenant.class, String.class, ModelMap.class,
-            HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alerts/new"));
+    expected = locateMethod(controllerClass, "createSpendAlertSubscription", new Class[] {
+        Tenant.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alerts/new"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass,
-        "createSpendAlertSubscription", new Class[] { Tenant.class,
-            String.class, CustomAlertForm.class,
-            BindingResult.class, ModelMap.class,
-            HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/alerts/new"));
+    expected = locateMethod(controllerClass, "createSpendAlertSubscription", new Class[] {
+        Tenant.class, String.class, CustomAlertForm.class, BindingResult.class, ModelMap.class,
+        HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/alerts/new"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "removeSubscription",
-        new Class[] { String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alerts/remove"));
+    expected = locateMethod(controllerClass, "removeSubscription", new Class[] {
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alerts/remove"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editSpendAlertSubscription",
-        new Class[] { String.class, Tenant.class, String.class,
-            ModelMap.class, HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/alerts/edit"));
+    expected = locateMethod(controllerClass, "editSpendAlertSubscription", new Class[] {
+        String.class, Tenant.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/alerts/edit"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editCurrentTenantLogo",
-        new Class[] { ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/editcurrentlogo"));
+    expected = locateMethod(controllerClass, "editCurrentTenantLogo", new Class[] {
+      ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/editcurrentlogo"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "editTenantLogo", new Class[] {
-        String.class, TenantLogoForm.class, BindingResult.class,
-        ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/123/editlogo"));
+        String.class, TenantLogoForm.class, BindingResult.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/123/editlogo"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editSpendAlertSubscription",
-        new Class[] { String.class, String.class,
-            CustomAlertForm.class, BindingResult.class,
-            ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/alerts/edit"));
+    expected = locateMethod(controllerClass, "editSpendAlertSubscription", new Class[] {
+        String.class, String.class, CustomAlertForm.class, BindingResult.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/alerts/edit"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "setAccountBudget",
-        new Class[] { Tenant.class, String.class, ModelMap.class,
-            HttpServletRequest.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/set_account_budget"));
+    expected = locateMethod(controllerClass, "setAccountBudget", new Class[] {
+        Tenant.class, String.class, ModelMap.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/set_account_budget"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "setAccountBudget",
-        new Class[] { Tenant.class, String.class, TenantForm.class,
-            ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/set_account_budget"));
+    expected = locateMethod(controllerClass, "setAccountBudget", new Class[] {
+        Tenant.class, String.class, TenantForm.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/set_account_budget"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "delete", new Class[] {
-        String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/1/delete"));
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/1/delete"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "listStateChanges",
-        new Class[] { String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/stateChanges"));
+    expected = locateMethod(controllerClass, "listStateChanges", new Class[] {
+        String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/stateChanges"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "listAccountLimits",
-        new Class[] { ModelMap.class, String.class, String.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/list_account_limits"));
+    expected = locateMethod(controllerClass, "listAccountLimits", new Class[] {
+        ModelMap.class, String.class, String.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/list_account_limits"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editAccountlimits",
-        new Class[] { String.class, String.class, ModelMap.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET,
-        "/tenants/edit_account_limits"));
+    expected = locateMethod(controllerClass, "editAccountlimits", new Class[] {
+        String.class, String.class, ModelMap.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/tenants/edit_account_limits"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "editAccountlimits",
-        new Class[] { String.class, String.class, String.class });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST,
-        "/tenants/edit_account_limits"));
+    expected = locateMethod(controllerClass, "editAccountlimits", new Class[] {
+        String.class, String.class, String.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/tenants/edit_account_limits"));
     Assert.assertEquals(expected, handler);
 
   }
@@ -616,57 +541,24 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(expected, found);
   }
 
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testTenantsListPopup() throws Exception {
-    List<Tenant> expected = tenantDAO.findAll(null);
-
-    String view = controller.listPopup(map, "0", "0", "0", "All", null,
-        getSystemTenant().getParam());
-    Assert.assertEquals("tenants.list", view);
-    Assert.assertTrue(map.containsKey("tenants"));
-    List<Tenant> found = (List<Tenant>) map.get("tenants");
-    Assert.assertTrue(map.containsKey("url"));
-    Assert.assertTrue(found.containsAll(expected));
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
-  public void testTenantsListPopupwithPattern() throws Exception {
-    List<Tenant> expected = tenantDAO.findAll(null);
-
-    String view = controller.listPopup(map, "0", "0", "0", "All", "A",
-        getSystemTenant().getParam());
-    Assert.assertEquals("tenants.list", view);
-    Assert.assertTrue(map.containsKey("tenants"));
-    List<Tenant> found = (List<Tenant>) map.get("tenants");
-    Assert.assertTrue(map.containsKey("url"));
-    Assert.assertTrue(expected.containsAll(found));
-  }
-
   @Test
   public void testTenantActivationNoOwner() throws Exception {
     asRoot();
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
-    controller.changeState(tenant.getParam(), State.ACTIVE, "memo",
-        response);
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
+    controller.changeState(tenant.getParam(), State.ACTIVE, "memo", response);
   }
 
   @Test
   public void testTenantActivationNoCurrency() throws Exception {
-    Tenant tenant = new Tenant("New Tenant",
-        accountTypeDAO.getDefaultRegistrationAccountType(), null,
-        randomAddress(), true, null, null);
-    List<CurrencyValue> activeCurrencies = currencyValueService
-        .listActiveCurrencies();
+    Tenant tenant = new Tenant("New Tenant", accountTypeDAO.getDefaultRegistrationAccountType(), null, randomAddress(),
+        true, null, null);
+    List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     for (CurrencyValue currencyValue : activeCurrencies) {
       tenant.setCurrency(currencyValue);
       break;
     }
     tenantService.createAccount(tenant, getUser(), null, null);
-    controller.changeState(tenant.getParam(), State.ACTIVE, "memo",
-        response);
+    controller.changeState(tenant.getParam(), State.ACTIVE, "memo", response);
   }
 
   public User getUser() {
@@ -685,28 +577,22 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test(expected = TenantStateChangeFailedException.class)
   public void testTenantActivationAfterTermination() throws Exception {
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
     tenantService.setOwner(tenant, getRootUser());
-    controller.changeState(tenant.getParam(), State.TERMINATED,
-        "Terminate Account", response);
-    controller.changeState(tenant.getParam(), State.ACTIVE,
-        "Reactivate Account", response);
+    controller.changeState(tenant.getParam(), State.TERMINATED, "Terminate Account", response);
+    controller.changeState(tenant.getParam(), State.ACTIVE, "Reactivate Account", response);
   }
 
   @Test
   public void testTenantTermination() throws Exception {
     asRoot();
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
-    User user = new User("test", "user", "test@test.com", VALID_USER
-        + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
+    User user = new User("test", "user", "test@test.com", VALID_USER + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
         VALID_TIMEZONE, tenant, ownerProfile, getRootUser());
     userDAO.save(user);
     tenantService.setOwner(tenant, user);
     tenantService.changeState(tenant.getUuid(), "ACTIVE", null, "memo");
-    HashMap<String, String> result = controller.changeState(
-        tenant.getParam(), State.TERMINATED, "memo", response);
+    HashMap<String, String> result = controller.changeState(tenant.getParam(), State.TERMINATED, "memo", response);
     Assert.assertEquals(HttpStatus.OK.value(), response.getStatus());
     Assert.assertEquals("TERMINATED", result.get("state"));
 
@@ -718,8 +604,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   public void testTenantNew() {
     asRoot();
     String view = controller.create(map, new MockHttpServletRequest());
-    Tenant tenant = ((com.citrix.cpbm.access.Tenant) map.get("tenant"))
-        .getObject();
+    Tenant tenant = ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getObject();
     Assert.assertNotNull(tenant);
     Assert.assertEquals("tenants.new", view);
     Assert.assertEquals("false", map.get("showSuffixTextBox"));
@@ -739,14 +624,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     configuration.setValue("true");
     configurationService.update(configuration);
 
-    configuration = configurationService
-        .locateConfigurationByName(Names.com_citrix_cpbm_directory_mode);
+    configuration = configurationService.locateConfigurationByName(Names.com_citrix_cpbm_directory_mode);
     configuration.setValue("pull");
     configurationService.update(configuration);
 
     String view = controller.create(map, new MockHttpServletRequest());
-    Tenant tenant = ((com.citrix.cpbm.access.Tenant) map.get("tenant"))
-        .getObject();
+    Tenant tenant = ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getObject();
     Assert.assertNotNull(tenant);
     Assert.assertEquals("true", map.get("showSuffixTextBox"));
     Assert.assertEquals("true", map.get("showImportAdButton"), "true");
@@ -769,8 +652,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
       view = controller.create(map, new MockHttpServletRequest());
       Assert.fail();
     } catch (NoManualRegistrationAccountTypeException e) {
-      Assert.assertEquals("Manual Registration Not Allowed",
-          e.getMessage());
+      Assert.assertEquals("Manual Registration Not Allowed", e.getMessage());
     } catch (Exception e) {
       Assert.fail();
     }
@@ -779,18 +661,13 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testCreateTenant() throws Exception {
     asRoot();
-    TenantForm form = new TenantForm(
-        (com.citrix.cpbm.access.Tenant) CustomProxy
-            .newInstance(new Tenant()));
-    form.setAccountTypeId(tenantService.getDefaultRegistrationAccountType()
-        .getId().toString());
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
+    form.setAccountTypeId(tenantService.getDefaultRegistrationAccountType().getId().toString());
 
     com.citrix.cpbm.access.Tenant newTenant = form.getTenant();
     newTenant.setName("ACME Corp");
-    newTenant.setAddress(new Address("steve", "creek", "cupertino", "ca",
-        "95014", "US"));
-    List<CurrencyValue> activeCurrencies = currencyValueService
-        .listActiveCurrencies();
+    newTenant.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
+    List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     for (CurrencyValue currencyValue : activeCurrencies) {
       newTenant.setCurrency(currencyValue);
       break;
@@ -807,19 +684,15 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     newUser.setProfile(userProfile);
     newUser.getObject().setCreatedBy(getPortalUser());
 
-    newUser.setAddress(new Address("steve", "creek", "cupertino", "ca",
-        "95014", "US"));
+    newUser.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
     // test add for secondary address
     form.setAllowSecondary(true);
-    form.setSecondaryAddress(new Address("steve", "creek", "cupertino",
-        "CHAN", "95014", "IN"));
+    form.setSecondaryAddress(new Address("steve", "creek", "cupertino", "CHAN", "95014", "IN"));
     form.setTrialCode("promocode");
 
     BindingResult result = validate(form);
-    Assert.assertEquals("validating that the form has no errors", 0,
-        result.getErrorCount());
-    controller.create(form, result, map, status,
-        new MockHttpServletRequest());
+    Assert.assertEquals("validating that the form has no errors", 0, result.getErrorCount());
+    controller.create(form, result, map, status, new MockHttpServletRequest());
 
     Tenant found = tenantDAO.find(newTenant.getId());
     TenantPromotion tenantPromotion = promotionService.findActiveTenantPromotionAsOf(found, new Date());
@@ -830,8 +703,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(2, eventListener.getEvents().size());
     Assert.assertTrue(eventListener.getEvents().get(0).getPayload() instanceof VerifyEmailRequest);
     Assert.assertTrue(eventListener.getEvents().get(1).getPayload() instanceof TriggerTransaction);
-    Assert.assertEquals(newUser.getObject(),
-        eventListener.getEvents().get(0).getSource());
+    Assert.assertEquals(newUser.getObject(), eventListener.getEvents().get(0).getSource());
 
     Assert.assertNotNull(found.getAddress());
     Assert.assertNotNull(found.getSecondaryAddress());
@@ -843,19 +715,14 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testCreateTenantWithSuffix() throws Exception {
     asRoot();
-    TenantForm form = new TenantForm(
-        (com.citrix.cpbm.access.Tenant) CustomProxy
-            .newInstance(new Tenant()));
-    form.setAccountTypeId(tenantService.getDefaultRegistrationAccountType()
-        .getId().toString());
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
+    form.setAccountTypeId(tenantService.getDefaultRegistrationAccountType().getId().toString());
     com.citrix.cpbm.access.Tenant newTenant = form.getTenant();
     newTenant.setName("ACME Corp");
-    newTenant.setAddress(new Address("steve", "creek", "cupertino", "ca",
-        "95014", "US"));
+    newTenant.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
     String suffix = "testSuffix";
     newTenant.getObject().setUsernameSuffix(suffix);
-    List<CurrencyValue> activeCurrencies = currencyValueService
-        .listActiveCurrencies();
+    List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     for (CurrencyValue currencyValue : activeCurrencies) {
       newTenant.setCurrency(currencyValue);
       break;
@@ -874,32 +741,25 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     newUser.setProfile(userProfile);
     newUser.getObject().setCreatedBy(getPortalUser());
 
-    newUser.setAddress(new Address("steve", "creek", "cupertino", "ca",
-        "95014", "US"));
+    newUser.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
     // test add for secondary address
     form.setAllowSecondary(true);
-    form.setSecondaryAddress(new Address("steve", "creek", "cupertino",
-        "CHAN", "95014", "IN"));
+    form.setSecondaryAddress(new Address("steve", "creek", "cupertino", "CHAN", "95014", "IN"));
 
     BindingResult result = validate(form);
-    Assert.assertEquals("validating that the form has no errors", 0,
-        result.getErrorCount());
+    Assert.assertEquals("validating that the form has no errors", 0, result.getErrorCount());
     newUser.getObject().setUserName(userName + "@" + suffix);
-    controller.create(form, result, map, status,
-        new MockHttpServletRequest());
+    controller.create(form, result, map, status, new MockHttpServletRequest());
 
-    Tenant found = userService.getUserByParam("email", newUser.getEmail(),
-        true).getTenant();
+    Tenant found = userService.getUserByParam("email", newUser.getEmail(), true).getTenant();
     Assert.assertNotNull(found);
-    Assert.assertEquals(userName + "@" + suffix, found.getOwner()
-        .getUsername());
+    Assert.assertEquals(userName + "@" + suffix, found.getOwner().getUsername());
     Assert.assertEquals(newTenant, found);
     Assert.assertTrue(status.isComplete());
     Assert.assertEquals(2, eventListener.getEvents().size());
     Assert.assertTrue(eventListener.getEvents().get(0).getPayload() instanceof VerifyEmailRequest);
     Assert.assertTrue(eventListener.getEvents().get(1).getPayload() instanceof TriggerTransaction);
-    Assert.assertEquals(newUser.getObject(),
-        eventListener.getEvents().get(0).getSource());
+    Assert.assertEquals(newUser.getObject(), eventListener.getEvents().get(0).getSource());
 
     Assert.assertNotNull(found.getAddress());
     Assert.assertNotNull(found.getSecondaryAddress());
@@ -915,8 +775,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     String view = controller.edit(expected.getParam(), map);
     Assert.assertEquals("tenant.edit", view);
     Assert.assertTrue(map.containsKey("tenantForm"));
-    com.citrix.cpbm.access.Tenant found = ((TenantForm) map.get("tenantForm"))
-        .getTenant();
+    com.citrix.cpbm.access.Tenant found = ((TenantForm) map.get("tenantForm")).getTenant();
     Assert.assertEquals(expected, found.getObject());
   }
 
@@ -925,10 +784,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantDAO.find(3L);
     tenant.setName("UPDATED");
     tenant.getAddress().setCity("UPDATECITY");
-    TenantForm form = new TenantForm(
-        (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
-    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form,
-        "validation");
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
 
     HashMap<String, String> map = controller.edit(form, result);
     Assert.assertEquals(tenant.getParam(), map.get("param"));
@@ -943,16 +800,13 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantDAO.find(3L);
     tenant.setName("UPDATED");
     tenant.getAddress().setCity("UPDATECITY");
-    User user = new User("test", "user", "test@test.com", VALID_USER
-        + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
+    User user = new User("test", "user", "test@test.com", VALID_USER + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
         VALID_TIMEZONE, tenant, ownerProfile, getRootUser());
     userDAO.save(user);
     tenantService.setOwner(tenant, user);
-    TenantForm form = new TenantForm(
-        (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
-    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form,
-        "validation");
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
     HashMap<String, String> map = controller.edit(form, result);
 
     Assert.assertEquals(tenant.getParam(), map.get("param"));
@@ -963,42 +817,27 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testTenantsUpdateFail() throws Exception {
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
     tenant.setName(null);
-    TenantForm form = new TenantForm(
-        (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     BindingResult result = validate(form);
     controller.edit(form, result);
   }
 
   @Test
-  public void testGetAuditLog() throws Exception {
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
-    createTestUserInTenant(tenant);
-    String view = controller.getAuditLog(tenant.getParam(), map);
-    Assert.assertEquals("auditlog.show", view);
-  }
-
-  @Test
   public void testVerifyAlertsDeliveryOptions() throws Exception {
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
     User user = createTestUserInTenant(tenant);
     String emailAddress = "test_verify_email@test.com";
 
-    userAlertPreferenceService.createUserAlertPreference(user,
-        emailAddress, AlertType.USER_ALERT_EMAIL);
+    userAlertPreferenceService.createUserAlertPreference(user, emailAddress, AlertType.USER_ALERT_EMAIL);
 
-    List<UserAlertPreferences> prefs = userAlertPreferenceService
-        .listAllUserAlertPreferences(user);
+    List<UserAlertPreferences> prefs = userAlertPreferenceService.listAllUserAlertPreferences(user);
     Assert.assertEquals(1, prefs.size());
 
     UserAlertPreferences selected = null;
     for (UserAlertPreferences pref : prefs) {
-      if (pref.getUser().getId() == user.getId()
-          && pref.getAlertType() == AlertType.USER_ALERT_EMAIL) {
+      if (pref.getUser().getId() == user.getId() && pref.getAlertType() == AlertType.USER_ALERT_EMAIL) {
         selected = pref;
         break;
       }
@@ -1007,15 +846,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(user.getId(), selected.getUser().getId());
     Assert.assertEquals(AlertType.USER_ALERT_EMAIL, selected.getAlertType());
 
-    String view = controller.verifyAlertsDeliveryOptions(selected.getId(),
-        map);
+    String view = controller.verifyAlertsDeliveryOptions(selected.getId(), map);
     Assert.assertEquals("success", view);
     Assert.assertEquals(4, eventListener.getEvents().size());
     PortalEvent verifyEvent = eventListener.getEvents().get(2);
     Assert.assertTrue(verifyEvent.getPayload() instanceof VerifyAlertEmailRequest);
-    Assert.assertEquals(user.getUsername(),
-        ((VerifyAlertEmailRequest) verifyEvent.getPayload())
-            .getUsername());
+    Assert.assertEquals(user.getUsername(), ((VerifyAlertEmailRequest) verifyEvent.getPayload()).getUsername());
     Assert.assertEquals(user, verifyEvent.getSource());
   }
 
@@ -1040,18 +876,14 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
       if (!type.isManualRegistrationAllowed())
         continue;
       type.setManualActivation(true);
-      TenantForm form = new TenantForm(
-          (com.citrix.cpbm.access.Tenant) CustomProxy
-              .newInstance(new Tenant()));
+      TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
       form.setAccountTypeId(type.getId().toString());
 
       com.citrix.cpbm.access.Tenant newTenant = form.getTenant();
       newTenant.setName("ACME Corp");
-      newTenant.setAddress(new Address("steve", "creek", "cupertino",
-          "ca", "95014", "US"));
+      newTenant.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
       newTenant.setCurrency(null);
-      List<CurrencyValue> activeCurrencies = currencyValueService
-          .listActiveCurrencies();
+      List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
       for (CurrencyValue currencyValue : activeCurrencies) {
         newTenant.setCurrency(currencyValue);
         break;
@@ -1067,20 +899,16 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
       newUser.setTimeZone(VALID_TIMEZONE);
       newUser.setProfile(userProfile);
       newUser.getObject().setCreatedBy(getPortalUser());
-      newUser.setAddress(new Address("steve", "creek", "cupertino", "ca",
-          "95014", "US"));
+      newUser.setAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
       BindingResult result = validate(form);
-      Assert.assertEquals("validating that the form has no errors", 0,
-          result.getErrorCount());
-      controller.create(form, result, map, status,
-          new MockHttpServletRequest());
+      Assert.assertEquals("validating that the form has no errors", 0, result.getErrorCount());
+      controller.create(form, result, map, status, new MockHttpServletRequest());
 
       Assert.assertTrue(status.isComplete());
       Assert.assertEquals(2, eventListener.getEvents().size());
       Assert.assertTrue(eventListener.getEvents().get(0).getPayload() instanceof VerifyEmailRequest);
       Assert.assertTrue(eventListener.getEvents().get(1).getPayload() instanceof TriggerTransaction);
-      Assert.assertEquals(newUser.getObject(), eventListener.getEvents()
-          .get(0).getSource());
+      Assert.assertEquals(newUser.getObject(), eventListener.getEvents().get(0).getSource());
       eventListener.clear();
     }
   }
@@ -1093,10 +921,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenant.setSecondaryAddress(VALID_BILLING_ADDRESS);
     tenant.getAccountType().setEnableSecondaryAddress(true);
     tenantService.save(tenant);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant);
-    String editTenant = controller.editCurrentTenant(
-        Action.CONVERTED.toString(), tenant.getParam(), "contact", map,
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
+    String editTenant = controller.editCurrentTenant(Action.CONVERTED.toString(), tenant.getParam(), "contact", map,
         request);
     Assert.assertEquals(editTenant, new String("tenants.editcurrent"));
     Assert.assertTrue(map.containsAttribute("tenant"));
@@ -1117,14 +943,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(map.get("tenant"), tenant);
     TenantForm tenantForm = ((TenantForm) map.get("tenantForm"));
     Assert.assertEquals(tenantForm.getTenant(), tenant);
-    Assert.assertEquals(tenantForm.getSecondaryAddress(),
-        VALID_BILLING_ADDRESS);
+    Assert.assertEquals(tenantForm.getSecondaryAddress(), VALID_BILLING_ADDRESS);
     Assert.assertEquals(true, tenantForm.isAllowSecondary());
     Assert.assertEquals(true, map.get("showChangeAccountType"));
     Assert.assertEquals(map.get("showMessagePendingConversion"), false);
     Assert.assertEquals(map.get("showCreditCardTabVar"), true);
-    BillingInfoForm billingInfoForm = ((BillingInfoForm) map
-        .get("billingInfo"));
+    BillingInfoForm billingInfoForm = ((BillingInfoForm) map.get("billingInfo"));
     Assert.assertEquals(billingInfoForm.getTenant(), tenant);
     PaymentGatewayService paymentGatewayService = (PaymentGatewayService) connectorManagementService
         .getOssServiceInstancebycategory(ConnectorType.PAYMENT_GATEWAY);
@@ -1133,8 +957,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
       Assert.assertEquals(billingInfoForm.getCreditCard(), creditCard);
     }
     Assert.assertEquals(map.get("paymentInfoExists"), true);
-    SetAccountTypeForm setAccountTypeForm = ((SetAccountTypeForm) map
-        .get("setAccountTypeForm"));
+    SetAccountTypeForm setAccountTypeForm = ((SetAccountTypeForm) map.get("setAccountTypeForm"));
     Assert.assertEquals(setAccountTypeForm.getTenant(), tenant);
     Assert.assertNotNull(map.get("currentBillingStart"));
     Assert.assertNotNull(map.get("currentBillingEnd"));
@@ -1147,16 +970,14 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     String editLogo = controller.editCurrentTenantLogo(map);
     Assert.assertEquals(editLogo, new String("tenants.editcurrentlogo"));
     Assert.assertTrue(map.containsAttribute("tenantLogoForm"));
-    TenantLogoForm tenantLogoForm = ((TenantLogoForm) map
-        .get("tenantLogoForm"));
+    TenantLogoForm tenantLogoForm = ((TenantLogoForm) map.get("tenantLogoForm"));
     Assert.assertNotNull(tenantLogoForm.getTenant());
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void testsearchlist() {
-    String searchList = controller.searchlist(map, "1", "5", null, "All",
-        null);
+    String searchList = controller.searchlist(map, "1", "5", null, "All", null);
     Assert.assertEquals(searchList, new String("tenant.search.list"));
     Assert.assertTrue(map.containsAttribute("tenants"));
     List<Tenant> tenants = ((List<Tenant>) map.get("tenants"));
@@ -1193,8 +1014,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     HttpServletResponse res = new MockHttpServletResponse();
 
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-    String issueCredit = controller.issueCredit(tenant.getParam(), "100",
-        "JUNIT TEST", request, res);
+    String issueCredit = controller.issueCredit(tenant.getParam(), "100", "JUNIT TEST", request, res);
     Assert.assertNotNull(issueCredit);
     Assert.assertTrue(issueCredit.contains("100"));
 
@@ -1210,10 +1030,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testhandleTenantStateChangeFailedException() {
-    TenantStateChangeFailedException ex = new TenantStateChangeFailedException(
-        "JUNIT TEST");
-    ModelAndView view = controller.handleTenantStateChangeFailedException(
-        ex, null);
+    TenantStateChangeFailedException ex = new TenantStateChangeFailedException("JUNIT TEST");
+    ModelAndView view = controller.handleTenantStateChangeFailedException(ex, null);
     Assert.assertNotNull(view);
     Assert.assertTrue(view.getModel().toString().contains("JUNIT TEST"));
 
@@ -1225,8 +1043,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     request = new MockHttpServletRequest();
     AccountType accType = acctypeService.locateAccountTypeById("1");
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-    String tenantlist = controller.list(tenant.getUuid(), "TEST", "1",
-        null, "1", tenant.getParam(), null, map, request);
+    String tenantlist = controller
+        .list(tenant.getUuid(), "TEST", "1", null, "1", tenant.getParam(), null, map, request);
     Assert.assertEquals(tenantlist, new String("tenant.listing"));
     Assert.assertTrue(map.containsAttribute("accountTypes"));
     Assert.assertTrue(map.containsAttribute("showAddAccountWizard"));
@@ -1240,17 +1058,14 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(map.containsAttribute("creditBalance"));
 
     List<AccountType> accountTypes = tenantService.getAllAccountTypes();
-    Assert.assertEquals(
-        new HashSet<AccountType>((List<AccountType>) map
-            .get("accountTypes")), new HashSet<AccountType>(
-            accountTypes));
+    Assert.assertEquals(new HashSet<AccountType>((List<AccountType>) map.get("accountTypes")),
+        new HashSet<AccountType>(accountTypes));
     Assert.assertEquals(map.get("showAddAccountWizard"), new String("TEST"));
     Assert.assertNull(map.get("filterBy"));
     Assert.assertEquals(map.get("accountresult"), new String("true"));
     Assert.assertEquals(map.get("selectedTab"), accType.getName());
     Assert.assertEquals(map.get("on"), new String("on"));
-    Assert.assertEquals(map.get("selectedAccountType"), accType.getId()
-        .toString());
+    Assert.assertEquals(map.get("selectedAccountType"), accType.getId().toString());
     List<Tenant> list = ((List<Tenant>) map.get("tenants"));
     Assert.assertTrue(list.size() == 1);
     Assert.assertEquals(list.get(0), tenant);
@@ -1258,64 +1073,57 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     map.clear();
     tenant.setState(State.NEW);
     tenantService.save(tenant);
-    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "1", "1",
-        null, null, map, request);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "1", "1", null, null, map, request);
     Assert.assertEquals(map.get("filterBy"), "0");
 
     map.clear();
     tenant.setState(State.ACTIVE);
     tenantService.save(tenant);
-    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "2", "1",
-        null, null, map, request);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "2", "1", null, null, map, request);
     Assert.assertEquals(map.get("filterBy"), "1");
 
     map.clear();
     tenant.setState(State.LOCKED);
     tenantService.save(tenant);
-    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "3", "1",
-        null, null, map, request);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "3", "1", null, null, map, request);
     Assert.assertEquals(map.get("filterBy"), "2");
 
     map.clear();
     tenant.setState(State.SUSPENDED);
     tenantService.save(tenant);
-    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "4", "1",
-        null, null, map, request);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", "4", "1", null, null, map, request);
     Assert.assertEquals(map.get("filterBy"), "3");
 
     map.clear();
     tenant.setState(State.TERMINATED);
     tenantService.save(tenant);
-    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", null, "1",
-        null, null, map, request);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "1", null, "1", null, null, map, request);
     Assert.assertEquals(map.get("filterBy"), "4");
     Assert.assertEquals(map.get("filterresult"), new String("true"));
 
-      map.clear();
-      tenant.setState(State.SUSPENDED);
-      tenantService.save(tenant);
-      tenantlist = controller.list(tenant.getUuid(), "TEST", "3", "1", "1", null, null, map, request);
-      Assert.assertEquals(map.get("filterBy"), "1");
+    map.clear();
+    tenant.setState(State.SUSPENDED);
+    tenantService.save(tenant);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "3", "1", "1", null, null, map, request);
+    Assert.assertEquals(map.get("filterBy"), "1");
 
+    map.clear();
+    tenant.setState(State.SUSPENDED);
+    tenantService.save(tenant);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "4", "1", "1", null, null, map, request);
+    Assert.assertEquals(map.get("filterBy"), "1");
 
-      map.clear();
-      tenant.setState(State.SUSPENDED);
-      tenantService.save(tenant);
-      tenantlist = controller.list(tenant.getUuid(), "TEST", "4", "1", "1", null, null, map, request);
-      Assert.assertEquals(map.get("filterBy"), "1");
+    map.clear();
+    tenant.setState(State.SUSPENDED);
+    tenantService.save(tenant);
+    tenantlist = controller.list(tenant.getUuid(), "TEST", "5", "1", "1", null, null, map, request);
+    Assert.assertEquals(map.get("filterBy"), "1");
 
-
-      map.clear();
-      tenant.setState(State.SUSPENDED);
-      tenantService.save(tenant);
-      tenantlist = controller.list(tenant.getUuid(), "TEST", "5", "1", "1", null, null, map, request);
-      Assert.assertEquals(map.get("filterBy"), "1");
-
-      map.clear();
-      tenant.setState(State.SUSPENDED);
-      tenantService.save(tenant);
-      tenantlist = controller.list(null, "TEST", "5", "1", "1", null, null, map, request);
-      Assert.assertEquals(map.get("filterBy"), "1");
+    map.clear();
+    tenant.setState(State.SUSPENDED);
+    tenantService.save(tenant);
+    tenantlist = controller.list(null, "TEST", "5", "1", "1", null, null, map, request);
+    Assert.assertEquals(map.get("filterBy"), "1");
 
   }
 
@@ -1332,8 +1140,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     custMap.put("name", "Acme Corp");
     form.setCustomFields(custMap);
 
-    String search = controller.search(form, null, "1", "1", null, "1",
-        null, map, request);
+    String search = controller.search(form, null, "1", "1", null, "1", null, map, request);
     Assert.assertEquals(search, new String("tenant.listing"));
     Assert.assertTrue(map.containsAttribute("accountTypes"));
     Assert.assertTrue(map.containsAttribute("selectedAccountType"));
@@ -1346,10 +1153,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(map.containsAttribute("searchForm"));
 
     List<AccountType> accountTypes = tenantService.getAllAccountTypes();
-    Assert.assertEquals(
-        new HashSet<AccountType>((List<AccountType>) map
-            .get("accountTypes")), new HashSet<AccountType>(
-            accountTypes));
+    Assert.assertEquals(new HashSet<AccountType>((List<AccountType>) map.get("accountTypes")),
+        new HashSet<AccountType>(accountTypes));
     Assert.assertEquals(map.get("selectedAccountType"), "1");
     Assert.assertEquals(map.get("filterBy"), new String("All"));
     Assert.assertEquals(map.get("searchresult"), new String("true"));
@@ -1360,39 +1165,6 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(tenants.size() == 1);
     Assert.assertEquals(tenants.get(0), tenant);
 
-  }
-
-  @Test
-  public void testshowResourceLimits() {
-    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-    String resource_limit = controller.showResourceLimits(
-        tenant.getParam(), map);
-    Assert.assertEquals(resource_limit, new String("tenant.resourcelimits"));
-    Assert.assertTrue(map.containsAttribute("resourceLimitForm"));
-    Assert.assertTrue(map.containsAttribute("tenant"));
-    ResourceLimitForm rlForm = ((ResourceLimitForm) map
-        .get("resourceLimitForm"));
-    Assert.assertEquals(rlForm.getId(), tenant.getId());
-    Assert.assertEquals(rlForm.getDefaultMaxUsers(), tenant
-        .getAccountType().getMaxUsers().toString());
-
-  }
-
-  @Test
-  public void testshowResourceLimit() {
-    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-    ResourceLimitForm form = new ResourceLimitForm();
-    form.setMaxUsers("2");
-
-    String resourcelimit = controller.showResourceLimit(tenant.getParam(),
-        form, response);
-    Assert.assertEquals(resourcelimit, new String("success"));
-    List<ResourceLimit> list = service.locateResourceLimitsByTenant(tenant);
-    Assert.assertEquals(list.get(0).getMax(), 2);
-    Assert.assertEquals(list.get(0).getType(), ResourceLimit.USER);
-    resourcelimit = controller.showResourceLimit(tenant.getParam(), null,
-        response);
-    Assert.assertEquals(resourcelimit, new String("fail"));
   }
 
   @Test
@@ -1416,14 +1188,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     userAlertPreferences.setAlertType(AlertType.USER_EMAIL);
     userAlertDAO.save(userAlertPreferences);
     request.setAttribute("isSurrogatedTenant", false);
-    String saveEmail = controller.saveNewPrimaryEmail(tenant.getParam(),
-        tenant.getOwner().getParam(), userAlertPreferences.getId()
-            .toString(), map, request);
+    String saveEmail = controller.saveNewPrimaryEmail(tenant.getParam(), tenant.getOwner().getParam(),
+        userAlertPreferences.getId().toString(), map, request);
     Assert.assertEquals(saveEmail, userAlertPreferences.getEmailAddress());
     User user = userService.get(tenant.getOwner().getParam());
     Assert.assertEquals(newEmail, user.getEmail());
-    saveEmail = controller.saveNewPrimaryEmail(tenant.getParam(), tenant
-        .getOwner().getParam(), null, map, request);
+    saveEmail = controller.saveNewPrimaryEmail(tenant.getParam(), tenant.getOwner().getParam(), null, map, request);
     Assert.assertEquals(saveEmail, new String("failure"));
 
   }
@@ -1433,14 +1203,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     UserAlertPreferences userAlertPreferences = new UserAlertPreferences();
     userAlertPreferences.setUser(getRootUser());
     userAlertPreferences.setCreatedBy(getRootUser());
-    userAlertPreferences.setEmailAddress("test" + random.nextInt()
-        + "@test.com");
+    userAlertPreferences.setEmailAddress("test" + random.nextInt() + "@test.com");
     userAlertPreferences.setUpdatedBy(getRootUser());
     userAlertPreferences.setAlertType(AlertType.USER_EMAIL);
     userAlertDAO.save(userAlertPreferences);
 
-    String delete = controller.deleteAlertsDeliveryOptions(
-        userAlertPreferences.getId(), map);
+    String delete = controller.deleteAlertsDeliveryOptions(userAlertPreferences.getId(), map);
     Assert.assertEquals(delete, new String("success"));
 
     delete = controller.deleteAlertsDeliveryOptions(null, map);
@@ -1454,8 +1222,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenant.setSpendBudget(BigDecimal.valueOf(100));
     tenantService.save(tenant);
     SpendAlertSubscription spendAlert = create_spendAlertSubscription(tenant);
-    String viewAlert = controller.viewAlert(spendAlert.getId().toString(),
-        map);
+    String viewAlert = controller.viewAlert(spendAlert.getId().toString(), map);
 
     Assert.assertEquals(viewAlert, new String("alerts.view"));
     Assert.assertTrue(map.containsAttribute("subscription"));
@@ -1464,8 +1231,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(map.containsAttribute("user_email"));
     Assert.assertTrue(map.containsAttribute("user_phone"));
     Assert.assertEquals(map.get("subscription"), spendAlert);
-    Assert.assertEquals(map.get("spendbudget"), tenant.getSpendBudget()
-        .toString());
+    Assert.assertEquals(map.get("spendbudget"), tenant.getSpendBudget().toString());
     Assert.assertEquals(map.get("tenant"), tenant);
     Assert.assertEquals(map.get("user_email"), tenant.getOwner().getEmail());
     Assert.assertEquals(map.get("user_phone"), tenant.getOwner().getPhone());
@@ -1478,16 +1244,13 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenant2.setSpendBudget(BigDecimal.valueOf(100));
     tenantService.save(tenant2);
     request.setAttribute("isSurrogatedTenant", true);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant2);
-    String create = controller.createSpendAlertSubscription(tenant1,
-        tenant2.getParam(), map, request);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant2);
+    String create = controller.createSpendAlertSubscription(tenant1, tenant2.getParam(), map, request);
     Assert.assertEquals(create, new String("alerts.new"));
     Assert.assertTrue(map.containsAttribute("tenant"));
     Assert.assertTrue(map.containsAttribute("subscriptionForm"));
     Assert.assertEquals(map.get("tenant"), tenant2);
-    CustomAlertForm subscriptionForm = ((CustomAlertForm) map
-        .get("subscriptionForm"));
+    CustomAlertForm subscriptionForm = ((CustomAlertForm) map.get("subscriptionForm"));
     Assert.assertEquals(subscriptionForm.getType(), "tenant");
     Assert.assertEquals(subscriptionForm.getBudget().toString(), "100");
     Assert.assertEquals(subscriptionForm.getThresholdType(), "percentage");
@@ -1507,26 +1270,22 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     spendAlert.setSubscriptionType(1);
     spendAlertDAO.save(spendAlert);
     request.setAttribute("isSurrogatedTenant", false);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant);
-    String edit = controller.editSpendAlertSubscription(spendAlert.getId()
-        .toString(), tenant, tenant.getParam(), map, request);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
+    String edit = controller.editSpendAlertSubscription(spendAlert.getId().toString(), tenant, tenant.getParam(), map,
+        request);
     Assert.assertEquals(edit, new String("alerts.edit"));
     Assert.assertTrue(map.containsAttribute("subscriptionForm"));
     Assert.assertTrue(map.containsAttribute("subscriptionId"));
     CustomAlertForm form = ((CustomAlertForm) map.get("subscriptionForm"));
     Assert.assertEquals(form.getThresholdType(), new String("percentage"));
-    Assert.assertEquals(form.getTenantPercentage(),
-        spendAlert.getPercentage());
-    Assert.assertEquals(map.get("subscriptionId"), spendAlert.getId()
-        .toString());
+    Assert.assertEquals(form.getTenantPercentage(), spendAlert.getPercentage());
+    Assert.assertEquals(map.get("subscriptionId"), spendAlert.getId().toString());
     Assert.assertEquals(map.get("tenant"), tenant);
 
     map.clear();
 
     Tenant tenant1 = tenantService.getTenantByParam("id", "3", false);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant1);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant1);
 
     spendAlert = new SpendAlertSubscription();
     spendAlert.setAccountHolder(tenant1);
@@ -1536,8 +1295,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     spendAlert.setSubscriptionType(1);
     spendAlertDAO.save(spendAlert);
     asUser(tenant1.getOwner());
-    edit = controller.editSpendAlertSubscription(spendAlert.getId()
-        .toString(), tenant, tenant1.getParam(), map, request);
+    edit = controller.editSpendAlertSubscription(spendAlert.getId().toString(), tenant, tenant1.getParam(), map,
+        request);
     Assert.assertEquals(map.get("tenant"), tenant1);
     form = ((CustomAlertForm) map.get("subscriptionForm"));
     Assert.assertEquals(form.getUser(), tenant1.getOwner());
@@ -1549,10 +1308,8 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
     tenant.setSpendBudget(BigDecimal.valueOf(100));
     tenantService.save(tenant);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant);
-    String setBudget = controller.setAccountBudget(tenant,
-        tenant.getParam(), map, request);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
+    String setBudget = controller.setAccountBudget(tenant, tenant.getParam(), map, request);
     Assert.assertEquals(setBudget, new String("alerts.setaccountbudget"));
     Assert.assertTrue(map.containsAttribute("tenantForm"));
     Assert.assertTrue(map.containsAttribute("tenant"));
@@ -1564,14 +1321,11 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant1 = tenantService.getTenantByParam("id", "3", false);
     tenant1.setSpendBudget(BigDecimal.valueOf(100));
     tenantService.save(tenant1);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant1);
-    setBudget = controller.setAccountBudget(tenant, tenant1.getParam(),
-        map, request);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant1);
+    setBudget = controller.setAccountBudget(tenant, tenant1.getParam(), map, request);
     Assert.assertEquals(map.get("tenant"), tenant1);
     tenantForm = ((TenantForm) map.get("tenantForm"));
-    Assert.assertEquals(tenantForm.getSpendLimit(),
-        tenant1.getSpendBudget());
+    Assert.assertEquals(tenantForm.getSpendLimit(), tenant1.getSpendBudget());
 
   }
 
@@ -1583,13 +1337,10 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenantService.save(tenant1);
     Tenant tenant2 = tenantService.getTenantByParam("id", "3", false);
     TenantForm form = new TenantForm();
-    form.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy
-        .newInstance(tenant1));
+    form.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant1));
 
-    String setBudget = controller.setAccountBudget(tenant1,
-        tenant2.getParam(), form, map);
-    Assert.assertEquals(setBudget, new String(
-        "redirect:/portal/tenants/alerts?tenant=" + tenant2.getParam()));
+    String setBudget = controller.setAccountBudget(tenant1, tenant2.getParam(), form, map);
+    Assert.assertEquals(setBudget, new String("redirect:/portal/tenants/alerts?tenant=" + tenant2.getParam()));
     Assert.assertTrue(map.containsAttribute("subscriptions"));
     Assert.assertTrue(map.containsAttribute("size"));
     Assert.assertTrue(map.containsAttribute("user"));
@@ -1627,8 +1378,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testlistStateChanges() {
-    AccountType accountType = new AccountType("NewACType_"
-        + System.currentTimeMillis(), "New AccountType",
+    AccountType accountType = new AccountType("NewACType_" + System.currentTimeMillis(), "New AccountType",
         "New AccountType Description", false);
     accTypeDAO.save(accountType);
 
@@ -1642,8 +1392,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenantChange.setAction(Action.ACTIVATED.toString());
     tenantChange.setCreatedBy(getPortalUser());
     tenantService.saveTenantChange(tenantChange);
-    String stateChange = controller
-        .listStateChanges(tenant.getParam(), map);
+    String stateChange = controller.listStateChanges(tenant.getParam(), map);
     Assert.assertEquals(stateChange, new String("tenant.state.changes"));
     Assert.assertTrue(map.containsAttribute("tenant"));
     Assert.assertEquals(map.get("tenant"), tenant);
@@ -1654,18 +1403,14 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testeditAccountLimits() {
     Tenant tenant = tenantService.getTenantByParam("id", "2", false);
-    String edit = controller.editAccountlimits(tenant.getParam(),
-        "003fa8ee-fba3-467f-a517-ed806dae8a87", map);
+    String edit = controller.editAccountlimits(tenant.getParam(), "003fa8ee-fba3-467f-a517-ed806dae8a87", map);
     Assert.assertEquals(edit, new String("tenant.editaccountlimits"));
-    Assert.assertTrue(map
-        .containsAttribute("account_control_edit_properties"));
-    Map<String, String> resLimitMap = (Map<String, String>) map
-        .get("resLimitMap");
+    Assert.assertTrue(map.containsAttribute("account_control_edit_properties"));
+    Map<String, String> resLimitMap = (Map<String, String>) map.get("resLimitMap");
     List<AccountControlServiceConfigMetadata> properties = (List<AccountControlServiceConfigMetadata>) map
         .get("account_control_edit_properties");
     for (AccountControlServiceConfigMetadata accountControlServiceConfigMetadata : properties) {
-      Assert.assertEquals(resLimitMap
-          .get(accountControlServiceConfigMetadata.getName()), "-1");
+      Assert.assertEquals(resLimitMap.get(accountControlServiceConfigMetadata.getName()), "-1");
     }
   }
 
@@ -1692,14 +1437,11 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testlistAccountLimits() {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-    String show = controller.listAccountLimits(map, tenant.getUuid(),
-        "003fa8ee-fba3-467f-a517-fd806dae8a80");
+    String show = controller.listAccountLimits(map, tenant.getUuid(), "003fa8ee-fba3-467f-a517-fd806dae8a80");
     Assert.assertEquals(show, new String("tenant.showlimits"));
-    Assert.assertEquals(map.get("domainid"),
-        tenantService.getTenantHandle(tenant.getUuid(), "1"));
+    Assert.assertEquals(map.get("domainid"), tenantService.getTenantHandle(tenant.getUuid(), "1"));
     @SuppressWarnings("unchecked")
-    Map<String, String> resLimitMap = (Map<String, String>) map
-        .get("resourceLimitsMap");
+    Map<String, String> resLimitMap = (Map<String, String>) map.get("resourceLimitsMap");
     for (String key : resLimitMap.keySet()) {
       Assert.assertEquals(resLimitMap.get(key), "-1");
     }
@@ -1712,23 +1454,17 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     User user = tenant.getOwner();
     String emailAddress = "test_verify_email@test.com";
 
-    UserAlertPreferences userAlertPreference = userAlertPreferenceService
-        .createUserAlertPreference(user, emailAddress,
-            AlertType.USER_ALERT_EMAIL);
+    UserAlertPreferences userAlertPreference = userAlertPreferenceService.createUserAlertPreference(user, emailAddress,
+        AlertType.USER_ALERT_EMAIL);
     userAlertPreference.setEmailVerified(true);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
     request.setAttribute("isSurrogatedTenant", false);
-    String verifiedmails = controller.viewVerifiedEmails(tenant.getParam(),
-        user.getParam(), map, request);
+    String verifiedmails = controller.viewVerifiedEmails(tenant.getParam(), user.getParam(), map, request);
 
-    Assert.assertEquals(verifiedmails, new String(
-        "alerts.change_primary_email"));
+    Assert.assertEquals(verifiedmails, new String("alerts.change_primary_email"));
     Assert.assertEquals(map.get("user"), user);
-    List<UserAlertPreferences> verifiedAlertPrefs = ((List<UserAlertPreferences>) map
-        .get("verifiedAlertsPrefs"));
-    Assert.assertEquals(verifiedAlertPrefs.get(0).toString(),
-        userAlertPreference.toString());
+    List<UserAlertPreferences> verifiedAlertPrefs = ((List<UserAlertPreferences>) map.get("verifiedAlertsPrefs"));
+    Assert.assertEquals(verifiedAlertPrefs.get(0).toString(), userAlertPreference.toString());
     Assert.assertTrue(verifiedAlertPrefs.size() == 1);
   }
 
@@ -1740,18 +1476,16 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     tenantService.save(tenant1);
     Tenant tenant2 = tenantService.getTenantByParam("id", "3", false);
     SpendAlertSubscription spendAlert = create_spendAlertSubscription(tenant2);
-    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY,
-        tenant2);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant2);
     request.setAttribute("isSurrogatedTenant", true);
-    String listSubscriptions = controller.listSubscriptions(tenant1,
-        tenant2.getParam().toString(), "true", "1", map, request);
+    String listSubscriptions = controller.listSubscriptions(tenant1, tenant2.getParam().toString(), "true", "1", map,
+        request);
     Assert.assertEquals(listSubscriptions, new String("tenants.alerts"));
     Assert.assertEquals(map.get("showUserProfile"), true);
     Assert.assertEquals(map.get("tenant"), tenant2);
     Assert.assertEquals(map.get("subscrptionalerttype"), "tenant");
     Assert.assertNotNull(map.get("subscriptionForm"));
-    List<SpendAlertSubscription> subscriptions = ((List<SpendAlertSubscription>) map
-        .get("subscriptions"));
+    List<SpendAlertSubscription> subscriptions = ((List<SpendAlertSubscription>) map.get("subscriptions"));
     Assert.assertEquals(subscriptions.get(0), spendAlert);
     Assert.assertEquals(map.get("size"), subscriptions.size());
     Assert.assertNotNull(map.get("tenantForm"));
@@ -1763,13 +1497,10 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
     SpendAlertSubscription spendAlert = create_spendAlertSubscription(tenant);
     Assert.assertNotNull(spendAlert.getUser().getSpendAlertSubscriptions());
-    Assert.assertTrue(spendAlert.getUser().getSpendAlertSubscriptions()
-        .size() == 1);
-    String remove = controller.removeSubscription(spendAlert.getId()
-        .toString(), map);
+    Assert.assertTrue(spendAlert.getUser().getSpendAlertSubscriptions().size() == 1);
+    String remove = controller.removeSubscription(spendAlert.getId().toString(), map);
     Assert.assertEquals(remove, new String("success"));
-    Assert.assertTrue(spendAlert.getUser().getSpendAlertSubscriptions()
-        .size() == 0);
+    Assert.assertTrue(spendAlert.getUser().getSpendAlertSubscriptions().size() == 0);
   }
 
   @Test
@@ -1785,8 +1516,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     }
 
     map.clear();
-    map = controller.editAccountlimits(tenant.getParam(),
-        "003fa8ee-fba3-467f-a517-ed806dae8a87", jsonArray.toString());
+    map = controller.editAccountlimits(tenant.getParam(), "003fa8ee-fba3-467f-a517-ed806dae8a87", jsonArray.toString());
     Assert.assertEquals(map.get("result"), "SUCCESS");
     Assert.assertEquals(map.get("validationResult"), "SUCCESS");
   }
@@ -1798,16 +1528,13 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     User user = tenant.getOwner();
     String emailAddress = "test_verify_email@test.com";
 
-    UserAlertPreferences userAlertPreference = userAlertPreferenceService
-        .createUserAlertPreference(user, emailAddress,
-            AlertType.USER_ALERT_EMAIL);
+    UserAlertPreferences userAlertPreference = userAlertPreferenceService.createUserAlertPreference(user, emailAddress,
+        AlertType.USER_ALERT_EMAIL);
     userAlertPreference.setEmailVerified(true);
     request.setAttribute("isSurrogatedTenant", false);
-    String options = controller.viewAlertsDeliveryOptions(
-        tenant.getParam(), user.getParam(), map, request);
+    String options = controller.viewAlertsDeliveryOptions(tenant.getParam(), user.getParam(), map, request);
     Assert.assertEquals(options, new String("alerts.delivery_opts"));
-    List<UserAlertPreferences> alertsPrefs = ((List<UserAlertPreferences>) map
-        .get("alertsPrefs"));
+    List<UserAlertPreferences> alertsPrefs = ((List<UserAlertPreferences>) map.get("alertsPrefs"));
     Assert.assertEquals(alertsPrefs.get(0), userAlertPreference);
     Assert.assertEquals(map.get("alertsPrefsSize"), 1);
     Assert.assertEquals(map.get("addAlertEmailLimit"), 2);
@@ -1819,30 +1546,22 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   public void testGetApiCredentials() {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
     asUser(tenant.getOwner());
-    Map<String, Object> map = controller.getApiCredentials("Portal123#",
-        request);
+    Map<String, Object> map = controller.getApiCredentials("Portal123#", request);
     Assert.assertNotNull(map.get("tenantCredentialList"));
     List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
-    credentialList = (List<Map<String, String>>) map
-        .get("tenantCredentialList");
-    Assert.assertEquals(credentialList.get(0).get("ServiceName"),
-        "com.company1.service1.service.name");
-    Assert.assertEquals(credentialList.get(0).get("ServiceUuid"),
-        "b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6");
-    Assert.assertEquals(credentialList.get(0).get("InstanceName"),
-        "SERVICE11");
+    credentialList = (List<Map<String, String>>) map.get("tenantCredentialList");
+    Assert.assertEquals(credentialList.get(0).get("ServiceName"), "com.company1.service1.service.name");
+    Assert.assertEquals(credentialList.get(0).get("ServiceUuid"), "b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6");
+    Assert.assertEquals(credentialList.get(0).get("InstanceName"), "SERVICE11");
   }
 
   @Test
   public void testGetApiCredentialsForEmpty() {
-    Tenant tenant = createTestTenant(accountTypeDAO
-        .getDefaultRegistrationAccountType());
+    Tenant tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType());
     asUser(tenant.getOwner());
-    Map<String, Object> map = controller.getApiCredentials("passW0rd",
-        request);
+    Map<String, Object> map = controller.getApiCredentials("passW0rd", request);
     @SuppressWarnings("unchecked")
-    List<Map<String, String>> credentialList = (ArrayList<Map<String, String>>) map
-        .get("tenantCredentialList");
+    List<Map<String, String>> credentialList = (ArrayList<Map<String, String>>) map.get("tenantCredentialList");
     Assert.assertTrue(credentialList.isEmpty());
   }
 
@@ -1854,88 +1573,65 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
     Assert.assertTrue("map must have tenant", map.containsKey("tenant"));
     Assert.assertEquals(tenant, map.get("tenant"));
-    Assert.assertTrue("map must have actions",
-        map.containsKey("pendingActions"));
+    Assert.assertTrue("map must have actions", map.containsKey("pendingActions"));
 
   }
 
   @Test
   public void testcancelCredit() {
-    Tenant tenant = tenantService
-        .get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
-    String cancelStatus1 = controller.cancelCredit(tenant.getParam(),
-        "8c4832c3-c319-4aef-ad47-25f9b187cfd4", "comments", request,
-        response);
-    
-    Assert.assertEquals(
-        "Test to validate, the cancellation of SLR ID , expected success",
-        "success", cancelStatus1);
+    Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
+    String cancelStatus1 = controller.cancelCredit(tenant.getParam(), "8c4832c3-c319-4aef-ad47-25f9b187cfd4",
+        "comments", request, response);
 
-    String cancelStatus2 = controller.cancelCredit(tenant.getParam(),
-        "8c4832c3-c319-4aef-ad47-25f9b187cfd4", "comments", request,
-        response);
+    Assert.assertEquals("Test to validate, the cancellation of SLR ID , expected success", "success", cancelStatus1);
 
-    Assert.assertEquals(
-        "Test to validate, the cancellation of same SLR ID , expected failure",
-        "failure", cancelStatus2);
+    String cancelStatus2 = controller.cancelCredit(tenant.getParam(), "8c4832c3-c319-4aef-ad47-25f9b187cfd4",
+        "comments", request, response);
+
+    Assert.assertEquals("Test to validate, the cancellation of same SLR ID , expected failure", "failure",
+        cancelStatus2);
   }
 
   @Test
   public void testcancelCredit_WithInvalidSLR() {
-    Tenant tenant = tenantService
-        .get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
-    String cancelStatus3 = controller.cancelCredit(tenant.getParam(),
-        "8c4832c3-c319-4aef-ad47-25f9b187cf", "comments", request,
-        response);
+    Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
+    String cancelStatus3 = controller.cancelCredit(tenant.getParam(), "8c4832c3-c319-4aef-ad47-25f9b187cf", "comments",
+        request, response);
 
-    Assert.assertEquals(
-        "Test to validate with an  non exist SLR ID , expected failure",
-        "failure", cancelStatus3);
+    Assert.assertEquals("Test to validate with an  non exist SLR ID , expected failure", "failure", cancelStatus3);
   }
 
   @Test
   public void testcancelCredit_WithINVOICETypeSLR() {
-    Tenant tenant = tenantService
-        .get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
-    String cancelStatus4 = controller.cancelCredit(tenant.getParam(),
-        "8c4732b3-c319-4aef-ad46-25f9b187cf04", "comments", request,
-        response);
+    Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
+    String cancelStatus4 = controller.cancelCredit(tenant.getParam(), "8c4732b3-c319-4aef-ad46-25f9b187cf04",
+        "comments", request, response);
 
-    Assert.assertEquals(
-        "Test to validate cancel credit with INVOICE type SLR ID , expected failure",
-        "failure", cancelStatus4);
+    Assert.assertEquals("Test to validate cancel credit with INVOICE type SLR ID , expected failure", "failure",
+        cancelStatus4);
   }
 
   @Test
   public void testcancelCredit_WithSLRAsNULL() {
-    Tenant tenant = tenantService
-        .get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
-    String cancelStatus5 = controller.cancelCredit(tenant.getParam(), null,
-        "comments", request, response);
+    Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
+    String cancelStatus5 = controller.cancelCredit(tenant.getParam(), null, "comments", request, response);
 
-    Assert.assertEquals(
-        "Test to validate cancel credit with SLR ID as null, expected failure",
-        "failure", cancelStatus5);
+    Assert.assertEquals("Test to validate cancel credit with SLR ID as null, expected failure", "failure",
+        cancelStatus5);
   }
 
   @Test
   public void testcancelCredit_CommentAsNULL() {
-    Tenant tenant = tenantService
-        .get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
-    String cancelStatus6 = controller
-        .cancelCredit(tenant.getParam(),
-            "8c4832c3-c319-4aef-ad46-25f9b187cf04", null, request,
-            response);
+    Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b711");
+    String cancelStatus6 = controller.cancelCredit(tenant.getParam(), "8c4832c3-c319-4aef-ad46-25f9b187cf04", null,
+        request, response);
 
-    Assert.assertEquals(
-        "Test to validate cancel credit with comment as null, expected success",
-        "success", cancelStatus6);
+    Assert.assertEquals("Test to validate cancel credit with comment as null, expected success", "success",
+        cancelStatus6);
   }
 
-
   @Test
-  public void testSaveAlertsDeliveryOptionsOnReachingUserLimit()
-      throws Exception {
+  public void testSaveAlertsDeliveryOptionsOnReachingUserLimit() throws Exception {
 
     Configuration configuration = configurationService
         .locateConfigurationByName("com.citrix.cpbm.accountManagement.resourceLimits.registered.emailAddresses");
@@ -1949,15 +1645,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     userAlertEmailForm.setAlertType(AlertType.USER_ALERT_EMAIL);
 
     BindingResult result = validate(userAlertEmailForm);
-    String result1 = controller.saveAlertsDeliveryOptions(
-        userAlertEmailForm, result);
-    List<UserAlertPreferences> list = userAlertPreferenceService
-        .listAllUserAlertPreferences(user);
+    String result1 = controller.saveAlertsDeliveryOptions(userAlertEmailForm, result);
+    List<UserAlertPreferences> list = userAlertPreferenceService.listAllUserAlertPreferences(user);
     Assert.assertEquals(list.size(), Integer.parseInt("1"));
     Assert.assertNotNull(result1);
     try {
-      String result2 = controller.saveAlertsDeliveryOptions(
-          userAlertEmailForm, result);
+      controller.saveAlertsDeliveryOptions(userAlertEmailForm, result);
       Assert.fail();
     } catch (AjaxFormValidationException e) {
       Assert.assertEquals(e.getMessage(), "Ajax Form Validation Error");
@@ -1968,8 +1661,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testSaveAlertsDeliveryOptionsForBlacklistedEmail()
-      throws Exception {
+  public void testSaveAlertsDeliveryOptionsForBlacklistedEmail() throws Exception {
     Configuration configuration = configurationService
         .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
     configuration.setValue("yahoo.com");
@@ -1983,8 +1675,7 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
     BindingResult result = validate(userAlertEmailForm);
     try {
-      String result1 = controller.saveAlertsDeliveryOptions(
-          userAlertEmailForm, result);
+      controller.saveAlertsDeliveryOptions(userAlertEmailForm, result);
       Assert.fail();
     } catch (AjaxFormValidationException e) {
       Assert.assertEquals(e.getMessage(), "Ajax Form Validation Error");
@@ -1993,12 +1684,11 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testSaveAlertsDeliveryOptionsForAddingPrimaryEmail()
-      throws Exception {
+  public void testSaveAlertsDeliveryOptionsForAddingPrimaryEmail() throws Exception {
 
     User user = userService.getUserByParam("username", "2_retail1", false);
     String email = user.getEmail();
-    
+
     UserAlertEmailForm userAlertEmailForm = new UserAlertEmailForm();
     userAlertEmailForm.setUser(user);
     userAlertEmailForm.setEmail(email);
@@ -2006,13 +1696,11 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
     BindingResult result = validate(userAlertEmailForm);
 
     try {
-      String result2 = controller.saveAlertsDeliveryOptions(
-          userAlertEmailForm, result);
+      controller.saveAlertsDeliveryOptions(userAlertEmailForm, result);
       Assert.fail();
     } catch (AjaxFormValidationException e) {
       Assert.assertEquals(e.getMessage(), "Ajax Form Validation Error");
-      logger.debug("###Exiting testSaveAlertsDeliveryOptionsForAddingPrimaryEmail============"
-          + e);
+      logger.debug("###Exiting testSaveAlertsDeliveryOptionsForAddingPrimaryEmail============" + e);
     }
   }
 
@@ -2021,23 +1709,19 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
     String date = DateUtils.getSimpleDateTimeString(new Date());
     System.err.println(date);
-    Tenant tenant = tenantService
-        .get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
+    Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
 
     int prev_count = eventDAO.count();
-    User user = createTestUserInTenant(tenant);
-    List<User> userList = tenant.getAllUsers();
+    createTestUserInTenant(tenant);
 
     int current_count = eventDAO.count();
     Assert.assertEquals(prev_count + 1, current_count);
 
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
-    String result = controller.viewNotification(tenant, tenant.getParam(),
-        date, "1", null, null, map, request);
+    String result = controller.viewNotification(tenant, tenant.getParam(), date, "1", null, null, map, request);
     List<Event> eventList = eventDAO.findAll(null);
 
-    Assert.assertTrue(eventList.get(0).getMessage()
-        .contains("user.created"));
+    Assert.assertTrue(eventList.get(0).getMessage().contains("user.created"));
 
     Assert.assertEquals(result, new String("notifications.view"));
 
@@ -2046,21 +1730,18 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testListNotification() {
 
-    Tenant tenant = tenantService
-        .get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
+    Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
 
     int prev_count = eventDAO.count();
-    User user = createTestUserInTenant(tenant);
+    createTestUserInTenant(tenant);
     int current_count = eventDAO.count();
     Assert.assertEquals(prev_count + 1, current_count);
 
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
-    String result = controller.listNotifications(tenant, tenant.getParam(),
-        null, "1", null, map, request);
+    String result = controller.listNotifications(tenant, tenant.getParam(), null, "1", null, map, request);
     List<com.vmops.model.Event> eventList = eventDAO.findAll(null);
 
-    Assert.assertTrue(eventList.get(0).getMessage()
-        .contains("user.created"));
+    Assert.assertTrue(eventList.get(0).getMessage().contains("user.created"));
     Assert.assertEquals(result, new String("tenants.notifications"));
 
   }
@@ -2081,22 +1762,17 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testValidateUserLimitWithZero() {
     try {
-      Tenant tenant = tenantService
-          .get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
-      List<User> userList = tenant.getAllUsers();
-      int count = userList.size();
+      Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
       controller.validateUserLimit("0", tenant.getParam());
     } catch (Exception e) {
-      Assert.assertEquals("Cannot set max user limit to 0.",
-          e.getMessage());
+      Assert.assertEquals("Cannot set max user limit to 0.", e.getMessage());
       logger.debug("###Exiting testValidateUserLimitWithZero");
     }
   }
 
   @Test
   public void testValidateUserLimitWithMaxCount() {
-    Tenant tenant = tenantService
-        .get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
+    Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
     List<User> userList = tenant.getAllUsers();
     String count = Integer.toString(userList.size());
     String result = controller.validateUserLimit(count, tenant.getParam());
@@ -2107,15 +1783,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testValidateUserLimitExceedMaxCount() {
     try {
-      Tenant tenant = tenantService
-          .get("f132a5e3-f1ae-478b-999f-ddaf68e2b7db");
+      Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b7db");
       List<User> userList = tenant.getAllUsers();
       String count = Integer.toString(userList.size() - 1);
       controller.validateUserLimit(count, tenant.getParam());
     } catch (Exception e) {
-      Assert.assertEquals(
-          "Failed to set max user limit as this  account has more users.",
-          e.getMessage());
+      Assert.assertEquals("Failed to set max user limit as this  account has more users.", e.getMessage());
       logger.debug("###Exiting testValidateUserLimitExceedMaxCount");
     }
   }
@@ -2123,340 +1796,327 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testValidateUserLimitWithInvalidValue() {
     try {
-      Tenant tenant = tenantService
-          .get("f132a5e3-f1ae-478b-999f-ddaf68e2b7db");
+      Tenant tenant = tenantService.get("f132a5e3-f1ae-478b-999f-ddaf68e2b7db");
       controller.validateUserLimit("count", tenant.getParam());
     } catch (Exception e) {
-      Assert.assertEquals("This value for user limit is unacceptable. ",e.getMessage());
+      Assert.assertEquals("This value for user limit is unacceptable. ", e.getMessage());
       logger.debug("###Exiting testValidateUserLimitWithInvalidValue");
     }
   }
 
-   @Test
-    public void testTenantCreationRetail() throws Exception
-    {
-      Tenant tenant = testTenantCreation(3L,null);
-      Assert.assertNotNull(tenant);
-      Assert.assertEquals(accountTypeDAO.getAccountTypeByName("RETAIL"), tenant.getAccountType());
-    }
+  @Test
+  public void testTenantCreationRetail() throws Exception {
+    Tenant tenant = testTenantCreation(3L, null);
+    Assert.assertNotNull(tenant);
+    Assert.assertEquals(accountTypeDAO.getAccountTypeByName("RETAIL"), tenant.getAccountType());
+  }
 
-    @Test
-    public void testTenantCreationCorporate() throws Exception
-    {
-      Tenant tenant = testTenantCreation(4L,null);
-      Assert.assertNotNull(tenant);
-      Assert.assertEquals(accountTypeDAO.getAccountTypeByName("Corporate"), tenant.getAccountType());
-    }
+  @Test
+  public void testTenantCreationCorporate() throws Exception {
+    Tenant tenant = testTenantCreation(4L, null);
+    Assert.assertNotNull(tenant);
+    Assert.assertEquals(accountTypeDAO.getAccountTypeByName("Corporate"), tenant.getAccountType());
+  }
 
-    @Test
-    public void testTenantCreationTrial() throws Exception
-    {
-      //TODO: need to create a new campaign here other wise this test will fail
-        CampaignPromotion campaignPromotion = new CampaignPromotion();
-        campaignPromotion.setCode("USD" + random.nextInt());
-        campaignPromotion.setCreateBy(getRootUser());
-        campaignPromotion.setUpdateBy(getRootUser());
-        campaignPromotion.setTrial(true);
-        campaignPromotion.setCampaignPromotionsInChannels(new HashSet<CampaignPromotionsInChannels>());
-        campaignPromotion =  cmpdao.save(campaignPromotion);
+  @Test
+  public void testTenantCreationTrial() throws Exception {
+    // TODO: need to create a new campaign here other wise this test will fail
+    CampaignPromotion campaignPromotion = new CampaignPromotion();
+    campaignPromotion.setCode("USD" + random.nextInt());
+    campaignPromotion.setCreateBy(getRootUser());
+    campaignPromotion.setUpdateBy(getRootUser());
+    campaignPromotion.setTrial(true);
+    campaignPromotion.setCampaignPromotionsInChannels(new HashSet<CampaignPromotionsInChannels>());
+    campaignPromotion = cmpdao.save(campaignPromotion);
 
-       
-        PromotionToken promotionToken = new PromotionToken(campaignPromotion,
-            "TESTPROMOCODE");
-        promotionToken.setCreateBy(getRootUser());
-        tokendao.save(promotionToken);
-        
-        Tenant tenant = testTenantCreation(5L,"TESTPROMOCODE");
-        Assert.assertNotNull(tenant);
-        Assert.assertEquals(accountTypeDAO.getAccountTypeByName("Trial"), tenant.getAccountType());
-    }
-    
-    
+    PromotionToken promotionToken = new PromotionToken(campaignPromotion, "TESTPROMOCODE");
+    promotionToken.setCreateBy(getRootUser());
+    tokendao.save(promotionToken);
 
-    @Test
-    public void testTenantCreation_BlackListed() throws Exception
-    {
+    Tenant tenant = testTenantCreation(5L, "TESTPROMOCODE");
+    Assert.assertNotNull(tenant);
+    Assert.assertEquals(accountTypeDAO.getAccountTypeByName("Trial"), tenant.getAccountType());
+  }
 
-      com.vmops.model.Configuration configuration = configurationService
-              .locateConfigurationByName(Names.com_citrix_cpbm_accountManagement_onboarding_emailDomain_blacklist);
-          configuration.setValue("citrix.com");
-          configurationService.update(configuration);
+  @Test
+  public void testTenantCreation_BlackListed() throws Exception {
 
-          AccountType type = accountTypeDAO.find(4L);
-          Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
-                  currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
-          List<Country> countryList = countryDAO.findAll(null);
-          Profile profile =  profileDAO.find(8L);
-          User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#", "91-9885098850", "GMT", null, profile, getRootUser());
-          user.setAddress(randomAddress());
-          tenant.setOwner(user);
-          com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User)CustomProxy.newInstance(user);
-          com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-          TenantForm form = new TenantForm();
-          form.setAccountTypeId("4");
-          form.setUser(newUser);
-          form.setTenant(newTenant);
-          form.setCountryList(countryList);
+    com.vmops.model.Configuration configuration = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_accountManagement_onboarding_emailDomain_blacklist);
+    configuration.setValue("citrix.com");
+    configurationService.update(configuration);
 
-          BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
-          String tenantCreation = controller.create(form, result, map, status, request);
-          logger.debug("RESULT------------------------"+tenantCreation);
-          Assert.assertFalse("verifying the form has zero error", tenantCreation.contains("0 errors"));
-    }
-    
-    @Test
-    public void testTenantCreation_Negative() throws Exception
-    {
+    AccountType type = accountTypeDAO.find(4L);
+    Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
+        currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
+    List<Country> countryList = countryDAO.findAll(null);
+    Profile profile = profileDAO.find(8L);
+    User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#",
+        "91-9885098850", "GMT", null, profile, getRootUser());
+    user.setAddress(randomAddress());
+    tenant.setOwner(user);
+    com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User) CustomProxy.newInstance(user);
+    com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    TenantForm form = new TenantForm();
+    form.setAccountTypeId("4");
+    form.setUser(newUser);
+    form.setTenant(newTenant);
+    form.setCountryList(countryList);
 
-          AccountType type = accountTypeDAO.find(4L);
-          Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
-                  currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
-          List<Country> countryList = countryDAO.findAll(null);
-          Profile profile =  profileDAO.find(8L);
-          User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#", "91-9885098850", "GMT", null, profile, getRootUser());
-          user.setAddress(randomAddress());
-          tenant.setOwner(user);
-          com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User)CustomProxy.newInstance(user);
-          com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-          TenantForm form = new TenantForm();
-          form.setAccountTypeId("4");
-          form.setUser(newUser);
-          form.setTenant(newTenant);
-          form.setCountryList(countryList);
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
+    String tenantCreation = controller.create(form, result, map, status, request);
+    logger.debug("RESULT------------------------" + tenantCreation);
+    Assert.assertFalse("verifying the form has zero error", tenantCreation.contains("0 errors"));
+  }
 
-          BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
-          result.addError(new FieldError("Error", "Error", "Error"));
-          String tenantCreation = controller.create(form, result, map, status, request);
-          logger.debug("RESULT------------------------"+tenantCreation);
-          Assert.assertFalse("verifying the form has zero error", tenantCreation.contains("0 errors"));
-    }
+  @Test
+  public void testTenantCreation_Negative() throws Exception {
 
-    private Tenant testTenantCreation(Long accountType, String trialCode) throws Exception
-    {
-      int prevTList = tenantDAO.count();
-      int prevUList = userDAO.count();
-      int prevBTList = businessTransactionDAO.count();
+    AccountType type = accountTypeDAO.find(4L);
+    Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
+        currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
+    List<Country> countryList = countryDAO.findAll(null);
+    Profile profile = profileDAO.find(8L);
+    User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#",
+        "91-9885098850", "GMT", null, profile, getRootUser());
+    user.setAddress(randomAddress());
+    tenant.setOwner(user);
+    com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User) CustomProxy.newInstance(user);
+    com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    TenantForm form = new TenantForm();
+    form.setAccountTypeId("4");
+    form.setUser(newUser);
+    form.setTenant(newTenant);
+    form.setCountryList(countryList);
 
-      AccountType type = accountTypeDAO.find(accountType);
-      Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
-              currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
-      List<Country> countryList = countryDAO.findAll(null);
-      Profile profile =  profileDAO.find(8L);
-      User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#", "91-9885098850", "GMT", null, profile, getRootUser());
-      user.setAddress(randomAddress());
-      tenant.setOwner(user);
-      com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User)CustomProxy.newInstance(user);
-      com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-      TenantForm form = new TenantForm();
-      form.setTrialCode(trialCode);
-      form.setAccountTypeId(accountType.toString());
-      form.setUser(newUser);
-      form.setTenant(newTenant);
-      form.setCountryList(countryList);
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
+    result.addError(new FieldError("Error", "Error", "Error"));
+    String tenantCreation = controller.create(form, result, map, status, request);
+    logger.debug("RESULT------------------------" + tenantCreation);
+    Assert.assertFalse("verifying the form has zero error", tenantCreation.contains("0 errors"));
+  }
 
-      BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
-      String tenantCreation = controller.create(form, result, map, status, request);
-      logger.debug("RESULT------------------------"+tenantCreation);
-      Assert.assertTrue("verifying the form has zero error", tenantCreation.contains("0 errors"));
-      Long newTenantId = (Long) map.get("tenantId");
-      Tenant obtainedTenant = tenantDAO.find(newTenantId);
-      int afterTList = tenantDAO.count();
-      int afterUList = userDAO.count();
-      int afterBTList = businessTransactionDAO.count();
+  private Tenant testTenantCreation(Long accountType, String trialCode) throws Exception {
+    int prevTList = tenantDAO.count();
+    int prevUList = userDAO.count();
+    int prevBTList = businessTransactionDAO.count();
 
-      Assert.assertEquals("", prevTList +1, afterTList);
-      Assert.assertEquals("", prevUList +1, afterUList);
-      Assert.assertEquals("", prevBTList +1, afterBTList);
+    AccountType type = accountTypeDAO.find(accountType);
+    Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
+        currencyValueService.locateBYCurrencyCode("USD"), getPortalUser());
+    List<Country> countryList = countryDAO.findAll(null);
+    Profile profile = profileDAO.find(8L);
+    User user = new User("firstName", "lastName", "nageswarareddy.poli@citrix.com", "username14", "Portal123#",
+        "91-9885098850", "GMT", null, profile, getRootUser());
+    user.setAddress(randomAddress());
+    tenant.setOwner(user);
+    com.citrix.cpbm.access.User newUser = (com.citrix.cpbm.access.User) CustomProxy.newInstance(user);
+    com.citrix.cpbm.access.Tenant newTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    TenantForm form = new TenantForm();
+    form.setTrialCode(trialCode);
+    form.setAccountTypeId(accountType.toString());
+    form.setUser(newUser);
+    form.setTenant(newTenant);
+    form.setCountryList(countryList);
 
-      logger.debug("Tenants before  ::"+prevTList + ",  Tenants After :: "+afterTList);
-      logger.debug("Users before  ::"+prevUList + ",  Users After :: "+afterUList);
-      logger.debug("businessTransactions before  ::"+prevBTList + ",  businessTransactions After :: "+afterBTList);
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
+    String tenantCreation = controller.create(form, result, map, status, request);
+    logger.debug("RESULT------------------------" + tenantCreation);
+    Assert.assertTrue("verifying the form has zero error", tenantCreation.contains("0 errors"));
+    Long newTenantId = (Long) map.get("tenantId");
+    Tenant obtainedTenant = tenantDAO.find(newTenantId);
+    int afterTList = tenantDAO.count();
+    int afterUList = userDAO.count();
+    int afterBTList = businessTransactionDAO.count();
 
-      return obtainedTenant;
-    }
+    Assert.assertEquals("", prevTList + 1, afterTList);
+    Assert.assertEquals("", prevUList + 1, afterUList);
+    Assert.assertEquals("", prevBTList + 1, afterBTList);
 
-    @Test
-    public void testcreateSpendAlertSubscriptionAddAlert() throws Exception
-    {
+    logger.debug("Tenants before  ::" + prevTList + ",  Tenants After :: " + afterTList);
+    logger.debug("Users before  ::" + prevUList + ",  Users After :: " + afterUList);
+    logger.debug("businessTransactions before  ::" + prevBTList + ",  businessTransactions After :: " + afterBTList);
 
-      Tenant tenant = tenantService.getTenantByParam("id", "3", false);
-      tenant.setSpendBudget(BigDecimal.valueOf(100));
-      tenantService.save(tenant);
+    return obtainedTenant;
+  }
 
-      request.setAttribute("isSurrogatedTenant", true);
-      request.setAttribute("effectiveTenant", tenant);
-      CustomAlertForm form = new CustomAlertForm();
-      form.setType("tenant");
-      form.setTenantPercentage(new BigDecimal(10.0));
-      BindingResult result = validate(form);
+  @Test
+  public void testcreateSpendAlertSubscriptionAddAlert() throws Exception {
 
-      SpendAlertSubscription spendAlertSubscription=controller.createSpendAlertSubscription(tenant, tenant.getParam(), form, result, map, request);
-      Assert.assertEquals(new BigDecimal(10.0), spendAlertSubscription.getPercentage());
+    Tenant tenant = tenantService.getTenantByParam("id", "3", false);
+    tenant.setSpendBudget(BigDecimal.valueOf(100));
+    tenantService.save(tenant);
 
-    }
+    request.setAttribute("isSurrogatedTenant", true);
+    request.setAttribute("effectiveTenant", tenant);
+    CustomAlertForm form = new CustomAlertForm();
+    form.setType("tenant");
+    form.setTenantPercentage(new BigDecimal(10.0));
+    BindingResult result = validate(form);
 
-    @Test
-    public void testeditSpendAlertSubscriptionEditSpendAlert() throws Exception
-    {
-        Tenant tenant = tenantService.getTenantByParam("id", "3", false);
-        tenant.setSpendBudget(BigDecimal.valueOf(100));
-        tenantService.save(tenant);
+    SpendAlertSubscription spendAlertSubscription = controller.createSpendAlertSubscription(tenant, tenant.getParam(),
+        form, result, map, request);
+    Assert.assertEquals(new BigDecimal(10.0), spendAlertSubscription.getPercentage());
 
-        SpendAlertSubscription spendAlert = new SpendAlertSubscription();
-        spendAlert.setAccountHolder(tenant);
-        spendAlert.setData("TEST");
-        spendAlert.setUser(userService.getUserByParam("id", "4", false));
-        spendAlert.setPercentage(BigDecimal.valueOf(100));
-        spendAlert.setSubscriptionType(1);
-        spendAlertDAO.save(spendAlert);
+  }
 
-      CustomAlertForm form = new CustomAlertForm();
-      form.setType("tenant");
-      form.setTenantPercentage(spendAlert.getPercentage());
-      BindingResult result = validate(form);
-      SpendAlertSubscription spendAlertSubscription=controller.editSpendAlertSubscription(spendAlert.getId().toString(), "14", form, result, map);
-      Assert.assertEquals(new BigDecimal(14), spendAlertSubscription.getPercentage());
-    }
+  @Test
+  public void testeditSpendAlertSubscriptionEditSpendAlert() throws Exception {
+    Tenant tenant = tenantService.getTenantByParam("id", "3", false);
+    tenant.setSpendBudget(BigDecimal.valueOf(100));
+    tenantService.save(tenant);
 
-    @Test(expected = AjaxFormValidationException.class)
-    public void testeditSpendAlertSubscriptionEditSpendAlertAsNULL() throws Exception
-    {
-        Tenant tenant = tenantService.getTenantByParam("id", "3", false);
-        tenant.setSpendBudget(BigDecimal.valueOf(100));
-        tenantService.save(tenant);
+    SpendAlertSubscription spendAlert = new SpendAlertSubscription();
+    spendAlert.setAccountHolder(tenant);
+    spendAlert.setData("TEST");
+    spendAlert.setUser(userService.getUserByParam("id", "4", false));
+    spendAlert.setPercentage(BigDecimal.valueOf(100));
+    spendAlert.setSubscriptionType(1);
+    spendAlertDAO.save(spendAlert);
 
-        SpendAlertSubscription spendAlert = new SpendAlertSubscription();
-        spendAlert.setAccountHolder(tenant);
-        spendAlert.setData("TEST");
-        spendAlert.setUser(userService.getUserByParam("id", "4", false));
-        spendAlert.setPercentage(BigDecimal.valueOf(100));
-        spendAlert.setSubscriptionType(1);
-        spendAlertDAO.save(spendAlert);
+    CustomAlertForm form = new CustomAlertForm();
+    form.setType("tenant");
+    form.setTenantPercentage(spendAlert.getPercentage());
+    BindingResult result = validate(form);
+    SpendAlertSubscription spendAlertSubscription = controller.editSpendAlertSubscription(
+        spendAlert.getId().toString(), "14", form, result, map);
+    Assert.assertEquals(new BigDecimal(14), spendAlertSubscription.getPercentage());
+  }
 
-      CustomAlertForm form = new CustomAlertForm();
-      form.setType("tenant");
-      form.setTenantPercentage(spendAlert.getPercentage());
-      BindingResult result = validate(form);
-      controller.editSpendAlertSubscription(spendAlert.getId().toString(), null, form, result, map);
+  @Test(expected = AjaxFormValidationException.class)
+  public void testeditSpendAlertSubscriptionEditSpendAlertAsNULL() throws Exception {
+    Tenant tenant = tenantService.getTenantByParam("id", "3", false);
+    tenant.setSpendBudget(BigDecimal.valueOf(100));
+    tenantService.save(tenant);
 
-    }
+    SpendAlertSubscription spendAlert = new SpendAlertSubscription();
+    spendAlert.setAccountHolder(tenant);
+    spendAlert.setData("TEST");
+    spendAlert.setUser(userService.getUserByParam("id", "4", false));
+    spendAlert.setPercentage(BigDecimal.valueOf(100));
+    spendAlert.setSubscriptionType(1);
+    spendAlertDAO.save(spendAlert);
 
-    @Test(expected = AjaxFormValidationException.class)
-    public void testeditSpendAlertSubscriptionEditSpendAlertMoreThan100Percent() throws Exception
-    {
-        Tenant tenant = tenantService.getTenantByParam("id", "3", false);
-        tenant.setSpendBudget(BigDecimal.valueOf(100));
-        tenantService.save(tenant);
+    CustomAlertForm form = new CustomAlertForm();
+    form.setType("tenant");
+    form.setTenantPercentage(spendAlert.getPercentage());
+    BindingResult result = validate(form);
+    controller.editSpendAlertSubscription(spendAlert.getId().toString(), null, form, result, map);
 
-        SpendAlertSubscription spendAlert = new SpendAlertSubscription();
-        spendAlert.setAccountHolder(tenant);
-        spendAlert.setData("TEST");
-        spendAlert.setUser(userService.getUserByParam("id", "4", false));
-        spendAlert.setPercentage(BigDecimal.valueOf(100));
-        spendAlert.setSubscriptionType(1);
-        spendAlertDAO.save(spendAlert);
+  }
 
-      CustomAlertForm form = new CustomAlertForm();
-      form.setType("tenant");
-      form.setTenantPercentage(spendAlert.getPercentage());
-      BindingResult result = validate(form);
-      controller.editSpendAlertSubscription(spendAlert.getId().toString(), "120", form, result, map);
+  @Test(expected = AjaxFormValidationException.class)
+  public void testeditSpendAlertSubscriptionEditSpendAlertMoreThan100Percent() throws Exception {
+    Tenant tenant = tenantService.getTenantByParam("id", "3", false);
+    tenant.setSpendBudget(BigDecimal.valueOf(100));
+    tenantService.save(tenant);
 
-    }
+    SpendAlertSubscription spendAlert = new SpendAlertSubscription();
+    spendAlert.setAccountHolder(tenant);
+    spendAlert.setData("TEST");
+    spendAlert.setUser(userService.getUserByParam("id", "4", false));
+    spendAlert.setPercentage(BigDecimal.valueOf(100));
+    spendAlert.setSubscriptionType(1);
+    spendAlertDAO.save(spendAlert);
 
-    @Test
-    public void testeditTenantLogo() throws Exception
-    {
+    CustomAlertForm form = new CustomAlertForm();
+    form.setType("tenant");
+    form.setTenantPercentage(spendAlert.getPercentage());
+    BindingResult result = validate(form);
+    controller.editSpendAlertSubscription(spendAlert.getId().toString(), "120", form, result, map);
 
-      Configuration configuration = configurationService
-          .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
-      configuration.setValue("src\\test\\resources");
-      configurationService.update(configuration);
+  }
 
-      Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-      TenantLogoForm tenantLogoForm = new TenantLogoForm();
+  @Test
+  public void testeditTenantLogo() throws Exception {
 
-      MultipartFile logo = new MockMultipartFile("poli.jpg", "poli.jpg", "bytes", "poli.jpg".getBytes());
-      MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
+    Configuration configuration = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
+    configuration.setValue("src\\test\\resources");
+    configurationService.update(configuration);
 
-      tenantLogoForm.setFavicon(favicon);
-      tenantLogoForm.setLogo(logo);
-      BindingResult result = validate(tenantLogoForm);
-      String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
-      Assert.assertEquals("redirect:/portal/home", actualResult);
+    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
+    TenantLogoForm tenantLogoForm = new TenantLogoForm();
 
-    }
+    MultipartFile logo = new MockMultipartFile("poli.jpg", "poli.jpg", "bytes", "poli.jpg".getBytes());
+    MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
 
-    @Test
-    public void testeditTenantLogoInvalidFiles() throws Exception
-    {
+    tenantLogoForm.setFavicon(favicon);
+    tenantLogoForm.setLogo(logo);
+    BindingResult result = validate(tenantLogoForm);
+    String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
+    Assert.assertEquals("redirect:/portal/home", actualResult);
 
-      Configuration configuration = configurationService
-          .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
-      configuration.setValue("src\\test\\resources");
-      configurationService.update(configuration);
+  }
 
-      Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-      TenantLogoForm tenantLogoForm = new TenantLogoForm();
+  @Test
+  public void testeditTenantLogoInvalidFiles() throws Exception {
 
-      MultipartFile logo = new MockMultipartFile("poli.txt", "poli.txt", "bytes", "poli.txt".getBytes());
-      MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
+    Configuration configuration = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
+    configuration.setValue("src\\test\\resources");
+    configurationService.update(configuration);
 
-      tenantLogoForm.setFavicon(favicon);
-      tenantLogoForm.setLogo(logo);
-      BindingResult result = validate(tenantLogoForm);
-      String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
-      Assert.assertEquals("tenants.editcurrentlogo", actualResult);
-    }
+    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
+    TenantLogoForm tenantLogoForm = new TenantLogoForm();
 
-    @Test
-    public void testeditTenantLogoInvalidUploadPath() throws Exception
-    {
+    MultipartFile logo = new MockMultipartFile("poli.txt", "poli.txt", "bytes", "poli.txt".getBytes());
+    MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
 
-      Configuration configuration = configurationService
-          .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
-      configuration.setValue("");
-      configurationService.update(configuration);
+    tenantLogoForm.setFavicon(favicon);
+    tenantLogoForm.setLogo(logo);
+    BindingResult result = validate(tenantLogoForm);
+    String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
+    Assert.assertEquals("tenants.editcurrentlogo", actualResult);
+  }
 
-      Tenant tenant = tenantService.getTenantByParam("id", "1", false);
-      TenantLogoForm tenantLogoForm = new TenantLogoForm();
+  @Test
+  public void testeditTenantLogoInvalidUploadPath() throws Exception {
 
-      MultipartFile logo = new MockMultipartFile("poli.txt", "poli.txt", "bytes", "poli.txt".getBytes());
-      MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
+    Configuration configuration = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
+    configuration.setValue("");
+    configurationService.update(configuration);
 
-      tenantLogoForm.setFavicon(favicon);
-      tenantLogoForm.setLogo(logo);
-      BindingResult result = validate(tenantLogoForm);
-      String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
-      Assert.assertEquals("tenants.editcurrentlogo", actualResult);
-    }
+    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
+    TenantLogoForm tenantLogoForm = new TenantLogoForm();
 
-    @Test
-    public void testTenantEditWithSecondaryAddress() throws Exception {
-      Tenant expected = tenantDAO.findAll(null).get(0);
-      expected.setSecondaryAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
-      String view = controller.edit(expected.getParam(), map);
-      Assert.assertEquals("tenant.edit", view);
-      Assert.assertTrue(map.containsKey("tenantForm"));
-      com.citrix.cpbm.access.Tenant found = ((TenantForm) map.get("tenantForm")).getTenant();
-      Assert.assertEquals(expected, found.getObject());
-    }
+    MultipartFile logo = new MockMultipartFile("poli.txt", "poli.txt", "bytes", "poli.txt".getBytes());
+    MultipartFile favicon = new MockMultipartFile("poli.ico", "poli.ico", "bytes", "poli.ico".getBytes());
 
-    @Test
-    public void testVerifyPromoAvail(){
-      String channelParam = "9fc7754c-6d46-11e0-a026-065287aed31b";
-      String status = controller.isPromoCodeAvailable(channelParam, map);
-      Assert.assertEquals("success", status);
-      
-      
-    }
-    @Test
-    public void testEnableService() {
+    tenantLogoForm.setFavicon(favicon);
+    tenantLogoForm.setLogo(logo);
+    BindingResult result = validate(tenantLogoForm);
+    String actualResult = controller.editTenantLogo(tenant.getUuid(), tenantLogoForm, result, map);
+    Assert.assertEquals("tenants.editcurrentlogo", actualResult);
+  }
 
-    Map<String,List<String>> es= controller.enableService("f132a5e3-f1ae-478b-999f-ddaf68e2b711", "003fa8ee-fba3-467f-a517-ed806dae8a87", null);
+  @Test
+  public void testTenantEditWithSecondaryAddress() throws Exception {
+    Tenant expected = tenantDAO.findAll(null).get(0);
+    expected.setSecondaryAddress(new Address("steve", "creek", "cupertino", "ca", "95014", "US"));
+    String view = controller.edit(expected.getParam(), map);
+    Assert.assertEquals("tenant.edit", view);
+    Assert.assertTrue(map.containsKey("tenantForm"));
+    com.citrix.cpbm.access.Tenant found = ((TenantForm) map.get("tenantForm")).getTenant();
+    Assert.assertEquals(expected, found.getObject());
+  }
+
+  @Test
+  public void testVerifyPromoAvail() {
+    String channelParam = "9fc7754c-6d46-11e0-a026-065287aed31b";
+    String status = controller.isPromoCodeAvailable(channelParam, map);
+    Assert.assertEquals("success", status);
+
+  }
+
+  @Test
+  public void testEnableService() {
+
+    Map<String, List<String>> es = controller.enableService("f132a5e3-f1ae-478b-999f-ddaf68e2b711",
+        "003fa8ee-fba3-467f-a517-ed806dae8a87", null);
     Assert.assertEquals("fnam lnam", es.get("registeredUser").get(0).toString());
-    
-    }
 
+  }
 
 }

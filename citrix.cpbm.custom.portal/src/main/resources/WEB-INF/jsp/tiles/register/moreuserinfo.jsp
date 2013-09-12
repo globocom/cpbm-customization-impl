@@ -54,14 +54,14 @@ $(function(){
                     	<c:if test="${not empty errormsg || not empty registrationError}">
 							<div class="registration_formbox_errormsg" id="error_success" >
 								<span><spring:message code="${registrationError}" /></span>
-								<%-- <c:forEach var="field" items="${errorMsgList}">
+								<c:forEach var="field" items="${errorMsgList}">
 									<span><c:out value="${field}" escapeXml="false"/></span><br></br>
-								</c:forEach> --%>
-								<spring:hasBindErrors name="registration">
+								</c:forEach>
+								<%-- <spring:hasBindErrors name="registration">
 								<c:forEach var="error" items="${errors.allErrors}">
 								<span><spring:message code="${error.code}" arguments="${error.arguments}"/></span><br></br>
 								</c:forEach>
-								</spring:hasBindErrors>
+								</spring:hasBindErrors> --%>
 							</div>
 						</c:if> 
                             <ul>

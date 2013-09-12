@@ -284,7 +284,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       CloudConnector cloudConnector;
       cloudConnector = (CloudConnector) connectorManagementService.getServiceInstance(subscription.getServiceInstance()
           .getUuid());
-      logger.trace("###SPI Calling SubscriptionLifecycleHandler().validate(subscription) for instance:" + cloudConnector.getServiceInstanceUUID() + " subscription:" + subscription.getParam());
+      logger.trace("###SPI Calling SubscriptionLifecycleHandler().validate(subscription) for instance:"
+          + cloudConnector.getServiceInstanceUUID() + " subscription:" + subscription.getParam());
       boolean isValid = cloudConnector.getSubscriptionLifecycleHandler().validate(subscription);
       if (!isValid) {
         map.addAttribute("toProvision", true);
@@ -298,6 +299,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     if (StringUtils.isNotEmpty(workflowUuid)) {
       map.addAttribute("workflowUuid", workflowUuid);
     }
+    boolean isPayAsYouGoChosen = config.getBooleanValue(Names.com_citrix_cpbm_catalog_payAsYouGoMode);
+    map.addAttribute("isPayAsYouGoChosen", isPayAsYouGoChosen);
     logger.debug("Exit ShowSubscriptionDetails");
     return "billing.viewSubscription";
   }
@@ -845,8 +848,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
 
   @RequestMapping(value = "/make_payment", method = RequestMethod.POST)
   @ResponseBody
-  public String makePayment(@RequestParam BigDecimal amount, @RequestParam String tenantParam, HttpSession session,
-      HttpServletResponse response) {
+  public String makePayment(@RequestParam BigDecimal amount, @RequestParam String memo,
+      @RequestParam String tenantParam, HttpSession session, HttpServletResponse response) {
     logger.debug("###Entering in makePaymentInvoice(tenantId,invoiceId,form, amount,response) method @POST");
     try {
       Tenant tenant = tenantService.get(tenantParam);
@@ -854,8 +857,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       if (amount.compareTo(BigDecimal.ZERO) <= 0) {
         return "failed";
       }
-      SalesLedgerRecord salesLedgerRecord = billingService.addPaymentOrCredit(tenant, paymentAmount, Type.MANUAL,
-          "Payment processed", null);
+      SalesLedgerRecord salesLedgerRecord = billingService.addPaymentOrCredit(tenant, paymentAmount, Type.MANUAL, memo,
+          null);
       if (salesLedgerRecord != null
           && salesLedgerRecord.getPaymentTransaction().getState().equals(PaymentTransaction.State.COMPLETED)) {
         response.setStatus(HttpStatus.OK.value());
@@ -877,8 +880,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
 
   @RequestMapping(value = "/recordpayment", method = RequestMethod.POST)
   @ResponseBody
-  public String recordPayment(@RequestParam BigDecimal amount, @RequestParam String tenantParam,
-      HttpServletResponse response, ModelMap map) {
+  public String recordPayment(@RequestParam BigDecimal amount, @RequestParam String memo,
+      @RequestParam String tenantParam, HttpServletResponse response, ModelMap map) {
     logger.debug("###Entering in recordPaymentInvoice(tenantId,form, amount,response) method @POST");
     Tenant tenant = tenantService.get(tenantParam);
     try {
@@ -886,7 +889,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
         return "failed";
       }
       BigDecimal roundedAmount = billingPostProcessor.setScaleByCurrency(amount, tenant.getCurrency());
-      billingService.addPaymentOrCredit(tenant, roundedAmount, Type.RECORD, "External payment", null);
+      billingService.addPaymentOrCredit(tenant, roundedAmount, Type.RECORD, memo, null);
       logger.debug("###Exiting recordPaymentInvoice(tenantId,amount,form ,response) method @POST");
     } catch (BillingServiceException e) {
       response.setStatus(HttpStatus.PRECONDITION_FAILED.value());

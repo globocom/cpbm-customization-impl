@@ -14,25 +14,6 @@ for (Entry<String, String> cf: form.getUser().getCustomFieldMap().entrySet()) {
   <c:catch var="e">
     <jsp:include page="<%=filename%>"></jsp:include>  
   </c:catch>
-  <%--   
-  <c:if test="${!empty e}">
-    Error: <c:out value="${e.message}"/>
-  </c:if>
-  --%>  
   <%
 }
 %>
-<!-- 
-<c:forEach items="${userObj.customFieldMap}" var="customField">
-..................
-  <c:set var="fieldName" value="<c:out value='${customField.key}'/>"></c:set>
-  <c:catch var="e">
-    <c:set var="userObj" value="${userObj}" scope="request"></c:set>
-    <jsp:include page="${fieldName}"></jsp:include>  
-  </c:catch>
-  <c:if test="${!empty e}">
-    Error: <c:out value="${e.message}"/>
-</c:if>
-
-</c:forEach>
- -->

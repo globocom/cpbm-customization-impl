@@ -105,8 +105,8 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   @RequestMapping(value = "/csinstances", method = RequestMethod.GET)
   public String showCloudServices(@RequestParam(value = "tenant", required = false) String tenantUuid,
       @RequestParam(value = "showIframe", required = false) String showIframe,
-      @RequestParam(value = "serviceInstanceUUID", required = false) String serviceInstanceUUID,
-      ModelMap map, HttpServletRequest request) {
+      @RequestParam(value = "serviceInstanceUUID", required = false) String serviceInstanceUUID, ModelMap map,
+      HttpServletRequest request) {
     Tenant tenant = tenantService.get(tenantUuid);
     if (tenant.equals(tenantService.getSystemTenant())) {
       return "redirect:/portal/home";
@@ -114,6 +114,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     map.addAttribute("tenant", tenant);
     String uiView = null;
     User user = getCurrentUser();
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
       setPage(map, Page.CRM_SERVICES);
       map.addAttribute("showUserProfile", true);
@@ -135,17 +136,18 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     }
     map.addAttribute("iframe_view", iframe_view);
 
-    prepareServiceViewForUser(map, tenant.getOwner());
+    prepareServiceViewForUser(map, user);
     List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
     map.addAttribute("services", services);
-    
 
-    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     map.addAttribute("effectiveUser", user);
     @SuppressWarnings("unchecked")
     Map<ServiceInstance, Boolean> serviceInstanceMap = (Map<ServiceInstance, Boolean>) map.get("serviceInstanceMap");
-
-    map.addAttribute("countPerCategory", connectorConfigurationManager.getInstanceCountPerCategoryMap(serviceInstanceMap));
+    if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
+      filterServiceInstances(serviceInstanceMap, getCurrentUser());
+    }
+    map.addAttribute("countPerCategory",
+        connectorConfigurationManager.getInstanceCountPerCategoryMap(serviceInstanceMap));
     map.addAttribute("serviceInstanceViewMap", getViewMap(tenant, serviceInstanceMap));
 
     boolean payAsYouGoMode = config.getBooleanValue(Names.com_citrix_cpbm_catalog_payAsYouGoMode);
@@ -188,6 +190,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       List<ServiceInstanceConfig> instanceConfiguration = new ArrayList<ServiceInstanceConfig>(
           connectorConfigurationManager.getInstanceConfiguration(instance, instance.getService()));
       Collections.sort(instanceConfiguration, new Comparator<ServiceInstanceConfig>() {
+
         @Override
         public int compare(ServiceInstanceConfig o1, ServiceInstanceConfig o2) {
           return o1.getServiceConfigMetadata().getPropertyOrder() - o2.getServiceConfigMetadata().getPropertyOrder();
@@ -197,7 +200,8 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       map.addAttribute("service", instance.getService());
       map.addAttribute("instance_properties", instanceConfiguration);
       setQuickProductProperties(map);
-      List<ServiceUsageType> usageTypeListWithNoProduct = connectorConfigurationManager.getUsageTypesWithNoProduct(instance);
+      List<ServiceUsageType> usageTypeListWithNoProduct = connectorConfigurationManager
+          .getUsageTypesWithNoProduct(instance);
       map.addAttribute("serviceUsageTypes", usageTypeListWithNoProduct);
       view = isOss ? "main.home_oss.instance.edit" : "main.home_cs.instance.edit";
     } else {
@@ -276,7 +280,6 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     return map;
   }
 
-
   @RequestMapping(value = {
     "/view_instances"
   }, method = RequestMethod.GET)
@@ -325,26 +328,26 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   }, method = RequestMethod.POST)
   public @ResponseBody
   String enableService(@RequestParam("id") final String id,
-          @RequestParam("profiledetails") final String profiledetails, ModelMap map) {
+      @RequestParam("profiledetails") final String profiledetails, ModelMap map) {
 
-      try {
-          Service service = connectorConfigurationManager.getService(id);
-          if (StringUtils.isNotEmpty(profiledetails)) {
-              Map<String, List<String>> profileRoleMapping = getProfileRoleMapping(profiledetails);
-              Roles cloudServiceRoles = connectorConfigurationManager.getRoles(service);
-              if (cloudServiceRoles != null) {
-                  connectorConfigurationManager.persistCloudServiceRoles(cloudServiceRoles, profileRoleMapping);
-              }
-              // Refreshing object as it gets stale in persistRoles
-              service = connectorConfigurationManager.getService(id);
-          }
-          service.setTermsAndConditionsAccepted(true);
-          connectorManagementService.saveServiceType(service);
-      } catch (Exception e) {
-          logger.error("Exception..", e);
-          return "failure";
+    try {
+      Service service = connectorConfigurationManager.getService(id);
+      if (StringUtils.isNotEmpty(profiledetails)) {
+        Map<String, List<String>> profileRoleMapping = getProfileRoleMapping(profiledetails);
+        Roles cloudServiceRoles = connectorConfigurationManager.getRoles(service);
+        if (cloudServiceRoles != null) {
+          connectorConfigurationManager.persistCloudServiceRoles(cloudServiceRoles, profileRoleMapping);
+        }
+        // Refreshing object as it gets stale in persistRoles
+        service = connectorConfigurationManager.getService(id);
       }
-      return "success";
+      service.setTermsAndConditionsAccepted(true);
+      connectorManagementService.saveServiceType(service);
+    } catch (Exception e) {
+      logger.error("Exception..", e);
+      return "failure";
+    }
+    return "success";
   }
 
   @RequestMapping(value = {
@@ -417,30 +420,30 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       @RequestParam(value = "viewCatalog", required = false, defaultValue = "false") Boolean viewCatalog,
       @RequestParam(value = "category", required = false) String category, HttpServletRequest request) {
 
-      logger.debug("###Entering in getServiceInstanceList GET");
-      User user = getCurrentUser();
-      if (user == null || (viewCatalog && user.getTenant().equals(tenantService.getSystemTenant()))) {
-          user = userService.getSystemUser(Handle.PORTAL);
-      }
-      List<ServiceInstance> serviceProviderCloudTypeServiceInstances = new ArrayList<ServiceInstance>();
-      boolean isSurrogatedTenant = (Boolean) request.getAttribute("isSurrogatedTenant");
-      if (isSurrogatedTenant) {
-          serviceProviderCloudTypeServiceInstances = userService.getCloudServiceInstance(user, category);
-          user = tenantService.get(tenantParam).getOwner();
-      }
-      List<ServiceInstance> cloudTypeServiceInstances = userService.getCloudServiceInstance(user, category);
-      if (isSurrogatedTenant) {
-          cloudTypeServiceInstances.retainAll(serviceProviderCloudTypeServiceInstances);
-      }
+    logger.debug("###Entering in getServiceInstanceList GET");
+    User user = getCurrentUser();
+    if (user == null || (viewCatalog && user.getTenant().equals(tenantService.getSystemTenant()))) {
+      user = userService.getSystemUser(Handle.PORTAL);
+    }
+    List<ServiceInstance> serviceProviderCloudTypeServiceInstances = new ArrayList<ServiceInstance>();
+    boolean isSurrogatedTenant = (Boolean) request.getAttribute("isSurrogatedTenant");
+    if (isSurrogatedTenant) {
+      serviceProviderCloudTypeServiceInstances = userService.getCloudServiceInstance(user, category);
+      user = tenantService.get(tenantParam).getOwner();
+    }
+    List<ServiceInstance> cloudTypeServiceInstances = userService.getCloudServiceInstance(user, category);
+    if (isSurrogatedTenant) {
+      cloudTypeServiceInstances.retainAll(serviceProviderCloudTypeServiceInstances);
+    }
 
-      List<Map<String, String>> serviceInstanceValues = new ArrayList<Map<String, String>>();
-      for (ServiceInstance currentInstance : cloudTypeServiceInstances) {
-          Map<String, String> currentInstanceValues = new HashMap<String, String>();
-          currentInstanceValues.put("uuid", currentInstance.getUuid());
-          currentInstanceValues.put("name", currentInstance.getName());
-          serviceInstanceValues.add(currentInstanceValues);
-      }
-      return serviceInstanceValues;
+    List<Map<String, String>> serviceInstanceValues = new ArrayList<Map<String, String>>();
+    for (ServiceInstance currentInstance : cloudTypeServiceInstances) {
+      Map<String, String> currentInstanceValues = new HashMap<String, String>();
+      currentInstanceValues.put("uuid", currentInstance.getUuid());
+      currentInstanceValues.put("name", currentInstance.getName());
+      serviceInstanceValues.add(currentInstanceValues);
+    }
+    return serviceInstanceValues;
   }
 
   @RequestMapping(value = "/account_config_params", method = RequestMethod.GET)
@@ -448,28 +451,48 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       @RequestParam(value = "serviceInstanceUUID", required = false) String serviceInstanceUUID,
       @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
 
-      map.addAttribute("serviceInstanceUUID", serviceInstanceUUID);
+    map.addAttribute("serviceInstanceUUID", serviceInstanceUUID);
 
-      ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(serviceInstanceUUID);
-      if (serviceinstance != null) {
-          Service service = serviceinstance.getService();
+    ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(serviceInstanceUUID);
+    if (serviceinstance != null) {
+      Service service = serviceinstance.getService();
 
-          StringBuilder propString = new StringBuilder();
-          Set<AccountConfigurationServiceConfigMetadata> accountConfigurationServiceConfigMetadataList = service.getAccountConfigServiceConfigMetadata();
-          for (AccountConfigurationServiceConfigMetadata accountConfigurationServiceConfigMetadata : accountConfigurationServiceConfigMetadataList) {
-              propString.append(accountConfigurationServiceConfigMetadata.getName()).append(",");
-          }
-
-          String jspProvidedByService = connectorConfigurationManager.getJspPath(service);
-          if (StringUtils.isNotBlank(jspProvidedByService)) {
-              map.addAttribute("jspProvidedByService", jspProvidedByService);
-          }
-
-          map.addAttribute("service_account_config_properties", accountConfigurationServiceConfigMetadataList);
-          map.addAttribute("service_account_config_properties_list", propString.toString());
-          map.addAttribute("service", service);
+      StringBuilder propString = new StringBuilder();
+      Set<AccountConfigurationServiceConfigMetadata> accountConfigurationServiceConfigMetadataList = service
+          .getAccountConfigServiceConfigMetadata();
+      for (AccountConfigurationServiceConfigMetadata accountConfigurationServiceConfigMetadata : accountConfigurationServiceConfigMetadataList) {
+        propString.append(accountConfigurationServiceConfigMetadata.getName()).append(",");
       }
-      return "service.account.config";
+
+      String jspProvidedByService = connectorConfigurationManager.getJspPath(service);
+      if (StringUtils.isNotBlank(jspProvidedByService)) {
+        map.addAttribute("jspProvidedByService", jspProvidedByService);
+      }
+
+      map.addAttribute("service_account_config_properties", accountConfigurationServiceConfigMetadataList);
+      map.addAttribute("service_account_config_properties_list", propString.toString());
+      map.addAttribute("service", service);
+    }
+    return "service.account.config";
+  }
+
+  @RequestMapping(value = "/has_service_configuration", method = RequestMethod.GET)
+  @ResponseBody
+  public Boolean hasServiceConfiguration(@RequestParam(value = "id", required = false) String serviceID,
+      @RequestParam(value = "instanceId", required = false) String instanceId) {
+
+    Service service = null;
+    if (StringUtils.isNotBlank(serviceID)) {
+      service = connectorConfigurationManager.getService(serviceID);
+    } else if (StringUtils.isNotBlank(instanceId)) {
+      ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(instanceId);
+      service = serviceinstance.getService();
+    }
+
+    if (service != null && CollectionUtils.isNotEmpty(service.getServiceConfigurationMetadata())) {
+      return true;
+    }
+    return false;
   }
 
   @RequestMapping(value = {
@@ -479,10 +502,10 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   public void loadPackagedJspInConnector(
       @RequestParam(value = "serviceInstanceUUID", required = false) String serviceInstanceUUID,
       HttpServletResponse response) {
-      ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(serviceInstanceUUID);
-      if (serviceinstance != null) {
-        loadConnectorJsp(serviceinstance.getService(), response);
-      }
+    ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(serviceInstanceUUID);
+    if (serviceinstance != null) {
+      loadConnectorJsp(serviceinstance.getService(), response);
+    }
   }
 
   @RequestMapping(value = ("/upload_logo"), method = RequestMethod.GET)
@@ -575,7 +598,8 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     return subScopeMap;
   }
 
-  private List<HashMap<String, Object>> getQuickProductList(String quickProducts, ServiceInstance instance) throws JSONException{
+  private List<HashMap<String, Object>> getQuickProductList(String quickProducts, ServiceInstance instance)
+      throws JSONException {
 
     List<HashMap<String, Object>> quickProductList = new ArrayList<HashMap<String, Object>>();
     if (instance.getService().getType().equals(CssdkConstants.CLOUD) && StringUtils.isNotEmpty(quickProducts)) {
@@ -619,7 +643,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
           JSONObject price = priceList.getJSONObject(priceIndex);
           ProductCharge productCharge = new ProductCharge();
           productCharge
-          .setPrice((new BigDecimal(price.getString("currencyVal"))).setScale(4, BigDecimal.ROUND_HALF_UP));
+              .setPrice((new BigDecimal(price.getString("currencyVal"))).setScale(4, BigDecimal.ROUND_HALF_UP));
           CurrencyValue cv = currencyValueService.locateBYCurrencyCode(price.getString("currencyCode"));
           productCharge.setCurrencyValue(cv);
           productCharge.setRevision(productRevision);
@@ -687,7 +711,8 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     return isAliveMap;
   }
 
-  private ServiceInstance createServiceInstance(String id, String configProperties, Map<String, String> map, boolean update) throws Exception {
+  private ServiceInstance createServiceInstance(String id, String configProperties, Map<String, String> map,
+      boolean update) throws Exception {
 
     Map<String, ServiceInstanceConfig> mapOfFieldNameVsInstanceConfig = new HashMap<String, ServiceInstanceConfig>();
     Set<ServiceInstanceConfig> instanceConfigurationList = new HashSet<ServiceInstanceConfig>();
@@ -708,14 +733,15 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       instance.setServiceInstanceConfig(instanceConfigurationList);
       instance.setService(service);
     }
-    String validationResult = populateInstanceProperties(instance, instanceConfigurationList, configProperties, mapOfFieldNameVsInstanceConfig, update);
+    String validationResult = populateInstanceProperties(instance, instanceConfigurationList, configProperties,
+        mapOfFieldNameVsInstanceConfig, update);
     map.put("validationResult", validationResult);
 
     return instance;
   }
 
-  private String populateInstanceProperties(ServiceInstance instance,Set<ServiceInstanceConfig> instanceConfigurationList,
-      String configProperties,
+  private String populateInstanceProperties(ServiceInstance instance,
+      Set<ServiceInstanceConfig> instanceConfigurationList, String configProperties,
       Map<String, ServiceInstanceConfig> mapOfFieldNameVsInstanceConfig, boolean update) throws Exception {
 
     Service service = instance.getService();
@@ -730,7 +756,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     for (int index = 0; index < jsonArray.length(); index++) {
       JSONObject jsonObj = jsonArray.getJSONObject(index);
       String fieldName = jsonObj.get("name").toString();
-      String fieldValue = jsonObj.get("value").toString();
+      String fieldValue = StringUtils.trim(jsonObj.get("value").toString());
 
       if ("instancename".equals(fieldName)) {
         instance.setName(fieldValue);
@@ -773,8 +799,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     return CssdkConstants.SUCCESS;
   }
 
-  private String valid(String validationJson, String fieldName, String fieldValue)
-      throws Exception {
+  private String valid(String validationJson, String fieldName, String fieldValue) throws Exception {
     if (StringUtils.isNotBlank(validationJson)) {
       JsonBean jsonObject = JSONUtils.fromJSONString(validationJson, JsonBean.class);
       PropertyDescriptor pd[] = BeanUtils.getPropertyDescriptors(JsonBean.class);
@@ -868,5 +893,10 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       logger.error("IOException Found...", e);
     }
     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+  }
+
+  private void filterServiceInstances(Map<ServiceInstance, Boolean> serviceInstanceMap, User user) {
+    List<ServiceInstance> serviceInstanceList = userService.getCloudServiceInstance(user, null);
+    serviceInstanceMap.keySet().retainAll(serviceInstanceList);
   }
 }

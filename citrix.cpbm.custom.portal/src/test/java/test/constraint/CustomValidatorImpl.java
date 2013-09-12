@@ -1,4 +1,4 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package test.constraint;
 
 import java.lang.annotation.Annotation;
@@ -42,7 +42,6 @@ import org.hibernate.validator.metadata.MetaConstraint;
 import org.hibernate.validator.util.ReflectionHelper;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
-
 
 public class CustomValidatorImpl implements Validator {
 
@@ -196,7 +195,7 @@ public class CustomValidatorImpl implements Validator {
     }
 
     // process first single groups. For these we can skip some object traversal, by first running all validations on the
-// current bean
+    // current bean
     // before traversing the object.
     Iterator<Group> groupIterator = groupChain.getGroupIterator();
     while (groupIterator.hasNext()) {
@@ -212,7 +211,7 @@ public class CustomValidatorImpl implements Validator {
     }
 
     // now we process sequences. For sequences I have to traverse the object graph since I have to stop processing when
-// an error occurs.
+    // an error occurs.
     Iterator<List<Group>> sequenceIterator = groupChain.getSequenceIterator();
     while (sequenceIterator.hasNext()) {
       List<Group> sequence = sequenceIterator.next();
@@ -244,7 +243,7 @@ public class CustomValidatorImpl implements Validator {
     }
 
     // if we are validating the default group we have to distinguish between the case where the main entity type
-// redefines the default group and
+    // redefines the default group and
     // where not
     if (validatedBeanRedefinesDefault) {
       validateConstraintsForRedefinedDefaultGroupOnMainEntity(globalExecutionContext, localExecutionContext, path,
@@ -257,7 +256,7 @@ public class CustomValidatorImpl implements Validator {
   private <T, U, V> void validateConstraintsForRedefinedDefaultGroup(GlobalExecutionContext<T> globalExecutionContext,
       LocalExecutionContext<U, V> localExecutionContext, PathImpl path, BeanMetaData<U> beanMetaData) {
     // in the case where the main entity does not redefine the default group we have to check whether the entity which
-// defines the constraint does
+    // defines the constraint does
     for (Map.Entry<Class<?>, List<MetaConstraint<U, ? extends Annotation>>> entry : beanMetaData
         .getMetaConstraintsAsMap().entrySet()) {
       Class<?> hostingBeanClass = entry.getKey();
@@ -282,7 +281,7 @@ public class CustomValidatorImpl implements Validator {
       GlobalExecutionContext<T> globalExecutionContext, LocalExecutionContext<U, V> localExecutionContext,
       PathImpl path, BeanMetaData<U> beanMetaData) {
     // in the case where the main entity redefines the default group we can iterate over all constraints independent of
-// the bean they are
+    // the bean they are
     // defined in. The redefined group sequence applies for all constraints.
     List<Class<?>> defaultGroupSequence = beanMetaData.getDefaultGroupSequence();
     for (Class<?> defaultSequenceMember : defaultGroupSequence) {

@@ -736,7 +736,7 @@ var dictionary = {
                                         </div>
                                         <div class="db_gridbox_columns" style="width:13%;">
                                           <div class="db_gridbox_celltitles">
-                                            <a class="netUsageObjectDiv"  id="moreLink_<c:out value='${invoice.uuid}'/>" style="cursor: pointer;" >
+                                            <a class="netUsageObjectDiv"  id="moreLink_<c:out value='${invoice.uuid}'/>" type="<c:out value='${invoice.type}'/>" style="cursor: pointer;" >
                                               <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoice.amount}" minFractionDigits="${minFractionDigits}" />
                                             </a>
                                           </div>
@@ -823,13 +823,15 @@ var dictionary = {
                       <c:set var="invoiceType" value="subscriptionInvoice"></c:set>
                       <c:if test="${not empty invoiceList }">
                       <c:set var="resourceTypeName" value="${resourceType.resourceTypeName} ${subsciptions_label}" ></c:set>
-                       <c:if test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__ Subscriptions'}">
-                        <c:set var="resourceTypeName" value="${otherchargeslabel} ${subsciptions_label}" ></c:set>
-                       </c:if>
-                        <c:if test="${invoiceType eq 'subscriptionInvoice'}">
-                          <spring:message code="${resourceType.service.serviceName}.ResourceType.${resourceType.resourceTypeName}.name" var="localizedResourceTypeName"/>
-                          <c:set var="resourceTypeName" value="${localizedResourceTypeName} ${subsciptions_label}" ></c:set>
-                         </c:if>
+                      <c:choose>
+                         <c:when test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__ Subscriptions'}">
+                           <c:set var="resourceTypeName" value="${otherchargeslabel} ${subsciptions_label}" ></c:set>
+                         </c:when>
+                         <c:otherwise>
+                           <spring:message code="${resourceType.service.serviceName}.ResourceType.${resourceType.resourceTypeName}.name" var="localizedResourceTypeName"/>
+                           <c:set var="resourceTypeName" value="${localizedResourceTypeName} ${subsciptions_label}" ></c:set>
+                         </c:otherwise>
+                       </c:choose>
                        <div class="usagelist_panel">
                       <div class="usagelist_header off" id="renewtenantVMBundle${status.index}">
                         <div class="usagelist_header_content">

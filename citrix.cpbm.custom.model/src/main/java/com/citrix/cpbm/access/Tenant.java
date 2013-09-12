@@ -3,7 +3,6 @@ package com.citrix.cpbm.access;
 
 import com.citrix.cpbm.access.TenantEntity;
 
-
 public interface Tenant extends TenantEntity {
 
 }

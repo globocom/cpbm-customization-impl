@@ -56,6 +56,7 @@ import com.vmops.service.UserAlertPreferencesService;
 import com.vmops.service.UserService;
 import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.service.exceptions.TelephoneVerificationServiceException;
+import com.vmops.utils.CryptoUtils;
 import com.vmops.web.controllers.AbstractBaseController;
 import com.vmops.web.filters.CaptchaAuthenticationFilter;
 import com.vmops.web.filters.exceptions.CaptchaValidationException;
@@ -330,7 +331,6 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
   }
 
   /**
-   * 
    * @param userName
    * @param pickValFromReset
    * @param request
@@ -402,7 +402,6 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
   }
 
   /**
-   * 
    * @param userName
    * @param pickValFromReset
    * @param request
@@ -557,16 +556,18 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
       public User run() {
         User user = userService.getUserByParam("username", username, false);
-        user.setClearPassword(password);
+        if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
+          user.setClearPassword(password);
+        } else if (config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
+          userService.updateUserPassword(password, user.getUuid());
+        }
         if (!user.isEnabled() || user.getFailedLoginAttempts() >= maxFailCount) {
           user.setFailedLoginAttempts(0);
           user.setEnabled(true);
         }
-
         return user;
       }
     });
-
     // Looks out of place, but useful.
     if (user.getFailedLoginAttempts() >= config
         .getIntValue(Names.com_citrix_cpbm_accountManagement_security_logins_captchaThreshold)) {
@@ -581,7 +582,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
   @RequestMapping(value = "/verify_additional_email", method = RequestMethod.GET)
   public String verifyAdditionalEmail(@RequestParam(value = "a", required = true) final String auth,
       @RequestParam(value = "i", required = true) final String userParam,
-      @RequestParam(value = "pi", required = true) final long userAlertPrefId, final HttpServletRequest request,
+      @RequestParam(value = "pi", required = true) final String cryptedEmail, final HttpServletRequest request,
       ModelMap map, HttpSession session) {
     logger.debug("###Entering in verifyAlertEmail(map) method @GET");
     privilegeService.runAsPortal(new PrivilegedAction<User>() {
@@ -589,8 +590,9 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
       public User run() {
         User user = userService.get(userParam);
         userService.verifyAuthorization(user, auth, 0);
-        UserAlertPreferences userAlertPreferences = userAlertPreferencesService
-            .locateUserAlertPreference(userAlertPrefId);
+        String emailAdd = CryptoUtils.decrypt(cryptedEmail, CryptoUtils.keyGenerationSeed);
+        UserAlertPreferences userAlertPreferences = userAlertPreferencesService.locateUserAlertPreference(user,
+            emailAdd);
 
         if (userAlertPreferences.getAlertType() == AlertType.USER_EMAIL) {
           user.setEmail(userAlertPreferences.getEmailAddress());

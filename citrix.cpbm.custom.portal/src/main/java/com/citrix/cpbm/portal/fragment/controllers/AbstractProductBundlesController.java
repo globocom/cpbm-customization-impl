@@ -159,7 +159,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
    */
   @RequestMapping(value = {
     "list.json"
-  }, method = RequestMethod.GET)
+  }, method = RequestMethod.POST)
   @ResponseBody
   public List<ProductBundleRevision> listProductBundles(@ModelAttribute("currentTenant") Tenant currentTenant,
       @RequestParam(value = "tenant", required = false) String tenantParam,
@@ -222,15 +222,15 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
         channelRevision = channelService.getRevisionForTheDateGiven(historyDateObj, channel);
       }
       filteredBundleRevisions = productBundleService.getProductBundleRevisions(serviceInstance, serviceResourceType,
-          createStringMap(context), createStringMap(filters), user, getSessionLocale(request), channel, currency,
-          channelRevision, includeFutureBundle);
+          createStringMapCombined(context), createStringMapCombined(filters), user, getSessionLocale(request), channel,
+          currency, channelRevision, includeFutureBundle);
     } else if (anonymousBrowsing) {
       filteredBundleRevisions = productBundleService.listAnonymousProductBundleRevisions(serviceInstance,
-          serviceResourceType, createStringMap(context), createStringMap(filters), user, getSessionLocale(request),
-          channel, currency);
+          serviceResourceType, createStringMapCombined(context), createStringMapCombined(filters), user,
+          getSessionLocale(request), channel, currency);
     } else {
       filteredBundleRevisions = productBundleService.getProductBundleRevisions(serviceInstance, serviceResourceType,
-          createStringMap(context), createStringMap(filters), user, getSessionLocale(request));
+          createStringMapCombined(context), createStringMapCombined(filters), user, getSessionLocale(request));
     }
 
     logger.debug("# listProductBundles method leaving...(list.json)");
@@ -288,7 +288,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
    */
   @RequestMapping(value = {
     "listValidSubscriptions.json"
-  }, method = RequestMethod.GET)
+  }, method = RequestMethod.POST)
   @ResponseBody
   public Map<Long, ProductBundleRevision> listValidSubscriptions(@ModelAttribute("currentTenant") Tenant currentTenant,
       @RequestParam(value = "tenant", required = false) String tenantParam,
@@ -308,8 +308,8 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
             effectiveUser);
     for (Subscription subscriptions : subscriptionProductBundleRevisionMap.keySet()) {
       ProductBundleRevision productBundleRevision = subscriptionProductBundleRevisionMap.get(subscriptions);
-      if (productBundleService.isValidBundleForGivenDiscriminators(productBundleRevision.getProvisioningConstraints(),
-          createStringMap(context + "," + filters))) {
+      if (productBundleService.isValidBundleForGivenDiscriminators(productBundleRevision,
+          createStringMapCombined(context + "," + filters))) {
         subMap.put(subscriptions.getId(), productBundleRevision.minClone());
       }
     }
@@ -345,7 +345,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
    */
   @RequestMapping(value = {
     "getBundleBySubscription.json"
-  }, method = RequestMethod.GET)
+  }, method = RequestMethod.POST)
   @ResponseBody
   public Map<String, Object> getBundleRevisionBySubscription(@ModelAttribute("currentTenant") Tenant currentTenant,
       @RequestParam(value = "subscriptionId", required = true) String subscriptionId,
@@ -362,10 +362,9 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     if (subscription.getProductBundle() != null && subscription.getProductBundle().getResourceType() != null) {
       productBundleRevision = productBundleService.getCurrentProductBundleRevisionForTenant(
           subscription.getProductBundle(), effectiveTenant);
-      if (productBundleService.isValidBundleForGivenDiscriminators(productBundleRevision.getProvisioningConstraints(),
-          createStringMap(context + "," + filters))) {
-        isCompatible = true;
-      }
+      isCompatible = productBundleService.isValidBundleForGivenDiscriminators(productBundleRevision,
+          createStringMapCombined(context + "," + filters));
+
     } else if (subscription.getProductBundle() == null && subscription.getResourceType() != null) {
       // Add Utility Bundle Which is Usage Based Bundle this is bundle which is shown only for UI purpose there is no
       // bundle as such
@@ -1303,19 +1302,43 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
    */
   @RequestMapping(value = "/sortbundles", method = RequestMethod.GET)
   public String sortBundles(@RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID,
-      ModelMap map) {
+      @RequestParam(value = "whichPlan", required = false, defaultValue = "planned") String whichPlan,
+      @RequestParam(value = "historyDate", required = false) String revisionDate,
+      @RequestParam(value = "filterBy", required = false) String filterBy, ModelMap map) {
     logger.debug("### sortBundles method starting...");
 
-    List<ProductBundle> bundlesList = new ArrayList<ProductBundle>();
+    List<ProductBundle> productBundleListByFilter = new ArrayList<ProductBundle>();
     if (!(serviceInstanceUUID == null || serviceInstanceUUID.trim().equals(""))) {
-      for (ProductBundle productBundle : productBundleService.listProductBundles(0, 0)) {
-        if (productBundle.getServiceInstanceId().getUuid().toString().equals(serviceInstanceUUID.trim())) {
-          bundlesList.add(productBundle);
+      List<ProductBundleRevision> allProductBundleRevisions = new ArrayList<ProductBundleRevision>();
+      if (whichPlan.equals("planned")) {
+        allProductBundleRevisions = channelService.getChannelRevision(null,
+            channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+      } else if (whichPlan.equals("current")) {
+        allProductBundleRevisions = channelService.getChannelRevision(null,
+            channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
+      } else if (whichPlan.equals("history")) {
+        if (revisionDate == null || revisionDate.trim().equals("")) {
+          List<Revision> revisions = productService.getReferencePriceBookHistoryRevisions();
+          revisionDate = DateUtils.getStringForCalendar(revisions.get(0).getStartDate(),
+              DateUtils.getDateFormatter("MM/dd/yyyy HH:mm:ss"));
+        }
+
+        Date historyDate = DateUtils
+            .getCalendarForDate(revisionDate, DateUtils.getDateFormatter("MM/dd/yyyy HH:mm:ss")).getTime();
+        allProductBundleRevisions = channelService.getChannelRevision(null, historyDate, false)
+            .getProductBundleRevisions();
+      }
+
+      List<ProductBundleRevision> productBundleRevisions = new ArrayList<ProductBundleRevision>();
+      for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+        if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+            .equals(serviceInstanceUUID.trim())) {
+          productBundleRevisions.add(productBundleRevision);
         }
       }
+      productBundleListByFilter = getProductBundleListByFilters(productBundleRevisions, filterBy);
     }
-    map.addAttribute("bundlesList", bundlesList);
-
+    map.addAttribute("bundlesList", productBundleListByFilter);
     logger.debug("### sortBundles method ending...");
     return "bundles.sort";
   }

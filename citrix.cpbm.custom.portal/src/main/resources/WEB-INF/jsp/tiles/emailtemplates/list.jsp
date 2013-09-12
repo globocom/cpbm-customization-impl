@@ -123,7 +123,7 @@ var dictionary = {
                 <span id="nav_icon" class="navicon invoices"></span>
               </c:if>
               <c:if test="${filterBy==4}">
-                <span id="nav_icon" class="navicon contentTemplates"></span>
+                <span id="nav_icon" class="navicon contents"></span>
               </c:if>
               <div class="widget_navtitlebox <c:out value="db_gridbox_rows"/>">
                 <span class="title">

@@ -101,6 +101,8 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
       </div>
     </sec:authorize>
     <sec:authorize access="hasRole('ROLE_PRODUCT_CRUD')">
+    <input id="noServiceEnabledError" type="hidden"  value="<spring:message code='no.cloud.service.enabled'/>"/>
+    
       <div class="mainmenu_button <c:out value="${Products}"/>" id="productstab" onclick="listProductsTabItems(this)">
         <div class="mainmenu_button_linkbox">
           <a href="#">
@@ -127,7 +129,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
     </sec:authorize>
     
     <c:choose>
-      <c:when test="${effectiveTenant.state eq 'ACTIVE'}">
+      <c:when test="${!empty top_nav_cs_instances}">
         <spring:url value="/portal/health" var="healthURL" htmlEscape="false">
         </spring:url>   
       </c:when>
@@ -217,9 +219,6 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
                       <li id="cloudService_<c:out value="${healthMap.id}" />" onclick="view_service_health(this)"> <span class="icon servicehealth <c:out value="${healthMap.health_status}" />"></span><span class="servicename"><c:out value="${healthMap.name}" /></span></li>
                     </c:forEach>
                     </ul>
-                    <div class="widget_actionpopover_mid healthdropdown_footer">
-                      <a href="javascript:void(0)" id="top_right_nav_view_maintenance_link"><spring:message code="label.top.right.nav.health.view.maintenance"/></a>
-                    </div>
                 </div>
                 <div class="widget_actionpopover_bot OSdropdown"></div>
           </div>
@@ -234,7 +233,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
      <li class="mainmenu_infolinks last">
          
     <div id="userprofile_button">
-      <div class="userprofile_buttonlink"><c:out value="${currentUser.firstName}"/>&nbsp;&nbsp;<c:out value="${currentUser.lastName}"/></div>
+      <div class="userprofile_buttonlink ellipsis"><c:out value="${currentUser.firstName}"/>&nbsp;&nbsp;<c:out value="${currentUser.lastName}"/></div>
       <div class="userprofile_arrows"><span class="caret"></span></div>
       <!--dropdown starts here-->
       <div class="userprofile_dropdownbox" style="display:none;" id="userprofile_dropdownbox">

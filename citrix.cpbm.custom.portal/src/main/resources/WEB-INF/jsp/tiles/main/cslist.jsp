@@ -12,8 +12,6 @@
   var connectorPath = "<%=request.getContextPath()%>/portal/connector";
   var type ="cs";
 </script>
-<link rel="stylesheet" href="<%=request.getContextPath() %>/css/jquery.ibutton.css" type="text/css">
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.ibutton.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/csconnector.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.iframe-post-form.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/validator.js"></script>

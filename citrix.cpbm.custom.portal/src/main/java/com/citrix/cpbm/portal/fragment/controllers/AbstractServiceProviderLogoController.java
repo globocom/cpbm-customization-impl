@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-
 import com.vmops.model.Tenant;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.TenantService;
@@ -25,7 +24,8 @@ public abstract class AbstractServiceProviderLogoController extends AbstractBase
   @Autowired
   protected TenantService tenantService;
 
-  Logger logger = Logger.getLogger(com.citrix.cpbm.portal.fragment.controllers.AbstractServiceProviderLogoController.class);
+  Logger logger = Logger
+      .getLogger(com.citrix.cpbm.portal.fragment.controllers.AbstractServiceProviderLogoController.class);
 
   @RequestMapping(value = ("/spfavicon"), method = RequestMethod.GET)
   public void getFavicon(HttpServletResponse response) {

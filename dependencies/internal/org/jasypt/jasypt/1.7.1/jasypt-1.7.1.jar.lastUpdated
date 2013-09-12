@@ -1,7 +1,0 @@
-#NOTE: This is an internal implementation file, its format can be changed without prior notice.
-#Sat Nov 03 14:51:51 GMT+05:30 2012
-http\://repo.maven.apache.org/maven2/.lastUpdated=1351934511857
-default-http\://repository.jboss.com/maven2/.lastUpdated=1351934494945
-http\://developer.ja-sig.org/maven2/.error=
-http\://developer.ja-sig.org/maven2/.lastUpdated=1351934485616
-http\://repository.jboss.com/maven2/.error=Could not transfer artifact org.jasypt\:jasypt\:jar\:1.7.1 from/to jboss (http\://repository.jboss.com/maven2)\: Access denied to\: http\://repository.jboss.com/maven2/org/jasypt/jasypt/1.7.1/jasypt-1.7.1.jar, ReasonPhrase\:Forbidden.

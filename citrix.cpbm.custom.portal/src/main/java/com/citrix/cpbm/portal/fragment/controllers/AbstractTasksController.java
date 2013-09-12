@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-
 import com.citrix.cpbm.core.workflow.model.Task;
 import com.citrix.cpbm.core.workflow.service.TaskService;
 import com.vmops.model.Tenant;
@@ -43,7 +42,8 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
   private TaskService taskService;
 
   @RequestMapping(value = "/", method = RequestMethod.GET)
-  public String getTasks(@ModelAttribute("currentTenant") Tenant currentTenant, @RequestParam(value = "tenant") final String tenantParam,
+  public String getTasks(@ModelAttribute("currentTenant") Tenant currentTenant,
+      @RequestParam(value = "tenant") final String tenantParam,
       @RequestParam(value = "filter", defaultValue = "PENDING") String filter,
       @RequestParam(value = "page", defaultValue = "1") Integer page, ModelMap map, HttpServletRequest request) {
     logger.debug("###Entering in getTasks(filter) method @GET");
@@ -54,7 +54,8 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
       map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(tenant.getOwner()));
     } else {
       map.addAttribute("showUserProfile", false);
-      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(currentTenant.getOwner()));
+      map.addAttribute("userHasCloudServiceAccount",
+          userService.isUserHasAnyActiveCloudService(currentTenant.getOwner()));
     }
 
     Integer perPage = getDefaultPageSize();
@@ -82,10 +83,10 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
 
     map.addAttribute("tasksMap", tasksMap);
     map.addAttribute("tenant", tenant);
-    
+
     map.addAttribute("taskfilters", Arrays.asList("ALL", "PENDING", "COMPLETED"));
     map.addAttribute("currentFilter", filter);
-    
+
     if (tasksMap.entrySet().size() == perPage) {
       // if tasks map size is equal to perpage, next page may or may not exist
       map.addAttribute("nextPage", page + 1);
@@ -94,22 +95,24 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
       // if the current page is > 1, assuming a previous page exists
       map.addAttribute("prevPage", page - 1);
     }
-    
+
     logger.debug("###Exiting in getTasks(filter) method @GET");
     return "tasks.all";
   }
-  
+
   @RequestMapping(value = "/{taskUuid}/", method = RequestMethod.GET)
-  public String getTask(@PathVariable String taskUuid, @RequestParam(value = "tenant") final String tenantParam, ModelMap map) {
-    Map<Task,String> taskMap = taskService.getTaskMap(tenantService.get(tenantParam), taskUuid);
+  public String getTask(@PathVariable String taskUuid, @RequestParam(value = "tenant") final String tenantParam,
+      ModelMap map) {
+    Map<Task, String> taskMap = taskService.getTaskMap(tenantService.get(tenantParam), taskUuid);
     Task task = taskMap.keySet().iterator().next();
     map.addAttribute("task", task);
     map.addAttribute("taskUrl", taskMap.get(task));
     return "task.view";
   }
-  
+
   @RequestMapping(value = "/approval-task/{taskUuid}", method = RequestMethod.GET)
-  public String getApprovalTask(@ModelAttribute("currentLocale") Locale currentLocale, @PathVariable String taskUuid, ModelMap map) {
+  public String getApprovalTask(@ModelAttribute("currentLocale") Locale currentLocale, @PathVariable String taskUuid,
+      ModelMap map) {
     Task task = taskService.get(taskUuid);
     map.addAttribute("task", task);
     map.addAttribute("transactionType", task.getBusinessTransaction().getClass().getSimpleName());
@@ -120,24 +123,24 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
 
   @RequestMapping(value = "/approval-task", method = RequestMethod.POST)
   @ResponseBody
-  public String actOnApprovalTask(
-      @RequestParam(value = "uuid", required = true) String pendingActionId,
+  public String actOnApprovalTask(@RequestParam(value = "uuid", required = true) String pendingActionId,
       @RequestParam(value = "state", required = true) String state,
       @RequestParam(value = "memo", required = false) String memo, HttpServletRequest request) {
     logger.debug("### In actOnPendingAction() method starting...");
     Task.State stateChangeTo;
-    if(state.equalsIgnoreCase("success")) {
+    if (state.equalsIgnoreCase("success")) {
       stateChangeTo = Task.State.SUCCESS;
     } else {
-      if(StringUtils.isEmpty(memo)) {
-        throw new InvalidAjaxRequestException(messageSource.getMessage("ui.accounts.all.pending.changes.memorequired", null, request.getLocale()));
+      if (StringUtils.isEmpty(memo)) {
+        throw new InvalidAjaxRequestException(messageSource.getMessage("ui.accounts.all.pending.changes.memorequired",
+            null, request.getLocale()));
       }
       stateChangeTo = Task.State.FAILURE;
     }
     Task currentTask = taskService.get(pendingActionId);
     Task action = taskService.completeTask(currentTask, stateChangeTo, memo);
     logger.debug("### In actOnPendingAction() method ending.");
-    return messageSource.getMessage("ui.task.state."+action.getState(), null, request.getLocale());
+    return messageSource.getMessage("ui.task.state." + action.getState(), null, request.getLocale());
   }
 
 }

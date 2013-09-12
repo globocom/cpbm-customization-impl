@@ -39,8 +39,7 @@
                   <div class="<c:out value="widget_grid ${rowClass}"/>">
                     <div class="widget_grid_cell" style="width:30%;" title="<c:out value="${configuration.name}"/>" >
                        <span class="celltext ellipsis" style="margin-left:10px;">
-                        <c:set var="propertyName" value="${fn:split(configuration.name,'.')}"/>
-                          <c:out value="${propertyName[fn:length(propertyName)-2]}.${propertyName[fn:length(propertyName)-1]}"/>
+                          <c:out value="${configuration.label}"/>
                         </span>
                     </div>
                     <div class="widget_grid_cell" style="width:30%;">

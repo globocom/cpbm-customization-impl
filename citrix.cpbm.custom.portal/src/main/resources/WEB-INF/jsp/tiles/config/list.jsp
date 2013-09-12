@@ -30,9 +30,6 @@ var dictionary = {
 };
 
 </script>
-<link rel="stylesheet" href="<%=request.getContextPath() %>/css/jquery.ibutton.css" type="text/css">
-
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.ibutton.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.easing.1.3.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/configurationList.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/thirdlevelmenuSlide.js"></script>

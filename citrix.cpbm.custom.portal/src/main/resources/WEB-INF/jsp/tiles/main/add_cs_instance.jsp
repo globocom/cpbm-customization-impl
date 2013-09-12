@@ -54,7 +54,7 @@
                 <div class="mandatory_wrapper">
                   <input id="configproperty_instance_name" value="" name="instancename" title="<spring:message  code="instance.name"/>" type="text" class="text required"  maxlen="128" tabindex="1" />
                 </div>
-                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_nameError" style="margin: 0px 0 0 305px;"></div>
+                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_nameError"></div>
               </li>
 
               <li>
@@ -62,7 +62,7 @@
                 <div class="mandatory_wrapper">
                   <input id="configproperty_instance_code" value="" name="instancecode" title="<spring:message  code="instance.code"/>" type="text" class="text required" maxlen="255" tabindex="2" onchange="validate_code(event, this, 'serviceInstanceCode')"/>
                 </div> 
-                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_codeError" style="margin: 0px 0 0 305px;"></div>
+                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_codeError"></div>
               </li>
 
               <li>
@@ -156,10 +156,10 @@
             <h2><spring:message code="default.product.selection"/></h2>
             <span><spring:message code="service.instance.product.selection"/></span>
           </div>
-          <div class="widgetwizard_detailsbox sixstepswizard gridbox" id="productsList" style="overflow:hidden;">
+          <div class="widgetwizard_detailsbox sixstepswizard gridbox" style="overflow:hidden;">
             <div class="row header" style="overflow:hidden;">
               <div class="gridcell header" style="width: 5%;">
-                <span class="gridtext header"></span>
+                <input class="text" style="height:15px;width:15px;margin:5px 0 0 8px;" type="checkbox" id="all_selected_usage_type" name="all_selected_usage_type" />
               </div>
               <div class="gridcell header" style="width: 19%;">
                 <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.usage.type" /></span>
@@ -177,17 +177,17 @@
                 <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.required.products" /></span>
               </div>
             </div>                
-            <div class="widgetwizard_detailsbox sixstepswizard gridbox" style="overflow-x: hidden; overflow-y: auto; margin-left: 0px; margin-top: 0px; border-width: 0px; height: 237px;">               
+            <div class="widgetwizard_detailsbox sixstepswizard gridbox" id="productsList" style="overflow-x: hidden; overflow-y: auto; margin-left: 0px; margin-top: 0px; border-width: 0px; height: 237px;">               
               <c:forEach var="usageTypes" items="${service.serviceUsageTypes}" varStatus="usageStatus">
                  <div class="row highlighted" id="productListDiv.<c:out value="${usageTypes.usageTypeName}" />">
                   <div class="gridcell" style="width: 5%;">
                     <input class="text" style="height:15px;width:15px;margin:13px 0 0 8px;" type="checkbox" id="selected_usage_type" name="<c:out value="${usageTypes.usageTypeName}" />" value="<c:out value="${usageTypes.id}" />"/>
                   </div>
                   <div class="gridcell" style="width: 19%;">
-                    <span style="width:145px;margin:14px 0 0 10px;" class="gridtext ellipsis" id="usageType.name.<c:out value="${usageTypes.usageTypeName}" />" title="<c:out value="${usageTypes.usageTypeName}" />" ><spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/></span>
+                    <span style="width:145px;margin:14px 0 0 10px;" class="gridtext ellipsis" id="usageType.name.<c:out value="${usageTypes.usageTypeName}" />" title="<spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/>" ><spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/></span>
                   </div>
                   <div class="gridcell" style="width: 19%;">
-                      <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<c:out value="${usageTypes.usageTypeName}" />' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]"/>
+                      <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/>' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]"/>
                   </div>
                   <div class="gridcell" style="width: 19%;">
                       <input class="text" id="product.code.<c:out value="${usageTypes.usageTypeName}" />" value='' name="product.code.[<c:out value="${usageTypes.usageTypeName}" />]" onchange="validate_code(event, this, 'productCode')"/>
@@ -256,13 +256,13 @@
               <p id="priceRequiredError" style="margin-top:7px;"></p>
             </div>
             <div class="details_lightboxformbox" style="padding-bottom: 0px; border-bottom-width: 0px;">
-                <div class="widget_details_inlinegrid product_plan_charges_grid" id="productPriceDiv" style="margin-left: 0px; margin-top: 0px; border-top-width: 0px;">
+                <div class="widget_details_inlinegrid product_plan_charges_grid" id="productPriceDiv" style="margin-left: 0px; margin-top: 0px; border-top-width: 0px;width:1000px;">
 
                   <div class="widget_grid inline subheader product_plan_charges_grid" style="padding-left: 20px;">
-                    <div class="widget_grid_cell" style="width:18%;">
+                    <div class="widget_grid_cell" style="width:150px;">
                       <span class="subheader" style="margin-left: 2px;"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
                     </div>
-                    <div class="widget_grid_cell" style="width:15%;">
+                    <div class="widget_grid_cell" style="width:150px;">
                       <span class="subheader"><spring:message htmlEscape="false" code="ui.label.product.unit" /></span>
                     </div>
                     <c:forEach var="currency" items="${activeCurrencies}">
@@ -277,15 +277,15 @@
                     </c:forEach>
                   </div>
 
-                  <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid" id="productPriceListDiv" style="overflow-x: hidden; overflow-y: auto; height: auto;">
+                  <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid" id="productPriceListDiv" style="overflow-x: hidden; overflow-y: auto; height: auto;width:100%;">
                   </div>
                   <div class="widget_grid inline odd product_plan_charges_innergrid" id="productItem" style="display:none; padding-left: 20px;">
-                    <div class="widget_grid_cell" style="width:18%;">
+                    <div class="widget_grid_cell" style="width:150px;">
                       <span class="subheader ellipsis" id="selectedProductName" style="margin-left: 2px;width:100%;"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
                       <span class="subheader" style="margin-left: 2px; margin-top:0px;font-weight:normal;" id="selectedProductCategory"><spring:message htmlEscape="false" code="ui.products.label.create.product.category" /></span>
                       <span class="levelicon INFORMATION" style="margin-top: 0px; padding-bottom: 0px; margin-left: 5px;position:relative;" onmouseover="onProductDetailMouseover(this);" onmouseout="onProductDetailMouseout(this);"></span>
                     </div>
-                    <div class="widget_grid_cell" style="width:15%;">
+                    <div class="widget_grid_cell" style="width:150px;">
                       <span class="subheader" style="font-weight:normal;" id="selectedUOM"><spring:message htmlEscape="false" code="ui.label.product.unit" /></span>
                     </div>
                     <c:forEach var="productCharge" items="${productCharges}" varStatus="priceStatus">

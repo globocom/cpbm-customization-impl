@@ -1,4 +1,4 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.IOException;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
 import com.citrix.cpbm.platform.spi.APICall;

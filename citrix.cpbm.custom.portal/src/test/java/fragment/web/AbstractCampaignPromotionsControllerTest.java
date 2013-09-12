@@ -44,6 +44,8 @@ import com.vmops.service.ChannelService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.PromotionService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
+import com.vmops.service.exceptions.InvalidAjaxRequestException;
+import com.vmops.utils.DateUtils;
 import com.vmops.web.forms.CampaignPromotionsForm;
 import com.vmops.web.forms.DepositRecordForm;
 import com.vmops.web.forms.TokenRequestForm;
@@ -75,7 +77,6 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
   CampaignPromotionDAO campaignPromotionDAO;
 
   private ModelMap map;
-
 
   private MockHttpServletResponse response;
 
@@ -227,20 +228,28 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
    * @Author: Vinayv
    * @Reviewer: NageswaraP
    */
-  @Test(expected = Exception.class)
+  @Test(expected = InvalidAjaxRequestException.class)
   public void testEditExpiredStateCampaignAsRoot() throws Exception {
 
     CampaignPromotion cp = campaignPromotionDAO.find(1L);
     cp.setTitle("New_Title");
     cp.setCode("New_PromoCode");
-    Assert.assertEquals(cp.getState().toString(), "EXPIRED");
+    cp.setPromoCode("New_PromoCode");
+    cp.setEndDate(DateUtils.minusOneDay(new Date()));
+    campaignPromotionDAO.save(cp);
+
+    cp = campaignPromotionDAO.find(1L);
+    Assert.assertEquals("EXPIRED", cp.getState().getName());
     CampaignPromotionsForm form = new CampaignPromotionsForm(cp);
+    form.setPromoCode(cp.getCode());
     BindingResult result = validate(form);
     CampaignPromotion obtainedCampaign = campaignController.edit(form, result, map);
+
     Assert.assertNotNull(obtainedCampaign);
-    Assert.assertEquals(obtainedCampaign.getTitle(), "New_Title");
-    Assert.assertEquals(obtainedCampaign.getCode(), "New_PromoCode");
-    Assert.assertEquals(obtainedCampaign.getState().toString(), "EXPIRED");
+    Assert.assertNotSame("New_Code", obtainedCampaign.getCode());
+    Assert.assertEquals("EXPIRED", obtainedCampaign.getState().toString());
+    Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
+    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getPromoCode());
   }
 
   /*
@@ -248,7 +257,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
    * @Author: Vinayv
    * @Reviewer: NageswaraP
    */
-  @Test(expected = Exception.class)
+  @Test(expected = InvalidAjaxRequestException.class)
   public void testEditExpiredStateCampaignAsProductManager() throws Exception {
 
     User user = userDAO.find("3");
@@ -257,15 +266,22 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     asUser(user);
     CampaignPromotion cp = campaignPromotionDAO.find(1L);
     cp.setTitle("New_Title");
-    cp.setCode("New_PromoCode");
-    Assert.assertEquals(cp.getState().toString(), "EXPIRED");
+    cp.setCode("New_Code");
+    cp.setPromoCode("New_PromoCode");
+    cp.setEndDate(DateUtils.minusOneDay(new Date()));
+    campaignPromotionDAO.save(cp);
+
+    cp = campaignPromotionDAO.find(1L);
     CampaignPromotionsForm form = new CampaignPromotionsForm(cp);
     BindingResult result = validate(form);
+    form.setPromoCode(cp.getCode());
     CampaignPromotion obtainedCampaign = campaignController.edit(form, result, map);
+
     Assert.assertNotNull(obtainedCampaign);
-    Assert.assertEquals(obtainedCampaign.getTitle(), "New_Title");
-    Assert.assertEquals(obtainedCampaign.getCode(), "New_PromoCode");
-    Assert.assertEquals(cp.getState().toString(), "EXPIRED");
+    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getCode());
+    Assert.assertEquals("EXPIRED", obtainedCampaign.getState().toString());
+    Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
+    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getPromoCode());
   }
 
   /*
@@ -273,7 +289,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
    * @Author: Vinayv
    * @Reviewer: NageswaraP
    */
-  @Test(expected = Exception.class)
+  @Test(expected = InvalidAjaxRequestException.class)
   public void testEditActiveStateCampaignAsRoot() throws Exception {
 
     CampaignPromotion campaignPromotion = generateCampaignPromotion(1, true, false, false);
@@ -282,19 +298,30 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     form.setChannel(channelService.getChannelById("1"));
     form.setUnlimited(true);
     BindingResult result = validate(form);
+
     CampaignPromotion cp = campaignController.createCampaigns(form, result, map, response);
+
     cp.setTitle("New_Title");
     cp.setCode("New_Code");
+    cp.setPromoCode("New_Promocode");
+    cp.setEndDate(DateUtils.addDays(new Date(), 10));
     cp.setMaxAccounts(2);
+    campaignPromotionDAO.save(cp);
+
+    cp = campaignPromotionDAO.findByCode("New_Code");
     Assert.assertEquals(cp.getState().toString(), "ACTIVE");
+    cp.setCode("New_Code2");
     CampaignPromotionsForm cpform = new CampaignPromotionsForm(cp);
     BindingResult cpresult = validate(cpform);
+    cpform.setPromoCode(cp.getCode());
     CampaignPromotion obtainedCampaign = campaignController.edit(cpform, cpresult, map);
+
     Assert.assertNotNull(obtainedCampaign);
-    Assert.assertEquals(obtainedCampaign.getTitle(), "New_Title");
-    Assert.assertEquals(obtainedCampaign.getCode(), "New_Code");
-    Assert.assertEquals(obtainedCampaign.getMaxAccounts(), 2);
-    Assert.assertEquals(cp.getState().toString(), "ACTIVE");
+    Assert.assertNotSame("New_Code1", obtainedCampaign.getCode());
+    Assert.assertNotSame("New_Promocode", obtainedCampaign.getPromoCode());
+    Assert.assertNotSame(2, obtainedCampaign.getMaxAccounts());
+    Assert.assertEquals("ACTIVE", cp.getState().toString());
+    Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
   }
 
   /*
@@ -617,7 +644,8 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       List<Channel> channels = (List) model.get("channels");
 
       Assert.assertTrue(form1.getPromoCode().toString().equals(campaignPromotionsForm.getPromoCode()));
-      Assert.assertTrue(channels.get(0).getName().equals(channelService.getChannels(null, null, null).get(0).getName()));
+      Assert
+          .assertTrue(channels.get(0).getName().equals(channelService.getChannels(null, null, null).get(0).getName()));
 
     } catch (Exception e) {
       // TODO Auto-generated catch block
@@ -654,7 +682,8 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       List<Channel> channels = (List) model.get("channels");
 
       Assert.assertTrue(form1.getPromoCode().toString().equals(campaignPromotionsForm.getPromoCode()));
-      Assert.assertTrue(channels.get(0).getName().equals(channelService.getChannels(null, null, null).get(0).getName()));
+      Assert
+          .assertTrue(channels.get(0).getName().equals(channelService.getChannels(null, null, null).get(0).getName()));
 
     } catch (Exception e) {
       // TODO Auto-generated catch block

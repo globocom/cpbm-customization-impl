@@ -60,6 +60,9 @@
 	                 </c:forEach>
 	             </span>
 	           </div>
+            <c:if test="${defaultChannel ne null && defaultChannel.id eq channel.id}">
+              <span id="default_channel_icon" class="navicon defaultchannel" title="<spring:message code="ui.image.title.default.channel"/>"></span>
+             </c:if>
 	           <div id="info_bubble" class="widget_info_popover" style="display: none;">
 	                <div class="popover_wrapper">
 	                  <div class="popover_shadow"></div>

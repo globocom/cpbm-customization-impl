@@ -1,7 +1,0 @@
-#NOTE: This is an internal implementation file, its format can be changed without prior notice.
-#Tue Oct 23 21:57:32 GMT+05:30 2012
-default-http\://repository.jboss.com/maven2/.lastUpdated=1351009651662
-http\://developer.ja-sig.org/maven2/.error=
-http\://repo1.maven.org/maven2/.lastUpdated=1351009652956
-http\://developer.ja-sig.org/maven2/.lastUpdated=1351009650433
-http\://repository.jboss.com/maven2/.error=Could not transfer artifact org.jasypt\:jasypt\:pom\:1.7.1 from/to jboss (http\://repository.jboss.com/maven2)\: Access denied to http\://repository.jboss.com/maven2/org/jasypt/jasypt/1.7.1/jasypt-1.7.1.pom. Error code 403, Forbidden

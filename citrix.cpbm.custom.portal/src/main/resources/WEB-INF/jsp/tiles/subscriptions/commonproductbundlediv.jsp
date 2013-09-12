@@ -8,11 +8,11 @@
 
 <div id="bundle_with_selection_summary_div">
     <c:if test="${not viewChannelCatalog && not anonymousBrowsing && resourceType != '__SERVICE__'}">
-  <div style="float:left;width:100%;">
-  <span class="title" style="float:left;padding-top:8px;font-size:11px;font-weight:normal;">Showing Bundles :</span>
+  <div id="bundle_subscriptions_tabs" style="float:left;width:100%;display:none;">
+  <span class="title" style="float:left;padding-top:8px;font-size:11px;font-weight:normal;"><spring:message code="label.Showing.bundles" />:</span>
   <ul class="widgets_transparent_tab" style="width:auto;">
     <li class="js_bundle_subscriptions_tabs" id="view_bundles_tab"><spring:message code="message.New.subscriptions" /></li>
-    <li class="js_bundle_subscriptions_tabs" id="view_subscriptions_tab" style="display:none;"><spring:message code="message.My.unprovisioned.subscriptions" /></li>
+    <li class="js_bundle_subscriptions_tabs" id="view_subscriptions_tab"><spring:message code="message.My.unprovisioned.subscriptions" /></li>
   </ul>
   </div>
     </c:if>
@@ -47,24 +47,31 @@
         <div id="totalentitlmentsdiv" title='<spring:message code="label.details"/>'
           style="display: none; overflow: hidden;">
           <div class="dialog_formcontent_entitlement_selectedbox">
-            <div id="totalentitlmentsribbon" class="widgetcatalog_bundlesbox" style="width:100px; margin-top: 0;">
+            <div id="totalentitlmentsribbon" class="widgetcatalog_bundlesbox" style="width:90px; margin-top: 0;float:left;">
               <div class="widgetcatalog_bundlesbox iconbox">
                 <span class="compute"></span>
               </div>
             </div>
-            <div style="width:80%; height:inherit; margin-left:120px;">
+            <div style="width:310px; height:inherit; float:left;margin-left:25px;">
               <h2 id="bundle_name" style="width:80%; margin-left:10px;"></h2>
               <p id="bundle_description" style="width:80%; margin-top: 0px; margin-left:10px; text-align:justify;"></p>
             </div>
+            <div class="widgetcatalog_cataloglist sections subscription contentarea" style="background:none;">
+                <h4><spring:message code="label.subscribe.price.message"/>:</h4>
+                <div class="widgetcatalog_cataloglist_rateswrapper js_rate_details">
+                  
+                </div>
+                 <span class="charges"></span>
+            </div>
           </div>
-          <div style="max-height:500px;overflow:auto;float:left;">
+          <div style="max-height:500px;overflow:auto;float:left;width:100%;">
           <div class="entitlementlightbox_bundledetails entitlements_div">
-            <div class="utility_table">
-                <table  id="table_service_offering" class="table table-condensed table-hover table-bordered">
+            <div class="utility_table" id="entitlements_table_container">
+                <table  id="entitlements_table" class="table table-condensed table-hover table-bordered" >
                   <thead class="table_header fixedHeader">  
                     <tr>  
                       <th style="width:200px;"><spring:message code="label.bundle.list.includes.title" /></th>
-                      <th style="width:240px;"><spring:message code="label.bundle.list.resource.title" /></th>
+                      <th style="width:240px;"><spring:message code="label.catalog.utility.card.table.header.product" /></th>
                       <th style="width:216px;"><spring:message code="label.bundle.list.overages.title" /></th>  
                     </tr>  
                   </thead>  
@@ -75,7 +82,8 @@
             </div>
           </div>
           <div class="entitlementlightbox_bundledetails js_extra_usage_tab" >
-              <a href="javascript:void(0);" style="float:left;" class="more_info more_down js_view_utility_link"><spring:message code="message.bundle.details.dialog.utility.rates" /></a>
+              <span style="font-weight:bold;"><spring:message code="message.bundle.details.dialog.utility.rates" />&nbsp;(<a href="javascript:void(0);" class="more_down js_view_utility_link"><spring:message code="view.utility.rates" /></a>)</span>
+              <span class="navicon loading js_loading" style="display:none;"></span>
           </div>
           <div class="entitlementlightbox_bundledetails js_extra_usage_div" style="display:none;max-height:160px;">
             <div id="utilityrate_table_bundle_details" class="full_width_box utility_table" style="height:100%"></div>
@@ -90,21 +98,29 @@
       <div class="widgetcatalog_cataloglist sections subscription">
         <div class="widgetcatalog_cataloglist sections subscription contentarea">
           <h4><spring:message code="label.subscribe.price.message"/>:</h4>
-          <div class="widgetcatalog_cataloglist_rateswrapper">
-            <div class="widgetcatalog_cataloglist_ratesbox">
-              <span class="currency" id="currencySign"></span> <span class="rate" id="recurringCharges"></span> <span
-                class="pertime" id="recurrenceType"></span>
+          <div class="js_rate_details">
+            <div class="widgetcatalog_cataloglist_rateswrapper">
+              <div class="widgetcatalog_cataloglist_ratesbox">
+                <span class="currency" id="currencySign"></span> <span class="rate" id="recurringCharges"></span> <span
+                  class="pertime" id="recurrenceType"></span>
+              </div>
             </div>
+            <span class="charges" id="activationCharges"></span>
           </div>
-          <span class="charges" id="activationCharges"></span>
           <c:if test="${not viewChannelCatalog && not anonymousBrowsing}">
           <div id="configure_button_group_choice_div">
-          <div class="configure_subscribe_button" data-hover="dropdown" data-delay="1000" data-close-others="false">
-            <a class="subscribebutton btn btn-info" id="subscribe" href="javascript:void(0)"> 
-              <spring:message code="label.configure" /> &amp; <spring:message code="label.subscribe.confirm" />
-            </a>
-          </div>
-            <ul id="group_choice_radios" class="dropdown-menu dropdown-menu-blue" style="width: 235px;position:relative;top:0px;left:-46px;"></ul>
+              <div class="configure_subscribe_button" data-hover="dropdown" data-delay="1000" data-close-others="false">
+                <a class="subscribebutton btn btn-info" id="subscribe" href="javascript:void(0)"> <c:choose>
+                    <c:when test="${serviceBundleResourceType == resourceType}">
+                      <spring:message code="label.subscribe.confirm" />
+                    </c:when>
+                    <c:otherwise>
+                      <spring:message code="label.configure" /> &amp; <spring:message code="label.subscribe.confirm" />
+                    </c:otherwise>
+                  </c:choose>
+                </a>
+              </div>
+              <ul id="group_choice_radios" class="dropdown-menu dropdown-menu-blue" style="width: 235px;position:relative;top:0px;left:-41px;"></ul>
             </div>
           </c:if>
         </div>

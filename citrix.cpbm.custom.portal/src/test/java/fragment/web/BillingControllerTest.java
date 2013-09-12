@@ -563,14 +563,15 @@ public class BillingControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantDAO.find(25L);
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
     request.setAttribute("effectiveTenant", tenant);
-    String makePayment = controller.makePayment(new BigDecimal("100"), tenant.getParam(), session, response);
+    String makePayment = controller.makePayment(new BigDecimal("100"), "Payment Memo", tenant.getParam(), session,
+        response);
     String view = controller.showPaymentHistory(tenant, tenant.getParam(), "1", session, request, map);
     Assert.assertEquals(map.get("userHasCloudServiceAccount"), Boolean.valueOf(false));
     Assert.assertEquals(map.get("showUserProfile"), Boolean.valueOf(true));
     Assert.assertEquals(map.get("errorMsg"), "");
     Assert.assertEquals(map.get("tenant"), tenant);
     Assert.assertNotNull(map.get("salesLedgerRecords"));
-    makePayment = controller.makePayment(new BigDecimal("0"), tenant.getParam(), session, response);
+    makePayment = controller.makePayment(new BigDecimal("0"), "Payment Memo", tenant.getParam(), session, response);
     Assert.assertEquals(makePayment, new String("failed"));
 
   }
@@ -597,7 +598,8 @@ public class BillingControllerTest extends WebTestsBaseWithMockConnectors {
   public void testMakePayment() {
 
     Tenant tenant = tenantDAO.find(25L);
-    String makePayment = controller.makePayment(new BigDecimal("100"), tenant.getParam(), session, response);
+    String makePayment = controller.makePayment(new BigDecimal("100"), "Payment Memo", tenant.getParam(), session,
+        response);
     Assert.assertEquals("success", makePayment);
     Assert.assertNotNull("response");
 
@@ -607,7 +609,8 @@ public class BillingControllerTest extends WebTestsBaseWithMockConnectors {
   public void testMakePaymentFail() {
 
     Tenant tenant = tenantDAO.find(25L);
-    String makePayment = controller.makePayment(new BigDecimal("-100"), tenant.getParam(), session, response);
+    String makePayment = controller.makePayment(new BigDecimal("-100"), "Payment Memo", tenant.getParam(), session,
+        response);
     Assert.assertEquals("failed", makePayment);
     Assert.assertNotNull("response");
   }
@@ -615,7 +618,8 @@ public class BillingControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testRecordPayment() {
     Tenant tenant = tenantDAO.find(25L);
-    String recordPayment = controller.recordPayment(new BigDecimal("100"), tenant.getParam(), response, map);
+    String recordPayment = controller.recordPayment(new BigDecimal("100"), "Payment Memo", tenant.getParam(), response,
+        map);
     Assert.assertEquals("success", recordPayment);
     Assert.assertNotNull("response");
   }
@@ -623,7 +627,8 @@ public class BillingControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testRecordPaymentFail() {
     Tenant tenant = tenantDAO.find(25L);
-    String recordPayment = controller.recordPayment(new BigDecimal("-100"), tenant.getParam(), response, map);
+    String recordPayment = controller.recordPayment(new BigDecimal("-100"), "Payment Memo", tenant.getParam(),
+        response, map);
     Assert.assertEquals("failed", recordPayment);
     Assert.assertNotNull("response");
   }

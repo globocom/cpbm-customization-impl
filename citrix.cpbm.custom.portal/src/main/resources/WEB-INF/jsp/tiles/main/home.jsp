@@ -24,7 +24,7 @@ var loadGravtars = true;
 	 fetchTicketCount = true;
 	</c:if>	   
 </script>
- <c:if test="${effectiveTenant.state == 'ACTIVE' && userHasCloudServiceAccount}">
+ <c:if test="${!empty top_nav_cs_instances}">
      <script type="text/javascript">
          var getServiceInstanceHealth = true;
      </script>
@@ -101,7 +101,7 @@ var dictionary = {
 
 <div class="maincontent_horizontalpanels">
     <div class="db_gridverticalpanel">
-		<c:if test="${effectiveTenant.state == 'ACTIVE' && userHasCloudServiceAccount}">
+		<c:if test="${!empty top_nav_cs_instances}">
 		<div class="db_statsbox default">
 		  <div class="db_statsbox title user">
 		    <h2><spring:message code="ui.home.page.title.service.health"/></h2>
@@ -123,7 +123,7 @@ var dictionary = {
 		<div class="db_statsbox default">
 	        <div class="db_statsbox title user">
 	          <h2><spring:message code="ui.home.page.title.spend.budget" htmlEscape="false"/></h2>
-	          <span id="budget_value" style="float:left;margin:12px 0px 0px 5px;font-size:14px;"></span>
+	          <span id="budget_value" style="float:left;margin:8px 0px 0px 5px;font-size:14px;"></span>
 	        </div>
 	        <div class="db_statsbox contentarea">
 	          
@@ -418,6 +418,7 @@ var dictionary = {
                 <div class="db_statsbox title">
                   <h2><spring:message code="ui.home.page.title.tickets"/></h2>
                 </div>
+                <div id="top_message_panel" class="common_messagebox widget" ><p id="msg"></p></div>
                <div class="db_statsbox contentarea">
                     <div id="ticketsCountChart">
                       <div id="spinnerDiv" class="spinnerDiv" style="margin: 70px 0 0 200px;"> </div>

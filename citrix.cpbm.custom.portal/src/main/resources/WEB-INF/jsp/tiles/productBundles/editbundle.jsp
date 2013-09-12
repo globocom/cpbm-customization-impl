@@ -234,7 +234,7 @@
 
                 <div class="widgetwizard_gridmenubox">
                   <div class="row header">
-                    <div class="gridcell header" style="width:90%;">
+                    <div class="gridcell header" style="width:95%;">
                         <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.resource.component" /></span>
                     </div>
                     <div class="widgetwizard_navigationlist">

@@ -34,10 +34,10 @@ public class WorkflowControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Autowired
   private WorkflowController controller;
-  
+
   @Autowired
   WorkflowDAO workflowDAO;
-  
+
   @Autowired
   BusinessTransactionService businessTransactionService;
 
@@ -67,7 +67,7 @@ public class WorkflowControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(expected, handler);
 
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
   public void testShow() {
@@ -84,7 +84,7 @@ public class WorkflowControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertNotNull(workflowActivites.get(bucket));
     Assert.assertEquals(1, workflowActivites.get(bucket).size());
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
   public void testShowUnOrderList() {
@@ -98,50 +98,52 @@ public class WorkflowControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(2, workflowActivites.size());
     Set<Bucket> buckets = workflowActivites.keySet();
     Integer i = 1;
-    for(Bucket bucket : buckets){
+    for (Bucket bucket : buckets) {
       Assert.assertEquals(i, bucket.getOrder());
       i++;
     }
   }
-  
+
   /**
    * Description: Test to reset the workflow which was errored.
+   * 
    * @author vinayv
    */
   @Test
-  public void testResetWithErrorActivities(){
-	  
-	  Workflow workflow = workflowDAO.find(1L);
-	  int beforeActivityList = workflow.getWorkflowActivities().size();
-	  BusinessTransaction businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
-	  Assert.assertEquals(State.ERROR, businessTransaction.getState());
-	  boolean result = controller.reset(workflow.getUuid());
-	  Assert.assertEquals(true, result);
-	  businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
-	  Assert.assertEquals(State.RUNNING, businessTransaction.getState());
-	  workflow = workflowDAO.find(1L);
-	  int afterActivityList = workflow.getWorkflowActivities().size();
-	  Assert.assertEquals(beforeActivityList+1, afterActivityList);
+  public void testResetWithErrorActivities() {
+
+    Workflow workflow = workflowDAO.find(1L);
+    int beforeActivityList = workflow.getWorkflowActivities().size();
+    BusinessTransaction businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
+    Assert.assertEquals(State.ERROR, businessTransaction.getState());
+    boolean result = controller.reset(workflow.getUuid());
+    Assert.assertEquals(true, result);
+    businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
+    Assert.assertEquals(State.RUNNING, businessTransaction.getState());
+    workflow = workflowDAO.find(1L);
+    int afterActivityList = workflow.getWorkflowActivities().size();
+    Assert.assertEquals(beforeActivityList + 1, afterActivityList);
   }
-  
+
   /**
    * Description: Test to reset the workflow which was not errored.
+   * 
    * @author vinayv
    */
   @Test
-  public void testResetWithoutErrorActivities(){
-	  
-	  Workflow workflow = workflowDAO.find(9L);
-	  int beforeActivityList = workflow.getWorkflowActivities().size();
-	  BusinessTransaction businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
-	  Assert.assertEquals(State.RUNNING, businessTransaction.getState());
-	  boolean result = controller.reset(workflow.getUuid());
-	  Assert.assertEquals(true, result);
-	  businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
-	  Assert.assertEquals(State.RUNNING, businessTransaction.getState());
-	  workflow = workflowDAO.find(9L);
-	  int afterActivityList = workflow.getWorkflowActivities().size();
-	  Assert.assertEquals(beforeActivityList, afterActivityList);
+  public void testResetWithoutErrorActivities() {
+
+    Workflow workflow = workflowDAO.find(9L);
+    int beforeActivityList = workflow.getWorkflowActivities().size();
+    BusinessTransaction businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
+    Assert.assertEquals(State.RUNNING, businessTransaction.getState());
+    boolean result = controller.reset(workflow.getUuid());
+    Assert.assertEquals(true, result);
+    businessTransaction = businessTransactionService.getBusinessTransaction(workflow.getUuid());
+    Assert.assertEquals(State.RUNNING, businessTransaction.getState());
+    workflow = workflowDAO.find(9L);
+    int afterActivityList = workflow.getWorkflowActivities().size();
+    Assert.assertEquals(beforeActivityList, afterActivityList);
   }
 
 }

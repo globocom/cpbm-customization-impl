@@ -313,7 +313,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     if (!channelService.isChannelCreationAllowed()) {
       map.addAttribute("channelCreationAllowed", false);
     }
-
+    map.addAttribute("defaultChannel", channelService.getDefaultServiceProviderChannel());
     logger.debug("### list method ending...(GET)");
     return "channels.list";
   }
@@ -366,6 +366,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     map.addAttribute("currenciestoadd", currenciestoadd);
     map.addAttribute("futureRevisionDate", channelService.getFutureRevision(channel).getStartDate());
     map.addAttribute("effectiveDate", channelService.getFutureRevision(channel).getStartDate());
+    map.addAttribute("isChannelDeletionAllowed", channelService.isChannelDeletionAllowed(channel));
 
     logger.debug("### viewchannel method end...(GET)");
     return "channels.view";
@@ -453,6 +454,15 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       channelService.locateChannel(channelName);
     } catch (NoSuchChannelException ex) {
       logger.debug(channelName + ": doesn't exist in the db channel table");
+      if(config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled) && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")){
+        try{
+          channelService.locateChannelInDirectoryService(channelName);
+          return Boolean.FALSE.toString();
+        } catch (NoSuchChannelException exc) {
+          logger.debug(channelName + ": doesn't exist in the directory server names in channel table");
+          return Boolean.TRUE.toString();
+        }
+      }
       return Boolean.TRUE.toString();
     }
 
@@ -721,6 +731,11 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     List<ProductBundleRevision> productBundleRevisions = getProductBundles(new ArrayList<ProductBundleRevision>(
         fullBundlePricingMap.keySet()), currentPage, perPageCount);
 
+    Date lastSyncDate = null;
+    if (channelService.getChannelReferenceCatalogRevision(channel, currentRevision) != null) {
+      lastSyncDate = channelService.getChannelReferenceCatalogRevision(channel, currentRevision)
+          .getReferenceCatalogRevision().getStartDate();
+    }
     map.addAttribute("supportedCurrencies", catalog.getSupportedCurrencyValuesByOrder());
     map.addAttribute("fullProductPricingMap", fullProductPricingMap);
     map.addAttribute("noOfProducts", fullProductPricingMap.size());
@@ -728,6 +743,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     map.addAttribute("fullBundlePricingMap", fullBundlePricingMap);
     map.addAttribute("channel", channel);
     map.addAttribute("effectiveDate", currentRevision.getStartDate());
+    map.addAttribute("lastSyncDate", lastSyncDate);
     logger.debug("### viewCatalogCurrent method ending...(GET)");
     return "catalog.current";
   }
@@ -777,7 +793,11 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     }
 
     List<CurrencyValue> listSupportedCurrencies = catalog.getSupportedCurrencyValuesByOrder();
-
+    Date lastSyncDate = null;
+    if (channelService.getChannelReferenceCatalogRevision(channel, futureRevision) != null) {
+      lastSyncDate = channelService.getChannelReferenceCatalogRevision(channel, futureRevision)
+          .getReferenceCatalogRevision().getStartDate();
+    }
     map.addAttribute("supportedCurrencies", listSupportedCurrencies);
     map.addAttribute("channel", channel);
     map.addAttribute("fullProductPricingMap", fullProductPricingMap);
@@ -788,6 +808,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     map.addAttribute("bundlesaddedtocatalog", bundlesaddedtocatalog);
     map.addAttribute("toalloweditprices", true);
     map.addAttribute("effectiveDate", futureRevision.getStartDate());
+    map.addAttribute("lastSyncDate", lastSyncDate);
     logger.debug("### viewCatalogPlanned method ending...(GET)");
     return "catalog.planned";
   }

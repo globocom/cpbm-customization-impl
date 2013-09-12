@@ -306,8 +306,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     } else {
       map.addAttribute("showMessagePendingConversion", false);
     }
-    if (proxyTenant.getAccountType().isDepositRequired()
-        && proxyTenant.getAccountType().getPaymentModes().intValue() != PaymentMode.INVOICE.getMask()) {
+    if (proxyTenant.getAccountType().isDepositRequired()) {
       DepositRecord depositRecord = tenantService.getDepositRecordByTenant(proxyTenant.getObject());
       if (depositRecord == null
           && proxyTenant.getAccountType().getInitialDeposit(proxyTenant.getObject().getCurrency().getCurrencyCode())
@@ -446,7 +445,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
           // root does not have extra information, so setting it null
           proxyTenant.getObject().setTenantExtraInformation(null);
         }
-        tenantService.update(proxyTenant, result);
+        tenantService.update(proxyTenant.getObject());
       } catch (ServiceException ex) {
         throw new InvalidAjaxRequestException(ex.getMessage());
       }
@@ -502,52 +501,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       setPage(map, Page.HOME);
       return "tenants.editcurrentlogo";
     }
-  }
-
-  /**
-   * Method for Listing Popup
-   * 
-   * @param map
-   * @param currentPage
-   * @param perPage
-   * @param size
-   * @param charRange
-   * @param pattern
-   * @param effectiveTenantParam
-   * @return String
-   */
-  @RequestMapping(value = {
-      "", "/"
-  }, method = RequestMethod.GET)
-  public String listPopup(ModelMap map,
-      @RequestParam(value = "currentPage", required = false, defaultValue = "1") String currentPage,
-      @RequestParam(value = "perPage", required = false, defaultValue = "5") String perPage,
-      @RequestParam(value = "size", required = false) String size,
-      @RequestParam(value = "charRange", required = false, defaultValue = "All") String charRange,
-      @RequestParam(value = "pattern", required = false) String pattern,
-      @RequestParam(value = "effectiveTenantParam", required = true) String effectiveTenantParam) {
-
-    logger.debug("###Entering in list(map) method @GET");
-    List<AccountType> accountTypes = tenantService.getAllAccountTypes();
-    map.addAttribute("accountTypes", accountTypes);
-    int currentPageValue = Integer.parseInt(currentPage);
-    int perPageValue = Integer.parseInt(perPage);
-    setPage(map, Page.CRM);
-    List<Tenant> tenants = tenantService.list(currentPageValue, perPageValue, null, null, false, null, null, null,
-        null, null, null, charRange, pattern);
-    int sizeInt = 0;
-    if (StringUtils.isNotEmpty(size)) {
-      sizeInt = tenantService.getCount(charRange, pattern);
-    } else {
-      sizeInt = Integer.parseInt(size);
-    }
-    map.addAttribute("tenants", tenants);
-    map.addAttribute("pattern", pattern);
-    // Need for pagination
-    map.addAttribute("url", "/portal/portal/tenants?");
-    setPaginationValues(map, perPageValue, currentPageValue, sizeInt, charRange);
-    logger.debug("###Exiting list(map) method @GET");
-    return "tenants.list";
   }
 
   /**
@@ -962,7 +915,8 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       }
       logger.debug("###Exiting register(registration,result,captchaChallenge,captchaResponse,"
           + "map,sessionStatus,request) method @POST");
-      return "tenants.new";
+      throw new AjaxFormValidationException(result);
+      // return "tenants.new";
     } else {
       String tenantParam = form.getTenant().getUuid();
       map.clear();
@@ -1345,57 +1299,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     return "tenant.listing";
   }
 
-  /**
-   * Retrieve audit log for specific tenant
-   * 
-   * @param tenantParam
-   * @param map
-   * @return audit log view
-   */
-  @RequestMapping(value = "/{tenantParam}/audit_log", method = RequestMethod.POST)
-  public String getAuditLog(@PathVariable String tenantParam, ModelMap map) {
-    Tenant tenant = tenantService.get(tenantParam);
-    map.addAttribute("auditLogs", auditLogService.getAuditLogsByTypeId(tenant));
-    return "auditlog.show";
-  }
-
-  @RequestMapping(value = "/{tenantParam}/resource_limit", method = RequestMethod.GET)
-  public String showResourceLimits(@PathVariable String tenantParam, ModelMap map) {
-    logger.debug("###Starting showResourceLimit() method @GET start");
-    Tenant tenant = tenantService.get(tenantParam);
-    ResourceLimitForm resourceLimitForm = getResourceLimit(tenant);
-    map.addAttribute("resourceLimitForm", resourceLimitForm);
-    map.addAttribute("tenant", tenant);
-    logger.debug("###Exiting showResourceLimit() method @GET start");
-    return "tenant.resourcelimits";
-  }
-
-  @RequestMapping(value = "/{tenantParam}/resource_limit", method = RequestMethod.POST)
-  @ResponseBody
-  public String showResourceLimit(@PathVariable String tenantParam,
-      @ModelAttribute("ResourceLimitForm") ResourceLimitForm resourceLimitForm, HttpServletResponse response) {
-    logger.debug("###Starting showResourceLimit() method @POST start");
-    try {
-      Tenant tenant = tenantService.get(tenantParam);
-      if (resourceLimitForm.getMaxUsers() != null) {
-        try {
-          int usercount = Integer.parseInt(resourceLimitForm.getMaxUsers());
-          ResourceLimit rsLimitUser = new ResourceLimit();
-          rsLimitUser.setTenant(tenant);
-          rsLimitUser.setType(ResourceLimit.USER);
-          rsLimitUser.setMax(usercount);
-          resourceLimitService.save(rsLimitUser);
-        } catch (NumberFormatException e) {
-          logger.error("### Max Users should be integer");
-        }
-      }
-    } catch (Exception e) {
-      return "fail";
-    }
-    logger.debug("###Exiting showResourceLimit() method @POST end");
-    return "success";
-  }
-
   protected ResourceLimitForm getResourceLimit(Tenant tenant) {
     ResourceLimitForm rlForm = new ResourceLimitForm();
     rlForm.setId(tenant.getId());
@@ -1508,7 +1411,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     // Need for pagination
     map.addAttribute("url", "/portal/portal/tenants/notifications?");
     setPaginationValues(map, perPageValue, currentPageValue, sizeInt, null);
-    map.addAttribute("currentUser", user);
+    // map.addAttribute("currentUser", user);
     logger.debug("Leaving in listNotifications");
     return "tenants.notifications";
   }
@@ -1596,7 +1499,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     map.addAttribute("lowerBound2", currentPageValue + 2 < totalpages ? currentPageValue : (totalpages - 2 < 1 ? 1
         : totalpages - 2));
     map.addAttribute("upperBound2", currentPageValue + 2 < totalpages ? currentPageValue + 2 : totalpages);
-    map.addAttribute("currentUser", user);
+    // map.addAttribute("currentUser", user);
     logger.debug("### viewNotification method end");
     return "notifications.view";
   }
@@ -2244,6 +2147,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       map.addAttribute("resourceLimitsMap", resLimitMap);
     }
 
+    map.addAttribute("tenantid", tenant.getId());
     map.addAttribute("tenantuuid", tenantParam);
     map.addAttribute("instance", instance);
 

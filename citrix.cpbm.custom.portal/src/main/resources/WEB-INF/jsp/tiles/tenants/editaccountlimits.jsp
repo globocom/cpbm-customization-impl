@@ -7,18 +7,6 @@
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/validator.js"></script>
 
 <style type="text/css">
-.tooltip {
-	background-color: #CCCCCC;
-	border: 1px solid #fff;
-	padding: 10px 15px;
-	width: 240px;
-	display: none;
-	color: #fff;
-	text-align: left;
-	font-size: 12px;
-	z-index: 10000;
-}
-
 .dialog_formcontent label.error {
 	margin-left: 265px;
 }
@@ -66,17 +54,34 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 								<div class="mandatory_wrapper" style="float: none">
 									<c:choose>
 										<c:when test="${account_control_property.type=='Boolean'}">
-											<span style="padding-left: 6px;" />
+											<c:choose>
+											<c:when test="${resLimitMap[account_control_property.name]} eq true}">
+												<span style="padding-left: 6px;" />
 											<span>
-												<input type="radio" id="configbooleantrue<c:out value="${account_control_property.id}"/>"
+												<input type="radio" disabled='disabled' id="configbooleantrue<c:out value="${account_control_property.id}"/>"
 													name="${account_control_property.name}" checked />
 												<spring:message code="label.true" />
 											</span>
 											<span>
-												<input type="radio" id="configbooleanfalse<c:out value="${account_control_property.id}"/>"
+												<input type="radio" disabled='disabled' id="configbooleanfalse<c:out value="${account_control_property.id}"/>"
 													name="${account_control_property.name}" />
 												<spring:message code="label.false" />
 											</span>
+											</c:when>
+											<c:otherwise>
+												<span style="padding-left: 6px;" />
+											<span> 
+												<input type="radio" disabled='disabled' id="configbooleantrue<c:out value="${account_control_property.id}"/>"
+													name="${account_control_property.name}"/>
+												<spring:message code="label.true" />
+											</span>
+											<span>
+												<input type="radio" disabled='disabled' id="configbooleanfalse<c:out value="${account_control_property.id}"/>"
+													name="${account_control_property.name}"  checked />
+												<spring:message code="label.false" />
+											</span>
+											</c:otherwise>
+										</c:choose>
 										</c:when>
 										<c:otherwise>
 											<input type="text" id="configproperty<c:out value="${account_control_property.id}"/>"

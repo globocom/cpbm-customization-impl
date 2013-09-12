@@ -104,10 +104,8 @@ $(document).ready(function() {
               	<div class="login_infobox_mid">
               	
   		              <div class="login_infocontentbox">
-                      <c:if test="${showSuffixControl!='true'}">                    
   		                <p><spring:message code="label.login.dontHaveAnAccount"/></p>
   		                <a href="/portal/portal/account_type"><spring:message code="label.login.signUpNow"/></a>
-                       </c:if>               
                       <p><spring:message code="label.login.forgotPassword"/></p>
                       <a href="/portal/portal/reset_password"><spring:message code="label.login.requestReset"/></a>
   		              </div>

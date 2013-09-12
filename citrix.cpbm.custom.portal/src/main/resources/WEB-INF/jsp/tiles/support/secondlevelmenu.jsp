@@ -31,7 +31,7 @@
   </c:if>
   </c:when>
   <c:otherwise>
-  <c:if test="${effectiveTenant.state eq 'ACTIVE'}">
+  <c:if test="${!empty top_nav_cs_instances}">
     <a class="secondlevel_menutabs <c:out value="${Health}"/>" href="<%=request.getContextPath() %>/portal/health">
         <spring:message code="page.level2.health"/>
     </a>

@@ -1,44 +1,47 @@
 /* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+
+var filledActiveCurrencies = new Array();
+
 $(document).ready(function() {
 
-	$(".js_iframe_tabs").live("click", function(){
-		  var serviceInstanceUUID = $(this).attr('id').substr(11);
-		  if(serviceInstanceUUID == "all_services"){
-			  window.location = "/portal/portal/connector/csinstances?tenant="+effectiveTenantParam;   
-		  }else{
-		   showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
-		  }
-	  });
-	if(typeof iframe_view!="undefined" && iframe_view && typeof service_instance_uuid_for_iframe !="undefined"){
-		showResourcesIFrameWithServiceInstanceUUID(service_instance_uuid_for_iframe);
-	}
-  $("#backToServiceInstanceDetails").live("click", function (event) {
+  $(".js_iframe_tabs").live("click", function() {
+    var serviceInstanceUUID = $(this).attr('id').substr(11);
+    if (serviceInstanceUUID == "all_services") {
+      window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
+    } else {
+      showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
+    }
+  });
+  if (typeof iframe_view != "undefined" && iframe_view && typeof service_instance_uuid_for_iframe != "undefined") {
+    showResourcesIFrameWithServiceInstanceUUID(service_instance_uuid_for_iframe);
+  }
+  $("#backToServiceInstanceDetails").live("click", function(event) {
     $(".j_cloudservicepopup").hide();
     currentstep = "step1";
     $("#step1").show();
-    });
+  });
 
-  $("#backToProductSelection").live("click", function (event) {
+  $("#backToProductSelection").live("click", function(event) {
     $(".j_cloudservicepopup").hide();
     currentstep = "step3";
     $("#step3").show();
-    });
+  });
 
-  $("#backToProductCharges").live("click", function (event) {
+  $("#backToProductCharges").live("click", function(event) {
     $(".j_cloudservicepopup").hide();
     currentstep = "step4";
     $("#step4").show();
-    });
+  });
 
 
   $.validator.addClassRules("logorequired", {
-    logorequired:true
+    logorequired: true
   });
   $.validator
-  .addMethod(
+    .addMethod(
       "logorequired",
       function(value, element) {
-        if (value == "" ){
+        if (value == "") {
           return false;
         }
         return true;
@@ -46,19 +49,19 @@ $(document).ready(function() {
       dictionary.editImagePathInvalidMessage);
   $("#serviceInstanceLogoForm").validate({
     // debug : true,
-    success : "valid",
-    ignoreTitle : true,
-    rules : {
-      "logo" : {
-        required : true
+    success: "valid",
+    ignoreTitle: true,
+    rules: {
+      "logo": {
+        required: true
       }
     },
-    messages : {
-      "logo" : {
-        required : dictionary.editImagePathInvalidMessage
+    messages: {
+      "logo": {
+        required: dictionary.editImagePathInvalidMessage
       }
     },
-    errorPlacement : function(error, element) {
+    errorPlacement: function(error, element) {
       var name = element.attr('id');
       name = ReplaceAll(name, ".", "\\.");
       if (name != "") {
@@ -71,7 +74,7 @@ $(document).ready(function() {
 
   $(".cloud_button.active").bind("click", function(event) {
     var id = $(this).attr('id');
-    $('div.servicelist_extended[serviceid='+ id +']').toggle();
+    $('div.servicelist_extended[serviceid=' + id + ']').toggle();
   });
 
   $("a.filters").bind("click", function(event) {
@@ -83,19 +86,22 @@ $(document).ready(function() {
     initDialog("dialog_service_details", 720);
     var id = $(this).attr('id');
     $.ajax({
-      type : "GET",
-      url : connectorPath + "/" + type + "?id=" + id +"&action=view",
-      dataType : "html",
-      success : function(html) {
+      type: "GET",
+      url: connectorPath + "/" + type + "?id=" + id + "&action=view",
+      dataType: "html",
+      success: function(html) {
         var $thisDialog = $("#dialog_service_details");
         $thisDialog.html(html);
         $thisDialog.bind("dialogbeforeclose", function(event, ui) {
           $thisDialog.empty();
         });
-        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
+        dialogButtonsLocalizer($thisDialog, {
+          'OK': g_dictionary.dialogOK,
+          'Cancel': g_dictionary.dialogCancel
+        });
         $thisDialog.dialog('open');
       },
-      error : function() {
+      error: function() {
 
       }
     });
@@ -116,7 +122,7 @@ $(document).ready(function() {
   });
 
   $("#tncAccept").live("click", function(event) {
-    if($(this).is(":checked")){
+    if ($(this).is(":checked")) {
       $("#tncAcceptError").text("");
     }
   });
@@ -149,19 +155,19 @@ $(document).ready(function() {
     var $currentRow = $(this).parents('li');
     $currentRow.find(".widget_loaderbox").show();
     $.ajax({
-      type : "GET",
-      url : connectorPath + "/status?id=" + id,
+      type: "GET",
+      url: connectorPath + "/status?id=" + id,
       async: false,
-      dataType : 'json',
-      success : function(running) {
-        if (running){
+      dataType: 'json',
+      success: function(running) {
+        if (running) {
           $currentRow.find("#instance_icon").removeClass('stopped_listicon').addClass('running_listicon'); //remove existing class
-        }else{
+        } else {
           $currentRow.find("#instance_icon").removeClass('running_listicon').addClass('stopped_listicon');
         }
         $currentRow.find(".widget_loaderbox").hide();
       },
-      error : function(error) {
+      error: function(error) {
         $currentRow.find(".widget_loaderbox").hide();
       }
     });
@@ -169,25 +175,29 @@ $(document).ready(function() {
 
   $("li.edit").live("click", function(event) {
     var id = $(this).parents('li').attr('serviceid');
+    filledActiveCurrencies = new Array();
     initDialog("dialog_edit_service_instance", 900);
     var actionurl = connectorPath + "/" + type + "?instanceId=" + id;
     $("#spinning_wheel").show();
     $.ajax({
-      type : "GET",
-      url : actionurl,
-      dataType : 'html',
-      success : function(html) {
+      type: "GET",
+      url: actionurl,
+      dataType: 'html',
+      success: function(html) {
         var $thisDialog = $("#dialog_edit_service_instance");
         $thisDialog.html(html);
         $thisDialog.bind("dialogbeforeclose", function(event, ui) {
           $thisDialog.empty();
         });
         $currentDialog = $thisDialog;
-        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
+        dialogButtonsLocalizer($thisDialog, {
+          'OK': g_dictionary.dialogOK,
+          'Cancel': g_dictionary.dialogCancel
+        });
         $currentDialog.dialog('open');
         $("#spinning_wheel").hide();
       },
-      error : function(error) {
+      error: function(error) {
         $("#spinning_wheel").hide();
       }
     });
@@ -195,62 +205,32 @@ $(document).ready(function() {
 
   $(".add_button.active.add_service").live("click", function(event) {
     var id = $(this).attr('id');
+    filledActiveCurrencies = new Array();
     initDialog("dialog_add_service_instance", 900);
     var actionurl = connectorPath + "/" + type + "?id=" + id;
     $("#spinning_wheel").show();
     $.ajax({
-      type : "GET",
-      url : actionurl,
-      dataType : "html",
-      success : function(html) {
+      type: "GET",
+      url: actionurl,
+      dataType: "html",
+      success: function(html) {
         var $thisDialog = $("#dialog_add_service_instance");
         $thisDialog.html(html);
         $thisDialog.bind("dialogbeforeclose", function(event, ui) {
           $thisDialog.empty();
         });
         $currentDialog = $thisDialog;
-        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
+        dialogButtonsLocalizer($thisDialog, {
+          'OK': g_dictionary.dialogOK,
+          'Cancel': g_dictionary.dialogCancel
+        });
         $currentDialog.dialog('open');
         $("#spinning_wheel").hide();
       },
-      error : function() {
+      error: function() {
         $("#spinning_wheel").hide();
       }
     });
-  });
-
-  $(".toggleButton").iButton({
-    labelOn: dictionary.toggleButtonEnable,
-    labelOff: dictionary.toggleButtonDisable,
-    change: function ($input) {
-      var id = $input.attr('id');
-      if ($input.is(":checked")) {
-        newvalue = true;
-        //dialog_enable_service(id.substr(8));
-      } else {
-        newvalue = false;
-      }
-      initDialogWithOK("dialog_info", 350, false);
-      $("#dialog_info").dialog("option", "height", 150);
-      $.ajax({
-        type: "POST",
-        url : connectorPath + "/enable?id=" + id.substr(8) + "&enable="+ newvalue,
-        dataType: 'json',
-        success: function (json) {
-          if (json.result == "success") {
-            $("#dialog_info").text(json.message).dialog("open");
-          } else {
-            $("#" + id).attr('checked', !newvalue);
-            $("#" + id).iButton("repaint");
-            $("#dialog_info").text(json.message).dialog("open");
-          }
-        },
-        error: function (request) {
-          $("#" + id).attr('checked', !newvalue);
-          $("#" + id).iButton("repaint");
-        }
-      });
-    }
   });
 
   $("li.widget_navigationlist").live("click", function(event) {
@@ -262,88 +242,105 @@ $(document).ready(function() {
     $(this).addClass("active");
   });
   $(".button_manage_service").live("click", showResourcesIFrame);
-  
-  $(".utility_rates_link").unbind("click").bind("click", function() {
-	  var serviceInstanceUUID = $(this).attr('id').substr(7);
-	  viewUtilitRates(effectiveTenantParam,"utilityrates_lightbox", null, serviceInstanceUUID);
- });
-  $(".subscibe_to_bundles_link").unbind("click").bind("click", function() {
-	  var serviceInstanceUUID = $(this).attr('id').substr(10);
-	  window.location ="/portal/portal/subscription/createsubscription?tenant="+effectiveTenantParam+"&serviceInstanceUUID="+serviceInstanceUUID;
-  });
-  
 
-  $(".learn_more_link").live("click", function(event){
-    var si_id=$(this).attr('id').substr(16);
+  $(".utility_rates_link").unbind("click").bind("click", function() {
+    var serviceInstanceUUID = $(this).attr('id').substr(7);
+    viewUtilitRates(effectiveTenantParam, "utilityrates_lightbox", null, serviceInstanceUUID);
+  });
+  $(".subscibe_to_bundles_link").unbind("click").bind("click", function() {
+    var serviceInstanceUUID = $(this).attr('id').substr(10);
+    window.location = "/portal/portal/subscription/createsubscription?tenant=" + effectiveTenantParam +
+      "&serviceInstanceUUID=" + serviceInstanceUUID;
+  });
+
+  $("#all_selected_usage_type").live("click", function(event) {
+    var isChecked = $(event.target).attr("checked");
+    var checkboxList = $("#step3").find("#productsList input:checkbox");
+    checkboxList.each(function(idx, i) {
+      var checkboxItem = $(i);
+      if (isChecked == "checked") {
+        checkboxItem.attr("checked", isChecked);
+      } else {
+        checkboxItem.prop("checked", false);
+      }
+    });
+  });
+
+  $(".learn_more_link").live("click", function(event) {
+    var si_id = $(this).attr('id').substr(16);
     $(this).toggleClass("more_down");
     $(this).toggleClass("more_up");
-    $("#stripped_content_"+si_id).toggle();
-    $("#learn_more_content_"+si_id).toggle();
+    $("#stripped_content_" + si_id).toggle();
+    $("#learn_more_content_" + si_id).toggle();
   });
 
-  function uploadServiceInstanceImageGet(ID){
+  function uploadServiceInstanceImageGet(ID) {
     initDialog("dialog_upload_service_instance_image", 550);
-    var actionurl = connectorPath+"/upload_logo";
-      $.ajax( {
-        type : "GET",
-        url : actionurl,
-        data: {"Id": ID},
-        async:false,
-        dataType : "html",
-        success : function(html) {
-                var $thisDialog = $("#dialog_upload_service_instance_image");
-                $thisDialog.empty();
-                $thisDialog.html(html);
-                $thisDialog.dialog('option', 'buttons', {
-                  "OK":function(){
-                    if( $('#serviceInstanceLogoForm').valid()){
-                      $('#serviceInstanceLogoForm').iframePostForm({
-                        iframeID : 'serviceInstanceLogoForm-iframe-post-form',
-                        dataType : 'html',
-                        post : function() {
-                          $("#serviceInstanceLogoForm-iframe-post-form").hide();
-                          return true;
-                        },
-                        complete : function(text) {
-                          if(text == 'success'){
-                            $thisDialog.dialog('close');
-                            alert(dictionary.imageUploadedSuccessfully);
-                          }else{
-                            $("#logoError").text(text);
-                          }
-                        }
-                      });
-                      $('#serviceInstanceLogoForm').submit();
-                   }
-
-                 },
-                  "Cancel":function(){
-                    $("#dialog_upload_service_instance_image").empty();
-                     $thisDialog.dialog('close');
+    var actionurl = connectorPath + "/upload_logo";
+    $.ajax({
+      type: "GET",
+      url: actionurl,
+      data: {
+        "Id": ID
+      },
+      async: false,
+      dataType: "html",
+      success: function(html) {
+        var $thisDialog = $("#dialog_upload_service_instance_image");
+        $thisDialog.empty();
+        $thisDialog.html(html);
+        $thisDialog.dialog('option', 'buttons', {
+          "OK": function() {
+            if ($('#serviceInstanceLogoForm').valid()) {
+              $('#serviceInstanceLogoForm').iframePostForm({
+                iframeID: 'serviceInstanceLogoForm-iframe-post-form',
+                dataType: 'html',
+                post: function() {
+                  $("#serviceInstanceLogoForm-iframe-post-form").hide();
+                  return true;
+                },
+                complete: function(text) {
+                  if (text == 'success') {
+                    $thisDialog.dialog('close');
+                    alert(dictionary.imageUploadedSuccessfully);
+                  } else {
+                    $("#logoError").text(text);
                   }
-                });
-                dialogButtonsLocalizer($thisDialog, {'Cancel': g_dictionary.dialogCancel});
-                $thisDialog.bind( "dialogbeforeclose", function(event, ui) {
-                  $thisDialog.empty();
-                  });
-                $thisDialog.dialog("open");
-              },error:function(){
+                }
+              });
+              $('#serviceInstanceLogoForm').submit();
+            }
+
+          },
+          "Cancel": function() {
+            $("#dialog_upload_service_instance_image").empty();
+            $thisDialog.dialog('close');
           }
-      });
-}
+        });
+        dialogButtonsLocalizer($thisDialog, {
+          'Cancel': g_dictionary.dialogCancel
+        });
+        $thisDialog.bind("dialogbeforeclose", function(event, ui) {
+          $thisDialog.empty();
+        });
+        $thisDialog.dialog("open");
+      },
+      error: function() {}
+    });
+  }
 });
 
 function showSelectedCategory(category) {
   $('div.servicelist_extended').hide();
-  if(category!="All"){
+  if (category != "All") {
     $('div.servicelist.mainbox').hide();
     $('div.servicelist.mainbox[category=' + category + ']').show();
-  }else{
+  } else {
     $("div.servicelist.mainbox").show();
   }
   $("#selectedcategory").val(category);
   $("a.filters").removeClass('selected');
-  $('a.filters[id='+ category +']').addClass('selected');
+  $('a.filters[id=' + category + ']').addClass('selected');
 }
 
 function dialog_enable_service(id) {
@@ -351,22 +348,28 @@ function dialog_enable_service(id) {
   var actionurl = connectorPath + "/enable_service?id=" + id;
   $("#spinning_wheel").show();
   $.ajax({
-    type : "GET",
-    url : actionurl,
-    dataType : "html",
-    success : function(html) {
+    type: "GET",
+    url: actionurl,
+    dataType: "html",
+    success: function(html) {
       var $thisDialog = $("#dialog_enable_service");
-      $thisDialog.dialog("option",{ height: "auto", width : 785});
+      $thisDialog.dialog("option", {
+        height: "auto",
+        width: 785
+      });
       $thisDialog.html(html);
       $thisDialog.bind("dialogbeforeclose", function(event, ui) {
         $thisDialog.empty();
       });
       $currentDialog = $thisDialog;
-      dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
+      dialogButtonsLocalizer($thisDialog, {
+        'OK': g_dictionary.dialogOK,
+        'Cancel': g_dictionary.dialogCancel
+      });
       $currentDialog.dialog('open');
       $("#spinning_wheel").hide();
     },
-    error : function() {
+    error: function() {
       $("#spinning_wheel").hide();
     }
   });
@@ -379,14 +382,14 @@ function goToNextStep(current) {
   var nextstep = $currentstep.find("#nextstep").val();
 
 
-  if(nextstep != "step4"){
-    if(currentstep == "step1" && $("#tncAccept").is(':checked')==false){
+  if (nextstep != "step4") {
+    if (currentstep == "step1" && $("#tncAccept").is(':checked') == false) {
       $("#tncAcceptError").text(dictionary.tncAcceptMessage);
-    }else{
+    } else {
       $currentstep.hide();
       $("#" + nextstep).show();
     }
-  }else{
+  } else {
     //submit
     $("#spinning_wheel").show();
     var profiledetails = new Array();
@@ -395,7 +398,7 @@ function goToNextStep(current) {
       var roles = new Array();
       var profileid = $(this).attr('id').substr(8);
       $(this).find('input[id^="role_"]:checked').each(function() {
-        var rolename = $(this).attr("id").substr(5);//Remove role_
+        var rolename = $(this).attr("id").substr(5); //Remove role_
         roles.push(rolename);
       });
       var profiledetail = new Object();
@@ -405,21 +408,21 @@ function goToNextStep(current) {
     });
 
     $.ajax({
-      type : "POST",
-      url : connectorPath + "/enable_service",
-      data : {
-        "profiledetails" : JSON.stringify(profiledetails),
-        "id" : $("#serviceParam").val()
+      type: "POST",
+      url: connectorPath + "/enable_service",
+      data: {
+        "profiledetails": JSON.stringify(profiledetails),
+        "id": $("#serviceParam").val()
       },
-      dataType : "text",
-      success : function(status) {
-        if(status =='success'){
+      dataType: "text",
+      success: function(status) {
+        if (status == 'success') {
           $("#step4").show();
           $currentstep.hide();
         }
         $("#spinning_wheel").hide();
       },
-      error : function(status) {
+      error: function(status) {
         $("#spinning_wheel").hide();
       }
     });
@@ -431,7 +434,7 @@ function goToPreviousStep(current) {
   var $currentstep = $("#" + currentstep);
   var prevstep = $currentstep.find("#prevstep").val();
 
-  if(prevstep != ""){
+  if (prevstep != "") {
     $currentstep.hide();
     $("#" + prevstep).show();
   }
@@ -452,114 +455,121 @@ function closeEditServiceInstanceDialog() {
   window.location = "/portal/portal/connector/cs";
 }
 
-function resolveViewForSettingFromServiceInstance(serviceInstanceUUID,currentTenantParam,serviceInstanceName){
+function resolveViewForSettingFromServiceInstance(serviceInstanceUUID, currentTenantParam, serviceInstanceName) {
   $("#selectedInstanceH1").append(serviceInstanceName);
   $("#serviceAccountConfigDiv").show();
   $("#myServicesDiv").hide();
-  $("#serviceAccountConfigViewFrame").attr("src", "/portal/portal/connector/account_config_params/?serviceInstanceUUID="+serviceInstanceUUID+"&tenant="+effectiveTenantParam);
+  $("#serviceAccountConfigViewFrame").attr("src",
+    "/portal/portal/connector/account_config_params/?serviceInstanceUUID=" + serviceInstanceUUID + "&tenant=" +
+    effectiveTenantParam);
 }
 
-function resolveViewForSettingFromServiceInstance2(instanceUuid){
+function resolveViewForSettingFromServiceInstance2(instanceUuid) {
   $("#manage_services_info").hide();
   $("#myServicesDiv").hide();
   $(".left_filtermenu").hide();
   $("#userSubscribedServiceDetails").show();
-  var actionurl = "/portal/portal/users/resolve_view_for_Settings?instanceUuid="+instanceUuid;
+  var actionurl = "/portal/portal/users/resolve_view_for_Settings?instanceUuid=" + instanceUuid;
   $("#full_page_spinning_wheel").show();
   $.ajax({
-    type : "GET",
-    url : actionurl,
-    dataType : "json",
-    success : function(json) {
-    	$("#full_page_spinning_wheel").hide();
-      if(json != null && json.url != null){
+    type: "GET",
+    url: actionurl,
+    dataType: "json",
+    success: function(json) {
+      $("#full_page_spinning_wheel").hide();
+      if (json != null && json.url != null) {
         $("#userOrAccountSettingsViewFrame").attr("src", json.url);
       }
     },
-    error:function(e){
-    $("#full_page_spinning_wheel").hide();
+    error: function(e) {
+      $("#full_page_spinning_wheel").hide();
     }
   });
 }
 
 $("#backToSubscribedServiceListing").live("click", function(event) {
-  $("#userOrAccountSettingsViewFrame").attr("src","");
+  $("#userOrAccountSettingsViewFrame").attr("src", "");
   $("#userSubscribedServiceDetails").hide();
   $("#manage_services_info").show();
   $("#myServicesDiv").show();
   $(".left_filtermenu").show();
 
-  });
+});
 
 
 function resolveViewForAccountSettingFromServiceInstance(instanceUuid, tenantParam, serviceInstanceName) {
-  var actionurl = "/portal/portal/users/resolve_view_for_account_settings?instanceUuid="+instanceUuid+"&tenantParam="+tenantParam;
+  var actionurl = "/portal/portal/users/resolve_view_for_account_settings?instanceUuid=" + instanceUuid +
+    "&tenantParam=" + tenantParam;
   $.ajax({
-    type : "GET",
-    url : actionurl,
-    dataType : "json",
-  success : function(json) {
-    if(json != null && json.url != null) {
-      $("#selectedInstanceH1").append(serviceInstanceName);
-      $("#serviceAccountConfigDiv").show();
-      $("#myServicesDiv").hide();
-      $("#serviceAccountConfigViewFrame").attr("src", json.url);
-    } else {
-      popUpDialogForAlerts("dialog_info", dictionary.noSettingsFound);
+    type: "GET",
+    url: actionurl,
+    dataType: "json",
+    success: function(json) {
+      if (json != null && json.url != null) {
+        $("#selectedInstanceH1").append(serviceInstanceName);
+        $("#serviceAccountConfigDiv").show();
+        $("#myServicesDiv").hide();
+        $("#serviceAccountConfigViewFrame").attr("src", json.url);
+      } else {
+        popUpDialogForAlerts("dialog_info", dictionary.noSettingsFound);
+      }
+    },
+    error: function(e) {
+      // TODO pop up (?) message for no account specific settings are found
     }
-  },
-  error:function(e){
-    // TODO pop up (?) message for no account specific settings are found
-  }
   });
 }
 
 //Checks if the ServiceInstance/Product code is unique or not
-function validate_code(event, input, codeType){
+
+function validate_code(event, input, codeType) {
   clearCodeError(input);
   var code = $(input).val().trim();
-  if(input.defaultValue != null && input.defaultValue.trim() != "" && input.defaultValue.trim() == code)
-  {
+  if (input.defaultValue != null && input.defaultValue.trim() != "" && input.defaultValue.trim() == code) {
     return true;
   }
   var err_msg = "";
-  if(code.length >= 255){
+  if (code.length >= 255) {
     err_msg = dictionary.max_length_exceeded + " 64";
   }
 
-  if( code.length > 0 && !/^[a-zA-Z0-9_:\[\]-]+$/.test(code)){
+  if (code.length > 0 && !/^[a-zA-Z0-9_:\[\]-]+$/.test(code)) {
     err_msg = dictionary.code_invalid;
   }
 
-  if (err_msg.trim().length > 0){
+  if (err_msg.trim().length > 0) {
     codeErrorPlacement(input, err_msg);
     return false;
   }
   var urlData = {};
   if (codeType == "serviceInstanceCode") {
-    urlData = {"serviceInstanceCode": code};
+    urlData = {
+      "serviceInstanceCode": code
+    };
   } else if (codeType == "productCode") {
-    urlData = {"product.code": code};
+    urlData = {
+      "product.code": code
+    };
   }
   var returnVal = false;
-  $.ajax( {
-    type : "GET",
-        url : "/portal/portal/products/validateCode",
-        data: urlData,
-        dataType : "html",
-        async : false,
-        cache: false,
-        success : function(result) {
-          if(result == "false"){
-            codeErrorPlacement(input, dictionary.code_not_unique);
-          } else {
-            returnVal = true;
-            clearCodeError(input);
-          }
-        },
-        error : function (html) {
-          codeErrorPlacement(input, html);
-        }
+  $.ajax({
+    type: "GET",
+    url: "/portal/portal/products/validateCode",
+    data: urlData,
+    dataType: "html",
+    async: false,
+    cache: false,
+    success: function(result) {
+      if (result == "false") {
+        codeErrorPlacement(input, dictionary.code_not_unique);
+      } else {
+        returnVal = true;
+        clearCodeError(input);
+      }
+    },
+    error: function(html) {
+      codeErrorPlacement(input, html);
+    }
   });
   return returnVal;
 }
@@ -582,8 +592,8 @@ function codeErrorPlacement(element, errmsg) {
 
 function createInstance(nextstep) {
   $("#step5").find("#spinning_wheel").show();
-  var uuid =  $("#step5").find("#add_service_instance_next").attr('uuid');
-  var action= $("#step5").find("#add_service_instance_next").attr('action');
+  var uuid = $("#step5").find("#add_service_instance_next").attr('uuid');
+  var action = $("#step5").find("#add_service_instance_next").attr('action');
   var configProperties = new Array();
   $('input[id^="configproperty"]').each(function() {
     var configProperty = new Object();
@@ -592,11 +602,11 @@ function createInstance(nextstep) {
     configProperties.push(configProperty);
   });
   $('textarea[id^="configproperty"]').each(function() {
-      var configProperty = new Object();
-      configProperty.name = $(this).attr("name");
-      configProperty.value = $(this).val();
-      configProperties.push(configProperty);
-    });
+    var configProperty = new Object();
+    configProperty.name = $(this).attr("name");
+    configProperty.value = $(this).val();
+    configProperties.push(configProperty);
+  });
 
   $('input[id^="configbooleantrue"]:checked').each(function() {
     var configProperty = new Object();
@@ -641,23 +651,23 @@ function createInstance(nextstep) {
 
   var $resultDisplayBanner = $("#validationError");
   $.ajax({
-    type : "POST",
-    url : connectorPath + "/create_instance",
-    data : {
-      "configProperties" : JSON.stringify(configProperties),
-      "quickProducts" : JSON.stringify(quickProducts),
-      "id" : uuid,
-      "action" : action
+    type: "POST",
+    url: connectorPath + "/create_instance",
+    data: {
+      "configProperties": JSON.stringify(configProperties),
+      "quickProducts": JSON.stringify(quickProducts),
+      "id": uuid,
+      "action": action
     },
-    dataType : "json",
+    dataType: "json",
     async: false,
-    success : function(data) {
+    success: function(data) {
       $("#step5").find("#spinning_wheel").hide();
 
       if (data.validationResult == "SUCCESS") {
         if (data.result == "SUCCESS") {
-          $resultDisplayBanner.css('color','green');
-          if($("#" + uuid).find(".add_button").attr('singleton')=="true"){
+          $resultDisplayBanner.css('color', 'green');
+          if ($("#" + uuid).find(".add_button").attr('singleton') == "true") {
             $("#" + uuid).find(".add_button").removeClass("active").addClass("nonactive");
           }
           $(".j_cloudservicepopup").hide();
@@ -670,7 +680,7 @@ function createInstance(nextstep) {
         $resultDisplayBanner.parent("#serviceInstanceError").show();
       }
     },
-    error : function(data) {
+    error: function(data) {
       $resultDisplayBanner.text(i18n.errors.connector.createfailed);
       $resultDisplayBanner.parent("#serviceInstanceError").show();
       $("#step5").find("#spinning_wheel").hide();
@@ -678,10 +688,28 @@ function createInstance(nextstep) {
   });
 }
 
-function addServiceInstancePrevious(current){
+function addServiceInstancePrevious(current) {
   var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
   var $currentstep = $("#" + currentstep);
+  if (currentstep == "step4") {
+    var checkboxList = $("#productsList input:checked");
+    filledActiveCurrencies = new Array();
+    checkboxList.each(function(idx, i) {
+      var checkboxItem = $(i);
+      var usageTypeName = checkboxItem.attr("name");
+      filledActiveCurrencies[usageTypeName] = new Array();
+      var activeCurrencies = $("#step4").find("#productItem\\." + usageTypeName).find(".j_pricerequired");
+      activeCurrencies.each(function(idxx, index) {
+        var price = new Object();
+        var currency = $(index);
+        price.currencyCode = currency.attr("id");
+        price.currencyVal = currency.val();
+        filledActiveCurrencies[usageTypeName][price.currencyCode] = price.currencyVal;
+      });
+    });
+  }
   if (currentstep == "step5") {
+    $("#serviceInstanceError").hide();
     var checkboxList = $("#step3").find("#productsList input:checkbox");
     if (checkboxList.length == 0) {
       $(".j_cloudservicepopup").hide();
@@ -689,10 +717,11 @@ function addServiceInstancePrevious(current){
       return;
     }
   }
+
   var prevStep = $currentstep.find("#prevstep").val();
-  if(prevStep !=""){
+  if (prevStep != "") {
     $(".j_cloudservicepopup").hide();
-    $("#"+prevStep).show();
+    $("#" + prevStep).show();
   }
 }
 
@@ -718,40 +747,49 @@ function addServiceInstanceNext(current) {
     }
   });
 
-  if(currentstep == "step3") {
+  if (currentstep == "step3") {
     var checkboxList = $("#productsList input:checked");
     $step4.find("#productPriceDiv").find("#productPriceListDiv").empty();
     var isProductCodeValid = true;
     var productCodeMap = new Array();
     checkboxList.each(function(idx, i) {
-        var checkboxItem = $(i);
-        var usageTypeName = checkboxItem.attr("name");
-        var parentDiv = checkboxItem.parent().parent();
-        var returnVal = validate_code(null, parentDiv.find("#product\\.code\\." + usageTypeName)[0], "productCode");
-        if (!returnVal) {
-          isProductCodeValid = false;
-        }
-        var prodCode = $(parentDiv.find("#product\\.code\\." + usageTypeName)[0]).val().trim();
-        if (productCodeMap[prodCode] != undefined) {
-          codeErrorPlacement(parentDiv.find("#product\\.code\\." + usageTypeName)[0], dictionary.code_not_unique);
-          isProductCodeValid = false;
-        } else {
-          productCodeMap[prodCode] = "";
-        }
-        var selectedProductName = parentDiv.find("#product\\.name\\." + usageTypeName).val();
-        var selectedUOM = parentDiv.find("#product\\.scale\\." + usageTypeName + " :selected").text().trim();
-        var selectedCategory = parentDiv.find("#product\\.category\\." + usageTypeName + " :selected").text().trim();
-        var selectedProductCode = parentDiv.find("#product\\.code\\." + usageTypeName).val();
-        var productItem = $step4.find("#productPriceDiv").find("#productItem").clone();
-        productItem.find("#selectedProductName").text(selectedProductName);
-        productItem.find("#selectedUOM").text(selectedUOM);
-        productItem.find("#selectedProductCategory").text(selectedCategory);
-        productItem.find("#selectedProductCode").text(selectedProductCode);
-        productItem.attr("id", "productItem." + usageTypeName);
-        $step4.find("#productPriceDiv").find("#productPriceListDiv").append(productItem);
-        productItem.show();
+      var checkboxItem = $(i);
+      var usageTypeName = checkboxItem.attr("name");
+      var parentDiv = checkboxItem.parent().parent();
+      var returnVal = validate_code(null, parentDiv.find("#product\\.code\\." + usageTypeName)[0], "productCode");
+      if (!returnVal) {
+        isProductCodeValid = false;
+      }
+      var prodCode = $(parentDiv.find("#product\\.code\\." + usageTypeName)[0]).val().trim();
+      if (productCodeMap[prodCode] != undefined) {
+        codeErrorPlacement(parentDiv.find("#product\\.code\\." + usageTypeName)[0], dictionary.code_not_unique);
+        isProductCodeValid = false;
+      } else {
+        productCodeMap[prodCode] = "";
+      }
+      var selectedProductName = parentDiv.find("#product\\.name\\." + usageTypeName).val();
+      var selectedUOM = parentDiv.find("#product\\.scale\\." + usageTypeName + " :selected").text().trim();
+      var selectedCategory = parentDiv.find("#product\\.category\\." + usageTypeName + " :selected").text().trim();
+      var selectedProductCode = parentDiv.find("#product\\.code\\." + usageTypeName).val();
+      var productItem = $step4.find("#productPriceDiv").find("#productItem").clone();
+      productItem.find("#selectedProductName").text(selectedProductName);
+      productItem.find("#selectedUOM").text(selectedUOM);
+      productItem.find("#selectedProductCategory").text(selectedCategory);
+      productItem.find("#selectedProductCode").text(selectedProductCode);
+      productItem.attr("id", "productItem." + usageTypeName);
+      var usageTypeCurVals = filledActiveCurrencies[usageTypeName];
+      if (usageTypeCurVals != undefined) {
+        var activeCurrencies = productItem.find(".j_pricerequired");
+        activeCurrencies.each(function(idxx, index) {
+          var currency = $(index);
+          var currencyCode = currency.attr("id");
+          currency.val(usageTypeCurVals[currencyCode]);
+        });
+      }
+      $step4.find("#productPriceDiv").find("#productPriceListDiv").append(productItem);
+      productItem.show();
     });
-    if(!isProductCodeValid) {
+    if (!isProductCodeValid) {
       return;
     }
   }
@@ -761,7 +799,7 @@ function addServiceInstanceNext(current) {
       if (!returnVal)
         return;
 
-      if($("#isOptionalFieldAvailable").val() == "true") {
+      if ($("#isOptionalFieldAvailable").val() == "true") {
         $step2.find("#optionalSettings").show();
       }
 
@@ -769,20 +807,22 @@ function addServiceInstanceNext(current) {
       $step5.find("#confirmServiceInstanceDetails").find("#name").attr("title", $("#configproperty_instance_name").val());
       $step5.find("#confirmServiceInstanceDetails").find("#code").text($("#configproperty_instance_code").val());
       $step5.find("#confirmServiceInstanceDetails").find("#code").attr("title", $("#configproperty_instance_code").val());
-      $step5.find("#confirmServiceInstanceDetails").find("#service_description").text($("#configproperty_instance_description").val());
-      $step5.find("#confirmServiceInstanceDetails").find("#service_description").attr("title", $("#configproperty_instance_description").val());
+      $step5.find("#confirmServiceInstanceDetails").find("#service_description").text($(
+        "#configproperty_instance_description").val());
+      $step5.find("#confirmServiceInstanceDetails").find("#service_description").attr("title", $(
+        "#configproperty_instance_description").val());
 
       var serviceInstanceName = $("#configproperty_instance_name").val();
       var serviceInstanceNameToDisplay = "<br>";
       var size = serviceInstanceName.length;
       var maxsize = 50;
       var count = 0;
-      while (size > 50){
+      while (size > 50) {
         serviceInstanceNameToDisplay += serviceInstanceName.substring(count, count + maxsize) + "<br>";
         count = count + maxsize;
         size = size - 50;
       }
-      serviceInstanceNameToDisplay += serviceInstanceName.substring(count)+"<br>";
+      serviceInstanceNameToDisplay += serviceInstanceName.substring(count) + "<br>";
       $step6.find("#successmessage").append(serviceInstanceNameToDisplay);
     }
     if (currentstep == "step2") {
@@ -798,7 +838,8 @@ function addServiceInstanceNext(current) {
         var checkboxItem = $(i);
         var usageTypeName = checkboxItem.attr("name");
         var parentDiv = checkboxItem.parent().parent();
-        parentDiv.find("#product\\.code\\." + usageTypeName).val($("#configproperty_instance_code").val() + "_" + usageTypeName);
+        parentDiv.find("#product\\.code\\." + usageTypeName).val($("#configproperty_instance_code").val() + "_" +
+          usageTypeName);
       });
     }
     if (currentstep == "step3") {
@@ -806,6 +847,23 @@ function addServiceInstanceNext(current) {
       $step4.show();
       fixupTooltipZIndex($step4.find("#productPriceDiv").find("#productPriceListDiv"));
       return;
+    }
+    if (currentstep == "step4") {
+      var checkboxList = $("#productsList input:checked");
+      filledActiveCurrencies = new Array();
+      checkboxList.each(function(idx, i) {
+        var checkboxItem = $(i);
+        var usageTypeName = checkboxItem.attr("name");
+        filledActiveCurrencies[usageTypeName] = new Array();
+        var activeCurrencies = $("#step4").find("#productItem\\." + usageTypeName).find(".j_pricerequired");
+        activeCurrencies.each(function(idxx, index) {
+          var price = new Object();
+          var currency = $(index);
+          price.currencyCode = currency.attr("id");
+          price.currencyVal = currency.val();
+          filledActiveCurrencies[usageTypeName][price.currencyCode] = price.currencyVal;
+        });
+      });
     }
     if ((currentstep == "step5")) {
       //call submit
@@ -822,51 +880,48 @@ function addServiceInstanceNext(current) {
   }
 }
 
-function fixupTooltipZIndex(current){
+function fixupTooltipZIndex(current) {
   var initialIndex = 200;
-  $(current).find('.widget_grid').each (function() {
+  $(current).find('.widget_grid').each(function() {
     var style = $(this).attr('style');
-    if(style){
+    if (style) {
       $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    }
-    else{
+    } else {
       $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
     }
     initialIndex -= 5;
   });
   initialIndex = 400;
-  $(current).find('.widget_grid_cell').each (function() {
+  $(current).find('.widget_grid_cell').each(function() {
     var style = $(this).attr('style');
-    if(style){
+    if (style) {
       $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    }
-    else{
+    } else {
       $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
     }
     initialIndex -= 5;
   });
   initialIndex = 700;
-  $(current).find('.subheader').each (function() {
+  $(current).find('.subheader').each(function() {
     var style = $(this).attr('style');
-    if(style){
+    if (style) {
       $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    }
-    else{
+    } else {
       $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
     }
     initialIndex -= 5;
   });
   initialIndex = 1000;
-  $(current).find('.widget_details_popover').each (function() {
+  $(current).find('.widget_details_popover').each(function() {
     var style = $(this).attr('style');
     var position = $(this).parent().find(".levelicon").position();
     var left = position.left + 43;
     var top = position.top + 5;
-    if(style){
-      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top +"px;");
-    }
-    else{
-      $(this).attr('style', 'z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top +"px;");
+    if (style) {
+      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top +
+        "px;");
+    } else {
+      $(this).attr('style', 'z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top + "px;");
     }
     initialIndex -= 5;
   });
@@ -874,7 +929,7 @@ function fixupTooltipZIndex(current){
 
 function onProductDetailMouseover(current) {
   var currentItem = $(current);
-  if($(current).hasClass('active'))
+  if ($(current).hasClass('active'))
     return;
   var productPriceItem = currentItem.parent().parent();
   productPriceItem.find("#info_bubble").show();
@@ -890,11 +945,11 @@ function onProductDetailMouseout(current) {
 
 function showHideUnmaskedField(show_unmasked_link) {
   var selected_field_id = $(show_unmasked_link).attr("id").replace("_show_unmasked", "");
-  var masked_field = $("#"+selected_field_id).get(0);
-  if($(show_unmasked_link).attr('disabled') == 'disabled') {
+  var masked_field = $("#" + selected_field_id).get(0);
+  if ($(show_unmasked_link).attr('disabled') == 'disabled') {
     return;
   }
-  if(masked_field.getAttribute('type') == 'text') {
+  if (masked_field.getAttribute('type') == 'text') {
     masked_field.setAttribute('type', 'password');
     $(show_unmasked_link).text(dictionary.viewMasked);
   } else {
@@ -904,15 +959,20 @@ function showHideUnmaskedField(show_unmasked_link) {
 }
 
 function showHideUnmaskedLink(masked_field) {
-  var value = $("#"+$(masked_field).attr("id")).val();
-  var $link = $("#"+$(masked_field).attr("id")+"_show_unmasked");
+  var value = $("#" + $(masked_field).attr("id")).val();
+  var $link = $("#" + $(masked_field).attr("id") + "_show_unmasked");
 
-  if(value != "") {
-    $link.css({opacity: 1.0, visibility: "visible"});
+  if (value != "") {
+    $link.css({
+      opacity: 1.0,
+      visibility: "visible"
+    });
     $link.attr('disabled', false);
   } else {
-    $link.css({opacity: 0.5, visibility: "visible"});
+    $link.css({
+      opacity: 0.5,
+      visibility: "visible"
+    });
     $link.attr('disabled', true);
   }
 }
-

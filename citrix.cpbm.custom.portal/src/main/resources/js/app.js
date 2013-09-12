@@ -9,129 +9,126 @@ var PRECONDITION_FAILED = 412;
 var ssoResponseMap = null;
 
 $(document).ready(
-    function() {
-      if ($("#from_cas_login_page").val() == 'true') {
-        $.ajax({
-          type : "GET",
-          url : "/portal/portal/getSupportedLanguages",
-          async : false,
-          dataType : "json",
-          success : function(response) {
+  function() {
+    if ($("#from_cas_login_page").val() == 'true') {
+      $.ajax({
+        type: "GET",
+        url: "/portal/portal/getSupportedLanguages",
+        async: false,
+        dataType: "json",
+        success: function(response) {
+          var htmlToPush = '';
+          for (var key in response) {
+            htmlToPush = htmlToPush + '<li class="language_select_option" id=' + key + '><span class="flagicons ' +
+              key + '"></span><span class="languagelist">' + response[key] + '</span></li>';
+          }
+          $(".catalog_signuppopoverlist").html(htmlToPush);
+          $(".language_select_option").bind('click',
+            function(event) {
+              reload_in_another_language($(this));
+            });
+        }
+      });
+
+      $.ajax({
+        type: "GET",
+        url: "/portal/portal/isShowAnnonymousCatalog",
+        async: false,
+        dataType: "json",
+        success: function(shouldShow) {
+          if (shouldShow == true) {
+            $("#language_selector_dropdown").css("left", "162px");
+            $("#cas_login_view_anonymous_browsing").show();
+          } else {
+            $("#language_selector_dropdown").css("left", "30px");
+            $("#cas_login_view_anonymous_browsing").hide();
+          }
+        }
+      });
+
+      $.ajax({
+        type: "GET",
+        url: "/portal/portal/getLoginPageUIRelatedConfigs",
+        async: false,
+        dataType: "json",
+        success: function(configs) {
+          if (configs.isDirectoryServiceAuthenticationON == "true") {
+            $("#login_maintabsarea_div_id").hide();
+            $("#login_main").attr('id', 'login_main_smaller_ver');
+            $("#login_contentpanel_div_id").addClass('smaller_ver');
+            $("#login_container_div_id").addClass('smaller_ver');
+            $("#login_headerarea_div_id").addClass('smaller_ver');
+            $("#login_maincontentarea_div_id").addClass('smaller_ver');
+            $("#login_formbox_div_id").addClass('smaller_ver');
+            $("#login_info_box").hide();
+            $("#loginbg_bot_div_id").addClass('smaller_ver');
+            $(".login_messages").addClass('smaller_ver');
+          }
+          if (configs.showSuffix == "true") {
+            $("#login_maintabsarea_div_id").hide();
+            $("#dontHaveAnAccount_p_id").hide();
+            $("#dontHaveAnAccount_a_id").hide();
+            $("#showSuffixControlVar").val("true");
+
+            $("#suffix_li").show();
+          }
+          if (configs.showSuffixDropBox == "true") {
+            var suffixList = configs.suffixList;
             var htmlToPush = '';
-            for ( var key in response) {
-              htmlToPush = htmlToPush
-                  + '<li class="language_select_option" id='
-                  + key + '><span class="flagicons ' + key
-                  + '"></span><span class="languagelist">'
-                  + response[key] + '</span></li>';
-            }
-            $(".catalog_signuppopoverlist").html(htmlToPush);
-            $(".language_select_option").bind('click',
-                function(event) {
-                  reload_in_another_language($(this));
-                });
-          }
-        });
-
-        $.ajax({
-          type : "GET",
-          url : "/portal/portal/isShowAnnonymousCatalog",
-          async : false,
-          dataType : "json",
-          success : function(shouldShow) {
-            if (shouldShow == true) {
-              $("#language_selector_dropdown").css("left", "162px");
-              $("#cas_login_view_anonymous_browsing").show();
-            } else {
-              $("#language_selector_dropdown").css("left", "30px");
-              $("#cas_login_view_anonymous_browsing").hide();
-            }
-          }
-        });
-
-        $.ajax({
-          type : "GET",
-          url : "/portal/portal/getLoginPageUIRelatedConfigs",
-          async : false,
-          dataType : "json",
-          success : function(configs) {
-            if(configs.isDirectoryServiceAuthenticationON=="true"){
-              $("#login_maintabsarea_div_id").hide();
-              $("#login_main").attr('id','login_main_smaller_ver');
-              $("#login_contentpanel_div_id").addClass('smaller_ver');
-              $("#login_container_div_id").addClass('smaller_ver');
-              $("#login_headerarea_div_id").addClass('smaller_ver');
-              $("#login_maincontentarea_div_id").addClass('smaller_ver');
-              $("#login_formbox_div_id").addClass('smaller_ver');
-              $("#login_info_box").hide();
-              $("#loginbg_bot_div_id").addClass('smaller_ver');
-              $(".login_messages").addClass('smaller_ver');
-            }
-            if(configs.showSuffix=="true"){
-              $("#login_maintabsarea_div_id").hide();
-              $("#dontHaveAnAccount_p_id").hide();
-              $("#dontHaveAnAccount_a_id").hide();
-              $("#showSuffixControlVar").val("true");
-
-              $("#suffix_li").show();
+            for (var index in suffixList) {
+              if (index == 0) {
+                $("#suffix").val(suffixList[index]);
               }
-            if(configs.showSuffixDropBox=="true"){
-              var suffixList = configs.suffixList;
-              var htmlToPush = '';
-              for ( var index in suffixList) {
-                if(index==0){
-                  $("#suffix").val(suffixList[index]);
-                }
-                htmlToPush=htmlToPush+'<option value="'+suffixList[index]+'">'+suffixList[index]+'</option>';
-              }
-              $("#suffixDropdown").html(htmlToPush);
-              $("#suffixDropdown").show();
-              }
-            else{
-              $("#suffix").show();
+              htmlToPush = htmlToPush + '<option value="' + suffixList[index] + '">' + suffixList[index] +
+                '</option>';
             }
+            $("#suffixDropdown").html(htmlToPush);
+            $("#suffixDropdown").show();
+          } else {
+            $("#suffix").show();
           }
-        });
+        }
+      });
 
-        $.ajax({
-          type : "GET",
-          url : "/portal/portal/isSystemActive",
-          async : false,
-          dataType : "json",
-          success : function(shouldShow) {
-            if (shouldShow == true) {
-              $("#login_info_box").show();
-              $("#signup_tab").show();
-            } else {
-              $("#login_info_box").hide();
-              $("#signup_tab").hide();
-            }
+      $.ajax({
+        type: "GET",
+        url: "/portal/portal/isSystemActive",
+        async: false,
+        dataType: "json",
+        success: function(shouldShow) {
+          if (shouldShow == true) {
+            $("#login_info_box").show();
+            $("#signup_tab").show();
+          } else {
+            $("#login_info_box").hide();
+            $("#signup_tab").hide();
           }
-        });
-        $("#login_main").show();
-        $("#login_main_smaller_ver").show();
-      }
+        }
+      });
+      $("#login_main").show();
+      $("#login_main_smaller_ver").show();
+    }
 
-      if ($("#from_login_page").val() == 'true') {
-        $.ajax({
-          type : "GET",
-          url : "/portal/portal/isSystemActive",
-          async : false,
-          dataType : "json",
-          success : function(shouldShow) {
-            if (shouldShow == true) {
-              $("#login_info_box").show();
-              $("#signup_tab").show();
-            } else {
-              $("#login_info_box").hide();
-              $("#signup_tab").hide();
-            }
+    if ($("#from_login_page").val() == 'true') {
+      $.ajax({
+        type: "GET",
+        url: "/portal/portal/isSystemActive",
+        async: false,
+        dataType: "json",
+        success: function(shouldShow) {
+          if (shouldShow == true) {
+            $("#login_info_box").show();
+            $("#signup_tab").show();
+          } else {
+            $("#login_info_box").hide();
+            $("#signup_tab").hide();
           }
-        });
-        $("#login_main").show();
-        $("#login_main_smaller_ver").show();
-      }
-    });
+        }
+      });
+      $("#login_main").show();
+      $("#login_main_smaller_ver").show();
+    }
+  });
 
 $("#language_selector").live('mouseover', function(event) {
   $("#language_selector_dropdown").show();
@@ -147,7 +144,7 @@ $("#browse_catalogs_li").live('click', function(event) {
   if (searchq.indexOf("lang=") != -1) {
     lang = searchq.substring(searchq.indexOf("lang="));
     window.location = "/portal/portal/catalog/browse_catalog?" + lang;
-  } else{
+  } else {
     window.location = "/portal/portal/catalog/browse_catalog";
   }
 });
@@ -159,12 +156,11 @@ $(".language_select_option").live('click', function(event) {
 function reload_in_another_language(obj) {
   if ($("#from_cas_login_page").val() == 'true') {
     $.ajax({
-      type : "GET",
-      url : "/portal/portal/setLocale?lang=" + obj.attr('id'),
-      async : false,
-      dataType : "json",
-      success : function(response) {
-      }
+      type: "GET",
+      url: "/portal/portal/setLocale?lang=" + obj.attr('id'),
+      async: false,
+      dataType: "json",
+      success: function(response) {}
     });
   }
   var searchq = window.location.search;
@@ -183,7 +179,7 @@ function reload_in_another_language(obj) {
       trimmedsearchq = searchq.substring(0, searchq.indexOf("lang="));
       if (searchq != "")
         loc = window.location.href.substring(0, window.location.href
-            .indexOf(searchq));
+          .indexOf(searchq));
       window.location = loc + trimmedsearchq + "lang=" + obj.attr('id');
     }
   }
@@ -206,7 +202,7 @@ if (typeof String.prototype.trim !== 'function') {
 }
 
 jQuery.fn.extend({
-  inputAutoTitles : function(options) {
+  inputAutoTitles: function(options) {
     // stick all the titles
     this.find('input[type=text]').each(function(i) {
       var title = $(this).attr('title');
@@ -236,12 +232,10 @@ jQuery.fn.extend({
 });
 
 jQuery.validator.addMethod("password", function(value, element) {
-  if (element.className == "text j_credit_card_cvv"
-      || element.className == "text j_credit_card_cvv error"
-      || element.className == "text j_credit_card_cvv valid")
+  if (element.className == "text j_credit_card_cvv" || element.className == "text j_credit_card_cvv error" || element
+    .className == "text j_credit_card_cvv valid")
     return true;
-  return this.optional(element) || value.length >= 8 && /\d/.test(value)
-      && /[A-Z]/.test(value);
+  return this.optional(element) || value.length >= 8 && /\d/.test(value) && /[A-Z]/.test(value);
 }, "8 characters, one number and one uppercase character required.");
 
 jQuery.validator.addMethod("notEqualTo", function(value, element, param) {
@@ -254,14 +248,14 @@ jQuery.validator.addMethod('noSpacesAllowed', function(value, element) {
 
 $.validator.addMethod("xRemote", function(value, element) {
   var rule = this.settings.rules[element.name].xRemote;
-  if (rule.condition && $.isFunction(rule.condition)
-      && !rule.condition.call(this, element))
+  if (rule.condition && $.isFunction(rule.condition) && !rule.condition.call(this, element))
     return "dependency-mismatch";
   return $.validator.methods.remote.apply(this, arguments);
 }, "Code already in use");
 
 jQuery.validator.addMethod("phone", function(value, element) {
-  return this.optional(element) || value.length > 0 && /^[\d-]+$/.test(value) && value.replace(/[^\d]/g, "").length < 13 && value.replace(/[^\d]/g, "").length > 4;
+  return this.optional(element) || value.length > 0 && /^[\d-]+$/.test(value) && value.replace(/[^\d]/g, "").length <
+    13 && value.replace(/[^\d]/g, "").length > 4;
 }, "Invalid phone number.");
 
 jQuery.validator.addMethod("countryCode", function(value, element) {
@@ -269,13 +263,13 @@ jQuery.validator.addMethod("countryCode", function(value, element) {
 }, "Invalid country code.");
 
 jQuery.validator.addMethod("flname", function(value, element) {
-  var myRegexp = /([[\.,\/#@!$%\^&\*;:{}=_`?~(\\)\d]+)/;
+  var myRegexp = /([[\.,\#@!$%\^&\*;:{}=_`?~(\\)\d]+)/;
   var match = myRegexp.exec(value);
   return this.optional(element) || value.length > 0 && match == null;
 }, "Only characters and special symbols ' - are allowed.");
 
 jQuery.validator.setDefaults({
-  submitHandler : function(form) {
+  submitHandler: function(form) {
     var submit = $(form).find(".submitmsg");
     if ($(submit).attr("rel") != null && $(submit).attr("rel") != "") {
       $(submit).attr("value", $(submit).attr("rel"));
@@ -288,8 +282,8 @@ jQuery.validator.setDefaults({
 });
 
 $.ajaxSetup({
-  contentType : "application/x-www-form-urlencoded;charset=utf8",
-  complete : function(xhr, status) {
+  contentType: "application/x-www-form-urlencoded;charset=utf8",
+  complete: function(xhr, status) {
     if (xhr.status == 401) {
       window.location.reload(false);
     }
@@ -307,7 +301,7 @@ $.ajaxSetup({
  * Extending Array object to support "indexOf()". START
  */
 if (!Array.prototype.indexOf) {
-  Array.prototype.indexOf = function(elt /* , from */) {
+  Array.prototype.indexOf = function(elt /* , from */ ) {
     var len = this.length >>> 0;
 
     var from = Number(arguments[1]) || 0;
@@ -336,8 +330,7 @@ function formUploadBeforeSubmit(form) {
   var thisForm = $(form);
   var csrfToken = $('input[name$="OWASP_CSRFTOKEN"]', thisForm).val();
   if (csrfToken != null) {
-    thisForm.attr('action', thisForm.attr('action') + "?OWASP_CSRFTOKEN="
-        + csrfToken);
+    thisForm.attr('action', thisForm.attr('action') + "?OWASP_CSRFTOKEN=" + csrfToken);
   }
 }
 
@@ -370,8 +363,7 @@ if (top.location != location) {
 function getCurrentPageData(current, currentPage, size, url) {
 
   var perPage = $("#perPage").val();
-  var url = url + "currentPage=" + currentPage + "&perPage=" + perPage
-      + "&size=" + size;
+  var url = url + "currentPage=" + currentPage + "&perPage=" + perPage + "&size=" + size;
   $(current).attr("href", url);
 
   return true;
@@ -381,7 +373,7 @@ function getCurrentPageData(current, currentPage, size, url) {
 function ReplaceAll(Source, stringToFind, stringToReplace) {
   var tempArr = Source.split(stringToFind);
   var dest = "";
-  for ( var i = 0; i < tempArr.length; i++) {
+  for (var i = 0; i < tempArr.length; i++) {
     if (dest == "") {
       dest = tempArr[i];
     } else {
@@ -395,7 +387,7 @@ function ReplaceAll(Source, stringToFind, stringToReplace) {
 // Prevent cross-site-script(XSS) attack.
 
 function sanitizeXSS(val) {
-  if (val == null || typeof (val) != "string")
+  if (val == null || typeof(val) != "string")
     return val;
   val = val.replace(/</g, "&lt;"); // replace < whose unicode is \u003c
   val = val.replace(/>/g, "&gt;"); // replace > whose unicode is \u003e
@@ -414,8 +406,7 @@ function validatePositiveInteger(value) {
 }
 
 function validatePositiveJavaInteger(value) {
-  return (Number(value) % 1) == 0 && Number(value) >= 0
-      && Number(value) <= 2147483647;
+  return (Number(value) % 1) == 0 && Number(value) >= 0 && Number(value) <= 2147483647;
 }
 
 function fromdb(val) {
@@ -454,7 +445,7 @@ function setBooleanEditField(value, $field) {
     $field.val("true"); // option value, not option displayText, so no
   // localization
   else
-    // value == false
+  // value == false
     $field.val("false"); // option value, not option displayText, so no
   // localization
 }
@@ -490,7 +481,7 @@ function showError2(isValid, field, errMsgField, errMsg, appendErrMsg) {
     if (appendErrMsg) // append text
       errMsgField.text(errMsgField.text() + errMsg).show();
     else
-      // reset text
+    // reset text
       errMsgField.text(errMsg).show();
     field.removeClass("text2").addClass("error_text2");
   }
@@ -504,7 +495,7 @@ function showErrorInDropdown(isValid, field, errMsgField, errMsg, appendErrMsg) 
     if (appendErrMsg) // append text
       errMsgField.text(errMsgField.text() + errMsg).show();
     else
-      // reset text
+    // reset text
       errMsgField.text(errMsg).show();
     field.removeClass("select").addClass("error_select");
   }
@@ -524,7 +515,7 @@ function validateDropDownBox(label, field, errMsgField, appendErrMsg) {
 
 function validateInteger(label, field, errMsgField, min, max, isOptional) {
   return validateNumber(label, field, errMsgField, min, max, isOptional,
-      "integer");
+    "integer");
 }
 
 function validateNumber(label, field, errMsgField, min, max, isOptional, type) {
@@ -676,7 +667,7 @@ function validateCIDRList(label, field, errMsgField, isOptional) {
   var cidrList = field.val();
 
   var array1 = cidrList.split(",");
-  for ( var i = 0; i < array1.length; i++) {
+  for (var i = 0; i < array1.length; i++) {
     var value = array1[i];
     if (value != null && value.length > 0) {
       myregexp = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/;
@@ -694,15 +685,14 @@ function validateCIDRList(label, field, errMsgField, isOptional) {
 }
 
 function validateAlphanumeric(label, field, errMsgField, isOptional,
-    allowedSplCharacters) {
+  allowedSplCharacters) {
   if (validateString(label, field, errMsgField, isOptional) == false)
     return;
   var isValid = true;
   var errMsg = "";
   var value = field.val();
   if (value != null && value.length > 0) {
-    if (allowedSplCharacters != undefined
-        && allowedSplCharacters.length > 0) { // Replacing
+    if (allowedSplCharacters != undefined && allowedSplCharacters.length > 0) { // Replacing
       // Spl
       // Characters
       // with
@@ -722,8 +712,7 @@ function validateAlphanumeric(label, field, errMsgField, isOptional,
       // with
       // Alphanumeric
       // characters.
-      value = value.replace(new RegExp("["
-          + allowedSplCharacters.join('') + "]", "g"), "");
+      value = value.replace(new RegExp("[" + allowedSplCharacters.join('') + "]", "g"), "");
     }
     if (alphanumericRegexp.test(value) == false) {
       errMsg = dictionary.onlyAlphanumericCharactersAreAllowed;
@@ -788,23 +777,21 @@ function clickAnotherGridRow($thisGridRow) {
 }
 
 function clickTopActionLink() {
-  if ($currentGridRow == null
-      || ($currentGridRow.hasClass("selected") == true && $currentGridRow
-          .hasClass("active") == true))
+  if ($currentGridRow == null || ($currentGridRow.hasClass("selected") == true && $currentGridRow
+    .hasClass("active") == true))
     $currentGridRow.removeClass("selected active");
 }
 
 function cancelTopActionLink() {
-  if ($currentGridRow != null
-      && $currentGridRow.hasClass("selected") == false
-      && $currentGridRow.hasClass("active") == false)
+  if ($currentGridRow != null && $currentGridRow.hasClass("selected") == false && $currentGridRow.hasClass("active") ==
+    false)
     $currentGridRow.addClass("selected active");
 }
 
 // action links at bottom (begin)
 
 function initActionLinks(actionMap, refreshGridRowFn, refreshDetailsPanelFn) {
-  for ( var i = 0; i < actionMap.length; i++) {
+  for (var i = 0; i < actionMap.length; i++) {
     bindToActionLink(actionMap[i], refreshGridRowFn, refreshDetailsPanelFn);
   }
 }
@@ -837,493 +824,455 @@ function cancelActionPanel(elementIdPrefix, actionLinkOnCancelFn) {
 
 function bindToActionLink(mapObj, refreshGridRowFn, refreshDetailsPanelFn) {
   $("." + mapObj.elementIdPrefix + "_link").unbind("click").bind(
-      "click",
-      function(event) {
-        clickActionLink(mapObj.elementIdPrefix,
-            mapObj.actionLinkOnClickFn);
-        return false;
-      });
+    "click",
+    function(event) {
+      clickActionLink(mapObj.elementIdPrefix,
+        mapObj.actionLinkOnClickFn);
+      return false;
+    });
 
   $("#" + mapObj.elementIdPrefix + "_panel").find("#cancel_button").unbind(
-      "click").bind(
-      "click",
-      function(event) {
-        $("#" + mapObj.elementIdPrefix + "_panel").find(
-            ".agree input[type=checkbox]#accept_checkbox")
-            .removeAttr("checked");
-        cancelActionPanel(mapObj.elementIdPrefix,
-            mapObj.actionLinkOnCancelFn);
-        return false;
-      });
+    "click").bind(
+    "click",
+    function(event) {
+      $("#" + mapObj.elementIdPrefix + "_panel").find(
+        ".agree input[type=checkbox]#accept_checkbox")
+        .removeAttr("checked");
+      cancelActionPanel(mapObj.elementIdPrefix,
+        mapObj.actionLinkOnCancelFn);
+      return false;
+    });
 
   $("#" + mapObj.elementIdPrefix + "_panel")
-      .find("#confirm_button")
-      .unbind("click")
-      .bind(
-          "click",
-          function(event) {
-            if ($currentGridRow.data("jsonObj") == null)
-              return false;
+    .find("#confirm_button")
+    .unbind("click")
+    .bind(
+      "click",
+      function(event) {
+        if ($currentGridRow.data("jsonObj") == null)
+          return false;
 
-            var actionUrl1 = mapObj.getActionUrlFn();
-            if (actionUrl1 == null)
-              return false;
+        var actionUrl1 = mapObj.getActionUrlFn();
+        if (actionUrl1 == null)
+          return false;
 
-            $("#" + mapObj.elementIdPrefix + "_text").hide();
-            $("." + mapObj.elementIdPrefix + "_link").show();
-            $("#" + mapObj.elementIdPrefix + "_panel").hide();
-            $("#action_link_container").find("#spinning_wheel")
-                .show();
+        $("#" + mapObj.elementIdPrefix + "_text").hide();
+        $("." + mapObj.elementIdPrefix + "_link").show();
+        $("#" + mapObj.elementIdPrefix + "_panel").hide();
+        $("#action_link_container").find("#spinning_wheel")
+          .show();
 
-            if (mapObj.isAsync == true) {
-              $
-                  .ajax({
-                    type : "GET",
-                    url : actionUrl1,
-                    async : false,
-                    dataType : "json",
-                    success : function(obj) {
-                      var property;
-                      for (property in obj) {
-                      }
-                      ;
-                      var jobId = obj[property].jobid;
-                      if (jobId == null)
-                        return;
-                      var timerKey = "vmAction" + jobId;
+        if (mapObj.isAsync == true) {
+          $
+            .ajax({
+              type: "GET",
+              url: actionUrl1,
+              async: false,
+              dataType: "json",
+              success: function(obj) {
+                var property;
+                for (property in obj) {};
+                var jobId = obj[property].jobid;
+                if (jobId == null)
+                  return;
+                var timerKey = "vmAction" + jobId;
 
-                      // Process the async job
-                      $("body")
-                          .everyTime(
-                              5000,
-                              timerKey,
-                              function() {
-                                var actionUrl2 = cloudStackURL("command=queryAsyncJobResult&jobId="
-                                    + jobId);
-                                $
-                                    .ajax({
-                                      type : "GET",
-                                      url : actionUrl2,
-                                      dataType : "json",
-                                      success : function(
-                                          json) {
-                                        var result = json.queryasyncjobresultresponse;
-                                        if (result.jobstatus == 0) {
-                                          return; // Job
-                                          // has
-                                          // not
-                                          // completed
-                                        } else {
-                                          $(
-                                              "body")
-                                              .stopTime(
-                                                  timerKey);
-                                          $(
-                                              "#action_link_container")
-                                              .find(
-                                                  "#spinning_wheel")
-                                              .hide();
-                                          if (result.jobstatus == 1) {
-                                            // Succeeded
-                                            var property;
-                                            for (property in result.jobresult) {
-                                            }
-                                            ; // e.g.
-                                            // property
-                                            // ==
-                                            // "virtualmachine",
-                                            // "volume",
-                                            // "success"
-                                            var item4 = result.jobresult[property]; // item4
-                                            // might
-                                            // be
-                                            // an
-                                            // object
-                                            // or
-                                            // true/"true"
-                                            // (if
-                                            // property
-                                            // is
-                                            // "success")
-                                            if (typeof (item4) != "object") {
-                                              if ((property == "success")
-                                                  && ((typeof (item4) == "string" && item4 == "true") || (typeof (item4) == "boolean" && item4 == true))) {
-                                                $currentGridRow
-                                                    .click();
+                // Process the async job
+                $("body")
+                  .everyTime(
+                    5000,
+                    timerKey,
+                    function() {
+                      var actionUrl2 = cloudStackURL("command=queryAsyncJobResult&jobId=" + jobId);
+                      $
+                        .ajax({
+                          type: "GET",
+                          url: actionUrl2,
+                          dataType: "json",
+                          success: function(
+                            json) {
+                            var result = json.queryasyncjobresultresponse;
+                            if (result.jobstatus == 0) {
+                              return; // Job
+                              // has
+                              // not
+                              // completed
+                            } else {
+                              $(
+                                "body")
+                                .stopTime(
+                                  timerKey);
+                              $(
+                                "#action_link_container")
+                                .find(
+                                  "#spinning_wheel")
+                                .hide();
+                              if (result.jobstatus == 1) {
+                                // Succeeded
+                                var property;
+                                for (property in result.jobresult) {}; // e.g.
+                                // property
+                                // ==
+                                // "virtualmachine",
+                                // "volume",
+                                // "success"
+                                var item4 = result.jobresult[property]; // item4
+                                // might
+                                // be
+                                // an
+                                // object
+                                // or
+                                // true/"true"
+                                // (if
+                                // property
+                                // is
+                                // "success")
+                                if (typeof(item4) != "object") {
+                                  if ((property == "success") && ((typeof(item4) == "string" && item4 == "true") ||
+                                    (typeof(item4) == "boolean" && item4 == true))) {
+                                    $currentGridRow
+                                      .click();
 
-                                                var msg;
-                                                if (mapObj.afterActionSeccessFn != null) {
-                                                  msg = mapObj
-                                                      .afterActionSeccessFn(item4); // item4
-                                                  // might
-                                                  // be
-                                                  // an
-                                                  // object
-                                                  // or
-                                                  // true/"true".
-                                                  // e.g.
-                                                  // {
-                                                  // "deletevolumeresponse"
-                                                  // : {
-                                                  // "success"
-                                                  // :
-                                                  // "true"}
-                                                  // }
-                                                }
-                                                if (msg == null) {
-                                                  var actionlabel = $(
-                                                      "."
-                                                          + mapObj.elementIdPrefix
-                                                          + "_link")
-                                                      .find(
-                                                          "a")
-                                                      .first()
-                                                      .text();
-                                                  msg = actionlabel
-                                                      + " "
-                                                      + g_dictionary.succeeded;
-                                                }
+                                    var msg;
+                                    if (mapObj.afterActionSeccessFn != null) {
+                                      msg = mapObj
+                                        .afterActionSeccessFn(item4); // item4
+                                      // might
+                                      // be
+                                      // an
+                                      // object
+                                      // or
+                                      // true/"true".
+                                      // e.g.
+                                      // {
+                                      // "deletevolumeresponse"
+                                      // : {
+                                      // "success"
+                                      // :
+                                      // "true"}
+                                      // }
+                                    }
+                                    if (msg == null) {
+                                      var actionlabel = $(
+                                        "." + mapObj.elementIdPrefix + "_link")
+                                        .find(
+                                          "a")
+                                        .first()
+                                        .text();
+                                      msg = actionlabel + " " + g_dictionary.succeeded;
+                                    }
 
-                                                $(
-                                                    "#action_result_panel")
-                                                    .find(
-                                                        "#msg")
-                                                    .html(
-                                                        msg);
-                                                $(
-                                                    "#action_result_panel")
-                                                    .find(
-                                                        "#status_icon")
-                                                    .removeClass(
-                                                        "erroricon")
-                                                    .addClass(
-                                                        "successicon");
-                                                $(
-                                                    "#action_result_panel")
-                                                    .removeClass(
-                                                        "error")
-                                                    .addClass(
-                                                        "success")
-                                                    .show();
-                                              }
-                                              return;
-                                            }
+                                    $(
+                                      "#action_result_panel")
+                                      .find(
+                                        "#msg")
+                                      .html(
+                                        msg);
+                                    $(
+                                      "#action_result_panel")
+                                      .find(
+                                        "#status_icon")
+                                      .removeClass(
+                                        "erroricon")
+                                      .addClass(
+                                        "successicon");
+                                    $(
+                                      "#action_result_panel")
+                                      .removeClass(
+                                        "error")
+                                      .addClass(
+                                        "success")
+                                      .show();
+                                  }
+                                  return;
+                                }
 
-                                            if ($currentGridRow
-                                                .data("jsonObj") == null)
-                                              return;
+                                if ($currentGridRow
+                                  .data("jsonObj") == null)
+                                  return;
 
-                                            var idPropertyName = null;
-                                            if (mapObj.returnedObjectId != null) {
-                                              if (mapObj.returnedObjectId != "NoReturnedObjectId")
-                                                idPropertyName = mapObj.returnedObjectId;
-                                              else
-                                                idPropertyName = null;
-                                            } else {
-                                              idPropertyName = "id";
-                                            }
+                                var idPropertyName = null;
+                                if (mapObj.returnedObjectId != null) {
+                                  if (mapObj.returnedObjectId != "NoReturnedObjectId")
+                                    idPropertyName = mapObj.returnedObjectId;
+                                  else
+                                    idPropertyName = null;
+                                } else {
+                                  idPropertyName = "id";
+                                }
 
-                                            if ((idPropertyName == null)
-                                                || (item4[idPropertyName] == $currentGridRow
-                                                    .data("jsonObj").id)) {
-                                              var msg;
-                                              if (mapObj.afterActionSeccessFn != null) {
-                                                msg = mapObj
-                                                    .afterActionSeccessFn(item4); // item4
-                                                // might
-                                                // be
-                                                // an
-                                                // object
-                                                // or
-                                                // true/"true".
-                                                // e.g.
-                                                // {
-                                                // "deletevolumeresponse"
-                                                // : {
-                                                // "success"
-                                                // :
-                                                // "true"}
-                                                // }
-                                              }
-                                              if (msg == null) {
-                                                var actionlabel = $(
-                                                    "."
-                                                        + mapObj.elementIdPrefix
-                                                        + "_link")
-                                                    .find(
-                                                        "a")
-                                                    .first()
-                                                    .text();
-                                                msg = actionlabel
-                                                    + " "
-                                                    + g_dictionary.succeeded;
-                                              }
+                                if ((idPropertyName == null) || (item4[idPropertyName] == $currentGridRow
+                                  .data("jsonObj").id)) {
+                                  var msg;
+                                  if (mapObj.afterActionSeccessFn != null) {
+                                    msg = mapObj
+                                      .afterActionSeccessFn(item4); // item4
+                                    // might
+                                    // be
+                                    // an
+                                    // object
+                                    // or
+                                    // true/"true".
+                                    // e.g.
+                                    // {
+                                    // "deletevolumeresponse"
+                                    // : {
+                                    // "success"
+                                    // :
+                                    // "true"}
+                                    // }
+                                  }
+                                  if (msg == null) {
+                                    var actionlabel = $(
+                                      "." + mapObj.elementIdPrefix + "_link")
+                                      .find(
+                                        "a")
+                                      .first()
+                                      .text();
+                                    msg = actionlabel + " " + g_dictionary.succeeded;
+                                  }
 
-                                              $(
-                                                  "#action_result_panel")
-                                                  .find(
-                                                      "#msg")
-                                                  .html(
-                                                      msg);
-                                              $(
-                                                  "#action_result_panel")
-                                                  .find(
-                                                      "#status_icon")
-                                                  .removeClass(
-                                                      "erroricon")
-                                                  .addClass(
-                                                      "successicon");
-                                              $(
-                                                  "#action_result_panel")
-                                                  .removeClass(
-                                                      "error")
-                                                  .addClass(
-                                                      "success")
-                                                  .show();
+                                  $(
+                                    "#action_result_panel")
+                                    .find(
+                                      "#msg")
+                                    .html(
+                                      msg);
+                                  $(
+                                    "#action_result_panel")
+                                    .find(
+                                      "#status_icon")
+                                    .removeClass(
+                                      "erroricon")
+                                    .addClass(
+                                      "successicon");
+                                  $(
+                                    "#action_result_panel")
+                                    .removeClass(
+                                      "error")
+                                    .addClass(
+                                      "success")
+                                    .show();
 
-                                              refreshGridRowFn(
-                                                  item4,
-                                                  $currentGridRow);
+                                  refreshGridRowFn(
+                                    item4,
+                                    $currentGridRow);
 
-                                              // $currentGridRow.click();
-                                              refreshDetailsPanelFn($currentGridRow);
-                                            }
-                                          } else if (result.jobstatus == 2) {
-                                            // Failed
-                                            var actionlabel = $(
-                                                "."
-                                                    + mapObj.elementIdPrefix
-                                                    + "_link")
-                                                .find(
-                                                    "a")
-                                                .first()
-                                                .text();
-                                            var msg = actionlabel
-                                                + " "
-                                                + g_dictionary.actionFailed;
-                                            if (result.jobresult.errortext != null
-                                                && result.jobresult.errortext.length > 0)
-                                              msg += (" - " + localizeCloudStackMsg(fromdb(result.jobresult.errortext)));
-                                            $(
-                                                "#action_result_panel")
-                                                .find(
-                                                    "#msg")
-                                                .text(
-                                                    msg);
-                                            $(
-                                                "#action_result_panel")
-                                                .find(
-                                                    "#status_icon")
-                                                .removeClass(
-                                                    "successicon")
-                                                .addClass(
-                                                    "erroricon");
-                                            $(
-                                                "#action_result_panel")
-                                                .removeClass(
-                                                    "success")
-                                                .addClass(
-                                                    "error")
-                                                .show();
-                                          }
-                                        }
-                                      },
-                                      error : function(
-                                          response) {
-                                        $(
-                                            "body")
-                                            .stopTime(
-                                                timerKey);
-                                        $(
-                                            "#action_link_container")
-                                            .find(
-                                                "#spinning_wheel")
-                                            .hide();
-                                        $(
-                                            "#action_result_panel")
-                                            .find(
-                                                "#msg")
-                                            .text(
-                                                g_dictionary.errorFromAPICall
-                                                    + ": "
-                                                    + actionUrl2);
-                                        $(
-                                            "#action_result_panel")
-                                            .find(
-                                                "#status_icon")
-                                            .removeClass(
-                                                "successicon")
-                                            .addClass(
-                                                "erroricon");
-                                        $(
-                                            "#action_result_panel")
-                                            .removeClass(
-                                                "success")
-                                            .addClass(
-                                                "error")
-                                            .show();
-                                      }
-                                    });
-                              }, 0);
-                    },
-                    error : function(XMLHttpResponse) {
-                      $("#action_link_container").find(
-                          "#spinning_wheel").hide();
-
-                      var errorMsg = "";
-                      if (XMLHttpResponse.responseText != null
-                          & XMLHttpResponse.responseText.length > 0)
-                        errorMsg = parseXMLHttpResponse(XMLHttpResponse);
-
-                      var actionlabel = $(
-                          "."
-                              + mapObj.elementIdPrefix
-                              + "_link")
-                          .find("a").first().text();
-                      var msg = actionlabel + " "
-                          + g_dictionary.actionFailed;
-                      if (errorMsg.length > 0)
-                        msg += (" " + localizeCloudStackMsg(errorMsg));
-                      else
-                        msg += (" "
-                            + g_dictionary.errorFromAPICall
-                            + ": " + actionUrl1);
-                      $("#action_result_panel").find(
-                          "#msg").text(msg);
-                      $("#action_result_panel").find(
-                          "#status_icon")
-                          .removeClass("successicon")
-                          .addClass("erroricon");
-                      $("#action_result_panel")
-                          .removeClass("success")
-                          .addClass("error").show();
-                    }
-                  });
-            } else { // sync
-              $
-                  .ajax({
-                    type : "GET",
-                    url : actionUrl1,
-                    async : false,
-                    dataType : "json",
-                    success : function(obj1) {
-                      if (typeof (obj1) != "object")
-                        return;
-                      var propertyInObj1;
-                      for (propertyInObj1 in obj1) {
-                      }
-                      ; // e.g. propertyInObj1 ==
-                      // "updatevirtualmachineresponse"
-                      var obj2 = obj1[propertyInObj1];
-                      if (typeof (obj2) != "object")
-                        return;
-                      var propertyInObj2;
-                      for (propertyInObj2 in obj2) {
-                      }
-                      ; // e.g. propertyInObj2 ==
-                      // "virtualmachine"
-                      var item3 = obj2[propertyInObj2]; // item3
-                      // might
-                      // be
-                      // an
-                      // object or a string
-                      // "success". e.g. {
-                      // "deletevolumeresponse"
-                      // : { "success" :
-                      // "true"} }
-                      $("#action_link_container").find(
-                          "#spinning_wheel").hide();
-
-                      var msg;
-                      if (mapObj.afterActionSeccessFn != null) {
-                        msg = mapObj
-                            .afterActionSeccessFn(item3); // item3
-                        // might
-                        // be an
-                        // object or a
-                        // string
-                        // "success".
-                        // e.g. {
-                        // "deletevolumeresponse"
-                        // : {
-                        // "success" :
-                        // "true"} }
-                      }
-                      if (msg == null) {
-                        var actionlabel = $(
-                            "."
-                                + mapObj.elementIdPrefix
-                                + "_link")
-                            .find("a").first()
-                            .text();
-                        msg = actionlabel
-                            + " "
-                            + g_dictionary.succeeded;
-                      }
-
-                      $("#action_result_panel").find(
-                          "#msg").text(msg);
-                      $("#action_result_panel").find(
-                          "#status_icon")
-                          .removeClass("successicon")
-                          .addClass("erroricon");
-                      $("#action_result_panel")
-                          .removeClass("error")
-                          .addClass("success").show();
-
-                      if (typeof (item3) == "object") {
-                        refreshGridRowFn(item3,
-                            $currentGridRow);
-                        // $currentGridRow.click();
-                        refreshDetailsPanelFn($currentGridRow);
-                      }
-
-                      if ((propertyInObj2 == "success")
-                          && ((typeof (item3) == "string" && item3 == "true") || (typeof (item3) == "boolean" && item3 == true))) {
-                        $currentGridRow.click(); // this
-                        // will
-                        // hide
-                        // action_result_panel
-                        $("#action_result_panel").find(
-                            "#msg").text(msg);
-                        $("#action_result_panel").find(
-                            "#status_icon")
-                            .removeClass(
+                                  // $currentGridRow.click();
+                                  refreshDetailsPanelFn($currentGridRow);
+                                }
+                              } else if (result.jobstatus == 2) {
+                                // Failed
+                                var actionlabel = $(
+                                  "." + mapObj.elementIdPrefix + "_link")
+                                  .find(
+                                    "a")
+                                  .first()
+                                  .text();
+                                var msg = actionlabel + " " + g_dictionary.actionFailed;
+                                if (result.jobresult.errortext != null && result.jobresult.errortext.length > 0)
+                                  msg += (" - " + localizeCloudStackMsg(fromdb(result.jobresult.errortext)));
+                                $(
+                                  "#action_result_panel")
+                                  .find(
+                                    "#msg")
+                                  .text(
+                                    msg);
+                                $(
+                                  "#action_result_panel")
+                                  .find(
+                                    "#status_icon")
+                                  .removeClass(
+                                    "successicon")
+                                  .addClass(
+                                    "erroricon");
+                                $(
+                                  "#action_result_panel")
+                                  .removeClass(
+                                    "success")
+                                  .addClass(
+                                    "error")
+                                  .show();
+                              }
+                            }
+                          },
+                          error: function(
+                            response) {
+                            $(
+                              "body")
+                              .stopTime(
+                                timerKey);
+                            $(
+                              "#action_link_container")
+                              .find(
+                                "#spinning_wheel")
+                              .hide();
+                            $(
+                              "#action_result_panel")
+                              .find(
+                                "#msg")
+                              .text(
+                                g_dictionary.errorFromAPICall + ": " + actionUrl2);
+                            $(
+                              "#action_result_panel")
+                              .find(
+                                "#status_icon")
+                              .removeClass(
                                 "successicon")
-                            .addClass("erroricon");
-                        $("#action_result_panel")
-                            .removeClass("error")
-                            .addClass("success")
-                            .show(); // so, show
-                        // action_result_panel
-                        // (again)
-                      }
-                    },
-                    error : function(obj1) {
-                      $("#action_link_container").find(
-                          "#spinning_wheel").hide();
+                              .addClass(
+                                "erroricon");
+                            $(
+                              "#action_result_panel")
+                              .removeClass(
+                                "success")
+                              .addClass(
+                                "error")
+                              .show();
+                          }
+                        });
+                    }, 0);
+              },
+              error: function(XMLHttpResponse) {
+                $("#action_link_container").find(
+                  "#spinning_wheel").hide();
 
-                      var actionlabel = $(
-                          "."
-                              + mapObj.elementIdPrefix
-                              + "_link")
-                          .find("a").first().text();
-                      var msg = actionlabel + " "
-                          + g_dictionary.actionFailed;
-                      $("#action_result_panel").find(
-                          "#msg").text(msg);
-                      $("#action_result_panel").find(
-                          "#status_icon")
-                          .removeClass("successicon")
-                          .addClass("erroricon");
-                      $("#action_result_panel")
-                          .removeClass("success")
-                          .addClass("error").show();
-                    }
-                  });
-            }
-            return false;
-          });
+                var errorMsg = "";
+                if (XMLHttpResponse.responseText != null & XMLHttpResponse.responseText.length > 0)
+                  errorMsg = parseXMLHttpResponse(XMLHttpResponse);
+
+                var actionlabel = $(
+                  "." + mapObj.elementIdPrefix + "_link")
+                  .find("a").first().text();
+                var msg = actionlabel + " " + g_dictionary.actionFailed;
+                if (errorMsg.length > 0)
+                  msg += (" " + localizeCloudStackMsg(errorMsg));
+                else
+                  msg += (" " + g_dictionary.errorFromAPICall + ": " + actionUrl1);
+                $("#action_result_panel").find(
+                  "#msg").text(msg);
+                $("#action_result_panel").find(
+                  "#status_icon")
+                  .removeClass("successicon")
+                  .addClass("erroricon");
+                $("#action_result_panel")
+                  .removeClass("success")
+                  .addClass("error").show();
+              }
+            });
+        } else { // sync
+          $
+            .ajax({
+              type: "GET",
+              url: actionUrl1,
+              async: false,
+              dataType: "json",
+              success: function(obj1) {
+                if (typeof(obj1) != "object")
+                  return;
+                var propertyInObj1;
+                for (propertyInObj1 in obj1) {}; // e.g. propertyInObj1 ==
+                // "updatevirtualmachineresponse"
+                var obj2 = obj1[propertyInObj1];
+                if (typeof(obj2) != "object")
+                  return;
+                var propertyInObj2;
+                for (propertyInObj2 in obj2) {}; // e.g. propertyInObj2 ==
+                // "virtualmachine"
+                var item3 = obj2[propertyInObj2]; // item3
+                // might
+                // be
+                // an
+                // object or a string
+                // "success". e.g. {
+                // "deletevolumeresponse"
+                // : { "success" :
+                // "true"} }
+                $("#action_link_container").find(
+                  "#spinning_wheel").hide();
+
+                var msg;
+                if (mapObj.afterActionSeccessFn != null) {
+                  msg = mapObj
+                    .afterActionSeccessFn(item3); // item3
+                  // might
+                  // be an
+                  // object or a
+                  // string
+                  // "success".
+                  // e.g. {
+                  // "deletevolumeresponse"
+                  // : {
+                  // "success" :
+                  // "true"} }
+                }
+                if (msg == null) {
+                  var actionlabel = $(
+                    "." + mapObj.elementIdPrefix + "_link")
+                    .find("a").first()
+                    .text();
+                  msg = actionlabel + " " + g_dictionary.succeeded;
+                }
+
+                $("#action_result_panel").find(
+                  "#msg").text(msg);
+                $("#action_result_panel").find(
+                  "#status_icon")
+                  .removeClass("successicon")
+                  .addClass("erroricon");
+                $("#action_result_panel")
+                  .removeClass("error")
+                  .addClass("success").show();
+
+                if (typeof(item3) == "object") {
+                  refreshGridRowFn(item3,
+                    $currentGridRow);
+                  // $currentGridRow.click();
+                  refreshDetailsPanelFn($currentGridRow);
+                }
+
+                if ((propertyInObj2 == "success") && ((typeof(item3) == "string" && item3 == "true") || (typeof(item3) ==
+                  "boolean" && item3 == true))) {
+                  $currentGridRow.click(); // this
+                  // will
+                  // hide
+                  // action_result_panel
+                  $("#action_result_panel").find(
+                    "#msg").text(msg);
+                  $("#action_result_panel").find(
+                    "#status_icon")
+                    .removeClass(
+                      "successicon")
+                    .addClass("erroricon");
+                  $("#action_result_panel")
+                    .removeClass("error")
+                    .addClass("success")
+                    .show(); // so, show
+                  // action_result_panel
+                  // (again)
+                }
+              },
+              error: function(obj1) {
+                $("#action_link_container").find(
+                  "#spinning_wheel").hide();
+
+                var actionlabel = $(
+                  "." + mapObj.elementIdPrefix + "_link")
+                  .find("a").first().text();
+                var msg = actionlabel + " " + g_dictionary.actionFailed;
+                $("#action_result_panel").find(
+                  "#msg").text(msg);
+                $("#action_result_panel").find(
+                  "#status_icon")
+                  .removeClass("successicon")
+                  .addClass("erroricon");
+                $("#action_result_panel")
+                  .removeClass("success")
+                  .addClass("error").show();
+              }
+            });
+        }
+        return false;
+      });
 }
 // action links at bottom (end)
 
@@ -1358,169 +1307,158 @@ function doActionButton(actionMapItem, apiCommand) {
   // Async job (begin) *****
   if (isAsyncJob == true) {
     $
-        .ajax({
-          cache : false,
-          type : protocol_type,
-          url : apiCommand,
-          dataType : data_type,
-          success : function(json) {
-            var jobId = json[asyncJobResponse].jobid;
-            var timerKey = "asyncJob_" + jobId;
+      .ajax({
+        cache: false,
+        type: protocol_type,
+        url: apiCommand,
+        dataType: data_type,
+        success: function(json) {
+          var jobId = json[asyncJobResponse].jobid;
+          var timerKey = "asyncJob_" + jobId;
 
-            $("body")
-                .everyTime(
-                    10000,
-                    timerKey,
-                    function() {
-                      $
-                          .ajax({
-                            cache : false,
-                            url : cloudStackURL("command=queryAsyncJobResult&jobId="
-                                + jobId),
-                            dataType : "json",
-                            success : function(json) {
-                              var result = json.queryasyncjobresultresponse;
-                              if (result.jobstatus == 0) {
-                                return; // Job
-                                // has
-                                // not
-                                // completed
-                              } else {
-                                $("body")
-                                    .stopTime(
-                                        timerKey);
-                                $spinningWheel
-                                    .hide();
+          $("body")
+            .everyTime(
+              10000,
+              timerKey,
+              function() {
+                $
+                  .ajax({
+                    cache: false,
+                    url: cloudStackURL("command=queryAsyncJobResult&jobId=" + jobId),
+                    dataType: "json",
+                    success: function(json) {
+                      var result = json.queryasyncjobresultresponse;
+                      if (result.jobstatus == 0) {
+                        return; // Job
+                        // has
+                        // not
+                        // completed
+                      } else {
+                        $("body")
+                          .stopTime(
+                            timerKey);
+                        $spinningWheel
+                          .hide();
 
-                                if (result.jobstatus == 1) { // Succeeded
+                        if (result.jobstatus == 1) { // Succeeded
 
-                                  var msg;
-                                  if (actionMapItem.afterActionSeccessFn != null)
-                                    msg = actionMapItem
-                                        .afterActionSeccessFn(json);
-                                  if (msg == null)
-                                    msg = label
-                                        + " "
-                                        + g_dictionary.succeeded;
+                          var msg;
+                          if (actionMapItem.afterActionSeccessFn != null)
+                            msg = actionMapItem
+                              .afterActionSeccessFn(json);
+                          if (msg == null)
+                            msg = label + " " + g_dictionary.succeeded;
 
-                                  if (actionMapItem.showResultMessage != false) {
-                                    $(
-                                        "#top_message_panel")
-                                        .find(
-                                            "#msg")
-                                        .text(
-                                            msg);
-                                    $(
-                                        "#top_message_panel")
-                                        .find(
-                                            "#status_icon")
-                                        .removeClass(
-                                            "erroricon")
-                                        .addClass(
-                                            "successicon");
-                                    $(
-                                        "#top_message_panel")
-                                        .removeClass(
-                                            "error")
-                                        .addClass(
-                                            "success")
-                                        .show();
-                                  }
+                          if (actionMapItem.showResultMessage != false) {
+                            $(
+                              "#top_message_panel")
+                              .find(
+                                "#msg")
+                              .text(
+                                msg);
+                            $(
+                              "#top_message_panel")
+                              .find(
+                                "#status_icon")
+                              .removeClass(
+                                "erroricon")
+                              .addClass(
+                                "successicon");
+                            $(
+                              "#top_message_panel")
+                              .removeClass(
+                                "error")
+                              .addClass(
+                                "success")
+                              .show();
+                          }
 
-                                } else if (result.jobstatus == 2) { // Failed
-                                  $(
-                                      "#top_message_panel")
-                                      .find(
-                                          "#msg")
-                                      .text(
-                                          label
-                                              + " "
-                                              + g_dictionary.actionFailed
-                                              + " - "
-                                              + localizeCloudStackMsg(fromdb(result.jobresult.errortext)));
-                                  $(
-                                      "#top_message_panel")
-                                      .find(
-                                          "#status_icon")
-                                      .removeClass(
-                                          "successicon")
-                                      .addClass(
-                                          "erroricon");
-                                  $(
-                                      "#top_message_panel")
-                                      .removeClass(
-                                          "success")
-                                      .addClass(
-                                          "error")
-                                      .show();
-                                }
-                              }
-                            },
-                            error : function(
-                                XMLHttpResponse) {
-                              $("body").stopTime(
-                                  timerKey);
-                              $spinningWheel
-                                  .hide();
-                              $(
-                                  "#top_message_panel")
-                                  .find(
-                                      "#msg")
-                                  .text(
-                                      label
-                                          + " "
-                                          + g_dictionary.actionFailed);
-                              $(
-                                  "#top_message_panel")
-                                  .find(
-                                      "#status_icon")
-                                  .removeClass(
-                                      "successicon")
-                                  .addClass(
-                                      "erroricon");
-                              $(
-                                  "#top_message_panel")
-                                  .removeClass(
-                                      "success")
-                                  .addClass(
-                                      "error")
-                                  .show();
-                              if (actionMapItem.afterActionFailureFn != null) {
-                                actionMapItem
-                                    .afterActionFailureFn(label
-                                        + " "
-                                        + g_dictionary.actionFailed);
-                              }
-                            }
-                          });
-                    }, 0);
-          },
-          error : function(XMLHttpResponse) {
-            $spinningWheel.hide();
-            $("#top_message_panel").find("#msg").text(
-                label + " " + g_dictionary.actionFailed);
-            $("#top_message_panel").find("#status_icon")
-                .removeClass("successicon").addClass(
-                    "erroricon");
-            $("#top_message_panel").removeClass("success")
-                .addClass("error").show();
-            if (actionMapItem.afterActionFailureFn != null) {
-              actionMapItem.afterActionFailureFn(label + " "
-                  + g_dictionary.actionFailed);
-            }
+                        } else if (result.jobstatus == 2) { // Failed
+                          $(
+                            "#top_message_panel")
+                            .find(
+                              "#msg")
+                            .text(
+                              label + " " + g_dictionary.actionFailed + " - " + localizeCloudStackMsg(fromdb(result
+                                .jobresult.errortext)));
+                          $(
+                            "#top_message_panel")
+                            .find(
+                              "#status_icon")
+                            .removeClass(
+                              "successicon")
+                            .addClass(
+                              "erroricon");
+                          $(
+                            "#top_message_panel")
+                            .removeClass(
+                              "success")
+                            .addClass(
+                              "error")
+                            .show();
+                        }
+                      }
+                    },
+                    error: function(
+                      XMLHttpResponse) {
+                      $("body").stopTime(
+                        timerKey);
+                      $spinningWheel
+                        .hide();
+                      $(
+                        "#top_message_panel")
+                        .find(
+                          "#msg")
+                        .text(
+                          label + " " + g_dictionary.actionFailed);
+                      $(
+                        "#top_message_panel")
+                        .find(
+                          "#status_icon")
+                        .removeClass(
+                          "successicon")
+                        .addClass(
+                          "erroricon");
+                      $(
+                        "#top_message_panel")
+                        .removeClass(
+                          "success")
+                        .addClass(
+                          "error")
+                        .show();
+                      if (actionMapItem.afterActionFailureFn != null) {
+                        actionMapItem
+                          .afterActionFailureFn(label + " " + g_dictionary.actionFailed);
+                      }
+                    }
+                  });
+              }, 0);
+        },
+        error: function(XMLHttpResponse) {
+          $spinningWheel.hide();
+          $("#top_message_panel").find("#msg").text(
+            label + " " + g_dictionary.actionFailed);
+          $("#top_message_panel").find("#status_icon")
+            .removeClass("successicon").addClass(
+              "erroricon");
+          $("#top_message_panel").removeClass("success")
+            .addClass("error").show();
+          if (actionMapItem.afterActionFailureFn != null) {
+            actionMapItem.afterActionFailureFn(label + " " + g_dictionary.actionFailed);
           }
-        });
+        }
+      });
   }
   // Async job (end) *****
   // Sync job (begin) *****
   else {
     $.ajax({
-      type : protocol_type,
-      cache : false,
-      url : apiCommand,
-      dataType : data_type,
-      async : false,
-      success : function(json) {
+      type: protocol_type,
+      cache: false,
+      url: apiCommand,
+      dataType: data_type,
+      async: false,
+      success: function(json) {
         var msg;
         if (actionMapItem.afterActionSeccessFn != null)
           msg = actionMapItem.afterActionSeccessFn(json);
@@ -1530,26 +1468,25 @@ function doActionButton(actionMapItem, apiCommand) {
         if (actionMapItem.showResultMessage != false) {
           $("#top_message_panel").find("#msg").text(msg);
           $("#top_message_panel").find("#status_icon").removeClass(
-              "erroricon").addClass("successicon");
+            "erroricon").addClass("successicon");
           $("#top_message_panel").removeClass("error").addClass(
-              "success").show();
+            "success").show();
         }
       },
-      error : function(XMLHttpResponse) {
+      error: function(XMLHttpResponse) {
         $spinningWheel.hide();
         $("#top_message_panel").find("#msg").text(
-            label + " " + g_dictionary.actionFailed);
+          label + " " + g_dictionary.actionFailed);
         $("#top_message_panel").find("#status_icon").removeClass(
-            "successicon").addClass("erroricon");
+          "successicon").addClass("erroricon");
         $("#top_message_panel").removeClass("success")
-            .addClass("error").show();
+          .addClass("error").show();
         if (actionMapItem.afterActionFailureFn != null) {
-          actionMapItem.afterActionFailureFn(label + " "
-              + g_dictionary.actionFailed);
+          actionMapItem.afterActionFailureFn(label + " " + g_dictionary.actionFailed);
         }
-        if(actionMapItem.processXMLHttpResponse != null){
+        if (actionMapItem.processXMLHttpResponse != null) {
           actionMapItem.processXMLHttpResponse(XMLHttpResponse);
-      }
+        }
       }
     });
   }
@@ -1559,29 +1496,27 @@ function doActionButton(actionMapItem, apiCommand) {
 function bindActionMenuContainers() {
 
   $(".action_menu_container").each(
-      function(i, ele) {
-        var $ele = $(ele);
+    function(i, ele) {
+      var $ele = $(ele);
 
-        $ele.bind("mouseover", function(event) {
-          $(this).find("#action_menu").show();
-          return false;
-        });
-        $ele.bind("mouseout", function(event) {
-          var $thisElement = $(this)[0];
-          var relatedTarget1 = event.relatedTarget;
-          while (relatedTarget1 != null
-              && relatedTarget1.nodeName != "BODY"
-              && relatedTarget1 != $thisElement) {
-            relatedTarget1 = relatedTarget1.parentNode;
-          }
-          if (relatedTarget1 == $thisElement) {
-            return;
-          }
-
-          $(this).find("#action_menu").hide();
-          return false;
-        });
+      $ele.bind("mouseover", function(event) {
+        $(this).find("#action_menu").show();
+        return false;
       });
+      $ele.bind("mouseout", function(event) {
+        var $thisElement = $(this)[0];
+        var relatedTarget1 = event.relatedTarget;
+        while (relatedTarget1 != null && relatedTarget1.nodeName != "BODY" && relatedTarget1 != $thisElement) {
+          relatedTarget1 = relatedTarget1.parentNode;
+        }
+        if (relatedTarget1 == $thisElement) {
+          return;
+        }
+
+        $(this).find("#action_menu").hide();
+        return false;
+      });
+    });
 }
 
 // top buttons (end)
@@ -1603,14 +1538,13 @@ function handleError(XMLHttpResponse, handleErrorCallback) {
   } else if (XMLHttpResponse.status == ERROR_INTERNET_CANNOT_CONNECT) {
     alert("The Management Server is unaccessible.  Please try again later.");
     // $("#dialog_error_management_server_not_accessible").dialog("open");
-  } else if (XMLHttpResponse.status == ERROR_VMOPS_ACCOUNT_ERROR
-      && handleErrorCallback != undefined) {
+  } else if (XMLHttpResponse.status == ERROR_VMOPS_ACCOUNT_ERROR && handleErrorCallback != undefined) {
     handleErrorCallback();
   } else if (handleErrorCallback != undefined) {
     handleErrorCallback();
   } else {
     var errorMsg = localizeCloudStackMsg(fromdb(parseXMLHttpResponse(XMLHttpResponse)));
-    if(errorMsg!=""){
+    if (errorMsg != "") {
       alert(errorMsg);
     }
 
@@ -1636,8 +1570,7 @@ function parseXMLHttpResponse(XMLHttpResponse) {
   }
   if (json != null) {
     var property;
-    for (property in json) {
-    }
+    for (property in json) {}
     var errorObj = json[property];
     return fromdb(errorObj.errortext);
   } else {
@@ -1665,8 +1598,8 @@ function cancelEditMode($tab) {
 }
 
 function switchBetweenDifferentTabs(tabArray, tabContentArray,
-    afterSwitchFnArray) {
-  for ( var tabIndex = 0; tabIndex < tabArray.length; tabIndex++) {
+  afterSwitchFnArray) {
+  for (var tabIndex = 0; tabIndex < tabArray.length; tabIndex++) {
     switchToTab(tabIndex, tabArray, tabContentArray, afterSwitchFnArray);
   }
 }
@@ -1676,14 +1609,14 @@ function switchToTab(tabIndex, tabArray, tabContentArray, afterSwitchFnArray) {
     tabArray[tabIndex].removeClass("off").addClass("on"); // current tab
     // turns
     // on
-    for ( var k = 0; k < tabArray.length; k++) {
+    for (var k = 0; k < tabArray.length; k++) {
       if (k != tabIndex)
         tabArray[k].removeClass("on").addClass("off"); // other tabs
       // turns off
     }
 
     tabContentArray[tabIndex].show(); // current tab content shows
-    for ( var k = 0; k < tabContentArray.length; k++) {
+    for (var k = 0; k < tabContentArray.length; k++) {
       if (k != tabIndex)
         tabContentArray[k].hide(); // other tab content hide
     }
@@ -1698,8 +1631,8 @@ function switchToTab(tabIndex, tabArray, tabContentArray, afterSwitchFnArray) {
 }
 
 function switchBetweenDifferentTabsTwo(tabArray, tabContentArray,
-    afterSwitchFnArray) {
-  for ( var tabIndex = 0; tabIndex < tabArray.length; tabIndex++) {
+  afterSwitchFnArray) {
+  for (var tabIndex = 0; tabIndex < tabArray.length; tabIndex++) {
     switchToTabTwo(tabIndex, tabArray, tabContentArray, afterSwitchFnArray);
   }
 }
@@ -1709,7 +1642,7 @@ function switchToTabTwo(tabIndex, tabArray, tabContentArray, afterSwitchFnArray)
     tabArray[tabIndex].removeClass("nonactive").addClass("active"); // current
     // tab turns
     // on
-    for ( var k = 0; k < tabArray.length; k++) {
+    for (var k = 0; k < tabArray.length; k++) {
       if (k != tabIndex)
         tabArray[k].removeClass("active").addClass("nonactive"); // other
       // tabs
@@ -1717,7 +1650,7 @@ function switchToTabTwo(tabIndex, tabArray, tabContentArray, afterSwitchFnArray)
     }
 
     tabContentArray[tabIndex].show(); // current tab content shows
-    for ( var k = 0; k < tabContentArray.length; k++) {
+    for (var k = 0; k < tabContentArray.length; k++) {
       if (k != tabIndex)
         tabContentArray[k].hide(); // other tab content hide
     }
@@ -1739,22 +1672,22 @@ var alphanumericRegexp = /^[a-zA-Z0-9_]*$/;
 function initDialog(elementId, width1, addToActive) {
   if (width1 == null) {
     activateDialog($("#" + elementId).dialog({
-      autoOpen : false,
-      modal : true,
-      zIndex : 2000,
-      open : function(event) {
+      autoOpen: false,
+      modal: true,
+      zIndex: 2000,
+      open: function(event) {
         $(".action_menu_container").find("#action_menu").hide();
-      }// to hide the Action-menu drop-down on dialog open
+      } // to hide the Action-menu drop-down on dialog open
     }), addToActive);
   } else {
     activateDialog($("#" + elementId).dialog({
-      width : width1,
-      autoOpen : false,
-      modal : true,
-      zIndex : 2000,
-      open : function(event) {
+      width: width1,
+      autoOpen: false,
+      modal: true,
+      zIndex: 2000,
+      open: function(event) {
         $(".action_menu_container").find("#action_menu").hide();
-      }// to hide the Action-menu drop-down on dialog open
+      } // to hide the Action-menu drop-down on dialog open
     }), addToActive);
   }
 }
@@ -1763,24 +1696,23 @@ function initDialogWithOK(elementId, width1, addToActive) {
   var dialog;
   if (width1 == null) {
     dialog = $("#" + elementId).dialog({
-      autoOpen : false,
-      modal : true,
-      zIndex : 2000,
-      buttons : {
-        "OK" : function() {
+      autoOpen: false,
+      modal: true,
+      zIndex: 2000,
+      buttons: {
+        "OK": function() {
           $(this).dialog("close");
         }
       }
     });
   } else {
     dialog = $("#" + elementId).dialog({
-      width : width1,
-      height : 500,
-      autoOpen : false,
-      modal : true,
-      zIndex : 2000,
-      buttons : {
-        "OK" : function() {
+      width: width1,
+      autoOpen: false,
+      modal: true,
+      zIndex: 2000,
+      buttons: {
+        "OK": function() {
           $(this).dialog("close");
         }
       }
@@ -1821,7 +1753,7 @@ function activateDialog(dialog, addToActive) {
       }
 
       $buttons = $('[aria-labelledby$=' + dialog.attr("id") + ']').find(
-          ":button");
+        ":button");
 
       var activeElementFound = false;
       $buttons.each(function(index, element) {
@@ -1834,10 +1766,10 @@ function activateDialog(dialog, addToActive) {
 
       if (!activeElementFound) {
         var primaryButton = $('[aria-labelledby$=' + dialog.attr("id") + ']').find(
-        ":button[data-primary]:visible:first");
-        if(primaryButton.length === 0) {
+          ":button[data-primary]:visible:first");
+        if (primaryButton.length === 0) {
           primaryButton = $('[aria-labelledby$=' + dialog.attr("id") + ']').find(
-          ":button:first");
+            ":button:first");
         }
         primaryButton.click();
       }
@@ -1847,7 +1779,7 @@ function activateDialog(dialog, addToActive) {
 }
 
 function removeDialogs() {
-  for ( var i = 0; i < activeDialogs.length; i++) {
+  for (var i = 0; i < activeDialogs.length; i++) {
     activeDialogs[i].remove();
   }
   activeDialogs = new Array();
@@ -1866,7 +1798,7 @@ function roundNumber(number, decimal) {
     }
   }
   return (Math.round(floatValue * Math.pow(10, decimal)) / Math.pow(10,
-      decimal)).toFixed(decimal);
+    decimal)).toFixed(decimal);
 }
 
 function stripTrailingZeros(number, minFractionalPart) {
@@ -1878,7 +1810,7 @@ function stripTrailingZeros(number, minFractionalPart) {
     return strNumber;
 
   return strNumber.slice(0, pointPos + minFractionalPart + 1) +
-          strNumber.slice(pointPos + minFractionalPart + 1).replace(/0*$/, '');
+    strNumber.slice(pointPos + minFractionalPart + 1).replace(/0*$/, '');
 }
 
 function formatNumber(number) {
@@ -1886,27 +1818,29 @@ function formatNumber(number) {
 }
 
 function displayAjaxFormError(XMLHttpRequest, formId, fieldErrorClass) {
+  var fieldErrorList = [];
   var json = $.parseJSON(XMLHttpRequest.responseText);
   $("#" + formId + " ." + fieldErrorClass + " label").html("");
-  for ( var fieldError in json.Error) {
-    var html = "<label class=\"error\" for=\"" + fieldError
-        + "\" generated=\"true\">" + json.Error[fieldError].Message
-        + "</label>";
+  for (var fieldError in json.Error) {
+    fieldErrorList.push(fieldError);
+    var html = "<label class=\"error\" for=\"" + fieldError + "\" generated=\"true\">" + json.Error[fieldError].Message +
+      "</label>";
     $("div[id='" + fieldError + "Error" + "']").html(html);
   }
+  return fieldErrorList;
 }
 
 function getOnlyNosFromThePhoneNoString(phoneNumber) {
   var nosInPhoneNoArray = phoneNumber.match(/\d+/g);
   var phoneNo = "";
-  for ( var i = 0; i <= nosInPhoneNoArray.length - 1; i++) {
+  for (var i = 0; i <= nosInPhoneNoArray.length - 1; i++) {
     phoneNo += nosInPhoneNoArray[i];
   }
   return phoneNo;
 }
 
 function initActionLinks2(actionMap, refreshGridRowFn, refreshDetailsPanelFn) {
-  for ( var i = 0; i < actionMap.length; i++) {
+  for (var i = 0; i < actionMap.length; i++) {
     bindToActionLink2(actionMap[i], refreshGridRowFn, refreshDetailsPanelFn);
   }
 }
@@ -1914,633 +1848,579 @@ function initActionLinks2(actionMap, refreshGridRowFn, refreshDetailsPanelFn) {
 var currentSelectedActionLink = null;
 
 function clickActionLink2(elementIdPrefix, actionLinkOnClickFn,
-    refreshGridRowFn, refreshDetailsPanelFn, mapObj) {
+  refreshGridRowFn, refreshDetailsPanelFn, mapObj) {
   if (actionLinkOnClickFn != null)
     actionLinkOnClickFn();
   currentSelectedActionLink = elementIdPrefix;
 
   $("#action_result_panel").hide();
   $("#top_message_panel").hide();
-  $("#"+mapObj.elementIdPrefix+"_panel").find(".agree input[type=checkbox]#accept_checkbox").removeAttr("checked");
+  $("#" + mapObj.elementIdPrefix + "_panel").find(".agree input[type=checkbox]#accept_checkbox").removeAttr("checked");
 
   var dialog = $("#" + elementIdPrefix + "_panel")
-      .dialog(
-          {
-            width : 675,
-            autoOpen : false,
-            modal : true,
-            zIndex : 2000,
-            buttons : {
-              "OK" : function() {
-                if ($currentGridRow.data("jsonObj") == null)
-                  return false;
+    .dialog({
+      width: 675,
+      autoOpen: false,
+      modal: true,
+      zIndex: 2000,
+      buttons: {
+        "OK": function() {
+          if ($currentGridRow.data("jsonObj") == null)
+            return false;
 
-                var actionUrl1 = mapObj.getActionUrlFn(this);
-                if (actionUrl1 == null)
-                  return false;
+          var actionUrl1 = mapObj.getActionUrlFn(this);
+          if (actionUrl1 == null)
+            return false;
 
-                $(this).dialog("close");
-                var $spinningWheel = $("#top_actions").find(
-                    "#spinning_wheel");
-                $spinningWheel.find("#in_process_text").text(
-                    mapObj.actionText);
-                $spinningWheel.show();
+          $(this).dialog("close");
+          var $spinningWheel = $("#top_actions").find(
+            "#spinning_wheel");
+          $spinningWheel.find("#in_process_text").text(
+            mapObj.actionText);
+          $spinningWheel.show();
 
-                if (mapObj.isAsync == true) {
-                  $
-                      .ajax({
-                        type : "GET",
-                        url : actionUrl1,
-                        async : false,
-                        cache : false,
-                        dataType : "json",
-                        success : function(obj) {
-                          var property;
-                          for (property in obj) {
-                          }
-                          ;
-                          var jobId = obj[property].jobid;
-                          if (jobId == null)
-                            return;
-                          var timerKey = "vmAction"
-                              + jobId;
+          if (mapObj.isAsync == true) {
+            $
+              .ajax({
+                type: "GET",
+                url: actionUrl1,
+                async: false,
+                cache: false,
+                dataType: "json",
+                success: function(obj) {
+                  var property;
+                  for (property in obj) {};
+                  var jobId = obj[property].jobid;
+                  if (jobId == null)
+                    return;
+                  var timerKey = "vmAction" + jobId;
 
-                          // Process the async job
-                          $("body")
-                              .everyTime(
-                                  5000,
-                                  timerKey,
-                                  function() {
-                                    var actionUrl2 = cloudStackURL("command=queryAsyncJobResult&jobId="
-                                        + jobId);
-                                    $
-                                        .ajax({
-                                          type : "GET",
-                                          url : actionUrl2,
-                                          dataType : "json",
-                                          cache : false,
-                                          success : function(
-                                              json) {
-                                            var result = json.queryasyncjobresultresponse;
-                                            if (result.jobstatus == 0) {
-                                              return; // Job
-                                              // has
-                                              // not
-                                              // completed
-                                            } else {
-                                              $(
-                                                  "body")
-                                                  .stopTime(
-                                                      timerKey);
-                                              $(
-                                                  "#top_actions")
-                                                  .find(
-                                                      "#spinning_wheel")
-                                                  .hide();
-                                              if (result.jobstatus == 1) {
-                                                // Succeeded
-                                                var property;
-                                                for (property in result.jobresult) {
-                                                }
-                                                ; // e.g.
-                                                // property
-                                                // ==
-                                                // "virtualmachine",
-                                                // "volume",
-                                                // "success"
-                                                var item4 = result.jobresult[property]; // item4
-                                                // might
-                                                // be
-                                                // an
-                                                // object
-                                                // or
-                                                // true/"true"
-                                                // (if
-                                                // property
-                                                // is
-                                                // "success")
-                                                if (typeof (item4) != "object") {
-                                                  if ((property == "success")
-                                                      && ((typeof (item4) == "string" && item4 == "true") || (typeof (item4) == "boolean" && item4 == true))) {
-                                                    $currentGridRow
-                                                        .click();
+                  // Process the async job
+                  $("body")
+                    .everyTime(
+                      5000,
+                      timerKey,
+                      function() {
+                        var actionUrl2 = cloudStackURL("command=queryAsyncJobResult&jobId=" + jobId);
+                        $
+                          .ajax({
+                            type: "GET",
+                            url: actionUrl2,
+                            dataType: "json",
+                            cache: false,
+                            success: function(
+                              json) {
+                              var result = json.queryasyncjobresultresponse;
+                              if (result.jobstatus == 0) {
+                                return; // Job
+                                // has
+                                // not
+                                // completed
+                              } else {
+                                $(
+                                  "body")
+                                  .stopTime(
+                                    timerKey);
+                                $(
+                                  "#top_actions")
+                                  .find(
+                                    "#spinning_wheel")
+                                  .hide();
+                                if (result.jobstatus == 1) {
+                                  // Succeeded
+                                  var property;
+                                  for (property in result.jobresult) {}; // e.g.
+                                  // property
+                                  // ==
+                                  // "virtualmachine",
+                                  // "volume",
+                                  // "success"
+                                  var item4 = result.jobresult[property]; // item4
+                                  // might
+                                  // be
+                                  // an
+                                  // object
+                                  // or
+                                  // true/"true"
+                                  // (if
+                                  // property
+                                  // is
+                                  // "success")
+                                  if (typeof(item4) != "object") {
+                                    if ((property == "success") && ((typeof(item4) == "string" && item4 == "true") ||
+                                      (typeof(item4) == "boolean" && item4 == true))) {
+                                      $currentGridRow
+                                        .click();
 
-                                                    var msg;
-                                                    if (mapObj.afterActionSeccessFn != null) {
-                                                      msg = mapObj
-                                                          .afterActionSeccessFn(item4); // item4
-                                                      // might
-                                                      // be
-                                                      // an
-                                                      // object
-                                                      // or
-                                                      // true/"true".
-                                                      // e.g.
-                                                      // {
-                                                      // "deletevolumeresponse"
-                                                      // : {
-                                                      // "success"
-                                                      // :
-                                                      // "true"}
-                                                      // }
-                                                    }
-                                                    if (msg == null) {
-                                                      var actionlabel = $(
-                                                          "."
-                                                              + mapObj.elementIdPrefix
-                                                              + "_link")
-                                                          .find(
-                                                              "a")
-                                                          .first()
-                                                          .text();
-                                                      msg = actionlabel
-                                                          + " "
-                                                          + g_dictionary.succeeded;
-                                                    }
+                                      var msg;
+                                      if (mapObj.afterActionSeccessFn != null) {
+                                        msg = mapObj
+                                          .afterActionSeccessFn(item4); // item4
+                                        // might
+                                        // be
+                                        // an
+                                        // object
+                                        // or
+                                        // true/"true".
+                                        // e.g.
+                                        // {
+                                        // "deletevolumeresponse"
+                                        // : {
+                                        // "success"
+                                        // :
+                                        // "true"}
+                                        // }
+                                      }
+                                      if (msg == null) {
+                                        var actionlabel = $(
+                                          "." + mapObj.elementIdPrefix + "_link")
+                                          .find(
+                                            "a")
+                                          .first()
+                                          .text();
+                                        msg = actionlabel + " " + g_dictionary.succeeded;
+                                      }
 
-                                                    $(
-                                                        "#action_result_panel")
-                                                        .find(
-                                                            "#msg")
-                                                        .html(
-                                                            msg);
-                                                    $(
-                                                        "#action_result_panel")
-                                                        .find(
-                                                            "#status_icon")
-                                                        .removeClass(
-                                                            "erroricon")
-                                                        .addClass(
-                                                            "successicon");
-                                                    $(
-                                                        "#action_result_panel")
-                                                        .removeClass(
-                                                            "error")
-                                                        .addClass(
-                                                            "success")
-                                                        .show();
+                                      $(
+                                        "#action_result_panel")
+                                        .find(
+                                          "#msg")
+                                        .html(
+                                          msg);
+                                      $(
+                                        "#action_result_panel")
+                                        .find(
+                                          "#status_icon")
+                                        .removeClass(
+                                          "erroricon")
+                                        .addClass(
+                                          "successicon");
+                                      $(
+                                        "#action_result_panel")
+                                        .removeClass(
+                                          "error")
+                                        .addClass(
+                                          "success")
+                                        .show();
 
-                                                  }
-                                                  return;
-                                                }
+                                    }
+                                    return;
+                                  }
 
-                                                if ($currentGridRow
-                                                    .data("jsonObj") == null)
-                                                  return;
+                                  if ($currentGridRow
+                                    .data("jsonObj") == null)
+                                    return;
 
-                                                var idPropertyName = null;
-                                                if (mapObj.returnedObjectId != null) {
-                                                  if (mapObj.returnedObjectId != "NoReturnedObjectId")
-                                                    idPropertyName = mapObj.returnedObjectId;
-                                                  else
-                                                    idPropertyName = null;
-                                                } else {
-                                                  idPropertyName = "id";
-                                                }
-                                                if ((idPropertyName == null)
-                                                    || (item4[idPropertyName] == $currentGridRow
-                                                        .data("jsonObj").id)) {
-                                                  var msg;
-                                                  if (mapObj.afterActionSeccessFn != null) {
-                                                    msg = mapObj
-                                                        .afterActionSeccessFn(item4); // item4
-                                                    // might
-                                                    // be
-                                                    // an
-                                                    // object
-                                                    // or
-                                                    // true/"true".
-                                                    // e.g.
-                                                    // {
-                                                    // "deletevolumeresponse"
-                                                    // : {
-                                                    // "success"
-                                                    // :
-                                                    // "true"}
-                                                    // }
-                                                  }
-                                                  if (msg == null) {
-                                                    var actionlabel = $(
-                                                        "."
-                                                            + mapObj.elementIdPrefix
-                                                            + "_link")
-                                                        .find(
-                                                            "a")
-                                                        .first()
-                                                        .text();
-                                                    msg = actionlabel
-                                                        + " "
-                                                        + g_dictionary.succeeded;
-                                                  }
+                                  var idPropertyName = null;
+                                  if (mapObj.returnedObjectId != null) {
+                                    if (mapObj.returnedObjectId != "NoReturnedObjectId")
+                                      idPropertyName = mapObj.returnedObjectId;
+                                    else
+                                      idPropertyName = null;
+                                  } else {
+                                    idPropertyName = "id";
+                                  }
+                                  if ((idPropertyName == null) || (item4[idPropertyName] == $currentGridRow
+                                    .data("jsonObj").id)) {
+                                    var msg;
+                                    if (mapObj.afterActionSeccessFn != null) {
+                                      msg = mapObj
+                                        .afterActionSeccessFn(item4); // item4
+                                      // might
+                                      // be
+                                      // an
+                                      // object
+                                      // or
+                                      // true/"true".
+                                      // e.g.
+                                      // {
+                                      // "deletevolumeresponse"
+                                      // : {
+                                      // "success"
+                                      // :
+                                      // "true"}
+                                      // }
+                                    }
+                                    if (msg == null) {
+                                      var actionlabel = $(
+                                        "." + mapObj.elementIdPrefix + "_link")
+                                        .find(
+                                          "a")
+                                        .first()
+                                        .text();
+                                      msg = actionlabel + " " + g_dictionary.succeeded;
+                                    }
 
-                                                  $(
-                                                      "#action_result_panel")
-                                                      .find(
-                                                          "#msg")
-                                                      .html(
-                                                          msg);
-                                                  $(
-                                                      "#action_result_panel")
-                                                      .find(
-                                                          "#status_icon")
-                                                      .removeClass(
-                                                          "erroricon")
-                                                      .addClass(
-                                                          "successicon");
-                                                  $(
-                                                      "#action_result_panel")
-                                                      .removeClass(
-                                                          "error")
-                                                      .addClass(
-                                                          "success")
-                                                      .show();
-                                                  $(
-                                                      "#"
-                                                          + mapObj.elementIdPrefix
-                                                          + "_panel")
-                                                      .find(
-                                                          ".agree input[type=checkbox]#accept_checkbox")
-                                                      .removeAttr(
-                                                          "checked");
+                                    $(
+                                      "#action_result_panel")
+                                      .find(
+                                        "#msg")
+                                      .html(
+                                        msg);
+                                    $(
+                                      "#action_result_panel")
+                                      .find(
+                                        "#status_icon")
+                                      .removeClass(
+                                        "erroricon")
+                                      .addClass(
+                                        "successicon");
+                                    $(
+                                      "#action_result_panel")
+                                      .removeClass(
+                                        "error")
+                                      .addClass(
+                                        "success")
+                                      .show();
+                                    $(
+                                      "#" + mapObj.elementIdPrefix + "_panel")
+                                      .find(
+                                        ".agree input[type=checkbox]#accept_checkbox")
+                                      .removeAttr(
+                                        "checked");
 
-                                                  if (mapObj.detailsLevelAction != true) {
-                                                    refreshGridRowFn(
-                                                        item4,
-                                                        $currentGridRow);
-                                                    // $currentGridRow.click();
-                                                    refreshDetailsPanelFn($currentGridRow);
-                                                  }
-                                                }
-                                              } else if (result.jobstatus == 2) {
-                                                // Failed
-                                                var actionlabel = $(
-                                                    "."
-                                                        + mapObj.elementIdPrefix
-                                                        + "_link")
-                                                    .find(
-                                                        "a")
-                                                    .first()
-                                                    .text();
-                                                var msg = actionlabel
-                                                    + " "
-                                                    + g_dictionary.actionFailed;
-                                                if (result.jobresult.errortext != null
-                                                    && result.jobresult.errortext.length > 0)
-                                                  msg += (" - " + localizeCloudStackMsg(fromdb(result.jobresult.errortext)));
-                                                $(
-                                                    "#action_result_panel")
-                                                    .find(
-                                                        "#msg")
-                                                    .text(
-                                                        msg);
-                                                $(
-                                                    "#action_result_panel")
-                                                    .find(
-                                                        "#status_icon")
-                                                    .removeClass(
-                                                        "successicon")
-                                                    .addClass(
-                                                        "erroricon");
-                                                $(
-                                                    "#action_result_panel")
-                                                    .removeClass(
-                                                        "success")
-                                                    .addClass(
-                                                        "error")
-                                                    .show();
-                                                $(
-                                                    "#"
-                                                        + mapObj.elementIdPrefix
-                                                        + "_panel")
-                                                    .find(
-                                                        ".agree input[type=checkbox]#accept_checkbox")
-                                                    .removeAttr(
-                                                        "checked");
-                                              }
-                                            }
-                                          },
-                                          error : function(
-                                              response) {
-                                            $(
-                                                "body")
-                                                .stopTime(
-                                                    timerKey);
-                                            $(
-                                                "#top_actions")
-                                                .find(
-                                                    "#spinning_wheel")
-                                                .hide();
-                                            $(
-                                                "#action_result_panel")
-                                                .find(
-                                                    "#msg")
-                                                .text(
-                                                    g_dictionary.errorFromAPICall
-                                                        + ": queryAsyncJobResult");
-                                            $(
-                                                "#action_result_panel")
-                                                .find(
-                                                    "#status_icon")
-                                                .removeClass(
-                                                    "successicon")
-                                                .addClass(
-                                                    "erroricon");
-                                            $(
-                                                "#action_result_panel")
-                                                .removeClass(
-                                                    "success")
-                                                .addClass(
-                                                    "error")
-                                                .show();
-                                            $(
-                                                "#"
-                                                    + mapObj.elementIdPrefix
-                                                    + "_panel")
-                                                .find(
-                                                    ".agree input[type=checkbox]#accept_checkbox")
-                                                .removeAttr(
-                                                    "checked");
-                                          }
-                                        });
-                                  }, 0);
-                        },
-                        error : function(
-                            XMLHttpResponse) {
-                          $("#top_actions").find(
-                              "#spinning_wheel")
-                              .hide();
-
-                          var errorMsg = "";
-                          if (XMLHttpResponse.responseText != null
-                              & XMLHttpResponse.responseText.length > 0)
-                            errorMsg = parseXMLHttpResponse(XMLHttpResponse);
-
-                          var actionlabel = $(
-                              "."
-                                  + mapObj.elementIdPrefix
-                                  + "_link")
-                              .find("a").first()
-                              .text();
-                          var msg = actionlabel
-                              + " "
-                              + g_dictionary.actionFailed;
-                          if (errorMsg.length > 0)
-                            msg += (" " + localizeCloudStackMsg(errorMsg));
-                          else
-                            msg += (" "
-                                + g_dictionary.errorFromAPICall
-                                + ": " + mapObj.apiName);
-                          $("#action_result_panel")
-                              .find("#msg").text(
-                                  msg);
-                          $("#action_result_panel")
-                              .find(
-                                  "#status_icon")
-                              .removeClass(
-                                  "successicon")
-                              .addClass(
-                                  "erroricon");
-                          $("#action_result_panel")
-                              .removeClass(
-                                  "success")
-                              .addClass("error")
-                              .show();
-                          $(
-                              "#"
-                                  + mapObj.elementIdPrefix
-                                  + "_panel")
-                              .find(
-                                  ".agree input[type=checkbox]#accept_checkbox")
-                              .removeAttr(
-                                  "checked");
-                        }
-                      });
-                } else { // sync
-                  $
-                      .ajax({
-                        type : "GET",
-                        url : actionUrl1,
-                        async : false,
-                        cache : false,
-                        dataType : "json",
-                        success : function(obj1) {
-                          if (typeof (obj1) != "object")
-                            return;
-                          var propertyInObj1;
-                          for (propertyInObj1 in obj1) {
-                          }
-                          ; // e.g. propertyInObj1
-                          // ==
-                          // "updatevirtualmachineresponse"
-                          var obj2 = obj1[propertyInObj1];
-                          if (typeof (obj2) != "object")
-                            return;
-                          var propertyInObj2;
-                          for (propertyInObj2 in obj2) {
-                          }
-                          ; // e.g. propertyInObj2
-                          // == "virtualmachine"
-                          var item3 = obj2[propertyInObj2]; // item3
-                          // might
-                          // be
-                          // an
-                          // object or a
-                          // string "success".
-                          // e.g. {
-                          // "deletevolumeresponse"
-                          // : { "success" :
-                          // "true"} }
-                          $("#top_actions").find(
-                              "#spinning_wheel")
-                              .hide();
-
-                          var msg;
-                          if (mapObj.afterActionSeccessFn != null) {
-                            msg = mapObj
-                                .afterActionSeccessFn(item3); // item3
-                            // might
-                            // be an
-                            // object
-                            // or a
-                            // string
-                            // "success".
-                            // e.g. {
-                            // "deletevolumeresponse"
-                            // : {
-                            // "success"
-                            // :
-                            // "true"}
-                            // }
-                          }
-                          if (msg == null) {
-                            var actionlabel = $(
-                                "."
-                                    + mapObj.elementIdPrefix
-                                    + "_link")
-                                .find("a")
-                                .first().text();
-                            msg = actionlabel
-                                + " "
-                                + g_dictionary.succeeded;
-                          }
-
-                          $("#action_result_panel")
-                              .find("#msg").text(
-                                  msg);
-                          $("#action_result_panel")
-                              .find(
-                                  "#status_icon")
-                              .removeClass(
-                                  "erroricon")
-                              .addClass(
-                                  "successicon");
-                          $("#action_result_panel")
-                              .removeClass(
-                                  "error")
-                              .addClass("success")
-                              .show();
-
-                          if (typeof (item3) == "object") {
-                            refreshGridRowFn(item3,
-                                $currentGridRow);
-                            // $currentGridRow.click();
-                            refreshDetailsPanelFn($currentGridRow);
-                          }
-
-                          if ((propertyInObj2 == "success")
-                              && ((typeof (item3) == "string" && item3 == "true") || (typeof (item3) == "boolean" && item3 == true))) {
-                            $currentGridRow.click(); // this
-                            // will
-                            // hide
-                            // action_result_panel
-                            $(
-                                "#action_result_panel")
-                                .find("#msg")
-                                .text(msg);
-                            $(
+                                    if (mapObj.detailsLevelAction != true) {
+                                      refreshGridRowFn(
+                                        item4,
+                                        $currentGridRow);
+                                      // $currentGridRow.click();
+                                      refreshDetailsPanelFn($currentGridRow);
+                                    }
+                                  }
+                                } else if (result.jobstatus == 2) {
+                                  // Failed
+                                  var actionlabel = $(
+                                    "." + mapObj.elementIdPrefix + "_link")
+                                    .find(
+                                      "a")
+                                    .first()
+                                    .text();
+                                  var msg = actionlabel + " " + g_dictionary.actionFailed;
+                                  if (result.jobresult.errortext != null && result.jobresult.errortext.length > 0)
+                                    msg += (" - " + localizeCloudStackMsg(fromdb(result.jobresult.errortext)));
+                                  $(
+                                    "#action_result_panel")
+                                    .find(
+                                      "#msg")
+                                    .text(
+                                      msg);
+                                  $(
+                                    "#action_result_panel")
+                                    .find(
+                                      "#status_icon")
+                                    .removeClass(
+                                      "successicon")
+                                    .addClass(
+                                      "erroricon");
+                                  $(
+                                    "#action_result_panel")
+                                    .removeClass(
+                                      "success")
+                                    .addClass(
+                                      "error")
+                                    .show();
+                                  $(
+                                    "#" + mapObj.elementIdPrefix + "_panel")
+                                    .find(
+                                      ".agree input[type=checkbox]#accept_checkbox")
+                                    .removeAttr(
+                                      "checked");
+                                }
+                              }
+                            },
+                            error: function(
+                              response) {
+                              $(
+                                "body")
+                                .stopTime(
+                                  timerKey);
+                              $(
+                                "#top_actions")
+                                .find(
+                                  "#spinning_wheel")
+                                .hide();
+                              $(
                                 "#action_result_panel")
                                 .find(
-                                    "#status_icon")
+                                  "#msg")
+                                .text(
+                                  g_dictionary.errorFromAPICall + ": queryAsyncJobResult");
+                              $(
+                                "#action_result_panel")
+                                .find(
+                                  "#status_icon")
                                 .removeClass(
-                                    "erroricon")
+                                  "successicon")
                                 .addClass(
-                                    "successicon");
-                            $(
+                                  "erroricon");
+                              $(
                                 "#action_result_panel")
                                 .removeClass(
-                                    "error")
-                                .addClass(
-                                    "success")
-                                .show(); // so,
-                            // show
-                            // action_result_panel
-                            // (again)
-                          }
-                        },
-                        error : function(
-                            XMLHttpResponse) {
-                          $("#top_actions").find(
-                              "#spinning_wheel")
-                              .hide();
-
-                          var errorMsg = "";
-                          if (XMLHttpResponse.responseText != null
-                              & XMLHttpResponse.responseText.length > 0)
-                            errorMsg = parseXMLHttpResponse(XMLHttpResponse);
-
-                          var actionlabel = $(
-                              "."
-                                  + mapObj.elementIdPrefix
-                                  + "_link")
-                              .find("a").first()
-                              .text();
-                          var msg = actionlabel
-                              + " "
-                              + g_dictionary.actionFailed;
-
-                          if (errorMsg.length > 0)
-                            msg += (" " + localizeCloudStackMsg(errorMsg));
-                          else
-                            msg += (" "
-                                + g_dictionary.errorFromAPICall
-                                + ": " + mapObj.apiName);
-
-                          $("#action_result_panel")
-                              .find("#msg").text(
-                                  msg);
-                          $("#action_result_panel")
-                              .find(
-                                  "#status_icon")
-                              .removeClass(
-                                  "successicon")
-                              .addClass(
-                                  "erroricon");
-                          $("#action_result_panel")
-                              .removeClass(
                                   "success")
-                              .addClass("error")
-                              .show();
-                          $(
-                              "#"
-                                  + mapObj.elementIdPrefix
-                                  + "_panel")
-                              .find(
+                                .addClass(
+                                  "error")
+                                .show();
+                              $(
+                                "#" + mapObj.elementIdPrefix + "_panel")
+                                .find(
                                   ".agree input[type=checkbox]#accept_checkbox")
-                              .removeAttr(
+                                .removeAttr(
                                   "checked");
-                        }
-                      });
-                }
+                            }
+                          });
+                      }, 0);
+                },
+                error: function(
+                  XMLHttpResponse) {
+                  $("#top_actions").find(
+                    "#spinning_wheel")
+                    .hide();
 
-              },
-              "Cancel" : function() {
-                $("#" + mapObj.elementIdPrefix + "_panel")
+                  var errorMsg = "";
+                  if (XMLHttpResponse.responseText != null & XMLHttpResponse.responseText.length > 0)
+                    errorMsg = parseXMLHttpResponse(XMLHttpResponse);
+
+                  var actionlabel = $(
+                    "." + mapObj.elementIdPrefix + "_link")
+                    .find("a").first()
+                    .text();
+                  var msg = actionlabel + " " + g_dictionary.actionFailed;
+                  if (errorMsg.length > 0)
+                    msg += (" " + localizeCloudStackMsg(errorMsg));
+                  else
+                    msg += (" " + g_dictionary.errorFromAPICall + ": " + mapObj.apiName);
+                  $("#action_result_panel")
+                    .find("#msg").text(
+                      msg);
+                  $("#action_result_panel")
                     .find(
-                        ".agree input[type=checkbox]#accept_checkbox")
-                    .removeAttr("checked");
-                if (currentSelectedActionLink == elementIdPrefix)
-                  currentSelectedActionLink = null;
+                      "#status_icon")
+                    .removeClass(
+                      "successicon")
+                    .addClass(
+                      "erroricon");
+                  $("#action_result_panel")
+                    .removeClass(
+                      "success")
+                    .addClass("error")
+                    .show();
+                  $(
+                    "#" + mapObj.elementIdPrefix + "_panel")
+                    .find(
+                      ".agree input[type=checkbox]#accept_checkbox")
+                    .removeAttr(
+                      "checked");
+                }
+              });
+          } else { // sync
+            $
+              .ajax({
+                type: "GET",
+                url: actionUrl1,
+                async: false,
+                cache: false,
+                dataType: "json",
+                success: function(obj1) {
+                  if (typeof(obj1) != "object")
+                    return;
+                  var propertyInObj1;
+                  for (propertyInObj1 in obj1) {}; // e.g. propertyInObj1
+                  // ==
+                  // "updatevirtualmachineresponse"
+                  var obj2 = obj1[propertyInObj1];
+                  if (typeof(obj2) != "object")
+                    return;
+                  var propertyInObj2;
+                  for (propertyInObj2 in obj2) {}; // e.g. propertyInObj2
+                  // == "virtualmachine"
+                  var item3 = obj2[propertyInObj2]; // item3
+                  // might
+                  // be
+                  // an
+                  // object or a
+                  // string "success".
+                  // e.g. {
+                  // "deletevolumeresponse"
+                  // : { "success" :
+                  // "true"} }
+                  $("#top_actions").find(
+                    "#spinning_wheel")
+                    .hide();
 
-                $(this).dialog("close");
-              }
+                  var msg;
+                  if (mapObj.afterActionSeccessFn != null) {
+                    msg = mapObj
+                      .afterActionSeccessFn(item3); // item3
+                    // might
+                    // be an
+                    // object
+                    // or a
+                    // string
+                    // "success".
+                    // e.g. {
+                    // "deletevolumeresponse"
+                    // : {
+                    // "success"
+                    // :
+                    // "true"}
+                    // }
+                  }
+                  if (msg == null) {
+                    var actionlabel = $(
+                      "." + mapObj.elementIdPrefix + "_link")
+                      .find("a")
+                      .first().text();
+                    msg = actionlabel + " " + g_dictionary.succeeded;
+                  }
 
-            }
-          });
+                  $("#action_result_panel")
+                    .find("#msg").text(
+                      msg);
+                  $("#action_result_panel")
+                    .find(
+                      "#status_icon")
+                    .removeClass(
+                      "erroricon")
+                    .addClass(
+                      "successicon");
+                  $("#action_result_panel")
+                    .removeClass(
+                      "error")
+                    .addClass("success")
+                    .show();
+
+                  if (typeof(item3) == "object") {
+                    refreshGridRowFn(item3,
+                      $currentGridRow);
+                    // $currentGridRow.click();
+                    refreshDetailsPanelFn($currentGridRow);
+                  }
+
+                  if ((propertyInObj2 == "success") && ((typeof(item3) == "string" && item3 == "true") || (typeof(
+                    item3) == "boolean" && item3 == true))) {
+                    $currentGridRow.click(); // this
+                    // will
+                    // hide
+                    // action_result_panel
+                    $(
+                      "#action_result_panel")
+                      .find("#msg")
+                      .text(msg);
+                    $(
+                      "#action_result_panel")
+                      .find(
+                        "#status_icon")
+                      .removeClass(
+                        "erroricon")
+                      .addClass(
+                        "successicon");
+                    $(
+                      "#action_result_panel")
+                      .removeClass(
+                        "error")
+                      .addClass(
+                        "success")
+                      .show(); // so,
+                    // show
+                    // action_result_panel
+                    // (again)
+                  }
+                },
+                error: function(
+                  XMLHttpResponse) {
+                  $("#top_actions").find(
+                    "#spinning_wheel")
+                    .hide();
+
+                  var errorMsg = "";
+                  if (XMLHttpResponse.responseText != null & XMLHttpResponse.responseText.length > 0)
+                    errorMsg = parseXMLHttpResponse(XMLHttpResponse);
+
+                  var actionlabel = $(
+                    "." + mapObj.elementIdPrefix + "_link")
+                    .find("a").first()
+                    .text();
+                  var msg = actionlabel + " " + g_dictionary.actionFailed;
+
+                  if (errorMsg.length > 0)
+                    msg += (" " + localizeCloudStackMsg(errorMsg));
+                  else
+                    msg += (" " + g_dictionary.errorFromAPICall + ": " + mapObj.apiName);
+
+                  $("#action_result_panel")
+                    .find("#msg").text(
+                      msg);
+                  $("#action_result_panel")
+                    .find(
+                      "#status_icon")
+                    .removeClass(
+                      "successicon")
+                    .addClass(
+                      "erroricon");
+                  $("#action_result_panel")
+                    .removeClass(
+                      "success")
+                    .addClass("error")
+                    .show();
+                  $(
+                    "#" + mapObj.elementIdPrefix + "_panel")
+                    .find(
+                      ".agree input[type=checkbox]#accept_checkbox")
+                    .removeAttr(
+                      "checked");
+                }
+              });
+          }
+
+        },
+        "Cancel": function() {
+          $("#" + mapObj.elementIdPrefix + "_panel")
+            .find(
+              ".agree input[type=checkbox]#accept_checkbox")
+            .removeAttr("checked");
+          if (currentSelectedActionLink == elementIdPrefix)
+            currentSelectedActionLink = null;
+
+          $(this).dialog("close");
+        }
+
+      }
+    });
 
   activateDialog(dialog);
   dialogButtonsLocalizer(dialog, {
-    'OK' : g_dictionary.dialogOK,
-    'Cancel' : g_dictionary.dialogCancel
+    'OK': g_dictionary.dialogOK,
+    'Cancel': g_dictionary.dialogCancel
   });
   dialog.dialog("open");
 
 }
 
-var $currentSelectedVolume = null;// Global variable for Volume ID for
+var $currentSelectedVolume = null; // Global variable for Volume ID for
 // snapshot
 // on Instances page.
-var $currentSelectedSnapshot = null;// Global variable for Snapshot ID for
+var $currentSelectedSnapshot = null; // Global variable for Snapshot ID for
 // snapshots on Volumes page.
 
 function bindToActionLink2(mapObj, refreshGridRowFn, refreshDetailsPanelFn) {
   $("." + mapObj.elementIdPrefix + "_link").unbind("click").bind(
-      "click",
-      function(event) {
+    "click",
+    function(event) {
 
-        $currentSelectedVolume = $(this).attr('ref_volume');// Selected
-        // Volume
-        // ID for snapshot
-        // on Instances
-        // page.
+      $currentSelectedVolume = $(this).attr('ref_volume'); // Selected
+      // Volume
+      // ID for snapshot
+      // on Instances
+      // page.
 
-        $currentSelectedSnapshot = $(this).parents('#action_menu')
-            .attr('ref_snapshot');
+      $currentSelectedSnapshot = $(this).parents('#action_menu')
+        .attr('ref_snapshot');
 
-        clickActionLink2(mapObj.elementIdPrefix,
-            mapObj.actionLinkOnClickFn, refreshGridRowFn,
-            refreshDetailsPanelFn, mapObj);
+      clickActionLink2(mapObj.elementIdPrefix,
+        mapObj.actionLinkOnClickFn, refreshGridRowFn,
+        refreshDetailsPanelFn, mapObj);
 
-      });
+    });
 
 }
 
@@ -2551,64 +2431,59 @@ var l3menuTenantParam = $("#l3_tenant_param").val();
 
 
 $("#l3_usage_details_tab").bind(
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/billing/usageBilling?tenant=" + effectiveTenantParam;
+
+  });
+$("#l3_subscriptions_tab")
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
       $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/billing/usageBilling?tenant="
-            + effectiveTenantParam;
-
+      if ($("#usage_billing_my_usage").val() == "true") {
+        window.location = "/portal/portal/usage/subscriptions?tenant=" + effectiveTenantParam + "&perPage=14&page=1";
+      } else {
+        window.location = "/portal/portal/billing/subscriptions?tenant=" + effectiveTenantParam + "&perPage=14&page=1";
+      }
     });
-$("#l3_subscriptions_tab")
-    .bind(
-        "click",
-        function(event) {
-          $(".thirdlevel_subtab").removeClass("on").addClass("off");
-          $(this).removeClass("off").addClass("on");
-          if ($("#usage_billing_my_usage").val() == "true") {
-            window.location = "/portal/portal/usage/subscriptions?tenant="
-                + effectiveTenantParam + "&perPage=14&page=1";
-          } else {
-            window.location = "/portal/portal/billing/subscriptions?tenant="
-                + effectiveTenantParam + "&perPage=14&page=1";
-          }
-        });
 
 $("#l3_billing_invoices_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/billing/history?tenant="
-          + effectiveTenantParam+ "&perPage=14&page=1";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/billing/history?tenant=" + effectiveTenantParam + "&perPage=14&page=1";
+  });
 $("#l3_billing_payments_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/billing/paymenthistory?tenant="
-          + effectiveTenantParam+ "&perPage=14&page=1";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/billing/paymenthistory?tenant=" + effectiveTenantParam + "&perPage=14&page=1";
+  });
 
 $("#l3_payment_info_tab")
-    .bind(
-        "click",
-        function(event) {
-          $(".thirdlevel_subtab").removeClass("on").addClass("off");
-          $(this).removeClass("off").addClass("on");
-          window.location = "/portal/portal/billing/showcreditcarddetails?tenant="
-              + effectiveTenantParam;
-        });
+  .bind(
+    "click",
+    function(event) {
+      $(".thirdlevel_subtab").removeClass("on").addClass("off");
+      $(this).removeClass("off").addClass("on");
+      window.location = "/portal/portal/billing/showcreditcarddetails?tenant=" + effectiveTenantParam;
+    });
 
 $("#13_health_status_tab").bind("click", function(event) {
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
   $(".thirdlevel_subtab").removeClass("on").addClass("off");
   $(this).removeClass("off").addClass("on");
-  if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
+  if (typeof selectedServiceInstanceUUID == 'undefined' || selectedServiceInstanceUUID == null ||
+    selectedServiceInstanceUUID == "") {
     window.location = "/portal/portal/health";
   } else {
-    window.location = "/portal/portal/health?serviceinstanceuuid="+selectedServiceInstanceUUID;
+    window.location = "/portal/portal/health?serviceinstanceuuid=" + selectedServiceInstanceUUID;
   }
 });
 
@@ -2616,22 +2491,22 @@ $("#13_health_scheduled_maintainence_tab").bind("click", function(event) {
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
   $(".thirdlevel_subtab").removeClass("on").addClass("off");
   $(this).removeClass("off").addClass("on");
-  if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
+  if (typeof selectedServiceInstanceUUID == 'undefined' || selectedServiceInstanceUUID == null ||
+    selectedServiceInstanceUUID == "") {
     window.location = "/portal/portal/health/health_maintainance";
   } else {
-    window.location = "/portal/portal/health/health_maintainance?serviceinstanceuuid="+selectedServiceInstanceUUID;
+    window.location = "/portal/portal/health/health_maintainance?serviceinstanceuuid=" + selectedServiceInstanceUUID;
   }
 });
 
 $("#l3_compute_bundles_tab")
-    .bind(
-        "click",
-        function(event) {
-          $(".thirdlevel_subtab").removeClass("on").addClass("off");
-          $(this).removeClass("off").addClass("on");
-          window.location = "/portal/portal/subscription/createsubscription?tenant="
-              + l3menuTenantParam;
-        });
+  .bind(
+    "click",
+    function(event) {
+      $(".thirdlevel_subtab").removeClass("on").addClass("off");
+      $(this).removeClass("off").addClass("on");
+      window.location = "/portal/portal/subscription/createsubscription?tenant=" + l3menuTenantParam;
+    });
 
 $("#l3_compute_bundles_tab_browse_catalog").bind("click", function(event) {
   var searchq = window.location.search;
@@ -2644,86 +2519,79 @@ $("#l3_compute_bundles_tab_browse_catalog").bind("click", function(event) {
 });
 
 $("#l3_account_All_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=All";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=All";
+  });
 
 $("#l3_service_bundles_tab")
-    .bind(
-        "click",
-        function(event) {
-          $(".thirdlevel_subtab").removeClass("on").addClass("off");
-          $(this).removeClass("off").addClass("on");
-          window.location = "/portal/portal/subscription/subscribeNonVmBundle?tenant="
-              + l3menuTenantParam;
-        });
+  .bind(
+    "click",
+    function(event) {
+      $(".thirdlevel_subtab").removeClass("on").addClass("off");
+      $(this).removeClass("off").addClass("on");
+      window.location = "/portal/portal/subscription/subscribeNonVmBundle?tenant=" + l3menuTenantParam;
+    });
 
 $("#l3_account_0_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=0";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=0";
+  });
 
 $("#l3_account_1_tab").bind(
-    "click",
-    function(event) {
-      // $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=1";
-    });
+  "click",
+  function(event) {
+    // $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=1";
+  });
 
 $("#l3_account_2_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=2";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=2";
+  });
 
 $("#l3_account_3_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=3";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=3";
+  });
 
 $("#l3_account_4_tab").bind(
-    "click",
-    function(event) {
-      $(".thirdlevel_subtab").removeClass("on").addClass("off");
-      $(this).removeClass("off").addClass("on");
-      window.location = "/portal/portal/tenants/list?accountType="
-          + selectedAccountType + "&filterBy=4";
-    });
+  "click",
+  function(event) {
+    $(".thirdlevel_subtab").removeClass("on").addClass("off");
+    $(this).removeClass("off").addClass("on");
+    window.location = "/portal/portal/tenants/list?accountType=" + selectedAccountType + "&filterBy=4";
+  });
 
 $("#l3_profile_serviceprovider_tab").bind(
-    "click",
-    function(event) {
-      initialiseProfilesPage("spProfiles");
-    });
+  "click",
+  function(event) {
+    initialiseProfilesPage("spProfiles");
+  });
 
 $("#l3_profile_customer_tab").bind(
-    "click",
-    function(event) {
-      initialiseProfilesPage("customerProfiles");
-    });
+  "click",
+  function(event) {
+    initialiseProfilesPage("customerProfiles");
+  });
 
 $("#l3_profile_partner_tab").bind(
-    "click",
-    function(event) {
-      initialiseProfilesPage("");
-    });
+  "click",
+  function(event) {
+    initialiseProfilesPage("");
+  });
 $("#12_content_0_tab").bind("click", function(event) {
   $(".thirdlevel_subtab").removeClass("on").addClass("off");
   $(this).removeClass("off").addClass("on");
@@ -2755,17 +2623,16 @@ $("#12_content_4_tab").bind("click", function(event) {
 });
 
 $("#l3_billing_record_deposit_tab")
-    .bind(
-        "click",
-        function(event) {
-          $(".thirdlevel_subtab").removeClass("on").addClass("off");
-          $(this).removeClass("off").addClass("on");
-          window.location = "/portal/portal/billing/show_record_deposit?tenant="
-              + l3menuTenantParam;
-        });
+  .bind(
+    "click",
+    function(event) {
+      $(".thirdlevel_subtab").removeClass("on").addClass("off");
+      $(this).removeClass("off").addClass("on");
+      window.location = "/portal/portal/billing/show_record_deposit?tenant=" + l3menuTenantParam;
+    });
 
 $("#l3_config_configaccountmanagement_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2774,7 +2641,7 @@ $("#l3_config_configaccountmanagement_tab")
     });
 
 $("#l3_config_accountprovisioning_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2783,7 +2650,7 @@ $("#l3_config_accountprovisioning_tab")
     });
 
 $("#l3_config_billing_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2793,7 +2660,7 @@ $("#l3_config_billing_tab")
 
 
 $("#l3_config_crm_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2802,7 +2669,7 @@ $("#l3_config_crm_tab")
     });
 
 $("#l3_config_helpdesk_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2811,7 +2678,7 @@ $("#l3_config_helpdesk_tab")
     });
 
 $("#l3_config_integration_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2820,7 +2687,7 @@ $("#l3_config_integration_tab")
     });
 
 $("#l3_home_connectors_cs_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2829,7 +2696,7 @@ $("#l3_home_connectors_cs_tab")
     });
 
 $("#l3_home_connectors_oss_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2838,7 +2705,7 @@ $("#l3_home_connectors_oss_tab")
     });
 
 $("#l3_config_server_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2846,7 +2713,7 @@ $("#l3_config_server_tab")
       window.location = "/portal/portal/admin/config/show_configuration?module=Server";
     });
 $("#l3_config_portal_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2854,7 +2721,7 @@ $("#l3_config_portal_tab")
       window.location = "/portal/portal/admin/config/show_configuration?module=Portal";
     });
 $("#l3_config_reports_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2862,7 +2729,7 @@ $("#l3_config_reports_tab")
       window.location = "/portal/portal/admin/config/show_configuration?module=Reports";
     });
 $("#l3_config_marketing_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2871,7 +2738,7 @@ $("#l3_config_marketing_tab")
     });
 
 $("#l3_config_trialmanagement_tab")
-.bind(
+  .bind(
     "click",
     function(event) {
       $(".thirdlevel_subtab").removeClass("on").addClass("off");
@@ -2887,37 +2754,38 @@ function isBrowserIE7() {
 }
 
 function viewUtilitRates(tenantParam, id, url, serviceInstanceUUID) {
-  var target_url="/portal/portal/subscription/utilityrates_table?tenant="+ tenantParam+"&serviceInstanceUuid="+serviceInstanceUUID;
-  if(url!=null){
-    target_url=url;
+  var target_url = "/portal/portal/subscription/utilityrates_table?tenant=" + tenantParam + "&serviceInstanceUuid=" +
+    serviceInstanceUUID;
+  if (url != null) {
+    target_url = url;
   }
   $("#full_page_spinning_wheel").show();
   initDialog(id, 850);
   $.ajax({
-    type : "GET",
-    url : target_url+"&isDialog=true",
-    dataType : "html",
-    cache : false,
-    success : function(html) {
+    type: "GET",
+    url: target_url + "&isDialog=true",
+    dataType: "html",
+    cache: false,
+    success: function(html) {
 
       var $thisDialog = $("#" + id);
       $thisDialog.dialog('option', 'minHeight', 400);
       $thisDialog.dialog('option', 'minWidth', 750);
 
       $thisDialog.dialog('option', 'buttons', {
-        "OK" : function() {
+        "OK": function() {
           $(this).dialog("close");
         }
       });
       dialogButtonsLocalizer($thisDialog, {
-        'Cancel' : g_dictionary.dialogOK
+        'Cancel': g_dictionary.dialogOK
       });
       $("#full_page_spinning_wheel").hide();
       $thisDialog.html(html);
       $thisDialog.dialog("open");
     },
-    error : function(){
-    	$("#full_page_spinning_wheel").hide();
+    error: function() {
+      $("#full_page_spinning_wheel").hide();
     }
   });
   return false;
@@ -2942,12 +2810,12 @@ function popUpDialogForAlerts(dialog_div_id, message) {
   $thisDialog = $("#" + dialog_div_id);
   $thisDialog.html(message);
   $thisDialog.dialog('option', 'buttons', {
-    "OK" : function() {
+    "OK": function() {
       $(this).dialog("close");
     }
   });
   dialogButtonsLocalizer($thisDialog, {
-    'OK' : g_dictionary.dialogOK
+    'OK': g_dictionary.dialogOK
   });
   $thisDialog.bind("dialogbeforeclose", function(event, ui) {
     $thisDialog.empty();
@@ -2958,11 +2826,11 @@ function popUpDialogForAlerts(dialog_div_id, message) {
 function getTaxableAmount(amount) {
   var taxableAmount = amount;
   $.ajax({
-    type : "GET",
-    url : "/portal/portal/subscription/taxable_amount?amount=" + amount,
-    async : false,
-    dataType : "html",
-    success : function(json) {
+    type: "GET",
+    url: "/portal/portal/subscription/taxable_amount?amount=" + amount,
+    async: false,
+    dataType: "html",
+    success: function(json) {
       taxableAmount = json;
     }
   });
@@ -2971,46 +2839,44 @@ function getTaxableAmount(amount) {
 
 function i18nUomText(uom) {
   switch (uom) {
-  case "GB-Months":
-    if (g_dictionary.GB_Months != null
-        && g_dictionary.GB_Months != "undefined") {
-      uom = g_dictionary.GB_Months;
-    }
-    break;
-  case "GB":
-    if (g_dictionary.GB != null && g_dictionary.GB != "undefined") {
-      uom = g_dictionary.GB;
-    }
-    break;
-  case "IP-Month":
-    if (g_dictionary.IP_Month != null
-        && g_dictionary.IP_Month != "undefined") {
-      uom = g_dictionary.IP_Month;
-    }
-    break;
-  case "Rules":
-    if (g_dictionary.Rules != null && g_dictionary.Rules != "undefined") {
-      uom = g_dictionary.Rules;
-    }
-    break;
-  case "Hours":
-    if (g_dictionary.Hours != null && g_dictionary.Hours != "undefined") {
-      uom = g_dictionary.Hours;
-    }
-    break;
+    case "GB-Months":
+      if (g_dictionary.GB_Months != null && g_dictionary.GB_Months != "undefined") {
+        uom = g_dictionary.GB_Months;
+      }
+      break;
+    case "GB":
+      if (g_dictionary.GB != null && g_dictionary.GB != "undefined") {
+        uom = g_dictionary.GB;
+      }
+      break;
+    case "IP-Month":
+      if (g_dictionary.IP_Month != null && g_dictionary.IP_Month != "undefined") {
+        uom = g_dictionary.IP_Month;
+      }
+      break;
+    case "Rules":
+      if (g_dictionary.Rules != null && g_dictionary.Rules != "undefined") {
+        uom = g_dictionary.Rules;
+      }
+      break;
+    case "Hours":
+      if (g_dictionary.Hours != null && g_dictionary.Hours != "undefined") {
+        uom = g_dictionary.Hours;
+      }
+      break;
   }
   return uom;
 }
 
-function i18nBooleanString(field){
-  switch(field){
+function i18nBooleanString(field) {
+  switch (field) {
     case true:
-      if(g_dictionary.labelTrue != null && g_dictionary.labelTrue != "undefined"){
+      if (g_dictionary.labelTrue != null && g_dictionary.labelTrue != "undefined") {
         field = g_dictionary.labelTrue;
       }
       break;
     case false:
-      if(g_dictionary.labelFalse != null && g_dictionary.labelFalse != "undefined"){
+      if (g_dictionary.labelFalse != null && g_dictionary.labelFalse != "undefined") {
         field = g_dictionary.labelFalse;
       }
       break;
@@ -3020,9 +2886,9 @@ function i18nBooleanString(field){
 
 function focusFirstItemInGivenContainer(container_id) {
   var firstInput = $("#" + container_id)
-      .find(
-          'input[type=text],input[type=password],input[type=radio],input[type=checkbox],textarea,select')
-      .filter(':visible:first');
+    .find(
+      'input[type=text],input[type=password],input[type=radio],input[type=checkbox],textarea,select')
+    .filter(':visible:first');
   if (firstInput != null) {
     firstInput.focus();
   }
@@ -3030,13 +2896,14 @@ function focusFirstItemInGivenContainer(container_id) {
 
 
 // Localize the message from CloudStack
+
 function localizeCloudStackMsg(msg) {
 
   var localizedMsg = "";
 
   if ((msg) && (language != "en")) {
 
-    for (var i = 0; i < CloudStack_Message_Regexp.length; i ++) {
+    for (var i = 0; i < CloudStack_Message_Regexp.length; i++) {
       var re = new RegExp("");
       re.compile(CloudStack_Message_Regexp[i][0]);
 
@@ -3054,9 +2921,9 @@ function localizeCloudStackMsg(msg) {
             // localize the message
             localizedMsg = msg.replace(re, CloudStack_Message_Regexp[i][1]);
 
-          //
-          // localize the message with localizing the arguments
-          //
+            //
+            // localize the message with localizing the arguments
+            //
           } else {
 
             var key = subKey = "";
@@ -3067,10 +2934,11 @@ function localizeCloudStackMsg(msg) {
               // localize the message with no localizing the argument, at first
               localizedMsg = msg.replace(re, CloudStack_Message_Regexp[i][1]);
 
-              for (var j = 0; (j < CloudStack_Message_Regexp[i][2].length) || (j < execResult.length-1); j ++) {
+              for (var j = 0;
+                (j < CloudStack_Message_Regexp[i][2].length) || (j < execResult.length - 1); j++) {
 
                 if (CloudStack_Message_Regexp[i][2][j] != null) {
-                  subKey = execResult[j+1];
+                  subKey = execResult[j + 1];
                   re.compile(subKey);
                   // create the key to the localized argument based on the value of argument
                   key = CloudStack_Message_Regexp[i][2][j] + "_" + subKey;
@@ -3081,15 +2949,16 @@ function localizeCloudStackMsg(msg) {
                 }
               }
 
-            //
-            // localize the whole sentence based on the arguments
+              //
+              // localize the whole sentence based on the arguments
             } else if (CloudStack_Message_Regexp[i].length == 4) {
 
               // create the key to the localized sentence based on the value of arguments
-              for (var j = 0; (j < CloudStack_Message_Regexp[i][2].length) || (j < execResult.length-1); j ++) {
+              for (var j = 0;
+                (j < CloudStack_Message_Regexp[i][2].length) || (j < execResult.length - 1); j++) {
                 if (CloudStack_Message_Regexp[i][2][j]) {
                   if (key != "") key += "_";
-                  key += execResult[j+1];
+                  key += execResult[j + 1];
                 }
               }
               // localize the whole sentence
@@ -3103,21 +2972,19 @@ function localizeCloudStackMsg(msg) {
       }
     }
     if (localizedMsg == "") localizedMsg = msg;
-  }
-  else {
+  } else {
     localizedMsg = msg;
   }
   return localizedMsg;
 }
 
-function checkDelinquent(isDelinquent,redirectToBilling,redirectToDashBoard,showMakePaymentMessage,tenantParam){
+function checkDelinquent(isDelinquent, redirectToBilling, redirectToDashBoard, showMakePaymentMessage, tenantParam) {
   if (isDelinquent == true) {
     if (redirectToBilling == true) {
       window.location = "/portal/portal/billing/history?tenant=" + tenantParam + "&action=launchvm"; //redirect them to payment page
-    }
-    else if (redirectToDashBoard == true) {
+    } else if (redirectToDashBoard == true) {
       alert(showMakePaymentMessage);
-      window.location = "/portal/portal/home?tenant="+tenantParam+"&secondLevel=true"; //redirect them to user dashboard page
+      window.location = "/portal/portal/home?tenant=" + tenantParam + "&secondLevel=true"; //redirect them to user dashboard page
     }
     return false;
   }
@@ -3136,32 +3003,32 @@ function addParametersToUrl(url, key, value) {
 
 function singleSignOn(tenantParam, serviceInstanceUUID) {
   if (serviceInstanceUUID == null || serviceInstanceUUID == "") {
-        return false;
-    }
+    return false;
+  }
   var returnVal = true;
-    var url = "/portal/portal/manage_resource/get_sso_cmd_string";
+  var url = "/portal/portal/manage_resource/get_sso_cmd_string";
 
-    if (tenantParam != null && tenantParam != "") {
-        url = addParametersToUrl(url, "tenant", tenantParam);
+  if (tenantParam != null && tenantParam != "") {
+    url = addParametersToUrl(url, "tenant", tenantParam);
   }
   url = addParametersToUrl(url, "serviceInstanceUUID", serviceInstanceUUID);
   $.ajax({
-    type : "POST",
-    url : url,
-    async : false,
-    dataType : "json",
-    success : function(responseMap) {
+    type: "POST",
+    url: url,
+    async: false,
+    dataType: "json",
+    success: function(responseMap) {
       if (responseMap.status == 'fail') {
         if (responseMap.error_message != null) {
           alert(responseMap.error_message);
         }
         ssoResponseMap = null;
-        returnVal =  responseMap.url;
+        returnVal = responseMap.url;
       } else {
         ssoResponseMap = responseMap;
       }
     },
-    error : function(XMLHttpResponse) {
+    error: function(XMLHttpResponse) {
       alert(g_dictionary.error_single_sign_on);
       ssoResponseMap = null;
       returnVal = false;
@@ -3170,96 +3037,103 @@ function singleSignOn(tenantParam, serviceInstanceUUID) {
   return returnVal;
 }
 
-function updateServiceInstanceItems(current, fn, tenantParam){
+function updateServiceInstanceItems(current, fn, tenantParam) {
   var serviceInstanceUUID = $(current).attr("id");
-  $selectedServiceInstance=$("#selectedServiceInstance");
+  $selectedServiceInstance = $("#selectedServiceInstance");
   $("#serviceInstanceUuid").val(serviceInstanceUUID);
-  $selectedServiceInstance.html($(current).text()+"<div class='downarrow' id='"+$(current).attr("id")+"'></div>");
+  $selectedServiceInstance.html($(current).text() + "<div class='downarrow' id='" + $(current).attr("id") + "'></div>");
   $("#serviceInstanceDropdownlist").css('display', 'none');
   fn(serviceInstanceUUID, tenantParam);
 }
 
-function populateServiceInstances(serviceCategory, tenantParam, fn, firstTimefn){
-  if(typeof serviceCategory =='undefined'){
+function populateServiceInstances(serviceCategory, tenantParam, fn, firstTimefn) {
+  if (typeof serviceCategory == 'undefined') {
     return;
   }
   actionUrl = "/portal/portal/connector/service_instance_list"
-    if($("#viewChannelCatalog").val() == 'true'){
-      actionUrl = addParametersToUrl(actionUrl, "viewCatalog", true);
-    }
-    $.ajax( {
-        type : "GET",
-        url : actionUrl,
-        async: true,
-        data:{category:serviceCategory, tenant:tenantParam},
-        dataType : "json",
-        success : function(items) {
-          var serviceInstanceSelect=$("#serviceInstanceList");
-          serviceInstanceSelect.empty();
-          var selectedCloudServiceInstance = $("#selectedCloudServiceInstance").val();
-          if(typeof selectedCloudServiceInstance =='undefined' || selectedCloudServiceInstance == null || selectedCloudServiceInstance=="") {
-            selectedCloudServiceInstance = null;
-          }
-          if (items != null && items.length > 0){
-            $("#serviceInstanceListContainer").show();
-            var serviceInstanceUUID = items[0].uuid;
-            if(selectedCloudServiceInstance == null) {
-              var $selectedServiceInstance=$("#selectedServiceInstance");
-              $selectedServiceInstance.html(items[0].name+"<div class='downarrow' id='"+items[0].uuid+"'></div>");
-            }
-            var serviceInstanceItem;
-            var select_option;
-            for (var i = 0; i < items.length; i++) {
-              serviceInstanceItem = items[i];
-              if(serviceInstanceItem.uuid == selectedCloudServiceInstance) {
-                var $selectedServiceInstance=$("#selectedServiceInstance");
-                $selectedServiceInstance.html(serviceInstanceItem.name+"<div class='downarrow' id='"+serviceInstanceItem.uuid+"'></div>");
-                serviceInstanceUUID = selectedCloudServiceInstance;
-              }
-              select_option="<li id='"+serviceInstanceItem.uuid+"' onclick='updateServiceInstanceItems(this, "+fn+", \""+tenantParam+"\");' >"+serviceInstanceItem.name+"</li>";
-              serviceInstanceSelect.append(select_option);
-
-            }
-            $("#serviceInstanceListContainer").bind("mouseover", function (event) {
-                  $(this).find("#serviceInstanceDropdownlist").show();
-                  return false;
-            });
-            $("#serviceInstanceListContainer").bind("mouseout", function (event) {
-                  var $thisElement = $(this)[0];
-                  var relatedTarget1 = event.relatedTarget;
-                  while (relatedTarget1 != null && relatedTarget1.nodeName != "BODY" && relatedTarget1 != $thisElement) {
-                    relatedTarget1 = relatedTarget1.parentNode;
-                  }
-                  if (relatedTarget1 == $thisElement) {
-                    return;
-                  }
-                  $(this).find("#serviceInstanceDropdownlist").hide();
-                  return false;
-            });
-            if(typeof firstTimefn != 'undefined') {
-              firstTimefn(serviceInstanceUUID, tenantParam);
-            }
-          } else {
-            $("#serviceInstanceListContainer").hide();
-            if(typeof firstTimefn != 'undefined') {
-              firstTimefn("", tenantParam);
-            }
-          }
-
-        },error:function(){
-          //need to handle TODO
+  if ($("#viewChannelCatalog").val() == 'true') {
+    actionUrl = addParametersToUrl(actionUrl, "viewCatalog", true);
+  }
+  $.ajax({
+    type: "GET",
+    url: actionUrl,
+    async: true,
+    data: {
+      category: serviceCategory,
+      tenant: tenantParam
+    },
+    dataType: "json",
+    success: function(items) {
+      var serviceInstanceSelect = $("#serviceInstanceList");
+      serviceInstanceSelect.empty();
+      var selectedCloudServiceInstance = $("#selectedCloudServiceInstance").val();
+      if (typeof selectedCloudServiceInstance == 'undefined' || selectedCloudServiceInstance == null ||
+        selectedCloudServiceInstance == "") {
+        selectedCloudServiceInstance = null;
+      }
+      if (items != null && items.length > 0) {
+        $("#serviceInstanceListContainer").show();
+        var serviceInstanceUUID = items[0].uuid;
+        if (selectedCloudServiceInstance == null) {
+          var $selectedServiceInstance = $("#selectedServiceInstance");
+          $selectedServiceInstance.html(items[0].name + "<div class='downarrow' id='" + items[0].uuid + "'></div>");
         }
-     });
+        var serviceInstanceItem;
+        var select_option;
+        for (var i = 0; i < items.length; i++) {
+          serviceInstanceItem = items[i];
+          if (serviceInstanceItem.uuid == selectedCloudServiceInstance) {
+            var $selectedServiceInstance = $("#selectedServiceInstance");
+            $selectedServiceInstance.html(serviceInstanceItem.name + "<div class='downarrow' id='" +
+              serviceInstanceItem.uuid + "'></div>");
+            serviceInstanceUUID = selectedCloudServiceInstance;
+          }
+          select_option = "<li id='" + serviceInstanceItem.uuid + "' onclick='updateServiceInstanceItems(this, " + fn +
+            ", \"" + tenantParam + "\");' >" + serviceInstanceItem.name + "</li>";
+          serviceInstanceSelect.append(select_option);
+
+        }
+        $("#serviceInstanceListContainer").bind("mouseover", function(event) {
+          $(this).find("#serviceInstanceDropdownlist").show();
+          return false;
+        });
+        $("#serviceInstanceListContainer").bind("mouseout", function(event) {
+          var $thisElement = $(this)[0];
+          var relatedTarget1 = event.relatedTarget;
+          while (relatedTarget1 != null && relatedTarget1.nodeName != "BODY" && relatedTarget1 != $thisElement) {
+            relatedTarget1 = relatedTarget1.parentNode;
+          }
+          if (relatedTarget1 == $thisElement) {
+            return;
+          }
+          $(this).find("#serviceInstanceDropdownlist").hide();
+          return false;
+        });
+        if (typeof firstTimefn != 'undefined') {
+          firstTimefn(serviceInstanceUUID, tenantParam);
+        }
+      } else {
+        $("#serviceInstanceListContainer").hide();
+        if (typeof firstTimefn != 'undefined') {
+          firstTimefn("", tenantParam);
+        }
+      }
+
+    },
+    error: function() {
+      //need to handle TODO
+    }
+  });
 }
 
-function displayErrorDialog(XMLHttpResponse){
-  var textToDisplay = "Error";//TODO localized default string
-  if(XMLHttpResponse.status === INTERNAL_SERVER_FAILED_CODE){
-    textToDisplay = XMLHttpResponse.statusText+"\n"+XMLHttpResponse.responseText;
+function displayErrorDialog(XMLHttpResponse) {
+  var textToDisplay = "Error"; //TODO localized default string
+  if (XMLHttpResponse.status === INTERNAL_SERVER_FAILED_CODE) {
+    textToDisplay = XMLHttpResponse.statusText + "\n" + XMLHttpResponse.responseText;
   }
   initDialogWithOK("dialog_info", 350, false);
-    $("#dialog_info").dialog("option", "height", 150);
-    $("#dialog_info").text(textToDisplay).dialog("open");
+  $("#dialog_info").dialog("option", "height", 150);
+  $("#dialog_info").text(textToDisplay).dialog("open");
 }
 
 /* START js to show workflows popup */
@@ -3269,9 +3143,10 @@ $(".workflowDetailsPopup").live("click", function() {
   var workflowUUID = $opener.attr('id').replace("workflowdetails", "");
   var workflowDetailsurl = "/portal/portal/workflow/" + workflowUUID;
   var workflowDetailsGet = $.ajax({
-    type : "GET",
-    url : workflowDetailsurl,
-    dataType : "html"
+    type: "GET",
+    url: workflowDetailsurl,
+    dataType: "html",
+    cache: false
   });
 
   $(".workflow_details_popup").each(function(index) {
@@ -3281,21 +3156,22 @@ $(".workflowDetailsPopup").live("click", function() {
   });
   var $workflowDetailsDialog = $(".workflow_details_popup");
   $workflowDetailsDialog.dialog({
-    width : 700,
-    modal : true,
-    resizable : false,
-    autoOpen : false,
-    buttons : {
-      "OK" : function() {
+    width: 700,
+    modal: true,
+    resizable: false,
+    autoOpen: false,
+    buttons: {
+      "OK": function() {
         $workflowDetailsDialog.dialog("close");
       }
     },
-    close: function(event, ui)
-    {
+    close: function(event, ui) {
       $workflowDetailsDialog.dialog("destroy").html("");
     }
   });
-  dialogButtonsLocalizer($workflowDetailsDialog, {'OK': g_dictionary.dialogOK});
+  dialogButtonsLocalizer($workflowDetailsDialog, {
+    'OK': g_dictionary.dialogOK
+  });
   workflowDetailsGet.done(function(html) {
     $workflowDetailsDialog.html(html);
     $workflowDetailsDialog.data('opener', $opener).dialog("open");
@@ -3309,7 +3185,8 @@ $(".workflow_details_popup .workflow_activitycontainer .statusearea a").die("cli
 function expandActivityDetails(bucketNumber) {
   var $divToExpand = $("#activitypanel" + bucketNumber);
   $('.activitypanel').each(function() {
-    if (!$(this).hasClass("hide") && $(this).attr('id').replace("activitypanel", "") != $divToExpand.attr('id').replace("activitypanel", "")) {
+    if (!$(this).hasClass("hide") && $(this).attr('id').replace("activitypanel", "") != $divToExpand.attr('id').replace(
+      "activitypanel", "")) {
       $(this).addClass("hide");
     }
   });
@@ -3317,16 +3194,17 @@ function expandActivityDetails(bucketNumber) {
 }
 
 $(".workflow_resetbutton").live("click", function() {
-  var workflowUUID = $(this).closest(".workflow_details_popup").data('opener').attr('id').replace("workflowdetails", "")
+  var workflowUUID = $(this).closest(".workflow_details_popup").data('opener').attr('id').replace("workflowdetails",
+    "")
   var resetUrl = "/portal/portal/workflow/" + workflowUUID + "/reset";
 
   var resetWorkflowGet = $.ajax({
-    type : "POST",
-    url : resetUrl,
-    dataType : "text"
+    type: "POST",
+    url: resetUrl,
+    dataType: "text"
   });
   resetWorkflowGet.done(function(text) {
-    if(text == 'true') {
+    if (text == 'true') {
       $("#workflowdetails" + workflowUUID).click();
     }
   });
@@ -3335,7 +3213,7 @@ $(".workflow_resetbutton").live("click", function() {
 /* END js to show workflows popup */
 
 function isNotBlank(str) {
-  if(str != null && str != "" && typeof(str) != "undefined") {
+  if (str != null && str != "" && typeof(str) != "undefined") {
     return true;
   }
   return false;
@@ -3348,18 +3226,18 @@ function isBlank(str) {
 
 String.prototype.format = String.prototype.f = function(argList) {
   var s = this,
-  i = argList.length;
+    i = argList.length;
   while (i--) {
     s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), argList[i]);
   }
   return s;
-}; 
+};
 
 function getFormattedDisplayAttribtutesDescription(message, attributes) {
   var displayString = "";
   if (attributes != null) {
     var argsList = [];
-    for (var i=0; i<attributes.length; i++) {
+    for (var i = 0; i < attributes.length; i++) {
       da = attributes[i];
       argsList.push(da.value);
     }
@@ -3371,7 +3249,7 @@ function getFormattedDisplayAttribtutesDescription(message, attributes) {
 function getFormattedDisplayAttribtutesString(attributes) {
   var displayString = "";
   if (attributes != null) {
-    for (var i=0; i<attributes.length; i++) {
+    for (var i = 0; i < attributes.length; i++) {
       da = attributes[i];
       displayString += displayString == "" ? "" : ", ";
       displayString += "<b>" + da.name + "</b> : " + da.value;
@@ -3390,60 +3268,97 @@ function getFormattedAttribtutesString(attributes) {
   }
   return displayString;
 }
-var showResourcesIFrameWithServiceInstanceUUID=function(serviceInstanceUUID){
-  
-    $("#maincontent_container").hide();
-    $("#main").css("width", "100%");
-    $("#header").css("margin", "auto");
-    $("#footer").css("width", "100%");
-    $("#mainmenu_panel").css({"margin":"auto"});
-    $("#manage_resources_container").show();
-    var $iframe_tab=$("#iframe_tab_"+serviceInstanceUUID);
-    $iframe_tab.find(".js_loading").show();
-  $.ajax({
-        url: "/portal/portal/manage_resource/get_resource_views",
-        dataType: "json",
-        async: false,
-        data: {
-            serviceInstanceUUID: serviceInstanceUUID,
-            tenant: effectiveTenantParam
-        },
+var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
 
-        cache: false,
-        success: function (json) {
-          singleSignOn(effectiveTenantParam, serviceInstanceUUID);
-          $iframe_tab.find(".js_loading").hide();
-          $(".js_iframe_tabs").removeClass("on");
-          $iframe_tab.addClass("on");
-          $("#manage_resources_iframe").attr("src", json[0].url);
-        },
-        error: function (XMLHttpResponse) {
-        	$iframe_tab.find(".js_loading").hide();
-            handleError(XMLHttpResponse);
-          }
-   });
+  $("#maincontent_container").hide();
+  $("#main").css("width", "100%");
+  $("#header").css("margin", "auto");
+  $("#footer").css("width", "100%");
+  $("#mainmenu_panel").css({
+    "margin": "auto"
+  });
+  $("#manage_resources_container").show();
+  var $iframe_tab = $("#iframe_tab_" + serviceInstanceUUID);
+  $iframe_tab.find(".js_loading").show();
+  $.ajax({
+    url: "/portal/portal/manage_resource/get_resource_views",
+    dataType: "json",
+    async: false,
+    data: {
+      serviceInstanceUUID: serviceInstanceUUID,
+      tenant: effectiveTenantParam
+    },
+
+    cache: false,
+    success: function(json) {
+      singleSignOn(effectiveTenantParam, serviceInstanceUUID);
+      $iframe_tab.find(".js_loading").hide();
+      $(".js_iframe_tabs").removeClass("on");
+      $iframe_tab.addClass("on");
+      if (json[0].mode == "WINDOW") {
+        window.location = json[0].url;
+      } else if (json[0].mode == "IFRAME") {
+        $("#manage_resources_iframe").attr("src", json[0].url);
+      }
+    },
+    error: function(XMLHttpResponse) {
+      $iframe_tab.find(".js_loading").hide();
+      handleError(XMLHttpResponse);
+    }
+  });
 }
 
-var showResourcesIFrame = function(event){
+var showResourcesIFrame = function(event) {
   var serviceInstanceUUID = $(this).attr("id");
   showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
 }
 
 
-function arr_diff(a1, a2)
-{
-  var a=[], diff=[];
-  for(var i=0;i<a1.length;i++)
-    a[a1[i]]=true;
-  for(var i=0;i<a2.length;i++)
-    if(a[a2[i]]) delete a[a2[i]];
-    else a[a2[i]]=true;
-  for(var k in a)
-    diff.push(k);
-  return diff;
-}
+  function arr_diff(a1, a2) {
+    var a = [],
+      diff = [];
+    for (var i = 0; i < a1.length; i++)
+      a[a1[i]] = true;
+    for (var i = 0; i < a2.length; i++)
+      if (a[a2[i]]) delete a[a2[i]];
+      else a[a2[i]] = true;
+    for (var k in a)
+      diff.push(k);
+    return diff;
+  }
 
-$(".doc_help_link").unbind("click").bind("click", function(e){
-	window.open(help_link_path, '_blank');
+$(".doc_help_link").unbind("click").bind("click", function(e) {
+  window.open(help_link_path, '_blank');
 });
 
+function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID) {
+  if (serviceInstanceUUID != null) {
+    $.ajax({
+      url: "/portal/portal/manage_resource/get_resource_views",
+      dataType: "json",
+      async: false,
+      data: {
+        serviceInstanceUUID: serviceInstanceUUID,
+        tenant: effectiveTenantParam
+      },
+
+      cache: false,
+      success: function(json) {
+        if (json[0].mode == "WINDOW") {
+          singleSignOn(effectiveTenantParam, serviceInstanceUUID);
+          window.location = json[0].url;
+        } else if (json[0].mode == "IFRAME") {
+          window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam +
+            "&showIframe=true&serviceInstanceUUID=" + serviceInstanceUUID;
+        }
+      },
+      error: function(XMLHttpResponse) {
+
+        handleError(XMLHttpResponse);
+      }
+    });
+
+  } else {
+    window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
+  }
+}

@@ -57,13 +57,13 @@ var viewtenantDictionary = {
                   </sec:authorize>
                   
                   <sec:authorize access="hasRole('ROLE_FINANCE_CRUD')">
-                    <c:if test="${tenant.accountId != '00000000' && tenant.state != 'TERMINATED'}">
+                    <c:if test="${tenant.accountId != '00000000' && tenant.state != 'TERMINATED' && tenant.state != 'NEW'}">
                       <c:set var="hasAnyOfActions" value="true"/>
                       <li id="editchannel_action5"><a href="javascript:void(0);" onclick="issueCreditGet(this);" class="issueCredit" id="<c:out value="issueCredit${tenant.param}"/>"><spring:message code="ui.label.tenant.view.issueCredit"/></a></li> 
                     </c:if>
                   </sec:authorize>
                   
-                  <c:if test="${(tenant.accountId != '00000000' && instances != null && instances.size() != 0)}"> 
+                  <c:if test="${tenant.accountId != '00000000'}"> 
                       <spring:url value="/portal/connector/csinstances" var="connectors_list" htmlEscape="false">
                           <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
                       </spring:url>
@@ -410,19 +410,19 @@ var viewtenantDictionary = {
         </div>
       </sec:authorize>
 		<div id="tenantAccountLimitsDivOuter" style="display: none">
-		  <div class="widget_details_actionbox">
-		    <div style="padding:5px;">
+		  <div class="widget_details_actionbox" style="height:35px;">
+		    <div style="padding:3px;">
 					<input type="hidden" id="tenantParam" value="${effectiveTenant.param}" />
 					<c:if test="${not empty services}">
 						<spring:message code="ui.label.service.sub.title" />
 						<select id="selectedService" class="select" style="width: auto" onchange="changeInstances()">
 							<c:forEach var="service" items="${services}" varStatus="status">
-								<option value="${service.uuid}">${service.serviceName}</option>
+								<option value="${service.uuid}"><spring:message  code="${service.serviceName}.service.name"/></option>
 							</c:forEach>
 						</select>
 					</c:if>
 					<c:if test="${not empty instances}">
-						<spring:message code="ui.home_service.page.title.service.instance" />
+						<span><spring:message code="ui.home_service.page.title.service.instance" /></span>
 						<select id="selectedInstance" class="select" style="width: auto" onchange="showControls(this)">
 							<!-- populate on service change -->
 						</select>

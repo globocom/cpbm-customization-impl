@@ -1,70 +1,67 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
-function createPieChartDoughnut2D(chart_container_id, width, height, chart_id, data){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
-  $("#"+chart_container_id).insertFusionCharts({
-    swfUrl: "../../fusion/charts/Doughnut2D.swf", 
-    renderer : 'JavaScript',
-    width: width, 
-    height: height, 
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+
+function createPieChartDoughnut2D(chart_container_id, width, height, chart_id, data) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/Doughnut2D.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
     id: chart_id,
 
-    dataFormat: "json", 
+    dataFormat: "json",
     dataSource: {
       "chart": {
-      "bgcolor": "FFFFFF,CCCCCC",
-      "showpercentagevalues": "1",
-      "plotbordercolor": "FFFFFF",
-      "numberprefix": "$",
-      "issmartlineslanted": "0",
-      "showvalues": "0",
-      "showlabels": "0",
-      "showlegend": "0",
-      "pieRadius":'40'
-    },
-    "data": data
-  }
+        "bgcolor": "FFFFFF,CCCCCC",
+        "showpercentagevalues": "1",
+        "plotbordercolor": "FFFFFF",
+        "numberprefix": "$",
+        "issmartlineslanted": "0",
+        "showvalues": "0",
+        "showlabels": "0",
+        "showlegend": "0",
+        "pieRadius": '40'
+      },
+      "data": data
+    }
   });
 }
 
 
-function createColumnChart2D(chart_container_id, width, height, chart_id, options, data){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
-  $("#"+chart_container_id).insertFusionCharts({
-    swfUrl: "../../fusion/charts/Column2D.swf", 
-    renderer : 'JavaScript',
-    width: width, 
-    height:height, 
+function createColumnChart2D(chart_container_id, width, height, chart_id, options, data) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/Column2D.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
     id: chart_id,
-  
-    dataFormat: "json", 
+
+    dataFormat: "json",
     dataSource: {
       "chart": options,
-      
+
       "data": data,
       "styles": {
-        "definition": [
-          {
-            "name": "myCaptionFont",
-            "type": "font",
-            "font": "Arial",
-            "size": "12",
-            "color": "808080",
-            "bold": "0",
-            "underline": "0"
-          }
-        ],
-        "application": [
-          {
-            "toobject": "Caption",
-            "styles": "myCaptionFont"
-          }
-        ]
+        "definition": [{
+          "name": "myCaptionFont",
+          "type": "font",
+          "font": "Arial",
+          "size": "12",
+          "color": "808080",
+          "bold": "0",
+          "underline": "0"
+        }],
+        "application": [{
+          "toobject": "Caption",
+          "styles": "myCaptionFont"
+        }]
       }
-}
+    }
   });
 }
 
@@ -72,128 +69,101 @@ function createColumnChart2D(chart_container_id, width, height, chart_id, option
 
 
 
-function createMultiSeriesColumnChart2D(chart_container_id, width, height, chart_id, options, categories, data){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
-  $("#"+chart_container_id).insertFusionCharts({
-    swfUrl: "../../fusion/charts/MSColumn2D.swf", 
-    renderer : 'JavaScript',
-    width: width, 
-    height:height, 
+function createMultiSeriesColumnChart2D(chart_container_id, width, height, chart_id, options, categories, data) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/MSColumn2D.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
     id: chart_id,
-  
-    dataFormat: "json", 
+
+    dataFormat: "json",
     dataSource: {
       "chart": options,
-      
-      "categories": [
-                     {
-                       "category": categories
-                     }
-                    ],
+
+      "categories": [{
+        "category": categories
+      }],
       "dataset": data,
       "styles": {
-                  "definition": [
-                                  {
-                                    "name": "myCaptionFont",
-                                    "type": "font",
-                                    "font": "Arial",
-                                    "size": "12",
-                                    "color": "808080",
-                                    "bold": "0",
-                                    "underline": "0"
-                                  }
-                                ],
-      "application": [
-                      {
-                        "toobject": "Caption",
-                        "styles": "myCaptionFont"
-                      }
-                     ]
-                }
-              }
+        "definition": [{
+          "name": "myCaptionFont",
+          "type": "font",
+          "font": "Arial",
+          "size": "12",
+          "color": "808080",
+          "bold": "0",
+          "underline": "0"
+        }],
+        "application": [{
+          "toobject": "Caption",
+          "styles": "myCaptionFont"
+        }]
+      }
+    }
   });
 }
 
-function createPieChart2D(chart_container_id, width, height, chart_id, data, options){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
+function createPieChart2D(chart_container_id, width, height, chart_id, data, options) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
+
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/Pie2D.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
+    id: chart_id,
+
+    dataFormat: "json",
+    dataSource: {
+      "chart": options,
+
+      "data": data
+
     }
-
-$("#"+chart_container_id).insertFusionCharts({
-  swfUrl: "../../fusion/charts/Pie2D.swf", 
-  renderer : 'JavaScript',
-  width: width, 
-  height: height, 
-  id: chart_id,
-
-  dataFormat: "json", 
-  dataSource: { 
-          "chart": options,
-                  
-          "data" : data
-          
-          }
-});
+  });
 }
 
-function createPieChart2D(chart_container_id, width, height, chart_id, data, options){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
 
-$("#"+chart_container_id).insertFusionCharts({
-  swfUrl: "../../fusion/charts/Pie2D.swf", 
-  renderer : 'JavaScript',
-  width: width, 
-  height: height, 
-  id: chart_id,
+function createGuageChart(chart_container_id, width, height, chart_id, data) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
 
-  dataFormat: "json", 
-  dataSource: { 
-          "chart": options,
-                  
-          "data" : data
-          
-          }
-});
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/AngularGauge.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
+    id: chart_id,
+
+    dataFormat: "json",
+    dataSource: data
+
+
+  });
 }
 
-function createGuageChart(chart_container_id, width, height, chart_id, data){
-    if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
+function createLinearGuageChart(chart_container_id, width, height, chart_id, data) {
+  if (FusionCharts(chart_id)) {
+    FusionCharts(chart_id).dispose();
+  }
 
-	$("#"+chart_container_id).insertFusionCharts({
-	  swfUrl: "../../fusion/charts/AngularGauge.swf", 
-	  renderer : 'JavaScript',
-	  width: width, 
-	  height: height, 
-	  id: chart_id,
-	
-	  dataFormat: "json", 
-	  dataSource: data
-	          
-	          
-	});
-}
+  $("#" + chart_container_id).insertFusionCharts({
+    swfUrl: "../../fusion/charts/HLinearGauge.swf",
+    renderer: 'JavaScript',
+    width: width,
+    height: height,
+    id: chart_id,
 
-function createLinearGuageChart(chart_container_id, width, height, chart_id, data){
-	if ( FusionCharts( chart_id ) ){
-        FusionCharts( chart_id ).dispose();
-    }
+    dataFormat: "json",
+    dataSource: data
 
-	$("#"+chart_container_id).insertFusionCharts({
-	  swfUrl: "../../fusion/charts/HLinearGauge.swf", 
-	  renderer : 'JavaScript',
-	  width: width, 
-	  height: height, 
-	  id: chart_id,
-	
-	  dataFormat: "json", 
-	  dataSource: data
-	          
-	});
-	
+  });
+
 }

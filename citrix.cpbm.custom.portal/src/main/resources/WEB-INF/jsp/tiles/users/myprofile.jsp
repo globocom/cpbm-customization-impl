@@ -184,10 +184,12 @@ if( typeof i18n.labels === 'undefined' ) {
                                 <select tabindex="200" class="select expandable-select" id="timeZone" name="timeZone" title="<c:out value="${i18nTimezoneTooltip}"/>">
                                   <option value="" ><spring:message code="label.myprofile.choose"/></option>
                                   <c:forEach items="${user.timeZones}" var="choice" varStatus="status">
+                                    <c:set var="timeZoneKey" value="${choice.key}"></c:set>
+                                    <c:set var="strippedtimeZoneKey" value="${fn:substringBefore(timeZoneKey,')')})"></c:set>
                                     <option value='<c:out value="${choice.value}" />' 
                                       <c:if test="${choice.value == user.user.timeZone}"><spring:message code="label.myprofile.selected"/></c:if>
                                        >
-                                      <c:out value="${choice.key}"/>
+                                      <c:out value="${strippedtimeZoneKey} ${choice.value}"/>
                                     </option> 
                                   </c:forEach>
                                </select>
@@ -677,7 +679,7 @@ if( typeof i18n.labels === 'undefined' ) {
 </sec:authorize>
 
 <input id="doNotShowVerifyUserDiv" type="hidden" name="doNotShowVerifyUserDiv" value="${doNotShowPasswordEditLink}"> 
-<div id="verifyUserDiv" title='<spring:message code="user.password.verification" />' style="min-height:150px; overflow: hidden;">
+<div id="verifyUserDiv" title='<spring:message code="user.password.verification" />' style="min-height:150px; overflow: hidden; display:none">
 	<tiles:insertDefinition name="user.password_verification"/>
 </div>
 

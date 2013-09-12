@@ -34,7 +34,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -47,7 +46,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.util.WebUtils;
-
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
@@ -177,6 +175,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Registering a Trial User
+   * 
    * @param campaign
    * @param channelName
    * @param model
@@ -230,6 +229,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * SignUp of Step 1
+   * 
    * @param model
    * @param request
    * @return String
@@ -282,6 +282,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * For the Signup.
+   * 
    * @param registration
    * @param result
    * @param map
@@ -308,6 +309,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * This method Shows Signup.
+   * 
    * @param registration
    * @param map
    * @param channelParam
@@ -338,13 +340,14 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     Channel channel = null;
     if (StringUtils.isNotBlank(promoCode) && StringUtils.isNotBlank(channelCode)) {
       channel = channelService.locateByChannelCode(channelCode);
-      
+
     } else if (StringUtils.isNotBlank(promoCode)) {
       channel = promotionService.findAptChannel(promoCode);
     }
 
-    if (channel != null)
+    if (channel != null) {
       channelParam = channel.getParam();
+    }
 
     map.addAttribute("channelParam", channelParam);
     map.addAttribute("promoCode", promoCode);
@@ -404,6 +407,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * For setting up the password
+   * 
    * @param password
    * @param session
    * @return String
@@ -423,7 +427,11 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
         @Override
         public User run() {
           User user = userService.get(userParam);
-          user.setClearPassword(password);
+          if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
+            user.setClearPassword(password);
+          } else if (config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
+            user.setClearLdapPassword(password);
+          }
           return user;
         }
       });
@@ -436,6 +444,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Get method for Back.
+   * 
    * @param registration
    * @param model
    * @return String
@@ -462,6 +471,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method to get user info.
+   * 
    * @param registration
    * @param result
    * @param map
@@ -478,12 +488,16 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     logger.debug("###Entering in userInfo(model) method @POST");
     String email = registration.getUser().getEmail();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    
+
     if (isEmailBlacklisted(email.toLowerCase())) {
       map.addAttribute("signuperror", "emaildomainblacklisted");
       map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
       map.addAttribute("defaultLocale", getDefaultLocale());
       addFraudProfilingHostToSession(map);
+      return "register.userinfo";
+    }
+    beanValidatorService.validate(registration.getUser(), result);
+    if (result.hasErrors()) {
       return "register.userinfo";
     }
     // registration.setCurrencyValueList(channelService.listCurrencies(channelParam));
@@ -503,7 +517,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       map.addAttribute("cloudmktgUrl", cloudmktgUrl);
     }
 
-    map.addAttribute("tnc", this.getTermsAndConditions());
+    map.addAttribute("tnc", getTermsAndConditions());
     map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
     List<Country> filteredCountryList = getFilteredCountryList(registration.getCountryList());
     map.addAttribute("filteredCountryList", filteredCountryList);
@@ -515,6 +529,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method for Phone Verification
+   * 
    * @param registration
    * @param result
    * @param captchaChallenge
@@ -619,6 +634,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * This method returns list of Anonymous Product Bundles
+   * 
    * @param channelParam
    * @param currencyCode
    * @param isServiceBundle
@@ -644,9 +660,9 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     return getSortedProductBundles(productBundles, isServiceBundle, category, currencyCode);
   }
 
-  
   /**
    * Gives the Sorted Product Bundles
+   * 
    * @param productBundles
    * @param isServiceBundle
    * @param category
@@ -699,6 +715,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * This method gets Product Bundle Revision For TenantCurrency
+   * 
    * @param currencyCode
    * @param productBundleRevision
    * @return ProductBundleRevision
@@ -727,6 +744,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * This method is used for Register.
+   * 
    * @param registration
    * @param result
    * @param captchaChallenge
@@ -849,15 +867,17 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       String promoCode = registration.getTrialCode();
       String channelCode = channelService.getChannel(channelParam).getCode();
 
-      if (!promotionService.isValidPromotion(promoCode, channelCode))
+      if (!promotionService.isValidPromotion(promoCode, channelCode)) {
         return "register.fail";
+      }
 
       // preempt trial account type creation if NOT supported [TA10428]
       CampaignPromotion cp = promotionService.locatePromotionByToken(promoCode);
       AccountType requestedAccountType = registrationService.getAccountTypeById(registration.getAccountTypeId());
 
-      if (requestedAccountType.equals(registrationService.getTrialAccountType()) && !cp.isTrial())
+      if (requestedAccountType.equals(registrationService.getTrialAccountType()) && !cp.isTrial()) {
         return "register.fail";
+      }
     }
 
     registration.getTenant().setAddress(registration.getUser().getAddress());
@@ -962,9 +982,10 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     }
     if (result.hasErrors()) {
       displayErrors(result);
-      for (ObjectError objectError : result.getAllErrors()) {
-        errorMsgList.add(objectError.getCode());
-      }
+      parseResult(result, map);
+      /*
+       * for (ObjectError objectError : result.getAllErrors()) { errorMsgList.add(objectError.getCode()); }
+       */
       registration.reset();
       registration.setCurrency(config.getValue(Names.com_citrix_cpbm_portal_settings_default_currency));
       if (errorMsgList.size() > 0) {
@@ -987,6 +1008,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * This method used for validation of Username
+   * 
    * @param username
    * @return String
    */
@@ -1014,6 +1036,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * For validation of Suffix.
+   * 
    * @param suffix
    * @return String
    */
@@ -1031,6 +1054,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * For validation of Email.
+   * 
    * @param email
    * @return String
    */
@@ -1070,12 +1094,12 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
         }
       }
     });
-    // Cross check for handling negative test cases
-    if (user.getPassword() == null
-        && (!config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled) || config
-            .getValue(Names.com_citrix_cpbm_directory_mode).equals("push"))) {
-      logger.debug("AbstractRegistrationCont userpassword is null returning to register.setpassword");
-      return "register.setpassword";
+    
+    if (!config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)) {
+      if (user.getPassword() == null) {
+        logger.debug("AbstractRegistrationCont userpassword is null returning to register.setpassword");
+        return "register.setpassword";
+      }
     }
     if (user.isEmailVerified()) {
       logger.debug("verifyEmail: email already verified forwarding to Login page");
@@ -1113,6 +1137,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Private method to create Default Registration
+   * 
    * @return UserRegistration
    */
   private UserRegistration createDefaultRegistration() {
@@ -1123,6 +1148,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Protected method to Parse Result.
+   * 
    * @param result
    * @param map
    */
@@ -1144,6 +1170,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Private method to get Terms and Conditions.
+   * 
    * @return
    */
   private String getTermsAndConditions() {
@@ -1166,6 +1193,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method for request Call
+   * 
    * @param phoneNumber
    * @param countryCode
    * @param request
@@ -1221,6 +1249,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method for Request of SMS
+   * 
    * @param phoneNumber
    * @param countryCode
    * @param request
@@ -1276,6 +1305,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method for verification of Phone verification Pin.
+   * 
    * @param PIN
    * @param phoneNumber
    * @param request
@@ -1301,7 +1331,6 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
   }
 
   /**
-   * 
    * @param registration
    * @param request
    * @return ReviewStatus
@@ -1337,6 +1366,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Private method to add Fraud Profiling Host To Session
+   * 
    * @param map
    */
   private void addFraudProfilingHostToSession(ModelMap map) {
@@ -1373,6 +1403,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
   /**
    * Method for utility Rate LightBox
+   * 
    * @param channelParam
    * @param currencyCode
    * @param serviceInstanceUuid

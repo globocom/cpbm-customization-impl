@@ -12,8 +12,6 @@
   var connectorPath = "<%=request.getContextPath()%>/portal/connector";
   var type ="cs";
 </script>
-<link rel="stylesheet" href="<%=request.getContextPath() %>/css/jquery.ibutton.css" type="text/css">
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.ibutton.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/csconnector.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/validator.js"></script>
 <script type="text/javascript">
@@ -44,7 +42,7 @@ var dictionary = {
 <c:set var="apostropy" value="'"/>
 <c:set var="escapedeapostropy" value="\\'"/>
 <c:choose>
-    <c:when test="${(is_admin || userHasCloudServiceAccount) && !iframe_view}">
+    <c:when test="${(is_admin || userHasCloudServiceAccount) && !iframe_view && not empty serviceInstanceMap}">
     <div id="manage_services_info">
         <div class="page_heading">
             <h3><spring:message code="message.myservices.header"/></h3>

@@ -76,7 +76,6 @@
     <intercept-url pattern="/portal/tenants/search" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')" />
     <intercept-url pattern="/portal/tenants/get_account_type"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')" />
-    <intercept-url pattern="/portal/tenants/*/resource_limit" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/view_notification" access="hasAnyRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/alert_prefs" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/change_primary_email" access="hasRole('ROLE_USER')" />
@@ -114,7 +113,6 @@
     <intercept-url pattern="/portal/tenants/alerts/remove"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_ACCOUNT_CRUD','ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/*/edit" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_ADMIN')" />
-    <intercept-url pattern="/portal/tenants/*/audit_log" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_ADMIN')" />
     <intercept-url pattern="/portal/tenants/mydetails/" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/*/approvePendingChange" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/stateChanges" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
@@ -140,8 +138,6 @@
     <intercept-url pattern="/portal/users/" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/search" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
-    <intercept-url pattern="/portal/users/subscribe/new" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/users/*/audit_log" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/*/delete" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/*/deactivate" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/*/activate" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
@@ -152,11 +148,8 @@
 
     <intercept-url pattern="/portal/users/listusersforaccount"
       access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
-    <intercept-url pattern="/portal/users/account_userpopup"
-      access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/new" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
 
-    <intercept-url pattern="/portal/users/subscribe" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/edit_prefs" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/subscribe/*" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/usageDetails" access="hasRole('ROLE_USER')" />
@@ -171,10 +164,10 @@
 	<intercept-url pattern="/portal/users/verify_user" access="hasRole('ROLE_USER')" />
 	<intercept-url pattern="/portal/users/verify_password" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/user_timezone_offset" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/users/*/edit" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_PROFILE_CRUD')" />
     <intercept-url pattern="/portal/users/*/myprofile" access="hasAnyRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/changePassword" access="hasAnyRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/cloud_login" access="hasAnyRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/importfromad.json" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_MGMT')" />
     
 
     <!-- COMMENTING OUT THESE PERMISSIONS <intercept-url pattern="/portal/users/*/*" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" 

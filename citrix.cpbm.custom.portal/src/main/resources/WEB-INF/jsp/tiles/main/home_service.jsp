@@ -127,6 +127,7 @@
 	            <div class="db_statsbox title">
 	              <h2><spring:message code="ui.home.page.title.tickets"/></h2>
 	            </div>
+              <div id="top_message_panel" class="common_messagebox widget" ><p id="msg"></p></div>
 	           <div class="db_statsbox contentarea">
 	                <div id="ticketsCountChart">
 	                  <div id="spinnerDiv" class="spinnerDiv" style="margin: 70px 0 0 200px;"> </div>

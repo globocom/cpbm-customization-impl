@@ -92,7 +92,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Autowired
   private ChannelService channelService2;
-  
+
   @Autowired
   private RegistrationController controller;
 
@@ -101,7 +101,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Autowired
   AccountTypeDAO accountTypeDAO;
-  
+
   @Autowired
   private CampaignPromotionDAO cmpdao;
 
@@ -130,7 +130,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     request = new MockHttpServletRequest();
     session = new MockHttpSession();
     request.setSession(session);
-   prepareMock(true, bootstrapActivator);
+    prepareMock(true, bootstrapActivator);
     if (isMockInstanceCreated == false) {
 
       Service ossService = serviceDAO.find(7l);
@@ -230,7 +230,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
     UserRegistration registration = new UserRegistration();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    
+
     /*
      * for (AccountType disposition : registration.getDisposition()) { dispNames.contains(disposition.getName()); }
      */
@@ -261,22 +261,23 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
     }
   }
-  
-  private void beforeRegisterCall(MockHttpServletRequest request, UserRegistration registration){
+
+  private void beforeRegisterCall(MockHttpServletRequest request, UserRegistration registration) {
     DispatcherServletWebRequest webRequest = new DispatcherServletWebRequest(request);
     RequestContextHolder.setRequestAttributes(webRequest);
     request.getSession().setAttribute("phoneVerificationPin", "12345");
     request.getSession().setAttribute("phoneNumber", "919591241025");
     Tenant tenant1 = new Tenant("New Co", accountTypeDAO.getDefaultRegistrationAccountType(), null, randomAddress(),
         true, currencyValueService.locateBYCurrencyCode("USD"), null);
-    registration.setTenant((com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant1));
+    registration.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant1));
     registration.setUserEnteredPhoneVerificationPin("12345");
   }
+
   @Test
   public void testRegisterDefault() throws Exception {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/portal/register");
     UserRegistration registration = new UserRegistration();
-    
+
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     registration.setAcceptedTerms(true);
     registration.setAllowSecondary(true);
@@ -289,7 +290,8 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals("register.registration_success", view);
     Assert.assertTrue(status.isComplete());
     verifyRegistration(disposition, registration.getUser(), registration.getTenant());
-    Assert.assertEquals(registration.getTenant().getObject(), ((com.citrix.cpbm.access.Tenant)map.get("tenant")).getObject());
+    Assert.assertEquals(registration.getTenant().getObject(),
+        ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getObject());
 
   }
 
@@ -298,7 +300,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/portal/signup?pc=TESTPROMOCODE");
     UserRegistration registration = new UserRegistration();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    
+
     registration.setAcceptedTerms(true);
     AccountType disposition = accountTypeDAO.getTrialAccountType();
     BindingResult result = setupRegistration(disposition, registration);
@@ -313,8 +315,9 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     campaignPromotion.setCreateBy(getRootUser());
     campaignPromotion.setTrial(true);
     campaignPromotion.setUpdateBy(getRootUser());
-    
-    CampaignPromotionsInChannels cpic = new CampaignPromotionsInChannels(campaignPromotion, channelservice.getDefaultServiceProviderChannel());
+
+    CampaignPromotionsInChannels cpic = new CampaignPromotionsInChannels(campaignPromotion,
+        channelservice.getDefaultServiceProviderChannel());
     campaignPromotion.getCampaignPromotionsInChannels().add(cpic);
     cmpdao.save(campaignPromotion);
 
@@ -323,7 +326,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     tokendao.save(promotionToken);
 
     promotionSignup.setPromotionToken(promotionToken);
-    
+
     registration.setTrialCode("TESTPROMOCODE");
 
     DispatcherServletWebRequest webRequest = new DispatcherServletWebRequest(request);
@@ -331,12 +334,13 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     request.getSession().setAttribute("phoneVerificationPin", "12345");
     request.getSession().setAttribute("phoneNumber", "919591241025");
     registration.setUserEnteredPhoneVerificationPin("12345");
-    
+
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals("register.registration_success", view);
     Assert.assertTrue(status.isComplete());
     verifyRegistration(disposition, registration.getUser(), registration.getTenant());
-    Assert.assertEquals(registration.getTenant().getAccountId(), ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getAccountId());
+    Assert.assertEquals(registration.getTenant().getAccountId(),
+        ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getAccountId());
   }
 
   @Test
@@ -360,11 +364,11 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
         true, currencyValueService.locateBYCurrencyCode("USD"), null);
     UserRegistration registration = new UserRegistration();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    registration.setUser((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
-    registration.setTenant((com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant));
+    registration.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
+    registration.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     registration.setDisposition(accountTypeDAO.getDefaultRegistrationAccountType());
     BindingResult result = validate(registration);
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals("register.userinfo", view);
     Assert.assertFalse(status.isComplete());
@@ -390,10 +394,10 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
         true, currencyValueService.locateBYCurrencyCode("USD"), null);
     UserRegistration registration = new UserRegistration();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    registration.setUser((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
-    registration.setTenant((com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant));
+    registration.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
+    registration.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     BindingResult result = new BindException(registration, "registration");
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "CAPTCHA_FAIL", map, "1", status, request);
     Assert.assertEquals("register.moreuserinfo", view);
     Assert.assertFalse(status.isComplete());
@@ -430,7 +434,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
     promotionSignup.setPromotionToken(promotionToken);
     registration.setTrialCode("testpromo");
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals("register.fail", view);
     Assert.assertFalse(status.isComplete());
@@ -444,7 +448,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     AccountType disposition = accountTypeDAO.getOnDemandPostPaidAccountType();
     BindingResult result = setupRegistration(disposition, registration);
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals("register.userinfo", view);
     Assert.assertFalse(status.isComplete());
@@ -666,15 +670,16 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     user.setAddress(address);
     Tenant tenant = new Tenant("New Co", disposition, null, address, true,
         currencyValueService.locateBYCurrencyCode("USD"), null);
-    registration.setUser((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
-    registration.setTenant((com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant));
+    registration.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
+    registration.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     registration.setDisposition(disposition);
     registration.setAccountTypeId(disposition.getId() + "");
     BindingResult result = validate(registration);
     return result;
   }
 
-  private void verifyRegistration(AccountType disposition, com.citrix.cpbm.access.User user, com.citrix.cpbm.access.Tenant tenant) {
+  private void verifyRegistration(AccountType disposition, com.citrix.cpbm.access.User user,
+      com.citrix.cpbm.access.Tenant tenant) {
     Assert.assertTrue(user.getObject().getId() != 0);
     Assert.assertTrue(tenant.getObject().getId() != 0);
     User foundUser = userDAO.find(user.getObject().getId());
@@ -709,7 +714,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
 
     }
-    
+
     try {
       request.getSession().setAttribute("phoneVerificationPin", "ABC");
       keyvaluepairs = controller.requestCall("INVALIDNUMBER", "INVALIDCODE", request);
@@ -731,7 +736,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Map<String, String> keyvaluepairs1 = controller.requestSMS("123456", "91", request);
     Assert.assertEquals("success", keyvaluepairs1.get("result"));
   }
-  
+
   @Test
   public void testManualActivationFlag() throws Exception {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/portal/register");
@@ -741,7 +746,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     AccountType disposition = accountTypeDAO.getDefaultRegistrationAccountType();
     disposition.setManualActivation(true);
     BindingResult result = setupRegistration(disposition, registration);
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals(2, eventListener.getEvents().size());
     PortalEvent event = eventListener.getEvents().get(0);
@@ -749,7 +754,8 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals("register.registration_success", view);
     Assert.assertTrue(status.isComplete());
     verifyRegistration(disposition, registration.getUser(), registration.getTenant());
-    Assert.assertEquals(registration.getTenant().getObject(), ((com.citrix.cpbm.access.Tenant)map.get("tenant")).getObject());
+    Assert.assertEquals(registration.getTenant().getObject(),
+        ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getObject());
   }
 
   @Test
@@ -784,12 +790,13 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
       e.printStackTrace();
     }
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     String view = controller.register(registration, result, "abc", "abc", map, null, status, request);
     Assert.assertEquals("register.registration_success", view);
     Assert.assertTrue(status.isComplete());
     verifyRegistration(disposition, registration.getUser(), registration.getTenant());
-    Assert.assertEquals(registration.getTenant().getObject(), ((com.citrix.cpbm.access.Tenant)map.get("tenant")).getObject());
+    Assert.assertEquals(registration.getTenant().getObject(),
+        ((com.citrix.cpbm.access.Tenant) map.get("tenant")).getObject());
     // account activation request event
     Assert.assertEquals(2, eventListener.getEvents().size());
     PortalEvent verifyEmailRequest = eventListener.getEvents().get(0);
@@ -821,12 +828,12 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
       e.printStackTrace();
     }
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     controller.register(registration, result, "abc", "abc", map, null, status, request);
     // Tenant Activation Event
-//    Assert.assertEquals(1, eventListener.getEvents().size());
-//    PortalEvent tenantActivationEvent = eventListener.getEvents().get(0);
-//    Assert.assertTrue(tenantActivationEvent.getPayload() instanceof TenantActivation);
+    // Assert.assertEquals(1, eventListener.getEvents().size());
+    // PortalEvent tenantActivationEvent = eventListener.getEvents().get(0);
+    // Assert.assertTrue(tenantActivationEvent.getPayload() instanceof TenantActivation);
     eventListener.clear();
     // verify email
     String auth = registration.getUser().getObject().getAuthorization(0);
@@ -852,12 +859,12 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
       e.printStackTrace();
     }
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     controller.register(registration, result, "abc", "abc", map, null, status, request);
     // Tenant Activation Event
-//    Assert.assertEquals(1, eventListener.getEvents().size());
-//    PortalEvent tenantActivationEvent = eventListener.getEvents().get(0);
-//    Assert.assertTrue(tenantActivationEvent.getPayload() instanceof TenantActivation);
+    // Assert.assertEquals(1, eventListener.getEvents().size());
+    // PortalEvent tenantActivationEvent = eventListener.getEvents().get(0);
+    // Assert.assertTrue(tenantActivationEvent.getPayload() instanceof TenantActivation);
     eventListener.clear();
     // verify email
     String auth = registration.getUser().getObject().getAuthorization(0);
@@ -889,12 +896,12 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
       e.printStackTrace();
     }
-     beforeRegisterCall(request, registration);
+    beforeRegisterCall(request, registration);
     controller.register(registration, result, "abc", "abc", map, null, status, request);
     // Tenant Activation Event
-//    Assert.assertEquals(1, eventListener.getEvents().size());
-//    PortalEvent accountActivationRequestEvent = eventListener.getEvents().get(0);
-//    Assert.assertTrue(accountActivationRequestEvent.getPayload() instanceof AccountActivationRequestEvent);
+    // Assert.assertEquals(1, eventListener.getEvents().size());
+    // PortalEvent accountActivationRequestEvent = eventListener.getEvents().get(0);
+    // Assert.assertTrue(accountActivationRequestEvent.getPayload() instanceof AccountActivationRequestEvent);
     eventListener.clear();
 
     // verify email
@@ -958,17 +965,17 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
     UserRegistration registration = new UserRegistration();
     registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    registration.setTenant((com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant));
+    registration.setTenant((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant));
     String back = controller.back(registration, map);
     Assert.assertEquals(back, new String("register.userinfo"));
     Assert.assertEquals(map.get("title"), new String("page.order_now"));
     Assert.assertEquals(map.get("registration"), registration);
-    Assert.assertEquals(((com.citrix.cpbm.access.Tenant)map.get("tenant")).getAccountId(), registration.getTenant().getAccountId());
+    Assert.assertEquals(((com.citrix.cpbm.access.Tenant) map.get("tenant")).getAccountId(), registration.getTenant()
+        .getAccountId());
     Assert.assertEquals(map.get("page"), Page.HOME);
     Assert.assertEquals(map.get("cloudmktgUrl"), new String("http://www.cloud.com"));
 
   }
-
 
   @Test
   public void testutilityratesLightbox() {
@@ -979,18 +986,16 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(map.containsAttribute("startDate"));
     Assert.assertEquals(map.get("currency"), currencyValueService.locateBYCurrencyCode("USD"));
     Assert.assertNotNull(map.get("startDate"));
-    utilityrates = controller.utilityratesLightbox("0bd2ab86-7402-4", "USD", null, null,
-        map);
+    utilityrates = controller.utilityratesLightbox("0bd2ab86-7402-4", "USD", null, null, map);
     Assert.assertNotNull(utilityrates);
     Assert.assertTrue(map.containsAttribute("currency"));
     Assert.assertTrue(map.containsAttribute("startDate"));
     Assert.assertEquals(map.get("currency"), currencyValueService.locateBYCurrencyCode("USD"));
     Assert.assertNotNull(map.get("startDate"));
   }
-  
+
   /*
-   * Description : Test signup with promocode added in channel.
-   * Author : Avinashg
+   * Description : Test signup with promocode added in channel. Author : Avinashg
    */
   @Test
   public void testPromoCodeAddedInGivenChannel() throws Exception {
@@ -1017,9 +1022,9 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     String register = controller.signupStep1(model, request);
     Assert.assertEquals(register, new String("register.account_type"));
   }
-  
+
   @Test
-  public void testUserInfo(){
+  public void testUserInfo() {
     ModelMap model = new ModelMap();
     UserRegistration registration = new UserRegistration();
     AccountType disposition = accountTypeDAO.getTrialAccountType();
@@ -1031,27 +1036,28 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     } catch (Exception e) {
       Assert.fail();
     }
-   
+
   }
-  
+
   @Test
   public void testListAnonymousProductBundles() {
-    List<ProductBundleRevision> productBundleRevisions = controller.listAnonymousProductBundles(getDefaultTenant().getSourceChannel().toString(), "USD", false, null);
+    List<ProductBundleRevision> productBundleRevisions = controller.listAnonymousProductBundles(getDefaultTenant()
+        .getSourceChannel().toString(), "USD", false, null);
     Assert.assertNotNull(productBundleRevisions);
   }
-  
+
   @Test
   public void testPhoneverification() {
     ModelMap model = new ModelMap();
     UserRegistration registration = new UserRegistration();
-    List<Country> countryList= new ArrayList<Country>();
+    List<Country> countryList = new ArrayList<Country>();
     countryList.addAll(countryService.getCountries(null, null, null, 1, 12, null, false));
     registration.setCountryList(countryList);
     AccountType disposition = accountTypeDAO.getTrialAccountType();
     BindingResult result;
     try {
       result = setupRegistration(disposition, registration);
-      String value =  controller.phoneverification(registration, result, "abs", "abs", model, null, status, request);
+      String value = controller.phoneverification(registration, result, "abs", "abs", model, null, status, request);
       Assert.assertEquals(value, new String("register.phoneverification"));
     } catch (Exception e) {
       Assert.fail();
@@ -1063,16 +1069,16 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
       Assert.fail();
     }
     try {
-      countryList= null;
+      countryList = null;
       result = setupRegistration(disposition, registration);
       controller.phoneverification(registration, result, "abs", null, model, null, status, request);
       Assert.assertTrue(true);
     } catch (Exception e) {
       Assert.fail();
     }
-    
+
   }
-  
+
   @Test
   public void testValidateMailDomain() {
     String value = controller.validateMailDomain(VALID_EMAIL);

@@ -12,7 +12,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.apache.http.HttpRequest;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -27,14 +26,12 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.support.SessionStatus;
 
 import web.WebTestsBaseWithMockConnectors;
 import web.support.DispatcherTestServlet;
 import web.support.MockSessionStatus;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
-import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
 import com.citrix.cpbm.platform.bootstrap.service.BootstrapActivator;
 import com.citrix.cpbm.platform.spi.AccountLifecycleHandler;
 import com.citrix.cpbm.platform.spi.CloudConnector;
@@ -68,7 +65,6 @@ import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.UserForm;
 import com.vmops.web.interceptors.UserContextInterceptor;
-
 import common.MockCloudInstance;
 import common.MockTelephoneVerificationService;
 
@@ -85,7 +81,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   private UserService userService;
 
   private HttpSession session;
-  
+
   private MockHttpServletRequest request;
 
   @Autowired
@@ -109,7 +105,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   @Autowired
   ConfigurationService configurationService;
 
-  private  BootstrapActivator bootstrapActivator = new BootstrapActivator();
+  private BootstrapActivator bootstrapActivator = new BootstrapActivator();
 
   private static boolean isMockInstanceCreated = false;
 
@@ -175,11 +171,10 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     EasyMock.replay(viewResolver);
     EasyMock.replay(cloudConnector);
 
-
   }
 
   @SuppressWarnings({
-      "rawtypes"
+    "rawtypes"
   })
   @Test
   public void testRouting() throws Exception {
@@ -187,8 +182,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     DispatcherTestServlet servlet = this.getServletInstance();
     Class controllerClass = controller.getClass();
     Method expected = locateMethod(controllerClass, "listUsersForAccount", new Class[] {
-        Tenant.class, Boolean.TYPE, String.class, ModelMap.class, HttpSession.class, String.class, int.class, int.class,
-        String.class, HttpServletRequest.class
+        Tenant.class, Boolean.TYPE, String.class, ModelMap.class, HttpSession.class, String.class, int.class,
+        int.class, String.class, HttpServletRequest.class
     });
 
     Method handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/users"));
@@ -209,29 +204,10 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/users/new/step1"));
     Assert.assertEquals(expected, handler);
 
-    expected = locateMethod(controllerClass, "edit", new Class[] {
-        String.class, String.class, HttpServletRequest.class, ModelMap.class
-    });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/users/1/edit"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(controllerClass, "edit", new Class[] {
-        String.class, UserForm.class, BindingResult.class, HttpServletRequest.class, ModelMap.class,
-        SessionStatus.class
-    });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/users/1/edit"));
-    Assert.assertEquals(expected, handler);
-
     expected = locateMethod(controllerClass, "login", new Class[] {
         Tenant.class, String.class, String.class, String.class, ModelMap.class
     });
     handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/users/cloud_login"));
-    Assert.assertEquals(expected, handler);
-
-    expected = locateMethod(controllerClass, "getAuditLog", new Class[] {
-        String.class, ModelMap.class
-    });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/users/1/audit_log"));
     Assert.assertEquals(expected, handler);
 
   }
@@ -259,7 +235,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
       expected.remove(portalUser);// As root user doesn't have permission on Portal User
     }
     MockHttpServletRequest request = new MockHttpServletRequest();
-    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1,20, "false", request);
+    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1, 20,
+        "false", request);
     Assert.assertEquals("users.list_with_admin_menu", view);
     Assert.assertTrue(map.containsKey("users"));
     List<User> found = (List<User>) map.get("users");
@@ -273,7 +250,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Tenant tenant = getDefaultTenant();
     List<User> expected = userService.list(0, 0, null, null, false, null, tenant.getId().toString(), null);
     MockHttpServletRequest request = new MockHttpServletRequest();
-    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1,20, "true", request);
+    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1, 20, "true",
+        request);
     Assert.assertEquals("users.list_with_admin_menu", view);
     Assert.assertTrue(map.containsKey("users"));
     List<User> found = (List<User>) map.get("users");
@@ -287,7 +265,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     asUser(user);
     List<User> expected = userService.list(0, 0, null, null, false, null, user.getTenant().getId().toString(), null);
     MockHttpServletRequest request = new MockHttpServletRequest();
-    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1,20, "true", request);
+    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, null, 1, 20, "true",
+        request);
     Assert.assertEquals("users.nonroot.list_with_user_menu", view);
     Assert.assertTrue(map.containsKey("users"));
     List<User> found = (List<User>) map.get("users");
@@ -321,8 +300,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertNotNull(form);
     Assert.assertNotNull(form.getUser());
     Assert.assertEquals("users.new.step1", view);
-    Assert.assertEquals(other.getAccountId(),
-        ((com.citrix.cpbm.access.Tenant) map.get("userTenant")).getAccountId());
+    Assert.assertEquals(other.getAccountId(), ((com.citrix.cpbm.access.Tenant) map.get("userTenant")).getAccountId());
   }
 
   @Test
@@ -341,9 +319,9 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
     BindingResult bindingResult = validate(form);
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.newuserregistration.finish", view);
     Assert.assertNotNull(map.get("user"));
     Assert.assertEquals(form, map.get("user"));
@@ -377,9 +355,9 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
     BindingResult bindingResult = validate(form);
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.newuserregistration.finish", view);
     Assert.assertNotNull(map.get("user"));
     Assert.assertEquals(form, map.get("user"));
@@ -407,9 +385,9 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "CustomeEmail");
     BindingResult bindingResult = validate(form);
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.newuser.customemail", view);
     Assert.assertNotNull(map.get("emailText"));
     Assert.assertEquals(form, map.get("user"));
@@ -431,9 +409,10 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
     BindingResult bindingResult = validate(form);
     Assert.assertTrue(bindingResult.hasErrors());
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map,
-        new MockHttpServletRequest(), new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, new MockHttpServletRequest(),
+        new MockHttpSession());
     Assert.assertFalse("users.newuserregistration.finish".equals(view));
   }
 
@@ -454,9 +433,9 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     BindingResult bindingResult = validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.newuserregistration.finish", view);
   }
 
@@ -481,26 +460,26 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     asRoot();
 
     String view = controller.edit(null, user.getUuid(),
-        getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/edit"), map);
+        getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/myprofile"), map);
     UserForm form = (UserForm) map.get("user");
     Assert.assertNotNull(form);
     Assert.assertNotNull(form.getUser());
-    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User)form.getUser()).getUsername());
-    Assert.assertEquals("users.edit", view);
+    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals("users.edit.myprofile", view);
   }
 
   @Test
   public void testUpdateUser() throws Exception {
     asRoot();
     User user = userDAO.find(3L);
-    UserForm form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     user.setFirstName("Updated");
     BindingResult result = validate(form);
-    form.setUserClone((com.citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
-    String view = controller.edit(user.getParam(), form, result, getRequestTemplate(HttpMethod.POST, "/users/3/edit"),
-        map, status);
-    Assert.assertEquals("redirect:/portal/users/" + user.getUuid() + "/edit", view);
+    form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
+    String view = controller.edit(user.getParam(), form, result,
+        getRequestTemplate(HttpMethod.POST, "/users/3/myprofile"), map, status);
+    Assert.assertEquals("redirect:/portal/users/" + user.getUuid() + "/myprofile", view);
     Assert.assertTrue(status.isComplete());
     User found = userDAO.find(user.getId());
     Assert.assertEquals(user.getFirstName(), found.getFirstName());
@@ -512,23 +491,23 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   public void testVerifyOldPassword() throws Exception {
     asRoot();
     User user = userDAO.find(3L);
-    UserForm form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     user.setClearPassword("Portal123#");
     user.setOldPassword("Anything123#");
     BindingResult result = validate(form);
-    form.setUserClone((com.citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
+    form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
     String response = controller.changePassword(form, result,
         getRequestTemplate(HttpMethod.POST, "/users/changePassword?userParam=3"), map, status, user.getParam());
     Assert.assertEquals("failure", response);
 
     user = userDAO.find(3L);
-    form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     user.setClearPassword("Portal123#");
     user.setOldPassword("Portal123#");
     result = validate(form);
-    form.setUserClone((com.citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
+    form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
     response = controller.changePassword(form, result,
         getRequestTemplate(HttpMethod.POST, "/users/changePassword?userParam=3"), map, status, user.getParam());
     Assert.assertEquals("success", response);
@@ -539,15 +518,15 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   public void testUpdateUserFail() throws Exception {
     asRoot();
     User user = userDAO.find(3L);
-    UserForm form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     user.setFirstName("Updated");
-    form.setUserClone((com.citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
+    form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
     BindingResult result = validate(form);
     result.reject("dummy");
     String view = controller.edit(user.getParam(), form, result,
-        getRequestTemplate(HttpMethod.POST, "/users/" + user.getUuid() + "/edit"), map, status);
-    Assert.assertEquals("redirect:/portal/users/" + user.getUuid() + "/edit", view);
+        getRequestTemplate(HttpMethod.POST, "/users/" + user.getUuid() + "/myprofile"), map, status);
+    Assert.assertEquals("redirect:/portal/users/" + user.getUuid() + "/myprofile", view);
     Object o = map.get("user");
     Assert.assertNull(o);
     Assert.assertFalse(status.isComplete());
@@ -614,13 +593,6 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testGetAuditLog() throws Exception {
-    User user = createTestUserInTenant(getDefaultTenant());
-    String view = controller.getAuditLog(user.getUuid(), map);
-    Assert.assertEquals("auditlog.show", view);
-  }
-
-  @Test
   public void testGetISDCode() throws Exception {
     String code = controller.getISDCodeByCounty("US");
     Assert.assertEquals("1", code);
@@ -633,8 +605,10 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertNotNull(Hashmap.get("userCredentialList"));
     List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
     credentialList = (List<Map<String, String>>) Hashmap.get("userCredentialList");
-    Assert.assertEquals(credentialList.get(0).get("apiKey"), "_KvuJ0mLMn4Z_FyLnQawAth-y1tobX3t44UUN1QYVyGVVyZETh_EcjyMrmEoEV-4y_5G_6AcHUw61FcFVv_qGw");
-    Assert.assertEquals(credentialList.get(0).get("secretKey"), "gvuiqvCkBzcLuVFEtYVjY_vE9-X6m4bsxmcHMcXQMz7Iy-QPZs1X_RlvZW0-5reoWqMmql2eA1DEFNOsMVyFkg");
+    Assert.assertEquals(credentialList.get(0).get("apiKey"),
+        "_KvuJ0mLMn4Z_FyLnQawAth-y1tobX3t44UUN1QYVyGVVyZETh_EcjyMrmEoEV-4y_5G_6AcHUw61FcFVv_qGw");
+    Assert.assertEquals(credentialList.get(0).get("secretKey"),
+        "gvuiqvCkBzcLuVFEtYVjY_vE9-X6m4bsxmcHMcXQMz7Iy-QPZs1X_RlvZW0-5reoWqMmql2eA1DEFNOsMVyFkg");
     Assert.assertEquals(credentialList.get(0).get("InstanceName"), "SERVICE11");
     Assert.assertEquals(credentialList.get(0).get("ServiceName"), "com.company1.service1.service.name");
     Assert.assertEquals(credentialList.get(0).get("InstanceName"), "SERVICE11");
@@ -642,21 +616,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testcreateSpendAlertSubscription() {
-    String subscription = controller.createSpendAlertSubscription(map);
-    Assert.assertNotNull(subscription);
-    Assert.assertEquals(subscription, new String("users.subscriptions.create"));
-    Assert.assertTrue(map.containsAttribute("subscriptionForm"));
-    Assert.assertTrue(map.containsAttribute("currency"));
-    Assert.assertNotNull(map.get("subscriptionForm"));
-    Assert.assertEquals(map.get("currency").toString(), new String(
-        "CurrencyValue [active=true, currencyCode=USD, currencyName=US Dollar, rank=2]"));
-
-  }
-
-  @Test
   public void testdeactivate() {
-    //Case 1: user is active
+    // Case 1: user is active
     User user = userService.getUserByParam("id", "3", false);
     user.setEnabled(true);
     user.setLocked(false);
@@ -671,7 +632,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(user, map.get("user"));
     Assert.assertEquals(map.get("profileName"), user.getProfile().getName());
 
-    //Case 2: user is not active
+    // Case 2: user is not active
     user = userService.getUserByParam("id", "3", false);
     user.setEnabled(false);
     user.setLocked(true);
@@ -700,7 +661,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testActivate() {
-    //Case 1: when the user is not active
+    // Case 1: when the user is not active
     User user = userService.getUserByParam("id", "3", false);
     user.setEnabled(false);
     user.setLocked(true);
@@ -716,7 +677,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(user, map.get("user"));
     Assert.assertEquals(map.get("profileName"), user.getProfile().getName());
 
-    //Case 2: when the user is active
+    // Case 2: when the user is active
     user = userService.getUserByParam("id", "4", false);
     user.setEnabled(true);
     user.setLocked(false);
@@ -825,10 +786,11 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     User user = userService.getUserByParam("id", "3", false);
     UserForm form = new UserForm();
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    form.setUser((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     MockHttpServletRequest request = new MockHttpServletRequest();
     BindingResult bindingResult = validate(form);
-    Map<String, String> HashMap = controller.editPrefs(form, bindingResult, VALID_TIMEZONE, Locale.ENGLISH.toString(), map, request);
+    Map<String, String> HashMap = controller.editPrefs(form, bindingResult, VALID_TIMEZONE, Locale.ENGLISH.toString(),
+        map, request);
     Assert.assertNotNull(HashMap);
     Assert.assertEquals(user.getTimeZone(), VALID_TIMEZONE);
     Assert.assertEquals(user.getLocale(), Locale.ENGLISH);
@@ -844,28 +806,6 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testlistUsersPerTenantWithPagination() {
-    List<String> err = new ArrayList<String>();
-    err.add("JnuitTest");
-    List<String> errMsgList = new ArrayList<String>();
-    errMsgList.add("errorMsgList");
-    session.setAttribute("errormsg", "true");
-    session.setAttribute("globalErrors", err);
-    session.setAttribute("errorMsgList", errMsgList);
-    Tenant tenant = service.getTenantByParam("id", "2", false);
-    String listUsers = controller.listUsersPerTenantWithPagination(tenant, "1", "1", null, "All", true,
-        tenant.getParam(), map, session);
-    Assert.assertEquals(listUsers, new String("users1.list"));
-    Assert.assertEquals(map.get("isShowingAll"), true);
-    Assert.assertEquals(map.get("tenant"), tenant);
-    Assert.assertNotNull(map.get("users"));
-    Assert.assertEquals(map.get("size"), 1);
-    Assert.assertEquals(map.get("globalErrors"), err);
-    Assert.assertEquals(map.get("errorMsgList"), errMsgList);
-    Assert.assertEquals(map.get("errormsg"), new String("true"));
-  }
-
-  @Test
   public void testdelete() {
     User user = userDAO.find(3L);
     String view = null;
@@ -878,25 +818,26 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  public void testResolveViewForSettingFromServiceInstance(){
-    View view = controller.resolveViewForSettingFromServiceInstance(getDefaultTenant(), "003fa8ee-fba3-467f-a517-fd806dae8a80");
+  public void testResolveViewForSettingFromServiceInstance() {
+    View view = controller.resolveViewForSettingFromServiceInstance(getDefaultTenant(),
+        "003fa8ee-fba3-467f-a517-fd806dae8a80");
     Assert.assertEquals("view", view.getName());
     Assert.assertEquals("http://www.google.com", view.getURL());
     Assert.assertEquals(ViewMode.IFRAME, view.getMode());
   }
 
   @Test
-  public void testResolveViewForAccountSettingFromServiceInstance(){
+  public void testResolveViewForAccountSettingFromServiceInstance() {
     Tenant tenant = service.getTenantByParam("id", "2", false);
-    View view = controller.resolveViewForAccountSettingFromServiceInstance(tenant.getParam(), "003fa8ee-fba3-467f-a517-fd806dae8a80");
+    View view = controller.resolveViewForAccountSettingFromServiceInstance(tenant.getParam(),
+        "003fa8ee-fba3-467f-a517-fd806dae8a80");
     Assert.assertEquals("view", view.getName());
     Assert.assertEquals("http://www.google.com", view.getURL());
     Assert.assertEquals(ViewMode.IFRAME, view.getMode());
   }
 
-
   @Test
-  public void testshow(){
+  public void testshow() {
     Tenant tenant = tenantService.getTenantByParam("id", "1", false);
     asUser(tenant.getOwner());
     controller.show(tenant.getOwner().getParam(), map);
@@ -906,30 +847,31 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testEnableService() {
-         Tenant tenant = tenantService.get("17eda09f-506b-4364-b67e-469071429b76");
-         User user = createTestUserInTenant(tenant);
-         user = controller.activateUser(user.getParam(), map);
-         user.setEnabled(true);
-         String userUUID = user.getUuid();
-         Map<String, Boolean> es= controller.enableServices("17eda09f-506b-4364-b67e-469071429b76", userUUID);
-         
+    Tenant tenant = tenantService.get("17eda09f-506b-4364-b67e-469071429b76");
+    User user = createTestUserInTenant(tenant);
+    user = controller.activateUser(user.getParam(), map);
+    user.setEnabled(true);
+    String userUUID = user.getUuid();
+    Map<String, Boolean> es = controller.enableServices("17eda09f-506b-4364-b67e-469071429b76", userUUID);
+    Assert.assertTrue(!es.isEmpty());
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
   public void testUsersListShowForSurrogatedTenant() {
     asRoot();
     Tenant tenant = getDefaultTenant();
-    User user = tenant.getOwner();
     List<User> expected = userService.list(0, 0, null, null, false, null, tenant.getId().toString(), null);
     HttpServletRequest request = new MockHttpServletRequest();
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
-    String view = controller.listUsersForAccount(controller.getTenant(), false, tenant.getParam(), map, session, null, 1,20, "true", request);
+    String view = controller.listUsersForAccount(controller.getTenant(), false, tenant.getParam(), map, session, null,
+        1, 20, "true", request);
     Assert.assertEquals("users.list_with_user_menu", view);
     Assert.assertTrue(map.containsKey("users"));
     List<User> found = (List<User>) map.get("users");
     Assert.assertTrue(found.containsAll(expected));
   }
+
   @SuppressWarnings("unchecked")
   @Test
   public void testUsersListWithUserParam() {
@@ -937,20 +879,21 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     asUser(user);
     List<User> expected = userService.list(0, 0, null, null, false, null, user.getTenant().getId().toString(), null);
     MockHttpServletRequest request = new MockHttpServletRequest();
-    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, user.getParam(), 1,20, "true", request);
+    String view = controller.listUsersForAccount(controller.getTenant(), true, null, map, session, user.getParam(), 1,
+        20, "true", request);
     Assert.assertEquals("users.nonroot.list_with_user_menu", view);
     Assert.assertTrue(map.containsKey("users"));
     List<User> found = (List<User>) map.get("users");
     Assert.assertTrue(found.containsAll(expected));
     Assert.assertTrue(map.get("page") == Page.ADMIN_ALL_USERS);
   }
-  
+
   @Test
   public void testCreateUserwithBlackListedEmail() throws Exception {
-       Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-       configuration.setValue("test.com");
-       configurationService.update(configuration);
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
 
     User user = userDAO.find(3L);
     asUser(user);
@@ -967,20 +910,19 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     BindingResult bindingResult = validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.new.step1", view);
   }
+
   @Test
   public void testCreateUserwithBlackListedEmail2() throws Exception {
-       Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-       configuration.setValue("test.com");
-       configurationService.update(configuration);
-       asRoot();
-    Tenant tenant = getDefaultTenant();
-    User user = tenant.getOwner();
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
+    asRoot();
     UserForm form = new UserForm();
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     com.citrix.cpbm.access.User newUser = form.getUser();
@@ -994,20 +936,21 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     BindingResult bindingResult = validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.new.step1", view);
   }
+
   @Test
   public void testCreateUserwithSurrogatedTenantBlackListedEmail() throws Exception {
-       Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-       configuration.setValue("test.com");
-       configurationService.update(configuration);
-       asRoot();
-   // Tenant tenant = getDefaultTenant();
-    //User user = tenant.getOwner();
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
+    asRoot();
+    // Tenant tenant = getDefaultTenant();
+    // User user = tenant.getOwner();
     UserForm form = new UserForm();
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     com.citrix.cpbm.access.User newUser = form.getUser();
@@ -1023,20 +966,20 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
     Tenant tenant = tenantDAO.find(3L);
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.new.step1", view);
   }
+
   @Test
   public void testCreateUserwithSurrogatedTenantBlackListedEmail2() throws Exception {
-       Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-       configuration.setValue("test.com");
-       configurationService.update(configuration);
-       asRoot();
-   // Tenant tenant = getDefaultTenant();
-    //User user = tenant.getOwner();
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
+    asRoot();
+    // Tenant tenant = getDefaultTenant();
+    // User user = tenant.getOwner();
     UserForm form = new UserForm();
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     com.citrix.cpbm.access.User newUser = form.getUser();
@@ -1046,30 +989,30 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     newUser.setLastName("lastName");
     Profile profile = profileDAO.findByName("User");
     form.setUserProfile(profile.getId());
-   
+
     BindingResult bindingResult = validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
-    //request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
+    // request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
     request.addParameter("submitButtonEmail", "Finish");
     Tenant tenant = tenantDAO.find(3L);
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,
-        new MockHttpSession());
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
     Assert.assertEquals("users.new.step1", view);
   }
+
   @Test
   public void testCreateUserMaxUserCount() throws Exception {
-         
-       Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-       configuration.setValue("test.com");
-       configurationService.update(configuration);
-       Tenant tenant = tenantDAO.find(3L);
-       List<User> userList = tenant.getAllUsers();
-       int count = userList.size();
-       long temp = Long.valueOf(count);
-       tenant.setMaxUsers(temp);
-       tenantService.update(tenant);
+
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
+    Tenant tenant = tenantDAO.find(3L);
+    List<User> userList = tenant.getAllUsers();
+    int count = userList.size();
+    long temp = Long.valueOf(count);
+    tenant.setMaxUsers(temp);
+    tenantService.update(tenant);
     UserForm form = new UserForm();
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     com.citrix.cpbm.access.User newUser = form.getUser();
@@ -1079,104 +1022,103 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     newUser.setLastName("lastName");
     Profile profile = profileDAO.findByName("User");
     form.setUserProfile(profile.getId());
-   
+
     BindingResult bindingResult = validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.addParameter("submitButtonEmail", "Finish");
-    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(tenant);
-    try{
-    controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request,new MockHttpSession());
-    }catch (Exception e) {
-              Assert.assertEquals("You have reached the maximum number of users. To increase your limit, please contact support",e.getMessage());
-              logger.debug("###Exiting testCreateUserMaxUserCount");
-       }
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(tenant);
+    try {
+      controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
+    } catch (Exception e) {
+      Assert.assertEquals(
+          "You have reached the maximum number of users. To increase your limit, please contact support",
+          e.getMessage());
+      logger.debug("###Exiting testCreateUserMaxUserCount");
+    }
   }
-    @Test
-    public void testCreateStepThree() throws Exception{
-       
-       UserForm form = new UserForm();
-        form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-        com.citrix.cpbm.access.User newUser = form.getUser();
-        newUser.setEmail("subodh@test.com");
-        newUser.setUsername("Subodh");
-        newUser.setFirstName("firstName");
-        newUser.setLastName("lastName");
-        Profile profile = profileDAO.findByName("User");
-        form.setUserProfile(profile.getId());
-        form.setEmailText("Customized Email");
-       
-        BindingResult bindingResult = validate(form);
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addParameter("submitButtonEmail", "Finish");
-        com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant)CustomProxy.newInstance(controller.getTenant());
-        String response = controller.createStepThree(form, bindingResult, proxyTenant, map, request);
-        Assert.assertEquals("users.newuserregistration.finish", response);
-    }
-    @Test
-    public void testEditUserWithTeleVerification() throws Exception {
-      User user = userDAO.find(3L);
-      asRoot();
-      MockTelephoneVerificationService.ENABLE_FLAG = true;
-      String view = controller.edit(null, user.getUuid(), getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/edit"), map);
-      UserForm form = (UserForm) map.get("user");
-      Assert.assertNotNull(form);
-      Assert.assertNotNull(form.getUser());
-      Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User)form.getUser()).getUsername());
-      Assert.assertEquals("users.edit", view);
-    }
-    @Test 
-    public void testViewAlertsDeliveryOptions(){
-       String response = controller.viewAlertsDeliveryOptions(map);
-       Assert.assertEquals(true, map.containsAttribute("alertsPrefs"));
-       Assert.assertEquals("users.alerts.delivery_opts", response);
-    }
-    
-    @Test 
-    public void testViewSpendAlertSubscriptions(){
-       String response = controller.viewSpendAlertSubscriptions(map);
-       Assert.assertEquals(true, map.containsAttribute("subscriptions"));
-       Assert.assertEquals("users.subscriptions", response);
-    }
-    
 
-    @Test
-    public void testEditUserWithBlaclistedEmail() throws Exception {
-      Configuration configuration = configurationService
-                            .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
-         configuration.setValue("test.com");
-         configurationService.update(configuration);
-      asRoot();
-      User user = userDAO.find(3L);
-      UserForm form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
-      form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-      user.setFirstName("Updated");
-      user.setEmail("subodh@test.com");
-      BindingResult result = validate(form);
-      String view = controller.edit(user.getParam(), form, result, getRequestTemplate(HttpMethod.POST, "/users/3/edit"),
-          map, status);
-      Assert.assertEquals("users.edit", view);
-      
-      User found = userDAO.find(user.getId());
-      Assert.assertEquals(user.getFirstName(), found.getFirstName());
-   
-    }
+  @Test
+  public void testCreateStepThree() throws Exception {
 
-    
-    @Test
-    public void testEditUserWithAlertPref() throws Exception {
-      User user = userDAO.find(3L);
-      asRoot();
-      String emailAddress = "sk@test.com";
-      
-      UserAlertPreferences userAlertPreferences = userAlertPreferencesService.createUserAlertPreference(user, emailAddress, AlertType.USER_ALERT_EMAIL);
-      userAlertPreferencesService.verifyUserAlertPreference(userAlertPreferences);
-      String view = controller.edit(null, user.getUuid(),
-      getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/edit"), map);
-      UserForm form = (UserForm) map.get("user");
-      Assert.assertNotNull(form);
-      Assert.assertNotNull(form.getUser());
-      Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User)form.getUser()).getUsername());
-      Assert.assertEquals("users.edit", view);
-    }
+    UserForm form = new UserForm();
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    com.citrix.cpbm.access.User newUser = form.getUser();
+    newUser.setEmail("subodh@test.com");
+    newUser.setUsername("Subodh");
+    newUser.setFirstName("firstName");
+    newUser.setLastName("lastName");
+    Profile profile = profileDAO.findByName("User");
+    form.setUserProfile(profile.getId());
+    form.setEmailText("Customized Email");
+
+    BindingResult bindingResult = validate(form);
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    request.addParameter("submitButtonEmail", "Finish");
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String response = controller.createStepThree(form, bindingResult, proxyTenant, map, request);
+    Assert.assertEquals("users.newuserregistration.finish", response);
+  }
+
+  @Test
+  public void testEditUserWithTeleVerification() throws Exception {
+    User user = userDAO.find(3L);
+    asRoot();
+    MockTelephoneVerificationService.ENABLE_FLAG = true;
+    String view = controller.edit(null, user.getUuid(),
+        getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/myprofile"), map);
+    UserForm form = (UserForm) map.get("user");
+    Assert.assertNotNull(form);
+    Assert.assertNotNull(form.getUser());
+    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals("users.edit.myprofile", view);
+  }
+
+  @Test
+  public void testViewAlertsDeliveryOptions() {
+    String response = controller.viewAlertsDeliveryOptions(map);
+    Assert.assertEquals(true, map.containsAttribute("alertsPrefs"));
+    Assert.assertEquals("users.alerts.delivery_opts", response);
+  }
+
+  @Test
+  public void testEditUserWithBlaclistedEmail() throws Exception {
+    Configuration configuration = configurationService
+        .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.emailDomain.blacklist");
+    configuration.setValue("test.com");
+    configurationService.update(configuration);
+    asRoot();
+    User user = userDAO.find(3L);
+    UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    user.setFirstName("Updated");
+    user.setEmail("subodh@test.com");
+    BindingResult result = validate(form);
+    String view = controller.edit(user.getParam(), form, result,
+        getRequestTemplate(HttpMethod.POST, "/users/3/myprofile"), map, status);
+    Assert.assertEquals("users.edit.myprofile", view);
+
+    User found = userDAO.find(user.getId());
+    Assert.assertEquals(user.getFirstName(), found.getFirstName());
+
+  }
+
+  @Test
+  public void testEditUserWithAlertPref() throws Exception {
+    User user = userDAO.find(3L);
+    asRoot();
+    String emailAddress = "sk@test.com";
+
+    UserAlertPreferences userAlertPreferences = userAlertPreferencesService.createUserAlertPreference(user,
+        emailAddress, AlertType.USER_ALERT_EMAIL);
+    userAlertPreferencesService.verifyUserAlertPreference(userAlertPreferences);
+    String view = controller.edit(null, user.getUuid(),
+        getRequestTemplate(HttpMethod.GET, "/users/" + user.getUuid() + "/myprofile"), map);
+    UserForm form = (UserForm) map.get("user");
+    Assert.assertNotNull(form);
+    Assert.assertNotNull(form.getUser());
+    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals("users.edit.myprofile", view);
+  }
 
 }

@@ -146,6 +146,8 @@ $(function(){
                                   </form:select>
                                    <div class="registration_formbox_errormsg" id="currencyError"></div>                       
                                 </li>
+                                
+                        <tiles:insertDefinition name="user.custom.fields"></tiles:insertDefinition>
                             </ul>
                         </form:form>
                         

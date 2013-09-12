@@ -67,14 +67,14 @@
     <div class="widgetcatalog_contentarea sectionbox bigborders catalog_rightmenu" style="min-height:100px;max-height:400px;overflow-y:auto;overflow-x:hidden;">
       <div>
         <p class="title" id="msg_RHS_entitlements" style="text-align: justify; text-justify: inter-word; width: 90%;">
-          <spring:message javaScriptEscape="true" code="message.create.subscription.utility.rates.above.entitlements" />
+          <spring:message code="message.create.subscription.utility.rates.above.entitlements" />
           :
         </p>
         <ul id="included_usage" class="pull-left"></ul>
       </div>
       <div>
         <p class="title" id="msg_RHS_generated_usage" style="text-align: justify; text-justify: inter-word; width: 90%;">
-          <spring:message javaScriptEscape="true" code="message.create.subscription.generated.usage.charges" />
+          <spring:message code="message.create.subscription.generated.usage.charges" />
           :
         </p>
         <div>
@@ -103,8 +103,10 @@
       </div>
     </div>
   </div>
-  <input class="checkbox" type="checkbox" id="accept_checkbox" style="margin-left:5px;float:left"/> 
-  <div style="float:left;margin:7px;" id="tncLink"><spring:message code="label.subscribe.notice.terms" htmlEscape="false" /></div>
+  <div class="subscribe_tnc_box">
+    <span class="checkbox_container"><input class="checkbox" type="checkbox" id="accept_checkbox" /></span> 
+    <span class="checkbox_description" ><spring:message code="label.subscribe.notice.terms" htmlEscape="false"/><img src="../../images/open_new_window.png" id="tncLink" alt="<spring:message code='terms.and.conditions' />" class="new_window" ></span>
+  </div>
 
   <div id="subtotal_content_area" class="launchvm_sub-totalbox">
     <span class="sublabel"><spring:message code="label.subscribe.summary.subtotal" /></span>&nbsp;&nbsp;&nbsp;<span
@@ -121,24 +123,18 @@
 
   <div class="widgetcatalog_contentarea sectionbox" style="border: none; background: none; margin-top: 10px;">
     <c:choose>
-      <c:when test="${isReconfigure || isReprovision || resourceType == '__SERVICE__'}">
+      <c:when test="${isReconfigure || isReprovision || resourceType == serviceBundleResourceType || isPayAsYouGoChosen}">
         <div class="btn-group">
           <button class="btn btn-info" style="width: 240px;" id="launchResource">
-            <c:choose>
-              <c:when test="${isReprovision}">
+              <c:if test="${isReprovision || isPayAsYouGoChosen}">
                 <spring:message code="ui.label.provision" />
-              </c:when>
-              <c:otherwise>
-              <c:choose>
-              <c:when test="${isReconfigure}">
-              <spring:message code="ui.label.subscription.Reconfigure" />
-              </c:when>
-              <c:otherwise>
-                <spring:message code="label.subscribe.confirm" />              
-              </c:otherwise>
-              </c:choose>
-              </c:otherwise>
-            </c:choose>
+              </c:if>
+              <c:if test="${isReconfigure}">
+                <spring:message code="ui.label.subscription.Reconfigure" />
+              </c:if>
+              <c:if test="${resourceType == serviceBundleResourceType}">
+                <spring:message code="label.subscribe.confirm" />
+              </c:if>
           </button>
         </div>
       </c:when>

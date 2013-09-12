@@ -29,7 +29,9 @@ import com.vmops.model.Ticket.TicketStatus;
 import com.vmops.model.TicketComment;
 import com.vmops.model.User;
 import com.vmops.service.SupportService;
+import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.service.exceptions.SupportServiceException;
+import com.vmops.service.exceptions.TicketServiceException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.TicketCommentForm;
@@ -116,12 +118,17 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       String status = "All";
       if (statusFilter != null) {
         status = statusFilter;
-        map.addAttribute("statusFilter", statusFilter);
+        map.addAttribute("statusFilter", status.toUpperCase());
         logger.info(" filter by status = " + status);
       }
 
       if (ticketNumber != null) {
-        Ticket tkt = supportService.get(ticketNumber);
+        Ticket tkt = null;
+        try {
+          tkt = supportService.get(ticketNumber);
+        } catch (TicketServiceException e) {
+          return "support.tickets";
+        }
         if (tkt != null) {
           tickets.add(tkt);
           totalTickets = 1;
@@ -146,9 +153,14 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
         }
         Map<String, String> responseAttribute = new HashMap<String, String>();
         responseAttribute.put("queryLocator", queryLocator);
-        List<Ticket> allTickets = supportService.list(page, perPage + 1, listTicketStatus, users, sortType, sortColumn,
-            responseAttribute);
+        List<Ticket> allTickets = new ArrayList<Ticket>();
 
+        try {
+          allTickets = supportService.list(page, perPage + 1, listTicketStatus, users, sortType, sortColumn,
+              responseAttribute);
+        } catch (TicketServiceException e) {
+          return "support.tickets";
+        }
         totalTickets = allTickets.size();
         if (allTickets.size() > perPage) {
           allTickets.remove(allTickets.size() - 1);
@@ -163,11 +175,15 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       if (tickets != null && tickets.size() > 0) {
         map.addAttribute("ticketForm", new TicketForm(tickets.get(0)));
         List<TicketComment> comments = new ArrayList<TicketComment>();
-        for (Ticket tkt : tickets) {
-          List<TicketComment> tktComments = supportService.listComments(tkt, user);
-          if (tktComments != null && tktComments.size() > 0) {
-            comments.addAll(tktComments);
+        try {
+          for (Ticket tkt : tickets) {
+            List<TicketComment> tktComments = supportService.listComments(tkt, user);
+            if (tktComments != null && tktComments.size() > 0) {
+              comments.addAll(tktComments);
+            }
           }
+        } catch (TicketServiceException e) {
+          throw new InvalidAjaxRequestException(e.getMessage(), e);
         }
         if (comments != null && comments.size() > 0) {
           map.addAttribute("ticketcomments", comments);
@@ -258,9 +274,11 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
     }
     List<User> users = new ArrayList<User>();
     users.add(user);
-
-    tickets = supportService.list(0, 0, listTicketStatus, users, sortType, sortColumn, responseAttribute);
-
+    try {
+      tickets = supportService.list(0, 0, listTicketStatus, users, sortType, sortColumn, responseAttribute);
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
+    }
     map.addAttribute("tickets", tickets);
     map.addAttribute("queryLocator", responseAttribute.get("queryLocator"));
 
@@ -310,7 +328,11 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       }
     }
     Ticket ticket = ticketForm.getTicket();
-    ticket = supportService.create(ticket.getSubject(), ticket.getDescription(), "WEB", user);
+    try {
+      ticket = supportService.create(ticket.getSubject(), ticket.getDescription(), "WEB", user);
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
+    }
     logger.debug("###In createTicket method end...(POST)");
     return ticket;
   }
@@ -339,21 +361,25 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       }
     }
 
-    if (ticketNumber != null) {
-      Ticket ticket = supportService.get(ticketNumber);
-      if (ticket != null) {
-        map.addAttribute("ticket", ticket);
-        map.addAttribute("ticketForm", new TicketForm(ticket));
-        List<TicketComment> comments = supportService.listComments(ticket, user);
-        if (comments != null && comments.size() > 0) {
-          map.addAttribute("ticketcomments", comments);
+    try {
+      if (ticketNumber != null) {
+        Ticket ticket = supportService.get(ticketNumber);
+        if (ticket != null) {
+          map.addAttribute("ticket", ticket);
+          map.addAttribute("ticketForm", new TicketForm(ticket));
+          List<TicketComment> comments = supportService.listComments(ticket, user);
+          if (comments != null && comments.size() > 0) {
+            map.addAttribute("ticketcomments", comments);
+          }
+          TicketCommentForm ticketCommentForm = new TicketCommentForm();
+          TicketComment comment = new TicketComment();
+          comment.setParentId(ticket.getUuid());
+          ticketCommentForm.setComment(comment);
+          map.addAttribute("ticketCommentForm", ticketCommentForm);
         }
-        TicketCommentForm ticketCommentForm = new TicketCommentForm();
-        TicketComment comment = new TicketComment();
-        comment.setParentId(ticket.getUuid());
-        ticketCommentForm.setComment(comment);
-        map.addAttribute("ticketCommentForm", ticketCommentForm);
       }
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
     }
     map.addAttribute("tenant", tenant);
     map.addAttribute("statuses", TicketStatus.values());
@@ -397,6 +423,8 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
           }
         }
       }
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
     } catch (Exception e) {
       logger.error("Failed to post comment", e);
       return "failure";
@@ -441,13 +469,18 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
     sortType = (sortType == null || sortType.equalsIgnoreCase("null") ? "" : sortType);
     sortColumn = (sortColumn == null || sortColumn.equalsIgnoreCase("null") ? "" : sortColumn);
     Ticket ticket = ticketForm.getTicket();
-    Ticket t = supportService.get(caseNumber);
-    ticket.setUpdatedAt(new Date());
-    ticket.setUpdatedBy(user);
-    if (ticket.getStatus() == null || "null".equals(ticket.getStatus().name())) {
-      ticket.setStatus(t.getStatus());
+    Ticket t = null;
+    try {
+      t = supportService.get(caseNumber);
+      ticket.setUpdatedAt(new Date());
+      ticket.setUpdatedBy(user);
+      if (ticket.getStatus() == null || "null".equals(ticket.getStatus().name())) {
+        ticket.setStatus(t.getStatus());
+      }
+      supportService.update(ticket, user);
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
     }
-    supportService.update(ticket, user);
     logger.debug("###In editTicket method end...(POST)");
     return "redirect:/portal/support/tickets?tenant=" + tenantParam + "&statusFilter=" + status + "&sortType="
         + sortType + "&sortColumn=" + sortColumn;
@@ -470,13 +503,17 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       @ModelAttribute("ticketForm") TicketForm ticketForm, ModelMap map) {
     logger.debug("###In closeTicket method starting...(POST) tkt#" + ticketNumber);
     String returnValue = "Failure";
-    if (ticketNumber != null) {
-      Ticket tkt = supportService.get(ticketNumber);
-      tkt.setStatus(TicketStatus.CLOSED);
-      tkt.setUpdatedAt(new Date());
-      tkt.setUpdatedBy(getCurrentUser());
-      supportService.update(tkt, tenant.getOwner());
-      returnValue = "Success";
+    try {
+      if (ticketNumber != null) {
+        Ticket tkt = supportService.get(ticketNumber);
+        tkt.setStatus(TicketStatus.CLOSED);
+        tkt.setUpdatedAt(new Date());
+        tkt.setUpdatedBy(getCurrentUser());
+        supportService.update(tkt, tenant.getOwner());
+        returnValue = "Success";
+      }
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
     }
     logger.debug("###In editTicket method end...(POST)");
     return returnValue;
@@ -516,6 +553,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
 
       List<Ticket> tickets = supportService.list(0, 0, listTicketStatus, users, null, null,
           new HashMap<String, String>());
+
       int new_tickets = 0;
       int working_tickets = 0;
       int closed_tickets = 0;
@@ -540,6 +578,8 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       if (ex.getMessage().equals("SERVICE_NOT_REACHABLE")) {
         error = "SERVICE_NOT_REACHABLE".toLowerCase();
       }
+    } catch (TicketServiceException e) {
+      throw new InvalidAjaxRequestException(e.getMessage(), e);
     }
     logger.debug("Leaving in homeTicketsCount");
     return "home.support.tickets.count";
@@ -567,7 +607,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
         tenant = effectiveTenant;
       }
     }
-    Ticket ticket = ticketForm.getTicket(); 
+    Ticket ticket = ticketForm.getTicket();
     ticket = supportService.create(ticket.getSubject(), ticket.getDescription(), Ticket.Category.EMAIL.getName(), user);
     map.addAttribute("message",
         messageSource.getMessage("support.ticket.create.email.success", null, getSessionLocale(request)));

@@ -157,13 +157,15 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
       map.addAttribute("component", component);
 
       List<Configuration> configList = configurationService.getConfiguration(moduleName, component);
-
+      List<Configuration> copiedConfigList = new ArrayList<Configuration>();
       for (Configuration config : configList) {
+        Configuration copiedConfig = config.copyThisConfiguration();
         if (config.isCurrentlyEncrypted()) {
-          config.setValue(CryptoUtils.decrypt(config.getValue(), CryptoUtils.keyGenerationSeed));
+          copiedConfig.setValue(CryptoUtils.decrypt(config.getValue(), CryptoUtils.keyGenerationSeed));
         }
+        copiedConfigList.add(copiedConfig);
       }
-      map.addAttribute("configurationList", configList);
+      map.addAttribute("configurationList", copiedConfigList);
 
       return "configuration.edit";
     }

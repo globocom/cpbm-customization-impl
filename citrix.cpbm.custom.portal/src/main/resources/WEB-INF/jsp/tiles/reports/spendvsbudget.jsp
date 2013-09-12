@@ -2,6 +2,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>  
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 
 <c:set var="chartId" value="spend_vs_budget"  />
@@ -11,7 +12,8 @@ $(document).ready(function(){
   var currencySymbol = "<c:out value="${effectiveTenant.currency.sign}" />"; 
   var chartId='<c:out value="${chartId}" />';
 	var chartData = '<c:out value="${chartData}" escapeXml="false"/>';
-	
+	var formatted_budget_value='<fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="0" minFractionDigits="0" value="${spend_vs_budget_chart_data_obj.spendvsbudget.spendLimit}" />';
+
 	if(typeof chartData != "undefined" && chartData != "" && chartData != null){
 	
 	var spendvsbudget = $.parseJSON(chartData).spendvsbudget;	
@@ -144,7 +146,7 @@ $(document).ready(function(){
 		chartData.chart['upperLimitDisplay']=spend_vs_budget_chart_dictionary.budgetNotSet;
 	}else if(initialBudgetValueDisplay!=0){
 		
-		$("#budget_value").text("("+currencySymbol+Number((initialBudgetValueDisplay).toFixed(0))+")");
+		$("#budget_value").text("("+currencySymbol+formatted_budget_value+")");
 	}
 	var budgetMarker={
             "startvalue": budget,

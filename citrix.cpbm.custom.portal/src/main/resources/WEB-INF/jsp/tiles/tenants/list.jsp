@@ -258,26 +258,6 @@ var i18nAccountTypeDictionary = {
             
           
         </div>
-        <!--  
-        <div class="widget_searchpanel">
-          <div id="search_panel" style="margin:8px 0 0 13px;color:#FFFFFF;">
-          <label style="color:#FFFFFF;"><spring:message code="label.filter.by"/>:</label>
-            <select id="selectedAccountfilter" class="select" onchange="filterAccounts(this);">
-              <c:forEach items="${filtersMap}" var="filter">
-                <c:choose>
-                  <c:when test="${filterBy==filter.key}">
-                    <c:set var="selected" value="selected" />
-                  </c:when>
-                  <c:otherwise>
-                    <c:set var="selected" value="" />
-                  </c:otherwise>
-                </c:choose>
-                <option value="<c:out value="${filter.key}"/>" <c:out value="${selected}"/>><c:out value="${filter.value}" /></option>
-              </c:forEach>
-            </select>
-          </div>
-        </div>
-        -->
         <div class="widget_navigation">
           <ul class="widget_navigationlist" id="grid_row_container">
             <c:choose>

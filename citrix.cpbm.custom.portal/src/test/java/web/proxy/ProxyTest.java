@@ -1,4 +1,4 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package web.proxy;
 
 import java.io.FileNotFoundException;
@@ -17,7 +17,6 @@ import javax.validation.ValidatorFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.validation.BeanPropertyBindingResult;
-
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.vmops.model.Tenant;
@@ -46,7 +45,7 @@ public class ProxyTest {
     User user = new User();
     user.setUsername("proxyuser");
     user.setPhone("919886445511");
-    //t.setFoo("foo");
+    // t.setFoo("foo");
     t.setOwner(user);
 
     BeanPropertyBindingResult result = new BeanPropertyBindingResult(t, "tenant");

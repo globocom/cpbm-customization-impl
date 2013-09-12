@@ -144,10 +144,12 @@ $(document).ready(function() {
                   <input type="text" style="width:25%; margin-left:0; margin-top: -5px" size="10" id="value<c:out value="${entitlementComponent.id}"/>" 
                          class="entitlementtext text numberRequired" value="<c:out value="${includedunitsvalue}"/>"
                          name="value" />
-                  <input type="checkbox" style="margin:0px 3px 3px 3px;" id="unlimitedUsage<c:out value="${entitlementComponent.id}"/>" tabindex= "23" name="unlimitedUsage"
+                    <c:if test="${entitlementComponent.allowedUnlimitedEntitlement eq true}">
+                    <input type="checkbox" style="margin:0px 3px 3px 3px;" id="unlimitedUsage<c:out value="${entitlementComponent.id}"/>" tabindex= "23" name="unlimitedUsage"
                          class="unlimitedUsage"
                       <c:if test="${entitlementComponent.includedUnits == -1 }">  checked </c:if> >
                    <spring:message code="label.bundle.list.entitlement.unlimited.usage"/>
+                    </c:if>
                    <span style="margin-left:5px;font-weight: normal;"> <spring:message code="${entitlementComponent.product.uom}"/></span>
                   <div class="main_addnew_formbox_errormsg" style="margin:0;width:180px;"  id="valueerror<c:out value="${entitlementComponent.id}"/>"></div>
                 </div>

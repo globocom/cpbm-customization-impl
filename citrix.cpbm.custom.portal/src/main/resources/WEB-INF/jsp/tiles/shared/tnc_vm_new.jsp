@@ -6,9 +6,6 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles"%>
 
-
-
-
 <div>
-<spring:message code="resources.agree.tnc.message"/>
+<spring:message code="resources.agree.tnc.message.new"/>
 </div>

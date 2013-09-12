@@ -95,10 +95,11 @@ public abstract class AbstractLogoController extends AbstractAuthenticatedContro
     List<ServiceImage> images = new ArrayList<ServiceImage>(service.getImages());
     for (ServiceImage serviceImage : images) {
       if (serviceImage.getImagetype().equals(type)) {
-        String cssdkFilesDirectory = FilenameUtils.concat(config.getValue(Names.com_citrix_cpbm_portal_settings_services_datapath),
-            service.getServiceName() + "_" + service.getVendorVersion());
-        logoResponse(FilenameUtils.concat(CssdkConstants.IMAGES_DIRECTORY, serviceImage.getImagepath()), "",
-            response, cssdkFilesDirectory);
+        String cssdkFilesDirectory = FilenameUtils.concat(
+            config.getValue(Names.com_citrix_cpbm_portal_settings_services_datapath), service.getServiceName() + "_"
+                + service.getVendorVersion());
+        logoResponse(FilenameUtils.concat(CssdkConstants.IMAGES_DIRECTORY, serviceImage.getImagepath()), "", response,
+            cssdkFilesDirectory);
         return;
       }
     }
@@ -108,10 +109,11 @@ public abstract class AbstractLogoController extends AbstractAuthenticatedContro
     logoResponse(imagePath, defaultImagePath, response, null);
   }
 
-  private void logoResponse(String imagePath, String defaultImagePath, HttpServletResponse response, String cssdkFilesDirectory) {
+  private void logoResponse(String imagePath, String defaultImagePath, HttpServletResponse response,
+      String cssdkFilesDirectory) {
     FileInputStream fileinputstream = null;
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
-    if(StringUtils.isNotBlank(cssdkFilesDirectory)){
+    if (StringUtils.isNotBlank(cssdkFilesDirectory)) {
       rootImageDir = cssdkFilesDirectory;
     }
     if (rootImageDir != null && !rootImageDir.trim().equals("")) {

@@ -20,10 +20,18 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
                     <div class="mandatory_wrapper" style="width: 100%;">
                     <form:select cssClass="select entitlement" id="productId" path="productId" cssStyle="width: 90%;" onchange="hideUnlimitedEntitlementCheckBoxIfNecessary(this);">
                       <option class="noProductSelected _hypervisor" value=""><spring:message code="label.bundle.entitlement.create.choose.product"/></option>
+                      <c:set var="current_service_instance_uuid" value="" />
                       <c:forEach items="${products}" var="choice" varStatus="status">
+                        <c:if test="${ current_service_instance_uuid!= choice.serviceInstance.uuid}" >
+                            <c:set var="current_service_instance_uuid" value="${choice.serviceInstance.uuid}" />
+                            <optgroup label="${choice.serviceInstance.name}" class="highlight">
+                        </c:if>
                         <option value=<c:out value="${choice.id}"/> unlimitedallow= "${choice.allowedUnlimitedEntitlement}"> 
                           <c:out value="${choice.name}" />
                         </option>
+                        <c:if test="${ current_service_instance_uuid!= choice.serviceInstance.uuid}" >
+                            </optgroup>
+                        </c:if>
                       </c:forEach>
                     </form:select>
                     <div class="main_addnew_formbox_errormsg" id="productIdError" style="margin:5px 0 0 10px"></div>

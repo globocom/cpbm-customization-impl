@@ -11,7 +11,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 
-
 /**
  * The default handler for all 'static' pages, including error, help etc.
  * 

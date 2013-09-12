@@ -2686,7 +2686,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   public void testSortProducts() {
     try {
 
-      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "current", null, map);
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "current", null, null, null, map);
       List<Product> productsList = (List<Product>) map.get("productsList");
       int size = getProductListSize("current", null);
       Assert.assertEquals(size, productsList.size());
@@ -2697,7 +2697,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
           Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
       }
 
-      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "planned", null, map);
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "planned", null, null, null, map);
       productsList = (List<Product>) map.get("productsList");
       size = getProductListSize("planned", null);
       Assert.assertEquals(size, productsList.size());
@@ -2708,7 +2708,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       }
 
       Date date = productService.getReferencePriceBookHistoryRevisions().get(0).getStartDate();
-      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "history", null, map);
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "history", null, null, null, map);
       productsList = (List<Product>) map.get("productsList");
       size = getProductListSize("history", date);
       Assert.assertEquals(size, productsList.size());

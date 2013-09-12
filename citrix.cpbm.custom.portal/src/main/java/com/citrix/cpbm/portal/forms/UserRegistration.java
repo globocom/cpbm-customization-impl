@@ -13,7 +13,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 
-
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.vmops.model.AccountType;
 import com.vmops.model.Address;
@@ -140,12 +139,11 @@ public class UserRegistration {
   private Address secondaryAddress;
 
   private List<Country> countryList;
-  
+
   public List<Country> getCountryList() {
     return countryList;
   }
 
-  
   public void setCountryList(List<Country> countryList) {
     this.countryList = countryList;
   }

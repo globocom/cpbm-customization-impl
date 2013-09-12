@@ -1,17 +1,17 @@
 /* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
-$(document).ready(function(){
+$(document).ready(function() {
   /* approval popup related js start*/
-  $(".taskPopup").live("click", function(){
-    var taskId = $(this).attr('id').replace("taskPopup","");
-    var taskurl = "/portal/portal/tasks/approval-task/"+taskId;
-    var approvalTaskGet = $.ajax( {
-      type : "GET",
-      url : taskurl,
-      dataType : "html"
+  $(".taskPopup").live("click", function() {
+    var taskId = $(this).attr('id').replace("taskPopup", "");
+    var taskurl = "/portal/portal/tasks/approval-task/" + taskId;
+    var approvalTaskGet = $.ajax({
+      type: "GET",
+      url: taskurl,
+      dataType: "html"
     });
 
     var $approvalDialog = $("#approvalTask_panel");
-    if(!$approvalDialog.is(':data(dialog)')) {
+    if (!$approvalDialog.is(':data(dialog)')) {
       $approvalDialog.dialog({
         width: 900,
         modal: true,
@@ -19,60 +19,64 @@ $(document).ready(function(){
         autoOpen: false
       });
     }
-    $("#approval_task_close,#okbutton").live("click", function(){
+    $("#approval_task_close,#okbutton").live("click", function() {
       $approvalDialog.dialog("close");
     });
-    approvalTaskGet.done(function(html){
+    approvalTaskGet.done(function(html) {
       $approvalDialog.html(html);
       $approvalDialog.dialog("open");
     });
-    approvalTaskGet.fail(function(XMLHttprequest){
+    approvalTaskGet.fail(function(XMLHttprequest) {
       $approvalDialog.html(XMLHttprequest.responseText);
       $approvalDialog.dialog("open");
     });
   });
-  $("#approvalTask_panel .dialog_formcontent.wizard #buttons input").live("click", function(){
-    var taskState = $(this).attr('id').replace("approval_task_","");
+  $("#approvalTask_panel .dialog_formcontent.wizard #buttons input").live("click", function() {
+    var taskState = $(this).attr('id').replace("approval_task_", "");
     var url = $("#approval_task_form").attr("action");
     var taskId = $("#approval_task_uuid").val();
     var taskMemo = $("#approval_task_form #memo").val();
     $("#spinning_wheel_rhs").show();
     var approvalTaskPost = $.ajax({
       type: "POST",
-      url:url,
-      data: {uuid:taskId,state:taskState,memo:taskMemo},
+      url: url,
+      data: {
+        uuid: taskId,
+        state: taskState,
+        memo: taskMemo
+      },
       dataType: "html"
     });
-    approvalTaskPost.done(function(state){
+    approvalTaskPost.done(function(state) {
       $("#taskState").html(state);
-      $("a#taskPopup"+taskId).removeClass("taskPopup");
-      $("a#taskPopup"+taskId).addClass("deleted");
+      $("a#taskPopup" + taskId).removeClass("taskPopup");
+      $("a#taskPopup" + taskId).addClass("deleted");
       $("#viewTaskDiv .taskState").html(state);
-      
+
       $(".j_actionForm").hide();
       $(".j_success").show();
-      
-      if(taskState == "success"){
+
+      if (taskState == "success") {
         $(".widgetwizard_successbox .j_approved").show();
-      }else{
+      } else {
         $(".widgetwizard_successbox .j_rejected").show();
       }
 
     });
-    approvalTaskPost.fail(function(XMLHttprequest){
+    approvalTaskPost.fail(function(XMLHttprequest) {
       $("#memo_errormsg").html(XMLHttprequest.responseText);
     });
-    approvalTaskPost.always(function(XMLHttprequest){
+    approvalTaskPost.always(function(XMLHttprequest) {
       $("#spinning_wheel_rhs").hide();
     });
-    
+
   });
   /* approval popup related js end*/
-  
+
   /*all tasks page js start*/
   $('#selectedTaskFilter').change(function() {
     var filter = $(this).find('option:selected').val();
-    window.location.href = "/portal/portal/tasks/?tenant="+tenantParam+"&filter="+filter;
+    window.location.href = "/portal/portal/tasks/?tenant=" + tenantParam + "&filter=" + filter;
   });
   var $listTaskElem = $('#all_tasks ul.widget_navigationlist li.widget_navigationlist');
   $listTaskElem.mouseover(function() {
@@ -83,20 +87,20 @@ $(document).ready(function(){
   });
   $listTaskElem.click(function() {
     var $thistaskElem = $(this);
-    var taskId = $(this).attr('id').replace("row","");
-    var taskurl = "/portal/portal/tasks/"+taskId+"/?tenant="+tenantParam;
-    var taskGet = $.ajax( {
-      type : "GET",
-      url : taskurl,
-      dataType : "html"
+    var taskId = $(this).attr('id').replace("row", "");
+    var taskurl = "/portal/portal/tasks/" + taskId + "/?tenant=" + tenantParam;
+    var taskGet = $.ajax({
+      type: "GET",
+      url: taskurl,
+      dataType: "html"
     });
-    taskGet.done(function(html){
+    taskGet.done(function(html) {
       $("#viewTaskDiv.widget_rightpanel").html(html);
       $listTaskElem.removeClass("selected active");
       $thistaskElem.addClass("selected active");
     });
 
-    taskGet.fail(function(XMLHttprequest){
+    taskGet.fail(function(XMLHttprequest) {
       $("#viewTaskDiv.widget_rightpanel").html(XMLHttprequest.responseText);
     });
   });
@@ -104,11 +108,13 @@ $(document).ready(function(){
   var $prevButton = $("#all_tasks #click_previous").not(".nonactive");
   $nextButton.click(function() {
     var filter = $("#selectedTaskFilter").find('option:selected').val();
-    window.location.href = "/portal/portal/tasks/?tenant="+tenantParam+"&filter="+filter+"&page="+nextPage;
+    window.location.href = "/portal/portal/tasks/?tenant=" + tenantParam + "&filter=" + filter + "&page=" +
+      nextPage;
   });
   $prevButton.click(function() {
     var filter = $("#selectedTaskFilter").find('option:selected').val();
-    window.location.href = "/portal/portal/tasks/?tenant="+tenantParam+"&filter="+filter+"&page="+prevPage;
+    window.location.href = "/portal/portal/tasks/?tenant=" + tenantParam + "&filter=" + filter + "&page=" +
+      prevPage;
   });
-/*all tasks page js end*/
+  /*all tasks page js end*/
 });

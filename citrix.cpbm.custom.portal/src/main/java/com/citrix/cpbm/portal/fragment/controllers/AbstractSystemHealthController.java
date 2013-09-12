@@ -185,10 +185,10 @@ public abstract class AbstractSystemHealthController extends AbstractAuthenticat
 
     return "service.health.chart";
   }
-  
+
   @RequestMapping(value = ("/get_health_status_for_service_instances"), method = RequestMethod.GET)
-  public String getHealthStatusForAllServiceInstances(@RequestParam(value = "tenant", required = false) String tenantParam,
-      HttpServletRequest request, ModelMap map) {
+  public String getHealthStatusForAllServiceInstances(
+      @RequestParam(value = "tenant", required = false) String tenantParam, HttpServletRequest request, ModelMap map) {
     User user = getCurrentUser(true);
     Tenant tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
@@ -201,16 +201,16 @@ public abstract class AbstractSystemHealthController extends AbstractAuthenticat
       Health health = healthService.getSystemHealthStatus(new Date(), serviceInstance);
       ServiceNotification latestNotification = healthService.getLatestNotification(serviceInstance);
       String message = messageSource.getMessage(health.getDescription(), null, getSessionLocale(request));
-      
+
       currentInstanceValues.put("message", message);
       currentInstanceValues.put("name", serviceInstance.getName());
       currentInstanceValues.put("id", serviceInstance.getUuid());
       currentInstanceValues.put("status", health.toString());
-      if(latestNotification!=null){
+      if (latestNotification != null) {
         currentInstanceValues.put("latestNotification", latestNotification.getDescription());
       }
       serviceInstanceValues.add(currentInstanceValues);
-      
+
     }
     map.addAttribute("healthStatusMapForServiceInstances", serviceInstanceValues);
 

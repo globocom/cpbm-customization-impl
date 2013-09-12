@@ -61,6 +61,9 @@
       </c:if>
     </c:if>
     <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/<spring:theme code="css"/>"/>
+    <link rel="stylesheet" media="all and (min-device-width: 481px) and (max-device-width: 1024px) and (orientationortrait)" href="<%=request.getContextPath()%>/css/ipad_custom.css" />
+    <link rel="stylesheet" media="all and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation:landscape)" href="<%=request.getContextPath()%>/css/ipad_custom.css" /> 
+    <link rel="stylesheet" media="all and (min-device-width: 1025px)" href="<%=request.getContextPath()%>/css/ipad_custom.css" /> 
     <link rel="stylesheet" type="text/css" media="only screen and (device-width: 768px) and (-webkit-min-device-pixel-ratio: 1)" href="<%=request.getContextPath()%>/css/ipad_custom.css"/>
 		<tiles:insertAttribute name="pageHeader" ignore="true"/>
 		<tiles:insertAttribute name="customHeader" ignore="true"/>
@@ -148,7 +151,6 @@ var g_dictionary = {
   example: '<spring:message javaScriptEscape="true" code="label.example"/>',
   youCanNotSubscribeUntilYouAcceptTheTermsAndConditions: '<spring:message javaScriptEscape="true" code="you.can.not.subscribe.until.you.accept.the.terms.and.conditions"/>',
   youCanNotContinueUntilYouAcceptTheTermsAndConditions: '<spring:message javaScriptEscape="true" code="you.can.not.continue.until.you.accept.the.terms.and.conditions"/>',
-  failedToCreateCloudStackAccountWithBillingInfo : '<spring:message javaScriptEscape="true" code="failed.to.create.CloudStack.account.with.billing.info"/>',	
   passwordValidationeError: '<spring:message javaScriptEscape="true" code="js.errors.password"/>',
   inAction:'<spring:message javaScriptEscape="true" code="label.in.action"/>',
   phoneValidationError:"<spring:message javaScriptEscape="true" code="js.errors.phone"/>",
@@ -197,6 +199,9 @@ var g_dictionary = {
   dialogInvalidFactor: '<spring:message javaScriptEscape="true" code="label.invalidFactor"/>',
   error_single_sign_on: '<spring:message javaScriptEscape="true" code="error.single.signon.failure"/>'
 };
+var fusion_chart_localized_strings={
+		ChartNoDataText:'<spring:message javaScriptEscape="true" htmlEscape="false" code="message.no.data.to.show"/>'
+}
 var i18nDayNames = [
   '<fmt:formatDate pattern="EEE" value="<%=new java.util.Date(0,0,0)%>"/>',
   '<fmt:formatDate pattern="EEE" value="<%=new java.util.Date(0,0,1)%>"/>',
@@ -270,7 +275,7 @@ var i18nMonthNames = [
     </div>    
     <div id="dialog_info" title='<spring:message code="lightbox.title.information"/>' style="margin:10px;display: none">
     </div>
-    <div id="utilityrates_lightbox" class="utility_table" title='<spring:message code="view.utility.rates"/>' style="display:none;padding:10px;max-height:800px;">
+    <div id="utilityrates_lightbox" class="utility_table" title='<spring:message code="label.view.utility.rates.dialog.title"/>' style="display:none;padding:10px;max-height:800px;">
     </div> 
     <div id="full_page_spinning_wheel" style="display: none;">
       <div class="widget_blackoverlay widget_full_page"></div>

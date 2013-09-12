@@ -16,7 +16,11 @@
         "payAmount" : {
           required : true,
           twoDecimal : true
-        }
+        },
+            "paymentMemo" : {
+              maxlength : 255
+            }
+        
       },
       messages : {
         "payAmount" : {
@@ -47,8 +51,19 @@
 			<p style="float: left; margin-top: 10px; color: black">
 				<c:out value="${salesLedgerRecord.tenant.currency.sign}" />
 			</p>
-			<input class="text" id="payAmount" name="payAmount"/>
+			<input class="text" id="payAmount" name="payAmount" style="width: 165px;"/>
 		</div>
-		<div class="main_addnew_formbox_errormsg" id="payAmountError" style="margin: 10px 0px 0 120px; width: 60%"></div>
+		<div class="main_addnew_formbox_errormsg" id="payAmountError" style="margin: 4px 0px 0 111px; width: 60%"></div>
+		<div class="db_gridbox_columns" style="width: 30%;">
+			<div class="db_gridbox_celltitles details">
+				<strong><spring:message code="label.record.payment.invoice.payment.memo" /></strong>
+			</div>
+		</div>
+		<div class="db_gridbox_columns" style="width: 45%;">
+			<p style="float: left; margin-top: 10px; color: black">				
+			</p>
+			<textarea style="width: 200px; height: 80px;" tabindex="2" cols="20" rows="3" class="longtextbox"name="paymentMemo" id="paymentMemo"></textarea>
+		</div>
+		<div class="main_addnew_formbox_errormsg" id="paymentMemoError" style="margin: 4px 0px 0 111px; width: 60%"></div>
 	</form:form>
 </div>

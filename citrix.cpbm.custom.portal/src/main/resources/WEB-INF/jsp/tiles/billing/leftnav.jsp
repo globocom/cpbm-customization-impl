@@ -34,7 +34,7 @@
 	          </div>
           </sec:authorize>
           <sec:authorize access="hasRole('ROLE_FINANCE_CRUD')">
-            <c:if test="${tenant.accountType.depositRequired && tenant.accountType.paymentModes == 8}">
+            <c:if test="${tenant.accountType.depositRequired}">
               <div class="thirdlevel_subtab off" id="l3_billing_record_deposit_tab" >
                 <div class="thirdlevel_menuicons payments"></div>
                 <p style="max-width:170px;"><spring:message code="label.billing.leftnav.record.deposit"/>

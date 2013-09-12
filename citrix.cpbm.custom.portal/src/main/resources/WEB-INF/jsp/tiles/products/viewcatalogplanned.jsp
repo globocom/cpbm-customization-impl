@@ -4,10 +4,11 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/channels.js"></script>
 
-
+<spring:message code="date.format" var="ddMMMyyyy_format"/>
 <div class="widget_details_actionbox">
    <ul class="widget_detail_navpanel" style="float:right; 0 5px 0 0">
      <li class="widget_detail_navpanel"  style="float:left;" id="product_bundle_current"><a href="javascript:void(0);" style="color:#000;"><spring:message code="page.level2.bundles"/></a></li>
@@ -21,6 +22,19 @@
 <div id="catalog_productbundle_current">
 
      <div class="widget_details_actionbox">
+          <span class="widget_detail_navpanel" style="margin: 10px 10px;" id="second_line_under_planned_span">
+          <spring:message code="label.last.sync.with.reference.catalog"/> 
+            <span id="last_sync_date">
+                <c:choose>
+                  <c:when test="${lastSyncDate != null}">
+                      <fmt:formatDate value="${lastSyncDate}" pattern="${ddMMMyyyy_format}" />
+                  </c:when>
+                  <c:otherwise>
+                      <spring:message code="ui.label.plan.date.not.yet.set"/>
+                  </c:otherwise>
+               </c:choose>
+            </span>
+          </span>
       <div style="float: right; display: block;" id="bundle_level_menu" class="widget_subactions grid action_menu_container">
         <div style="display:None;" id="bundle_add_menu" class="widget_actionpopover_grid">
           <div class="widget_actionpopover_top grid"></div>

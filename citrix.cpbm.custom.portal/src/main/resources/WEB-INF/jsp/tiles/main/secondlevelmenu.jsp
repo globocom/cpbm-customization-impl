@@ -102,10 +102,6 @@
          </div>
        </c:forEach>
       </c:if>
-      <div id="TicketError" class="errorinvisible" >
-        <div class="clearboth"></div>
-           <div id="msg" class="errorinvisible"></div>
-       </div>
        
   <tiles:insertDefinition name="warnings"></tiles:insertDefinition>
       

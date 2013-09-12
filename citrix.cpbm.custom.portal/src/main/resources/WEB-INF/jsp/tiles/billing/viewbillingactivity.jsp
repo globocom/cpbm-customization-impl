@@ -93,7 +93,7 @@
                            <span class="descpwrapper" style="width:340px;">
                             <span class="descpwrapper desctext">
                               <strong><spring:message code="label.invoice.total.amount"/>: </strong>
-                              <a class="invoiceDetailsLink" href="javascript:void(0);" style="cursor:default;" id="moreLink_<c:out value='${invoice.uuid}'/>" >
+                              <a class="invoiceDetailsLink" href="javascript:void(0);" style="cursor:default;" id="moreLink_<c:out value='${invoice.uuid}'/>" type="${invoice.type}">
                                   <c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" value="${invoice.amount}" maxFractionDigits="${minFractionDigits}" minFractionDigits="${minFractionDigits}" />
                               </a>
                             </span>

@@ -11,6 +11,7 @@ import com.vmops.event.DepositReceived;
 import com.vmops.event.DeviceFraudDetectionEvent;
 import com.vmops.event.MissingProductEvent;
 import com.vmops.event.PasswordResetRequest;
+import com.vmops.event.PaymentInfoChangeEvent;
 import com.vmops.event.ProvisionResourceFailedEvent;
 import com.vmops.event.SubscriptionActivation;
 import com.vmops.event.SubscriptionChangeEvent;
@@ -156,17 +157,28 @@ public class CustomTopicSubscriber implements TopicSubscriber {
 
   @Override
   public void receive(ProvisionResourceFailedEvent event) {
-    logger.info("###Received ProvisionResourceFailedEvent event for subscription id"+event.getSubscriptionId());
+    logger.info("###Received ProvisionResourceFailedEvent event for subscription id" + event.getSubscriptionId());
   }
 
   @Override
   public void receive(PasswordResetRequest event) {
-    logger.info("###Received PasswordResetRequest event for user:"+event.getUsername());
+    logger.info("###Received PasswordResetRequest event for user:" + event.getUsername());
   }
 
   @Override
   public void receive(DepositReceived event) {
-    logger.info("###Received DepositReceived event for user:"+event.getUsername() +" with amount:"+event.getAmount());
+    logger.info("###Received DepositReceived event for user:" + event.getUsername() + " with amount:"
+        + event.getAmount());
+  }
+
+  /*
+   * (non-Javadoc)
+   * @see com.citrix.cpbm.subscriber.TopicSubscriber#receive(com.vmops.event.PaymentInfoChangeEvent)
+   */
+  @Override
+  public void receive(PaymentInfoChangeEvent event) {
+    logger.info("###Received PaymentInfoChangeEvent event for business transaction: " + event.getTransactionId());
+
   }
 
 }

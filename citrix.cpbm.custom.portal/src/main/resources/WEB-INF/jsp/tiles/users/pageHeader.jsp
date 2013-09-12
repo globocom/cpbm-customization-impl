@@ -3,9 +3,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 	
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/auditlogs.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.selectboxes.min.js"></script>
-<c:set var="countries" scope="page" value="${user.countryList}"/>
 <jsp:include page="/WEB-INF/jsp/tiles/shared/country_states.jsp"></jsp:include>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.stateselect.js"></script>
 <script language="javascript">

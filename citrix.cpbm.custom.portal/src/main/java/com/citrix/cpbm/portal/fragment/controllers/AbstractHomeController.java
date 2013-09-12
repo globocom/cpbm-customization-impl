@@ -66,6 +66,7 @@ import com.vmops.service.billing.BillingAdminService;
 import com.vmops.service.billing.BillingService;
 import com.vmops.service.exceptions.UsageServiceException;
 import com.vmops.usage.model.ProductUsage;
+import com.vmops.utils.DateUtils;
 import com.vmops.utils.JSONUtils;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
@@ -133,7 +134,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     map.addAttribute("maintenance", healthService.listPlannedNotifications(null));
     map.addAttribute("showWarningOfServiceInstanceNotEnabled", true);
 
-    User user = getCurrentUser(true);
+    User user = getCurrentUser();
 
     // setting login success message only when request come from login page.
     if (session.getAttribute("loginreturn") != null && session.getAttribute("loginreturn").equals("success")) {
@@ -144,8 +145,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
       // createloginauditrecord(user, request);
     }
 
-    if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled) && config
-        .getValue(Names.com_citrix_cpbm_directory_mode).equals("pull"))) {
+    if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
       if (user.getPassword() == null) {
         map.clear();
         return "redirect:/portal/users/" + user.getParam() + "/myprofile";
@@ -162,21 +162,15 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
 
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     if ((userService.hasAnyAuthority(user, "ROLE_ACCOUNT_CRUD", "ROLE_ACCOUNT_MGMT", "ROLE_FINANCE_CRUD"))
         && (Boolean) request.getAttribute("isSurrogatedTenant")) {
-
       user = tenant.getOwner();
       map.addAttribute("showUserProfile", true);
-      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
-
       setPage(map, Page.CRM_HOME);
-
     } else {
-      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
-
       setPage(map, Page.HOME);
     }
-
     fetchCurrencies(map);
     fetchEvents(user, map);
 
@@ -186,8 +180,10 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
         try {
 
           AccountStatement provisionalAccountStatement = billingService.getOrCreateProvisionalAccountStatement(tenant);
-          map.addAttribute("chartData", JSONUtils.toJSONString(reportService.getChartData(user, "tenant",
-              getSessionLocale(request), provisionalAccountStatement)));
+          HashMap<String, Object> spend_vs_budget_chart_data = reportService.getChartData(user, "tenant",
+              getSessionLocale(request), provisionalAccountStatement);
+          map.addAttribute("chartData", JSONUtils.toJSONString(spend_vs_budget_chart_data));
+          map.addAttribute("spend_vs_budget_chart_data_obj", spend_vs_budget_chart_data);
 
           addToChartData(map, provisionalAccountStatement);
 
@@ -369,7 +365,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     Tenant tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
 
-    List<User> usersForGravatar = userService.list(0, 10, null, null, false, null, tenant.getId().toString(), null);
+    List<User> usersForGravatar = userService.list(1, 7, null, null, false, null, tenant.getId().toString(), null);
     List<String> gravatarUrlsForUsers = new ArrayList<String>();
     // now generate the gravatar url for each of these users and return the gravatars
     for (User u : usersForGravatar) {
@@ -437,13 +433,12 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     // get alerts
     List<Event> alerts_for_today = new ArrayList<Event>();
     List<Event> alerts_for_yesterday = new ArrayList<Event>();
-    Date generated_at;
 
     try {
-      generated_at = eventService.showEventDates(user, "Today", 0, 0, null, null, null, null).get(0).getGeneratedAt();
       DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-      String date = formatter.format(generated_at);
+      String date = formatter.format(new Date());
       alerts_for_today = eventService.showEvents(user, date, 1, 2, null, null, null, null, null, false);
+      // alerts_for_today = eventService.showEventsByDate(user, date, 1, 2);
 
       if (alerts_for_today.size() > 2) {
         map.addAttribute("alerts_for_today", alerts_for_today.subList(0, 2));
@@ -455,10 +450,8 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     }
 
     try {
-      generated_at = eventService.showEventDates(user, "Yesterday", 0, 0, null, null, null, null).get(0)
-          .getGeneratedAt();
       DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-      String date = formatter.format(generated_at);
+      String date = formatter.format(DateUtils.minusOneDay(new Date()));
       alerts_for_yesterday = eventService.showEvents(user, date, 1, 1, null, null, null, null, null, false);
 
       if (alerts_for_yesterday.size() > 1) {
@@ -560,7 +553,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
         }
 
       List<Product> products = productService.listProductsByServiceInstance(serviceInstance, 0, 60);// adding
-// perPage as 60 for now so that dashboard UI pagination doesn't break
+      // perPage as 60 for now so that dashboard UI pagination doesn't break
       int productImageCount = 0;
       BigDecimal totalSpendByInstance = BigDecimal.ZERO;
       for (Product product : products) {
@@ -750,7 +743,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
         }
 
       List<Product> products = productService.listProductsByServiceInstance(serviceInstance, 0, 60);// adding
-// perPage as 60 for now so that dashboard UI pagination doesn't break
+      // perPage as 60 for now so that dashboard UI pagination doesn't break
       int productImageCount = 0;
 
       BigDecimal totalSpendByTenantByInstance = BigDecimal.ZERO;

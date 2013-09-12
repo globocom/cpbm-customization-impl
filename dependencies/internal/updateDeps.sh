@@ -8,6 +8,7 @@ do
 	if [ ! -f $line ]; then 
 		mkdir -p $line
 	fi
-	cp -r $DEPENDENCY/* $line
+	cp -r $DEPENDENCY/*.jar $line
+	cp -r $DEPENDENCY/*.pom $line
 done < dependencies.txt
 

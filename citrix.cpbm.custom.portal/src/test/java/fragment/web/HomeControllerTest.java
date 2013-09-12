@@ -253,7 +253,7 @@ public class HomeControllerTest extends WebTestsBase {
     String resultString = controller.getHomeItems(systemTenant, tenant.getParam(), instance.getUuid(), map, request);
     Assert.assertNotNull(resultString);
     Assert.assertEquals("home.items.view", resultString);
-    
+
     List<Map<String, Object>> dashboardItemsList = (List<Map<String, Object>>) map.get("dashboardItems");
     int count = 0;
     for (int i = 0; i < dashboardItemsList.size(); i++) {
@@ -338,8 +338,7 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", systemTenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
 
-    String resultString = controller.getHomeItems(systemTenant, systemTenant.getParam(), null, map,
-        request);
+    String resultString = controller.getHomeItems(systemTenant, systemTenant.getParam(), null, map, request);
     Assert.assertNotNull(resultString);
     Assert.assertEquals("home.items.view", resultString);
 
@@ -458,7 +457,6 @@ public class HomeControllerTest extends WebTestsBase {
     }
   }
 
-
   /**
    * @author Abhaik
    * @throws ConnectorManagementServiceException
@@ -470,12 +468,12 @@ public class HomeControllerTest extends WebTestsBase {
     User user = userDAO.find(3L);
     user.setClearPassword(null);
     asUser(user);
-    
+
     Tenant systemTenant = tenantService.getSystemTenant();
     Tenant tenant = tenantDAO.find(3L);
     request.setAttribute("effectiveTenant", tenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
-    
+
     session.setAttribute("loginreturn", "success");
 
     String resultString = controller.home(systemTenant, tenant.getParam(), false, map, session, request);

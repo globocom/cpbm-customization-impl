@@ -16,7 +16,6 @@ import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonMethod;
 import org.codehaus.jackson.annotate.JsonProperty;
 
-
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.vmops.model.AccountType;
 import com.vmops.model.Address;
@@ -104,14 +103,13 @@ public class TenantForm {
   private List<CurrencyValue> currencyValueList = new ArrayList<CurrencyValue>();
 
   private Long userLimit;
-  
- private List<Country> countryList;
-  
+
+  private List<Country> countryList;
+
   public List<Country> getCountryList() {
     return countryList;
   }
 
-  
   public void setCountryList(List<Country> countryList) {
     this.countryList = countryList;
   }

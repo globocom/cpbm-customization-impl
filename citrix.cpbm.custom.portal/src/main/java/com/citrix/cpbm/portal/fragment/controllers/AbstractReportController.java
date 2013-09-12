@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-
 import com.vmops.model.AccountType;
 import com.vmops.model.Event;
 import com.vmops.model.Report;
@@ -164,16 +163,16 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
         }
       }
     }
-    String status = getReport(customerRankReportForm.getReportMonth(),
-        customerRankReportForm.getReportYear(), modelMap, CustomerRankReport.class, Page.REPORTS_CUSTOMER_RANK,
-        getSessionLocale(request));
+    String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
+        modelMap, CustomerRankReport.class, Page.REPORTS_CUSTOMER_RANK, getSessionLocale(request));
     if (status.equalsIgnoreCase("failure"))
       return "failure";
+    modelMap.addAttribute("customerRankReport", customerRankReportForm);
+    modelMap.addAttribute("rotateYAxisLabels", true);
+    modelMap.addAttribute("formatNumber", true);
     logger.debug("###Exiting customerRank(modelMap) method @POST");
     return "report.customerRank";
   }
-
-  
 
   @RequestMapping(value = "/product_usage", method = {
     RequestMethod.GET
@@ -213,12 +212,13 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
         }
       }
     }
-    String status = getReport(customerRankReportForm.getReportMonth(),
-        customerRankReportForm.getReportYear(), modelMap, MonthlyProductUsage.class, Page.REPORTS_PRODUCT_USAGE,
-        getSessionLocale(request));
+    String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
+        modelMap, MonthlyProductUsage.class, Page.REPORTS_PRODUCT_USAGE, getSessionLocale(request));
     if (status.equalsIgnoreCase("failure"))
       return "failure";
+    modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productUsage");
+    modelMap.addAttribute("rotateXAxisLabels", true);
     logger.debug("###Exiting productUsage(modelMap) method @POST");
     return "report.usageByProduct";
   }
@@ -259,19 +259,19 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
           return "report.usageByProductBundle";
       }
     }
-    String status = getReport(customerRankReportForm.getReportMonth(),
-        customerRankReportForm.getReportYear(), modelMap, MonthlyProductBundleUsage.class,
-        Page.REPORTS_PRODUCT_BUNDLE_USAGE, getSessionLocale(request));
+    String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
+        modelMap, MonthlyProductBundleUsage.class, Page.REPORTS_PRODUCT_BUNDLE_USAGE, getSessionLocale(request));
     if (status.equalsIgnoreCase("failure"))
       return "failure";
+    modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productbundleUsage");
+    modelMap.addAttribute("rotateXAxisLabels", true);
     logger.debug("###Exiting productBundleUsage(modelMap) method @POST");
     return "report.usageByProductBundle";
   }
 
   @RequestMapping(value = "/custom_reports", method = RequestMethod.GET)
-  public String customReports(ModelMap modelMap, HttpServletRequest request)
-      throws Exception {
+  public String customReports(ModelMap modelMap, HttpServletRequest request) throws Exception {
     logger.debug("###Entering in customReports(modelMap) method @GET");
     List<ScheduledCustomReports> list = reportService.getAllScheduledCustomReports();
     Map<String, String> reportMapping = new HashMap<String, String>();
@@ -351,7 +351,8 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     try {
       String portalTempPath = config.getValue(Names.com_citrix_cpbm_portal_settings_temp_path);
       File targetZipFile = new File(portalTempPath + File.separator + filename + ".zip");
-      reportService.sendReportAsEmail(StringUtils.split(emailIds, emailDelemeter), "Test", null, targetZipFile);
+      reportService.sendReportAsEmail(getCurrentUser().getUsername(), StringUtils.split(emailIds, emailDelemeter),
+          "Test", null, targetZipFile);
       String message = "report.sent";
       String messageArguments = getCurrentUser().getUsername();
       Event alert = new Event(new Date(), message, messageArguments, getCurrentUser(), Source.PORTAL, Scope.USER,
@@ -410,10 +411,10 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     modelMap.addAttribute("report", report);
     modelMap.addAttribute("tenant", getCurrentUser().getTenant());
   }
-  
+
   @SuppressWarnings("rawtypes")
-  private String getReport(String month, String year, ModelMap modelMap,
-      Class genericReportKlass, Page page, Locale locale) {
+  private String getReport(String month, String year, ModelMap modelMap, Class genericReportKlass, Page page,
+      Locale locale) {
     Report report = null;
     HashMap<String, Object> parameters = new HashMap<String, Object>();
     Calendar cal = Calendar.getInstance();
@@ -432,8 +433,8 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     Object[] args = new Object[] {
         parameters, dataSource, config, locale, messageSource
     };
-    
-    Class[] parameterTypes = new Class[] { 
+
+    Class[] parameterTypes = new Class[] {
         Map.class, DataSource.class, Configuration.class, Locale.class, MessageSource.class
     };
     GenericReport generic_report;
@@ -456,7 +457,7 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     }
     return "success";
   }
-  
+
   private void addMonthAndYearToMap(ModelMap modelMap, Locale locale) {
     Calendar cal = Calendar.getInstance();
     String monthsArr[] = new DateFormatSymbols(locale).getMonths();

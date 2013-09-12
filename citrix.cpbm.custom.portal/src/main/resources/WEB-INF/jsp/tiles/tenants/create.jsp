@@ -185,6 +185,7 @@ var product_action="";
                           </div>
                           <div class="main_addnew_formbox_errormsg_popup" id="confirmEmailError"></div>
                         </li>
+                        <tiles:insertDefinition name="user.custom.fields"></tiles:insertDefinition>
                         <li id ="trialCodeBox">
                           <span class="label" ><form:label  path="trialCode"><spring:message code="label.userInfo.promo.code"/></form:label></span>
                             <spring:message code="label.userInfo.promo.code.tooltip" var="i18nUsernameTooltip"/>

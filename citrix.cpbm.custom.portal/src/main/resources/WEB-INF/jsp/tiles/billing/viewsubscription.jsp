@@ -31,14 +31,16 @@
                        <c:if test="${subscription.state=='NEW'}">
                         <li class="cancelsubscription_link" id="<c:out value="cancel_subscription_1_${subscription.param}"/>" title='<spring:message code="label.subscription.details.cancel"/>'><spring:message code="label.subscription.details.cancel"/></li>
                         </c:if>
-                        <c:choose>
-                          <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and toProvision}">
-                            <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.provision.resource"/>'><spring:message code="ui.label.provision.resource"/></li>
-                          </c:when>
-                          <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and !toProvision}">
-                            <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.edit.resource"/>'><spring:message code="ui.label.edit.resource"/></li>
-                          </c:when>
-                        </c:choose>
+                        <c:if test="${!isPayAsYouGoChosen}">
+                          <c:choose>
+                            <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and toProvision}">
+                              <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.provision.resource"/>'><spring:message code="ui.label.provision.resource"/></li>
+                            </c:when>
+                            <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and !toProvision}">
+                              <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.edit.resource"/>'><spring:message code="ui.label.edit.resource"/></li>
+                            </c:when>
+                          </c:choose>
+                        </c:if>
                       </c:when>
                       <c:otherwise>
                               <li id="no_actions_available_volume" title='<spring:message code="label.no.actions.available"/>'><spring:message code="label.no.actions.available"/></li>
@@ -361,7 +363,7 @@
                     </div>
                     <div class="grid_row_cell"  style="padding:1px;width: 30%;">
                       <div class="row_celltitles" style="padding: 1px;">
-                        <c:out value="${subscription.resourceType.resourceTypeName}"></c:out>
+                        <spring:message code="${subscription.serviceInstance.service.serviceName}.ResourceType.${subscription.resourceType.resourceTypeName}.name"/>
                       </div>
                     </div>
                   </div>
@@ -391,22 +393,8 @@
                       </div>
                     </div>
                   </div>
-
-                  <div class="<c:out value="grid_rows odd"/>">
-                    <div class="grid_row_cell" style="padding: 1px;width: 40%;">
-                      <div class="row_celltitles" style="padding: 1px;">
-                        <spring:message code="ui.label.service"/>
-                      </div>
-                    </div>
-                    <div class="grid_row_cell"  style="padding:1px;width: 30%;">
-                      <div class="row_celltitles" style="padding: 1px;">
-                        <c:out value="${subscription.serviceInstance.service.serviceName}"></c:out>
-                      </div>
-                    </div>
-                  </div>
+                  
                 </div>
-
-        
     </div>
 </div>
 <input type="hidden" id="current_subscription_param"  value="<c:out value="${subscription.param}"/>"/>

@@ -97,12 +97,13 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
                     <div class="widget_grid_description">
                     <span class='navicon <c:out value="${bundleTypeClass}"/>' id="details_nav_icon" style="height: 16px;margin-top:5px;"></span>
                         <span style="width:175px;" id="bundletype">
+                          <c:set var="currentServiceName" value="${productBundle.serviceInstanceId.service.serviceName}"></c:set>
                           <c:choose>
                             <c:when test="${empty productBundle.resourceType}">
                               <spring:message code="bundle.type.service"/>
                             </c:when>
                             <c:otherwise>
-                              <spring:message code="${productBundle.resourceType.resourceTypeName}"/>
+                              <spring:message code="${currentServiceName}.ResourceType.${productBundle.resourceType.resourceTypeName}.name"/>
                             </c:otherwise>
                           </c:choose>
                         </span>

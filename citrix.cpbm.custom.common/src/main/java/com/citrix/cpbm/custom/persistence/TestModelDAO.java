@@ -1,6 +1,5 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package com.citrix.cpbm.custom.persistence;
-
 
 import com.citrix.cpbm.custom.model.TestModel;
 import com.vmops.persistence.GenericDAO;

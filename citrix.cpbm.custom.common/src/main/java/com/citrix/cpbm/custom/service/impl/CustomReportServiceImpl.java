@@ -33,9 +33,7 @@ import com.vmops.utils.transfer.FtpConfiguration;
 import com.vmops.utils.transfer.FtpTransfer;
 
 /**
- * 
  * @author Damoderr
- *
  */
 @Service("customReportService")
 public class CustomReportServiceImpl implements CustomReportService {

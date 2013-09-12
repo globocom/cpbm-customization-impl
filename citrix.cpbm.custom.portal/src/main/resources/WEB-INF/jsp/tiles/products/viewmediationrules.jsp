@@ -30,7 +30,10 @@
 </div>
 
   <c:forEach items="${mediationRules}" var="mediationRule" varStatus="status">
-  
+  <c:set var="convFactor" value="${mediationRule.conversionFactor}" />
+  <c:if test="${mediationRule.monthly==true}">
+    <c:set var="convFactor" value="${mediationRule.conversionFactor * hoursInMonths}" />
+  </c:if>
      <c:choose>
         <c:when test="${status.index % 2 == 0}">
           <c:set var="rowClass" value="odd"/>
@@ -55,7 +58,7 @@
   
            <div class="widget_grid_cell borders" style="height:27px; width: 143px;">
               <span class="celltext">
-                 <c:out value="${mediationRule.conversionFactor}" />
+                 <c:out value="${convFactor}" />
               </span>
            </div>
   

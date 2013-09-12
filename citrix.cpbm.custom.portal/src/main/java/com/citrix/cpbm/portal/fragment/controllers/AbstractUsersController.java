@@ -24,7 +24,6 @@ import javax.validation.Valid;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.LocaleUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -42,10 +41,10 @@ import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.util.WebUtils;
 
-
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
+import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
 import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
 import com.citrix.cpbm.platform.spi.View;
@@ -96,7 +95,7 @@ import com.vmops.web.validators.UserStep1Validator;
 
 /**
  * Controller that handles all user pages.
- *
+ * 
  * @author vijay
  */
 public abstract class AbstractUsersController extends AbstractAuthenticatedController {
@@ -152,6 +151,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Find which all services are enable for given user
+   * 
    * @param userParam
    * @param map
    * @return
@@ -193,7 +193,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       @RequestParam(value = "user", required = false) String userParam,
       @RequestParam(value = "page", required = false, defaultValue = "1") int page,
       @RequestParam(value = "perPage", required = false, defaultValue = "14") int perPage,
-      @RequestParam(value = "showAddNewUserWizard", required = false) String showAddNewUserWizard, HttpServletRequest request) {
+      @RequestParam(value = "showAddNewUserWizard", required = false) String showAddNewUserWizard,
+      HttpServletRequest request) {
 
     logger.debug("###Entering in list(tenant,showAll,tenantId,map) method @GET");
 
@@ -272,8 +273,9 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
     if (totalUsers - (page * perPage) > 0) {
       map.addAttribute("enable_next", "True");
-    } else
+    } else {
       map.addAttribute("enable_next", "False");
+    }
     map.addAttribute("current_page", page);
 
     logger.debug("###Exiting list(req,map,session) method");
@@ -281,85 +283,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   }
 
   /**
-   * This method returns back the list of users, belonging to a particular tenant. The method also paginates the users
-   * based on the pagination parameters provided. Finally it also filters the users based on the letter range provided.
-   *
-   * @param tenant -- owning account
-   * @param currentPage
-   * @param perPage
-   * @param size
-   * @param charRange -- range of chars for start and end for filtering
-   * @param showAll
-   * @param tenantId -- owning account id
-   * @param map -- model map
-   * @param session -- http session obj
-   * @return
-   */
-  @SuppressWarnings("unchecked")
-  @RequestMapping(value = {
-    "/account_userpopup"
-  }, method = RequestMethod.GET)
-  public String listUsersPerTenantWithPagination(@ModelAttribute("currentTenant") Tenant tenant,
-      @RequestParam(value = "currentPage", required = false, defaultValue = "1") String currentPage,
-      @RequestParam(value = "perPage", required = false, defaultValue = "6") String perPage,
-      @RequestParam(value = "size", required = false) String size,
-      @RequestParam(value = "charRange", required = false, defaultValue = "All") String charRange,
-      @RequestParam(value = "showAll", required = false, defaultValue = "false") boolean showAll,
-      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session) {
-    logger.debug("###Entering in list(tenant,showAll,tenantId,map) method @GET");
-    // setPage(map, Page.ACCOUNT_MGMT_ALL_USERS);
-    int currentPageValue = Integer.parseInt(currentPage);
-    int perPageValue = Integer.parseInt(perPage);
-    map.addAttribute("isShowingAll", showAll);
-    List<User> results;
-    if (isAdmin() && showAll) {
-      results = userService.list(0, 0, null, null, false, null, null, null);
-    } else if (isAdmin() && tenantParam != null) {
-      tenant = tenantService.get(tenantParam);
-      results = userService.list(currentPageValue, perPageValue, null, null, false, null, tenant.getId().toString(),
-          charRange);
-    } else {
-      results = userService.list(currentPageValue, perPageValue, null, null, false, null, tenant.getId().toString(),
-          charRange);
-    }
-    int sizeInt = 0;
-    if (StringUtils.isEmpty(size)) {
-      sizeInt = userService.count(null, null, tenant.getId().toString(), charRange);
-    } else {
-      sizeInt = Integer.parseInt(size);
-    }
-    map.addAttribute("tenant", tenant);
-    map.addAttribute("users", results);
-    map.addAttribute("size", results != null ? results.size() : 0);
-    // get session data having any error messages
-    String errormsg = (String) session.getAttribute("errormsg");
-    session.removeAttribute("errormsg");
-    if (errormsg != null && errormsg.equals("true")) {
-      List<String> globalErrors = (List<String>) session.getAttribute("globalErrors");
-      if (globalErrors != null) {
-        map.addAttribute("globalErrors", globalErrors);
-      }
-      List<String> errorMsgList = (List<String>) session.getAttribute("errorMsgList");
-      if (errorMsgList != null) {
-        map.addAttribute("errorMsgList", errorMsgList);
-      }
-      map.addAttribute("errormsg", errormsg);
-
-      session.removeAttribute("errorMsgList");
-      session.removeAttribute("globalErrors");
-    }
-    // check user limit
-    if (!isAllowedToAddUser(tenant)) {
-      map.addAttribute("isUsersMaxReached", "Y");
-    }
-
-    setPaginationValues(map, perPageValue, currentPageValue, sizeInt, charRange);
-    logger.debug("###Exiting list(req,map,session) method");
-    return "users1.list";
-  }
-
-  /**
    * Method for User Creation Step1
+   * 
    * @param tenant
    * @param tenantParam
    * @param map
@@ -369,7 +294,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    */
   @RequestMapping(value = "/new/step1", method = RequestMethod.GET)
   public String createStepOne(@ModelAttribute("currentTenant") Tenant tenant,
-      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session, HttpServletRequest request) {
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpSession session,
+      HttpServletRequest request) {
     logger.debug("Entering user create: createStepOne ");
     UserForm user = new UserForm();
     user.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
@@ -430,6 +356,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     try {
       privilegeService.runAsPortal(new PrivilegedAction<Void>() {
 
+        @Override
         public Void run() {
           userService.getUserByParam("username", username, false);
           return null;
@@ -454,7 +381,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   @RequestMapping(value = "/new/step1", method = RequestMethod.POST)
   public String createUserStepTwo(@ModelAttribute("user") UserForm form, BindingResult result,
       @ModelAttribute("userTenant") com.citrix.cpbm.access.Tenant tenant, ModelMap map, HttpServletRequest request,
-      HttpSession session){
+      HttpSession session) {
     logger.debug("### Entering user create : createUserStepTwo");
     boolean validationError = false;
     session.setAttribute("currentStep", "newUserCreationStep1");
@@ -589,6 +516,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Called from Click on finish Button of Custom Email message page.
+   * 
    * @param form {@link UserForm}
    * @param result {@link BindingResult}
    * @param tenant {@link Tenant}
@@ -598,8 +526,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    */
 
   @RequestMapping(value = "/new/step2", method = RequestMethod.POST)
-  public String createStepThree(@ModelAttribute("user") UserForm form, BindingResult result, @ModelAttribute("userTenant") com.citrix.cpbm.access.Tenant tenant,
-      ModelMap map, HttpServletRequest request) {
+  public String createStepThree(@ModelAttribute("user") UserForm form, BindingResult result,
+      @ModelAttribute("userTenant") com.citrix.cpbm.access.Tenant tenant, ModelMap map, HttpServletRequest request) {
     logger.debug("### Entering user create : createStepThree");
     if (isAdmin() && tenant.getParam().equals(getTenant().getParam())) {
       setPage(map, Page.ADMIN_ALL_USERS);
@@ -643,6 +571,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Edit Myprofile
+   * 
    * @param currentTab Selected Tab
    * @param userParam User Param
    * @param request {@link HttpServletRequest}
@@ -650,14 +579,14 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return View
    */
   @RequestMapping(value = {
-      "/{userParam}/edit", "/{userParam}/myprofile"
+      "/{userParam}/myprofile"
   }, method = RequestMethod.GET)
   public String edit(@RequestParam(value = "activeTab", required = false) String currentTab,
       @PathVariable String userParam, HttpServletRequest request, ModelMap map) {
     logger.debug("###Entering in edit(userId,map) method @GET");
 
     User user = userService.get(userParam);
-    com.citrix.cpbm.access.User userProxy = (com.citrix.cpbm.access.User)CustomProxy.newInstance(user);
+    com.citrix.cpbm.access.User userProxy = (com.citrix.cpbm.access.User) CustomProxy.newInstance(user);
     User logedInUser = getCurrentUser();
     if (isAdmin() && isSurrogatedTenant(getCurrentUser().getTenant(), user.getTenant().getParam())) {
       if (userService.hasAuthority(logedInUser, "ROLE_USER_CRUD")) {
@@ -669,7 +598,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
     customFieldService.populateCustomFields(user);
     customFieldService.populateCustomFields(user.getTenant());
-    UserForm form = new UserForm((com.citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
 
     TelephoneVerificationService tele_verification_service = (TelephoneVerificationService) connectorManagementService
@@ -694,8 +623,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     // add cloud servcies and cloud for left menu
     List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
     map.addAttribute("services", services);
-    map.addAttribute("categories",
-        connectorConfigurationManager.getAllCategories(CssdkConstants.CLOUD));
+    map.addAttribute("categories", connectorConfigurationManager.getAllCategories(CssdkConstants.CLOUD));
     map.addAttribute("countPerCategory", connectorConfigurationManager.getServiceCountPerCategory(services));
 
     // Phone number is mandatory for the owner of the tenant.
@@ -706,33 +634,14 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     }
 
     try {
-      form.setUserClone((com.citrix.cpbm.access.User)CustomProxy.newInstance((User) user.clone()));
+      form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
     } catch (CloneNotSupportedException e) {
       logger.debug("Cloning of user failed", e);
-    }
-    String view = "users.edit";
-    // verifying for myprofile page
-    if (request.getPathInfo() != null && request.getPathInfo().contains("myprofile")) {
-      view = "users.edit.myprofile";
-    } else {
-      List<Profile> valideProfiles = profileService.listValidProfiles(user.getTenant(), null);
-      // get user profile id
-      Long profileId = null;
-      for (Profile profile : valideProfiles) {
-        if (profile.getName().equals("User")) {
-          profileId = profile.getId();
-          break;
-        }
-      }
-      if (userProxy.getProfile().isOperationsProfile()) {
-        valideProfiles.remove(profileService.getProfile(profileId));
-      }
-      form.setValidProfiles(valideProfiles);
     }
 
     List<AuditLog> auditLogs = auditLogService.getAuditLogsByTypeId(user, 1, 1);
     if (CollectionUtils.isNotEmpty(auditLogs)) {
-        map.addAttribute("lastLogin", auditLogs.get(0).getCreationDate());
+      map.addAttribute("lastLogin", auditLogs.get(0).getCreationDate());
     }
     map.addAttribute("logins", auditLogService.getLoginCount(user.getId()));
 
@@ -748,7 +657,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     map.addAttribute("tenant", CustomProxy.newInstance(user.getTenant()));
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
     map.addAttribute("userLocale", this.getLocaleDisplayName(userProxy.getLocale()));
-    map.addAttribute("cloudstackEndPoint", this.getCloudStackEndPointUrl());
+    map.addAttribute("cloudstackEndPoint", getCloudStackEndPointUrl());
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     String doNotShowPasswordEditLink = "false";
     if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
@@ -758,16 +667,16 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     map.addAttribute("doNotShowPasswordEditLink", doNotShowPasswordEditLink);
 
     List<UserAlertPreferences> alertsPrefs = userAlertPreferencesService.listAllUserAlertPreferences(user);
-    if(CollectionUtils.isNotEmpty(alertsPrefs)){
-        map.addAttribute("alertsPrefs", alertsPrefs);
-        map.addAttribute("alertsPrefsSize", alertsPrefs.size());
-        List<UserAlertPreferences> verifiedAlertPrefs = getVerifiedEmailPreferences(alertsPrefs);
-        if (CollectionUtils.isNotEmpty(verifiedAlertPrefs)){
-            map.addAttribute("showChangePrimaryEmailLink", "true");
-        }
+    if (CollectionUtils.isNotEmpty(alertsPrefs)) {
+      map.addAttribute("alertsPrefs", alertsPrefs);
+      map.addAttribute("alertsPrefsSize", alertsPrefs.size());
+      List<UserAlertPreferences> verifiedAlertPrefs = getVerifiedEmailPreferences(alertsPrefs);
+      if (CollectionUtils.isNotEmpty(verifiedAlertPrefs)) {
+        map.addAttribute("showChangePrimaryEmailLink", "true");
+      }
     }
     map.addAttribute("addAlertEmailLimit",
-            config.getIntValue(Names.com_citrix_cpbm_accountManagement_resourceLimits_registered_emailAddresses));
+        config.getIntValue(Names.com_citrix_cpbm_accountManagement_resourceLimits_registered_emailAddresses));
 
     map.addAttribute("activeTab", currentTab);
     map.addAttribute("userAlertEmailForm", new UserAlertEmailForm(user, AlertType.USER_ALERT_EMAIL));
@@ -775,58 +684,60 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
     setPage(map, Page.USER_PERSONAL_PROFILE);
     logger.debug("###Exiting edit(userId,map) method @GET");
-    return view;
+    return "users.edit.myprofile";
   }
 
-    private List<UserAlertPreferences> getVerifiedEmailPreferences(List<UserAlertPreferences> alertsPrefs) {
-        List<UserAlertPreferences> verifiedAlertPrefs = new ArrayList<UserAlertPreferences>();
-        UserAlertPreferences alertPref = null;
-        Iterator<UserAlertPreferences> alertPrefIt = alertsPrefs.iterator();
-        while (alertPrefIt.hasNext()) {
-            alertPref = alertPrefIt.next();
-            if (alertPref.isEmailVerified())
-                verifiedAlertPrefs.add(alertPref);
-        }
-        return verifiedAlertPrefs;
+  private List<UserAlertPreferences> getVerifiedEmailPreferences(List<UserAlertPreferences> alertsPrefs) {
+    List<UserAlertPreferences> verifiedAlertPrefs = new ArrayList<UserAlertPreferences>();
+    UserAlertPreferences alertPref = null;
+    Iterator<UserAlertPreferences> alertPrefIt = alertsPrefs.iterator();
+    while (alertPrefIt.hasNext()) {
+      alertPref = alertPrefIt.next();
+      if (alertPref.isEmailVerified()) {
+        verifiedAlertPrefs.add(alertPref);
+      }
     }
+    return verifiedAlertPrefs;
+  }
 
-    private Country getCountry(com.citrix.cpbm.access.User userProxy) {
-        Country country = null;
-        String isdCode = userProxy.getCountryCode();
-        if (isdCode == null) {
-            country = countryService.locateCountryByCode(userProxy.getObject().getTenant().getAddress().getCountry());
+  private Country getCountry(com.citrix.cpbm.access.User userProxy) {
+    Country country = null;
+    String isdCode = userProxy.getCountryCode();
+    if (isdCode == null) {
+      country = countryService.locateCountryByCode(userProxy.getObject().getTenant().getAddress().getCountry());
+    } else {
+      if (isdCode.trim().equals("1")) {
+        country = countryService.locateCountryByCode("US");
+      } else {
+        List<Country> countryList = countryService.locateCountryByIsdCode(isdCode);
+        if (countryList.size() > 0) {
+          country = countryList.get(0);
         } else {
-            if (isdCode.trim().equals("1")) {
-                country = countryService.locateCountryByCode("US");
-            } else {
-                List<Country> countryList = countryService.locateCountryByIsdCode(isdCode);
-                if (countryList.size() > 0) {
-                    country = countryList.get(0);
-                } else {
-                    country = countryService.locateCountryByCode("US");
-                }
-            }
+          country = countryService.locateCountryByCode("US");
         }
-        return country;
+      }
     }
+    return country;
+  }
 
-    /**
-     * Validates Email.
-     * @param userParam User Param
-     * @param email Email Id
-     * @param request {@link HttpServletRequest}
-     * @param map {@link ModelMap}
-     * @return true if email is not blacklisted otherwise false.
-     */
-    @RequestMapping(value = "/{userParam}/validateemail", method = RequestMethod.GET)
-    @ResponseBody
-    public String validateemail(@PathVariable String userParam,
-            @RequestParam(value = "email", required = false) String email, HttpServletRequest request, ModelMap map) {
-        if (email != null && email.length() > 0 && isEmailBlacklisted(email.toLowerCase())) {
-            return "false";
-        }
-        return "true";
+  /**
+   * Validates Email.
+   * 
+   * @param userParam User Param
+   * @param email Email Id
+   * @param request {@link HttpServletRequest}
+   * @param map {@link ModelMap}
+   * @return true if email is not blacklisted otherwise false.
+   */
+  @RequestMapping(value = "/{userParam}/validateemail", method = RequestMethod.GET)
+  @ResponseBody
+  public String validateemail(@PathVariable String userParam,
+      @RequestParam(value = "email", required = false) String email, HttpServletRequest request, ModelMap map) {
+    if (email != null && email.length() > 0 && isEmailBlacklisted(email.toLowerCase())) {
+      return "false";
     }
+    return "true";
+  }
 
   /**
    * This method is the helper for the gravatar url generation This method gets the user email, trims it for leading and
@@ -846,7 +757,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Hex representation of the incoming email address string
-   *
+   * 
    * @param array -- email address byte array
    * @return -- hex rep string
    */
@@ -860,7 +771,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * This method represents the MD5 Hash of the input message
-   *
+   * 
    * @param message
    * @return -- md5 encoded string
    */
@@ -877,7 +788,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   /**
    * This method returns back the gravatar url of a user, given his user id/email address The gravatar url is of the
    * format: http://www.gravatar.com/avatar/<email hash>
-   *
+   * 
    * @param form
    * @param result
    * @param map
@@ -885,7 +796,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return
    */
   @RequestMapping(value = {
-      "/{userParam}/edit", "/{userParam}/myprofile"
+      "/{userParam}/myprofile"
   }, method = RequestMethod.POST)
   public String edit(@PathVariable String userParam, @Valid @ModelAttribute("user") UserForm form,
       BindingResult result, HttpServletRequest request, ModelMap map, SessionStatus status) {
@@ -935,8 +846,9 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
       if (connectorManagementService.getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION) != null
           && ((TelephoneVerificationService) connectorManagementService
-              .getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION)).isEnabled())
+              .getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION)).isEnabled()) {
         phoneVerificationEnabled = true;
+      }
 
       if (phoneVerificationEnabled && !(userService.hasAuthority(logedInUser, "ROLE_ACCOUNT_CRUD"))) {
         String generatedPhoneVerificationPin = (String) request.getSession().getAttribute("phoneVerificationPin");
@@ -956,8 +868,9 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     // Set the phone number
     user.setPhone(phoneNo);
 
-    if ((user.getObject().getTenant().getState() == State.ACTIVE || user.getObject().getTenant().getState() == State.LOCKED || user.getObject().getTenant()
-        .getState() == State.SUSPENDED) && !user.getEmail().equals(userClone.getEmail())) {
+    if ((user.getObject().getTenant().getState() == State.ACTIVE
+        || user.getObject().getTenant().getState() == State.LOCKED || user.getObject().getTenant().getState() == State.SUSPENDED)
+        && !user.getEmail().equals(userClone.getEmail())) {
       userAlertPreferencesService.createUserAlertPreference(user.getObject(), user.getEmail(), AlertType.USER_EMAIL);
       // set email so that it wont be updated in users table and other places
       user.setEmail(userClone.getEmail());
@@ -970,17 +883,12 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     status.setComplete();
     logger.debug("###Exiting edit(form,result,map,status) method @POST");
     map.clear();
-    // verifying for myprofile page
-    if (request.getPathInfo() != null && request.getPathInfo().contains("myprofile")) {
-      return "redirect:/portal/users/" + user.getObject().getParam() + "/myprofile";
-    } else {
-      return "redirect:/portal/users/" + user.getObject().getParam() + "/edit";
-    }
+    return "redirect:/portal/users/" + user.getObject().getParam() + "/myprofile";
   }
 
   /**
    * This method is invoked when we try to change the password from the MyProfile Page
-   *
+   * 
    * @param form
    * @param result
    * @param request
@@ -997,16 +905,25 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   public String changePassword(@Valid @ModelAttribute("user") UserForm form, BindingResult result,
       HttpServletRequest request, ModelMap map, SessionStatus status, @RequestParam("userParam") String userParam) {
     com.citrix.cpbm.access.User user = form.getUser();
-    if ((user.getObject().getOldPassword()).equals(userService.get(userParam).getPassword())) {
-      user.setPassword(form.getUser().getPassword());
-      user = userService.save(user, result);
-      return "success";
+    if (!config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)) {
+      if ((user.getObject().getOldPassword()).equals(userService.get(userParam).getPassword())) {
+        user.setPassword(form.getUser().getPassword());
+        user = userService.save(user, result);
+        return "success";
+      }
+      return "failure";
+    } else if (config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
+      if (userService.authenticateUserInDirectoryService(user.getUsername(), user.getObject().getPlainOldPassword())) {
+        User Ldapuser = userService.get(userParam);
+        userService.updateUserPassword(form.getUser().getObject().getLdapPassword(), Ldapuser.getUuid());
+        return "success";
+      }
+      return "failure";
     }
     return "failure";
   }
 
   /**
-   *
    * @param tenant
    * @param term
    * @param tenantParam
@@ -1024,43 +941,42 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     return "users.search_results";
   }
 
-      /**
-     *
-     * @param tenant
-     * @param tenantParam
-     * @param manage
-     * @param serviceInstanceUUID
-     * @param map
-     * @return
-     */
-    @RequestMapping(value = "/cloud_login", method = RequestMethod.GET)
-    @ResponseBody
-    public String login(@ModelAttribute("currentTenant") Tenant tenant,
-            @RequestParam(value = "tenant", required = false) String tenantParam,
-            @RequestParam(value = "manage", required = false) String manage,
-            @RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID,
-            ModelMap map) {
-        logger.debug("###Entering in login(tenantId,map) method @GET");
-        String url = null;
-        Tenant userTenant = tenant;
+  /**
+   * @param tenant
+   * @param tenantParam
+   * @param manage
+   * @param serviceInstanceUUID
+   * @param map
+   * @return
+   */
+  @RequestMapping(value = "/cloud_login", method = RequestMethod.GET)
+  @ResponseBody
+  public String login(@ModelAttribute("currentTenant") Tenant tenant,
+      @RequestParam(value = "tenant", required = false) String tenantParam,
+      @RequestParam(value = "manage", required = false) String manage,
+      @RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID, ModelMap map) {
+    logger.debug("###Entering in login(tenantId,map) method @GET");
+    String url = null;
+    Tenant userTenant = tenant;
 
-        if (isAdmin() && tenantParam != null) {
-            userTenant = tenantService.get(tenantParam);
-        }
-        url = getConsoleURL(userTenant, map, serviceInstanceUUID);
-        if (url == null) {
-            throw new NoSuchUserException("Invalid user for params");
-        }
-        if (manage != null && manage.length() > 0) {
-            url = url + "&lp=" + manage;
-        }
-        logger.debug("###Exiting login(tenantId,map) method @GET");
-        map.clear();
-        return url;
+    if (isAdmin() && tenantParam != null) {
+      userTenant = tenantService.get(tenantParam);
     }
+    url = getConsoleURL(userTenant, map, serviceInstanceUUID);
+    if (url == null) {
+      throw new NoSuchUserException("Invalid user for params");
+    }
+    if (manage != null && manage.length() > 0) {
+      url = url + "&lp=" + manage;
+    }
+    logger.debug("###Exiting login(tenantId,map) method @GET");
+    map.clear();
+    return url;
+  }
 
   /**
    * Private Method to get Console URL for the Tenant.
+   * 
    * @param tenantId
    * @param map
    * @return String
@@ -1083,7 +999,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * list the alerts
-   *
+   * 
    * @param map
    * @return String
    */
@@ -1110,7 +1026,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * list the alerts
-   *
+   * 
    * @param map
    * @return String
    */
@@ -1135,7 +1051,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * edit timezone and preferred language
-   *
+   * 
    * @param map
    * @return <string,string> Map
    */
@@ -1166,9 +1082,11 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
         user.setLocale(null);
       }
       user = userService.save(user, result);
-      form.setUser(user);
+      User savedUser = userService.getUserByParam("username", user.getUsername(), false);
+      form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(savedUser));
+      map.addAttribute("user", form);
     } catch (Exception e) {
-      logger.debug("###Exiting editPrefs(String,map) method @POST - failure");
+      logger.error("###Exiting editPrefs(String,map) method @POST - failure", e);
       returnMap.put("failure", "failure");
       localeChange = false;
       returnMap.put("localeChange", "false");
@@ -1194,76 +1112,37 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   }
 
-
   /**
    * Verify if password is correct for the current user
-   *
+   * 
    * @param map
    * @return
    */
   @RequestMapping(value = "/verify_password", method = RequestMethod.POST)
   @ResponseBody
-  public Map<String, Object> verifyPassword(@RequestParam(value = "password", required = true) final String password, HttpServletRequest request) {
+  public Map<String, Object> verifyPassword(@RequestParam(value = "password", required = true) final String password,
+      HttpServletRequest request) {
 
     Map<String, Object> mapresult = new HashMap<String, Object>();
     logger.debug("###Entering in verifyPassword(password,session) method @POST");
     User user = getCurrentUser();
     List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
     try {
-      credentialList = connectorConfigurationManager.getApiCredentials(user, this.getTenant(), password, getSessionLocale(request), false);
+      credentialList = connectorConfigurationManager.getApiCredentials(user, getTenant(), password,
+          getSessionLocale(request), false);
     } catch (Exception e) {
       logger.error(e);
     }
-      mapresult.put("userCredentialList", credentialList);
-      mapresult.put("success", true);
+    mapresult.put("userCredentialList", credentialList);
+    mapresult.put("success", true);
 
-    logger.debug("###Exiting verifyPassword(password,map) method @POST returning  for "+user.getName());
+    logger.debug("###Exiting verifyPassword(password,map) method @POST returning  for " + user.getName());
     return mapresult;
   }
 
   /**
-   * list the subscriptions
-   *
-   * @param map
-   * @return string
-   */
-  @RequestMapping(value = "/subscribe", method = RequestMethod.GET)
-  public String viewSpendAlertSubscriptions(ModelMap map) {
-    logger.debug("###Entering in viewSubscriptions(map) method @GET");
-    List<SpendAlertSubscription> subscriptions = new ArrayList<SpendAlertSubscription>();
-    setPage(map, Page.SUBSCRIPTIONS);
-    User user = getCurrentUser();
-    subscriptions = notificationService.getUserSubscriptions(user);
-    map.addAttribute("subscriptions", subscriptions);
-    map.addAttribute("size", subscriptions.size());
-
-    logger.debug("###Exiting viewSubscriptions(map) method @GET");
-    return "users.subscriptions";
-  }
-
-  /**
    * creates subscriptions
-   *
-   * @param form
-   * @param map
-   * @return string
-   */
-  @RequestMapping(value = "/subscribe/new", method = RequestMethod.GET)
-  public String createSpendAlertSubscription(ModelMap map) {
-    logger.debug("###Entering in createSubscription(map) method @GET");
-    setPage(map, Page.HOME);
-    // map.addAttribute(Level3.Dashboard.getName(), "");
-    // map.addAttribute(Level3.Subscriptions.getName(), "on");
-    User user = getCurrentUser();
-    CustomAlertForm subscriptionForm = new CustomAlertForm(user);
-    map.addAttribute("subscriptionForm", subscriptionForm);
-    map.addAttribute("currency", user.getTenant().getCurrency());
-    return "users.subscriptions.create";
-  }
-
-  /**
-   * creates subscriptions
-   *
+   * 
    * @param form
    * @param map
    * @return string
@@ -1290,7 +1169,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * deletes subscription
-   *
+   * 
    * @param subscriptionId
    * @param map
    * @return
@@ -1309,6 +1188,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Method is used in case of Requesting Password reset.
+   * 
    * @param form
    * @param request
    * @param map
@@ -1328,22 +1208,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   }
 
   /**
-   * To get Audit Log
-   * @param userParam
-   * @param map
-   * @return String
-   */
-  @RequestMapping(value = "/{userParam}/audit_log", method = RequestMethod.POST)
-  public String getAuditLog(@PathVariable String userParam, ModelMap map) {
-    logger.debug("###Entering in getAuditLog(userId,map) method @GET");
-    User user = userService.get(userParam);
-    map.addAttribute("auditLogs", auditLogService.getAuditLogsByTypeId(user));
-    logger.debug("###Exiting getAuditLog(userId,map) method @GET");
-    return "auditlog.show";
-  }
-
-  /**
    * Method used for deleting.
+   * 
    * @param userParam
    * @param map
    * @return null
@@ -1352,8 +1218,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    */
   @RequestMapping(value = "/{userParam}/delete", method = RequestMethod.GET)
   @ResponseBody
-  public String delete(@PathVariable String userParam, ModelMap map) throws NoSuchUserException
-       {
+  public String delete(@PathVariable String userParam, ModelMap map) throws NoSuchUserException {
     User user = userService.get(userParam);
     Tenant tenant = user.getTenant();
     if (tenant.getState().equals(State.ACTIVE)) {
@@ -1370,6 +1235,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Gives the view for deactivating the user
+   * 
    * @param userParam
    * @param action
    * @param map which is to be filled by method. Contains all the UI accessible variables as an attribute
@@ -1391,6 +1257,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Deactivates the given user
+   * 
    * @param userParam
    * @param map which is to be filled by method. Contains all the UI accessible variables as an attribute
    * @return
@@ -1401,12 +1268,12 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     User user = userService.get(userParam);
     userService.disableAndSendDeactivationMail(user);
     map.addAttribute("user", user);
-    userService.sendDeactivationMail(user);
     return user;
   }
 
   /**
-   *  Gives the view for activating the user
+   * Gives the view for activating the user
+   * 
    * @param userParam
    * @param action
    * @param map which is to be filled by method. Contains all the UI accessible variables as an attribute
@@ -1429,6 +1296,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Activates the given user
+   * 
    * @param userParam
    * @param map
    * @return
@@ -1439,12 +1307,12 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     User user = userService.get(userParam);
     userService.enableAndSendActivationMail(user);
     map.addAttribute("user", user);
-    userService.sendActivationMail(user, "activation.email.sent", user.getUsername());
     return user;
   }
 
   /**
    * To resend user verification Email.
+   * 
    * @param userParam
    * @param action
    * @param map
@@ -1468,7 +1336,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Validates for max custom spend alerts
-   *
+   * 
    * @param id
    * @return String
    */
@@ -1550,6 +1418,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Retrieve the User time zone offset
+   * 
    * @param currentTenant
    * @param tenantParam
    * @param request
@@ -1578,6 +1447,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Retrieves country ISD code
+   * 
    * @param countyCode
    * @return
    */
@@ -1602,7 +1472,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   }
 
   /**
-   *
    * @param userName
    * @return
    */
@@ -1624,6 +1493,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Retrieves the view Object for user settings
+   * 
    * @param currentTenant
    * @param instanceUuid
    * @return
@@ -1651,6 +1521,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Retrieves the view Object for Account settings
+   * 
    * @param tenantParam
    * @param instanceUuid
    * @return
@@ -1660,13 +1531,12 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   public View resolveViewForAccountSettingFromServiceInstance(
       @RequestParam(value = "tenantParam", required = true) String tenantParam,
       @RequestParam(value = "instanceUuid", required = true) String instanceUuid) {
-     return resolveViewForAccountSettingsFromServiceInstance(tenantParam, instanceUuid);
+    return resolveViewForAccountSettingsFromServiceInstance(tenantParam, instanceUuid);
   }
 
   @ResponseBody
   @RequestMapping(value = "/enable_services", method = RequestMethod.POST)
-  public Map<String, Boolean> enableServices(
-      @RequestParam(value = "tenantparam", required = true) String tenantParam,
+  public Map<String, Boolean> enableServices(@RequestParam(value = "tenantparam", required = true) String tenantParam,
       @RequestParam(value = "userparam", required = true) String userParam) {
 
     Tenant tenant = tenantService.get(tenantParam);
@@ -1676,6 +1546,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   /**
    * Returns Last Login
+   * 
    * @param auditLogs
    * @return Date
    */

@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import junit.framework.Assert;
 
@@ -1995,10 +1997,10 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     User user = userService.get("2ee0d598-00c8-4e12-b307-1cab5305e867");
     ServiceInstance serviceInstance = serviceInstanceDAO.find(1L);
     ServiceResourceType serviceResourceType = serviceResourceTypeDAO.find(1L);
-    Map<String, String> serviceDiscriminatorMap = new HashMap<String, String>();
+    Map<String, Set<String>> serviceDiscriminatorMap = new HashMap<String, Set<String>>();
 
     serviceDiscriminatorMap.clear();
-    serviceDiscriminatorMap.put("Template", "210");
+    serviceDiscriminatorMap.put("Template", makeSet("210"));
     List<ProductBundleRevision> pbRevisions = bundleService.getProductBundleRevisions(serviceInstance,
         serviceResourceType, serviceDiscriminatorMap, null, user, null);
     Assert.assertNotNull("product bundle revision list cannot be null", pbRevisions);
@@ -2033,5 +2035,196 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     Map<String, List<String>> componentCollection = bundleController.getServiceResourceComponents(1L);
     Assert.assertNotNull(componentCollection);
     Assert.assertTrue(componentCollection.get("filters").contains("zone"));
+  }
+
+  private Set<String> makeSet(String s) {
+    Set<String> result = new HashSet<String>();
+    result.add(s);
+    return result;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testSortProductBundles() {
+    map = new ModelMap();
+    String result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "all", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    List<ProductBundle> productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    int size = productBundleList.size();
+    List<ProductBundleRevision> allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
+    int size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    map = new ModelMap();
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "publish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    map = new ModelMap();
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "unpublish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && !productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "all", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "publish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "unpublish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && !productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "all", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "publish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
+    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "unpublish", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("bundles.sort", result);
+    Assert.assertNotNull(map.get("bundlesList"));
+    productBundleList = (List<ProductBundle>) map.get("bundlesList");
+    Assert.assertNotNull(productBundleList);
+    size = productBundleList.size();
+    allProductBundleRevisions = channelService.getChannelRevision(null,
+        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
+    size2 = 0;
+    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
+      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
+          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
+          && !productBundleRevision.getProductBundle().getPublish()) {
+        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
+        size2++;
+      }
+    }
+    Assert.assertEquals(size2, size);
+
   }
 }

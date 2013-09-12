@@ -11,6 +11,9 @@
 </div>
 <div style="text-align:right">
   <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD')">
-    <spring:message code="version.id" /> (<spring:message code="build.id" />)
+  
+  <a href="../license/index.html" target="_blank"><spring:message code="version.id" /> </a> (<spring:message code="build.id" />) 
+  
+      
   </sec:authorize>
 </div>

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
 import com.vmops.model.Authority;
 import com.vmops.model.Profile;
 import com.vmops.model.ProfileAuthority;
@@ -39,15 +38,14 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
   Logger logger = Logger.getLogger(AbstractProfilesController.class);
 
   @RequestMapping(value = "/show", method = RequestMethod.GET)
-  public String showProfiles(@RequestParam(value = "profileId", required = false) String profileId, @RequestParam(
-      value = "selectedTab", required = false) String selectedTab, ModelMap map) {
+  public String showProfiles(@RequestParam(value = "profileId", required = false) String profileId,
+      @RequestParam(value = "selectedTab", required = false) String selectedTab, ModelMap map) {
 
     logger.debug("###Entering in showProfiles method @GET");
 
     List<ProfileForm> opsProfileList = getProfileFormList(profileService.listAllProfilesOfClass(Scope.GLOBAL), true);
 
-    List<ProfileForm> nonOpsProfileList =
-        getProfileFormList(profileService.listAllProfilesOfClass(Scope.TENANT), false);
+    List<ProfileForm> nonOpsProfileList = getProfileFormList(profileService.listAllProfilesOfClass(Scope.TENANT), false);
     List<ProfileForm> allProfileList = new ArrayList<ProfileForm>(opsProfileList);
     allProfileList.addAll(nonOpsProfileList);
     map.addAttribute("allProfileList", allProfileList);
@@ -98,8 +96,7 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
     }
 
     List<ProfileForm> opsProfileList = getProfileFormList(profileService.listAllProfilesOfClass(Scope.GLOBAL), true);
-    List<ProfileForm> nonOpsProfileList =
-        getProfileFormList(profileService.listAllProfilesOfClass(Scope.TENANT), false);
+    List<ProfileForm> nonOpsProfileList = getProfileFormList(profileService.listAllProfilesOfClass(Scope.TENANT), false);
     List<ProfileForm> allProfileList = new ArrayList<ProfileForm>(opsProfileList);
     allProfileList.addAll(nonOpsProfileList);
     map.addAttribute("allProfileList", allProfileList);
@@ -144,8 +141,8 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
       for (Authority authorityScope : authorityScopeLst) {
         boolean found = false;
         boolean required = false;
-        String serviceName =
-            authorityScope.getCpbmService() == null ? "" : authorityScope.getCpbmService().getServiceName();
+        String serviceName = authorityScope.getCpbmService() == null ? "" : authorityScope.getCpbmService()
+            .getServiceName();
 
         pos++;
         for (ProfileAuthority auth : authList) {

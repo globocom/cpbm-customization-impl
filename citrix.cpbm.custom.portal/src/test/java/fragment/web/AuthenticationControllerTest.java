@@ -44,6 +44,7 @@ import com.vmops.service.ConfigurationService;
 import com.vmops.service.UserAlertPreferencesService;
 import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.service.exceptions.UserAuthorizationInvalidException;
+import com.vmops.utils.CryptoUtils;
 
 public class AuthenticationControllerTest extends WebTestsBase {
 
@@ -451,9 +452,10 @@ public class AuthenticationControllerTest extends WebTestsBase {
     User user = createTestUserInTenant(getDefaultTenant());
     UserAlertPreferences uap = userAlertPreferencesService.createUserAlertPreference(user, "test@test123.com",
         AlertType.USER_ALERT_EMAIL);
-    controller.verifyAdditionalEmail(user.getAuthorization(0), user.getParam(), uap.getId(),
+    controller.verifyAdditionalEmail(user.getAuthorization(0), user.getParam(),
+        CryptoUtils.encrypt(uap.getEmailAddress(), CryptoUtils.keyGenerationSeed),
         getRequestTemplate(HttpMethod.GET, "/verify_additional_email"), map, session);
-    UserAlertPreferences uapSaved = userAlertPreferencesService.locateUserAlertPreference(uap.getId());
+    UserAlertPreferences uapSaved = userAlertPreferencesService.locateUserAlertPreference(user, uap.getEmailAddress());
     Assert.assertTrue(uapSaved.isEmailVerified());
   }
 
@@ -464,9 +466,10 @@ public class AuthenticationControllerTest extends WebTestsBase {
     UserAlertPreferences uap = userAlertPreferencesService.createUserAlertPreference(user, "test@test123.com",
         AlertType.USER_ALERT_EMAIL);
     asAnonymous();
-    controller.verifyAdditionalEmail(user.getAuthorization(0), user.getParam(), uap.getId(),
+    controller.verifyAdditionalEmail(user.getAuthorization(0), user.getParam(),
+        CryptoUtils.encrypt(uap.getEmailAddress(), CryptoUtils.keyGenerationSeed),
         getRequestTemplate(HttpMethod.GET, "/verify_additional_email"), map, session);
-    UserAlertPreferences uapSaved = userAlertPreferencesService.locateUserAlertPreference(uap.getId());
+    UserAlertPreferences uapSaved = userAlertPreferencesService.locateUserAlertPreference(user, uap.getEmailAddress());
     Assert.assertTrue(uapSaved.isEmailVerified());
   }
 
@@ -476,11 +479,12 @@ public class AuthenticationControllerTest extends WebTestsBase {
     User user = createTestUserInTenant(getDefaultTenant());
     UserAlertPreferences uap = userAlertPreferencesService.createUserAlertPreference(user, "test@test1234.com",
         AlertType.USER_ALERT_EMAIL);
-    controller.verifyAdditionalEmail(user.getAuthorization(1), user.getParam(), uap.getId(),
+    controller.verifyAdditionalEmail(user.getAuthorization(1), user.getParam(),
+        CryptoUtils.encrypt(uap.getEmailAddress(), CryptoUtils.keyGenerationSeed),
         getRequestTemplate(HttpMethod.GET, "/verify_additional_email"), map, session);
-    userAlertPreferencesService.locateUserAlertPreference(uap.getId());
+    userAlertPreferencesService.locateUserAlertPreference(user, uap.getEmailAddress());
   }
-  
+
   @Test
   public void testRequestCall() throws Exception {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
@@ -505,7 +509,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     Assert.assertEquals("Failed to make call. Please try later.", actualResult.get("message"));
     Assert.assertEquals("failed", actualResult.get("result"));
   }
-  
+
   @Test
   public void tesRequestSMS() throws Exception {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
@@ -515,7 +519,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     Map<String, String> actualResult = controller.requestSMS(user.getUsername(), null, request);
     Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
     Assert.assertEquals("success", actualResult.get("result"));
-    request.getSession().setAttribute("vmops__reset_password__key",user.getUsername());
+    request.getSession().setAttribute("vmops__reset_password__key", user.getUsername());
     actualResult = controller.requestSMS(user.getUsername(), "pick", request);
     Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
     Assert.assertEquals("success", actualResult.get("result"));
@@ -530,7 +534,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
     Assert.assertEquals("success", actualResult.get("result"));
   }
-  
+
   @Test
   public void testVerifyPhoneVerificationPINForUnlock() throws Exception {
     MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
@@ -542,5 +546,5 @@ public class AuthenticationControllerTest extends WebTestsBase {
     actualResult = controller.verifyPhoneVerificationPINForUnlock("PIN", request);
     Assert.assertEquals("success", actualResult);
   }
-  
+
 }

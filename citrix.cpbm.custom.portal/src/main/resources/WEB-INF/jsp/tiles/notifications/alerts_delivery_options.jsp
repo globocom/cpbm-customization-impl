@@ -25,10 +25,9 @@ var dictionary = {
       	<div class="widget_grid" style="margin-top:10px; border:none;">
         	<!-- Header -->
         	<div class="widget_grid header">
-            <div class="widget_grid_cell" style="width:34%;"><span class="header"><spring:message code="ui.notification.delivery.type" /></span></div>
-            <div class="widget_grid_cell" style="width:35%;"><span class="header"><spring:message code="ui.notification.delivery.email.address" /></span></div>
-            <div class="widget_grid_cell" style="width:15%;"><span class="header"><spring:message code="ui.notification.delivery.isverified" /></span></div>
-            <div class="widget_grid_cell" style="width:15%;"><span class="header"><spring:message code="ui.notification.delivery.action" /></span></div>
+            <div class="widget_grid_cell" style="width:49%;"><span class="header"><spring:message code="ui.notification.delivery.email.address" /></span></div>
+            <div class="widget_grid_cell" style="width:25%;"><span class="header"><spring:message code="ui.notification.delivery.isverified" /></span></div>
+            <div class="widget_grid_cell" style="width:25%;"><span class="header"><spring:message code="ui.notification.delivery.action" /></span></div>
           </div>
           <!-- Header end -->
             <c:choose>
@@ -47,11 +46,9 @@ var dictionary = {
                 </c:otherwise>
               </c:choose> 
               <div class="widget_grid <c:out value="${rowClass}"/>" id="div<c:out value="${preference.id}"/>">
-                <div class="widget_grid_cell" style="width:34%;"><span class="celltext"><spring:message code="ui.notification.delivery.additional.email" /></span> </div>
-          
-                <div class="widget_grid_cell" style="width:35%;"><span class="celltext" id="email-<c:out value="${preference.id}"/>"><c:out value="${preference.emailAddress}"/></span> </div>
+                <div class="widget_grid_cell" style="width:49%;"><span class="celltext" id="email-<c:out value="${preference.id}"/>"><c:out value="${preference.emailAddress}"/></span> </div>
                 
-                <div class="widget_grid_cell" style="width:15%;">
+                <div class="widget_grid_cell" style="width:26%;">
                   <c:choose>
                     <c:when test="${!preference.emailVerified}">
                       <span class="unverifiedicon">

@@ -100,8 +100,6 @@ public class AccessDecisionTest extends WebTestsBase {
         }, {
             HttpMethod.GET, "/portal/portal/users/1"
         }, {
-            HttpMethod.GET, "/portal/portal/users/1/edit"
-        }, {
             HttpMethod.PUT, "/portal/portal/users/1"
         }, {
             HttpMethod.GET, "/portal/portal/tenants"
@@ -151,8 +149,6 @@ public class AccessDecisionTest extends WebTestsBase {
             HttpMethod.POST, "/portal/portal/users"
         }, {
             HttpMethod.GET, "/portal/portal/users/1"
-        }, {
-            HttpMethod.GET, "/portal/portal/users/1/edit"
         }, {
             HttpMethod.PUT, "/portal/portal/users/1"
         },
@@ -209,10 +205,6 @@ public class AccessDecisionTest extends WebTestsBase {
         }, {
             HttpMethod.GET, "/portal/portal/users/1/myprofile"
         }, {
-            HttpMethod.GET, "/portal/portal/users/1/edit"
-        },
-
-        {
             HttpMethod.GET, "/portal/portal/tenants/1/edit"
         },
 
@@ -261,8 +253,6 @@ public class AccessDecisionTest extends WebTestsBase {
     Object[][] invalid = {
         {
             HttpMethod.GET, "/portal/portal/users/1"
-        }, {
-            HttpMethod.GET, "/portal/portal/users/1/edit"
         }, {
             HttpMethod.PUT, "/portal/portal/users/1"
         }, {

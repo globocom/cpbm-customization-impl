@@ -65,18 +65,18 @@ public class AdminControllerTest extends WebTestsBase {
 
   @Autowired
   private ConfigurationDAO configurationDAO;
- 
+
   @Autowired
   private ServiceInstanceDao serviceInstanceDao;
-  
+
   @Autowired
   private EmailTemplatesDAO emailTemplatesDAO;
-  
+
   @Autowired
   private EventDAO eventDAO;
 
   private MockHttpServletRequest request;
-  
+
   private MockHttpServletResponse response;
 
   @Before
@@ -232,14 +232,15 @@ public class AdminControllerTest extends WebTestsBase {
 
   @Test
   public void testupdateEmailTemplate() {
-    controller.updateEmailTemplate(EmailTemplate.WELCOME_EMAIL.toString(), "en_US","JUNIT TEST", new MockHttpServletRequest(),
-        map);
+    controller.updateEmailTemplate(EmailTemplate.WELCOME_EMAIL.toString(), "en_US", "JUNIT TEST",
+        new MockHttpServletRequest(), map);
     Assert.assertTrue(map.containsAttribute("templateName"));
     Assert.assertTrue(map.containsAttribute("emailText"));
     Assert.assertTrue(map.containsAttribute("parseError"));
     Assert.assertTrue(map.containsAttribute("lastUpdatedAt"));
     Assert.assertEquals(EmailTemplate.WELCOME_EMAIL.toString(), map.get("templateName").toString());
-    EmailTemplates emailTemplate = emailTemplateService.getEmailTemplateByLocale(EmailTemplate.WELCOME_EMAIL.name(), "en_US");
+    EmailTemplates emailTemplate = emailTemplateService.getEmailTemplateByLocale(EmailTemplate.WELCOME_EMAIL.name(),
+        "en_US");
 
     Assert.assertEquals(new String("JUNIT TEST"), emailTemplate.getTemplateText());
     Assert.assertEquals(map.get("parseError"), false);
@@ -255,13 +256,14 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertTrue(map.containsAttribute("templateName"));
     Assert.assertTrue(map.containsAttribute("emailText"));
     Assert.assertEquals(map.get("templateName").toString(), EmailTemplate.WELCOME_EMAIL.toString());
-    Assert.assertEquals(map.get("emailText"), emailTemplateService.getEmailTemplateByLocale(EmailTemplate.WELCOME_EMAIL.name(), "en_US")
-        .getTemplateText());
+    Assert.assertEquals(map.get("emailText"),
+        emailTemplateService.getEmailTemplateByLocale(EmailTemplate.WELCOME_EMAIL.name(), "en_US").getTemplateText());
   }
 
   @Test
   public void testviewEmailTemplate() {
-    String viewEmailtemplate = controller.viewEmailTemplate(EmailTemplate.WELCOME_EMAIL.toString(), "en_US",request, map);
+    String viewEmailtemplate = controller.viewEmailTemplate(EmailTemplate.WELCOME_EMAIL.toString(), "en_US", request,
+        map);
     Assert.assertNotNull(viewEmailtemplate);
     Assert.assertEquals(viewEmailtemplate, new String("emailtemplate.view"));
     Assert.assertTrue(map.containsAttribute("templateName"));
@@ -269,7 +271,8 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertTrue(map.containsAttribute("parseError"));
     Assert.assertTrue(map.containsAttribute("emailText"));
     Assert.assertEquals(map.get("templateName").toString(), EmailTemplate.WELCOME_EMAIL.toString());
-    String emailText = emailTemplateService.getEmailTemplateAsStringByLocale(EmailTemplate.WELCOME_EMAIL.name(), map, "en_US");
+    String emailText = emailTemplateService.getEmailTemplateAsStringByLocale(EmailTemplate.WELCOME_EMAIL.name(), map,
+        "en_US");
     Assert.assertEquals(map.get("emailText"), emailText);
     Assert.assertEquals(map.get("parseError"), false);
     Assert.assertNotNull(map.get("template"));
@@ -290,11 +293,11 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertTrue(list.size() == 14);
     Assert.assertEquals(map.get("filterBy"), new String("0"));
     Assert.assertNotNull(map.get("filtersMap"));
-    
-    Map<String,String> filterMap = (Map<String, String>) map.get("filtersMap");
+
+    Map<String, String> filterMap = (Map<String, String>) map.get("filtersMap");
     Assert.assertTrue(filterMap.size() > 0);
-    for(Category category : Category.values()){
-      Assert.assertNotNull(filterMap.get(""+category.ordinal()));
+    for (Category category : Category.values()) {
+      Assert.assertNotNull(filterMap.get("" + category.ordinal()));
     }
     map.clear();
     controller.listEmailTemplates(null, "1", "1", "en_US", request, map);
@@ -306,7 +309,7 @@ public class AdminControllerTest extends WebTestsBase {
   @Test
   public void testeditConfiguration() {
     String configProperties = "[{\"name\":\"2\",\"value\":\"www.JunitTest.com\"}]";
-    String editConfiguration = controller.editConfiguration(configProperties,  map);
+    String editConfiguration = controller.editConfiguration(configProperties, map);
     Configuration configuration = configurationService.locateConfigurationById("2");
     Assert.assertEquals(editConfiguration, new String("success"));
     Assert.assertEquals(configuration.getValue(), new String("www.JunitTest.com"));
@@ -316,7 +319,8 @@ public class AdminControllerTest extends WebTestsBase {
     controller.editConfiguration(configProperties, map);
     configuration = configurationService.locateConfigurationById("2");
     Assert.assertTrue(configuration.getIsCurrentlyEncrypted());
-    Assert.assertEquals(configuration.getValue(), new String("A7E4C44C1E2468B950DEADE1E9D219673096633E7B681EE1817BC30371FA61EA451E503715DDF7D2D7BC46EE428ED2FC"));
+    Assert.assertEquals(configuration.getValue(), new String(
+        "A7E4C44C1E2468B950DEADE1E9D219673096633E7B681EE1817BC30371FA61EA451E503715DDF7D2D7BC46EE428ED2FC"));
   }
 
   @Test
@@ -332,7 +336,7 @@ public class AdminControllerTest extends WebTestsBase {
 
   @Test
   public void testshowConfigurations() {
-	  
+
     String showconfigurations = controller.showConfigurations(Level3.ConfigAccountManagement.getName(), null, map);
     Assert.assertNotNull(showconfigurations);
     Assert.assertEquals("config.list", showconfigurations);
@@ -360,7 +364,7 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals(map.get("module"), Level3.Portal.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.Portal.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.Portal.getCode());
-    
+
     showconfigurations = controller.showConfigurations(Level3.Reports.getName(), null, map);
     Assert.assertNotNull(showconfigurations);
     Assert.assertEquals("config.list", showconfigurations);
@@ -381,7 +385,7 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals(map.get("module"), Level3.TrialManagement.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.TrialManagement.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.TrialManagement.getCode());
-    
+
     showconfigurations = controller.showConfigurations(Level3.Server.getName(), "Notifications", map);
     Assert.assertNotNull(showconfigurations);
     Assert.assertEquals("configuration.edit", showconfigurations);
@@ -390,7 +394,7 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals(map.get("labelCode"), Level3.Server.getCode());
     List<Configuration> configList = (List<Configuration>) map.get("configurationList");
     Assert.assertEquals(6, configList.size());
-    
+
     showconfigurations = controller.showConfigurations(null, null, map);
     Assert.assertNotNull(showconfigurations);
     Assert.assertEquals("config.list", showconfigurations);
@@ -398,76 +402,81 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals(map.get("moduleName"), ModuleType.AccountManagement.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.ConfigAccountManagement.getCode());
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void testAddAccountTypeControls(){
-	  
-	  ServiceInstance serviceInstance = serviceInstanceDao.find(7L);
-	  String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
-	  Assert.assertNotNull(result);
-	  Assert.assertEquals("accounttypecontrols.edit", result);
-	  List<BaseServiceConfigurationMetadata> sortedProperties = (List<BaseServiceConfigurationMetadata>) map.get("account_control_add_properties");
-	  Assert.assertEquals(12, sortedProperties.size());
+  public void testAddAccountTypeControls() {
+
+    ServiceInstance serviceInstance = serviceInstanceDao.find(7L);
+    String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("accounttypecontrols.edit", result);
+    List<BaseServiceConfigurationMetadata> sortedProperties = (List<BaseServiceConfigurationMetadata>) map
+        .get("account_control_add_properties");
+    Assert.assertEquals(12, sortedProperties.size());
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void testAddAccountTypeControlsExisting(){
-	  
-	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
-	  String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
-	  Assert.assertNotNull(result);
-	  Assert.assertEquals("accounttypecontrols.edit", result);
-	  List<ServiceInstanceConfig> instanceProperties = (List<ServiceInstanceConfig>) map.get("account_control_edit_properties");
-	  Assert.assertEquals(1, instanceProperties.size());
+  public void testAddAccountTypeControlsExisting() {
+
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("accounttypecontrols.edit", result);
+    List<ServiceInstanceConfig> instanceProperties = (List<ServiceInstanceConfig>) map
+        .get("account_control_edit_properties");
+    Assert.assertEquals(1, instanceProperties.size());
   }
-  
+
   @Test
-  public void testPersistAccountTypeControlsUpdate(){
-	  
-	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
-	  String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
-	  Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "update", configProperties);
-	  Assert.assertNotNull(resultMap);
-	  String status = (String) resultMap.get("result");
-	  Assert.assertEquals(CssdkConstants.SUCCESS, status);
+  public void testPersistAccountTypeControlsUpdate() {
+
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
+    Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "update",
+        configProperties);
+    Assert.assertNotNull(resultMap);
+    String status = (String) resultMap.get("result");
+    Assert.assertEquals(CssdkConstants.SUCCESS, status);
   }
-  
+
   @Test
-  public void testPersistAccountTypeControlsAdd(){
-	  
-	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
-	  String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
-	  Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "add", configProperties);
-	  Assert.assertNotNull(resultMap);
-	  String status = (String) resultMap.get("result");
-	  Assert.assertEquals(CssdkConstants.SUCCESS, status);
+  public void testPersistAccountTypeControlsAdd() {
+
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
+    Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "add",
+        configProperties);
+    Assert.assertNotNull(resultMap);
+    String status = (String) resultMap.get("result");
+    Assert.assertEquals(CssdkConstants.SUCCESS, status);
   }
-  
+
   @Test
-  public void testEditInitialDeposit() throws Exception{
-	 
-	  AccountType accountType = accountTypeDAO.find(3L);
-	  accountType.getAccountTypeCreditExposureList().get(0).setInitialDeposit(BigDecimal.TEN);
-	  AccountTypeForm form  = new AccountTypeForm(accountType);
-	  BindingResult result = validate(form);
-	  String resultString =  controller.editInitialDeposit(form, result, map);
-	  Assert.assertNotNull(resultString);
-	  Assert.assertEquals("success", resultString);
-	  Assert.assertEquals(BigDecimal.TEN, accountType.getAccountTypeCreditExposureList().get(0).getInitialDeposit());
+  public void testEditInitialDeposit() throws Exception {
+
+    AccountType accountType = accountTypeDAO.find(3L);
+    accountType.getAccountTypeCreditExposureList().get(0).setInitialDeposit(BigDecimal.TEN);
+    AccountTypeForm form = new AccountTypeForm(accountType);
+    BindingResult result = validate(form);
+    String resultString = controller.editInitialDeposit(form, result, map);
+    Assert.assertNotNull(resultString);
+    Assert.assertEquals("success", resultString);
+    Assert.assertEquals(BigDecimal.TEN, accountType.getAccountTypeCreditExposureList().get(0).getInitialDeposit());
   }
-  
+
   @Test
-  public void testSendTestMail(){
-	  
-	  EmailTemplates emailTemplates = emailTemplatesDAO.find(1L);
-	  int before = eventDAO.count();
-	  String resultString = controller.sendEmailTemplate(emailTemplates.getTemplateName(), "test@test.com", response, "en_US", request, map);
-	  Assert.assertNotNull(resultString);
-	  Assert.assertEquals("success", resultString);
-	  int after = eventDAO.count();
-	  Assert.assertEquals(before+1, after);
+  public void testSendTestMail() {
+
+    EmailTemplates emailTemplates = emailTemplatesDAO.find(1L);
+    int before = eventDAO.count();
+    String resultString = controller.sendEmailTemplate(emailTemplates.getTemplateName(), "test@test.com", response,
+        "en_US", request, map);
+    Assert.assertNotNull(resultString);
+    Assert.assertEquals("success", resultString);
+    int after = eventDAO.count();
+    Assert.assertEquals(before + 1, after);
   }
-  
+
 }

@@ -12,8 +12,8 @@
 <c:set var="currency_width" value="14%" />
 <c:if test="${noDialog}">
   <c:set var="main_width" value="608px" />
-  <c:set var="title_width" value="18%" />
-  <c:set var="currency_width" value="17%" />
+  <c:set var="title_width" value="20%" />
+  <c:set var="currency_width" value="15%" />
 </c:if>
 
 <div class="widget_grid inline subheader" style="width: <c:out value="${main_width}"/> ;">

@@ -47,9 +47,13 @@
         label_na:'<spring:message javaScriptEscape="true" code="ui.label.na" />',
         label_Reconfigure:'<spring:message javaScriptEscape="true" code="ui.label.subscription.Reconfigure" />',
         view_details:'<spring:message javaScriptEscape="true" code="label.view.details" />',
-        view_utility_pricing:'<spring:message javaScriptEscape="true" code="view.utility.pricing" />',
+        view_utility_pricing:'<spring:message javaScriptEscape="true" code="view.utility.rates" />',
         label_Using:'<spring:message javaScriptEscape="true" code="label.catalog.Using" />',
-        label_no_entitlements:'<spring:message javaScriptEscape="true" code="message.bundle.details.dialog.no.entitlements" />'
+        label_no_entitlements:'<spring:message javaScriptEscape="true" code="message.bundle.details.dialog.no.entitlements" />',
+        error_select_required_rcs:'<spring:message javaScriptEscape="true" code="error.catalog.Select.missing.components" />',
+        label_configure:'<spring:message javaScriptEscape="true" code="label.configure" />',
+        label_back_to_catalog:'<spring:message javaScriptEscape="true" code="label.subscribe.backtocatalog" />',
+        msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />'
     };
 
     var l10dict = new Array();
@@ -74,19 +78,21 @@
     var serviceFilterNames = [];
     var serviceFilterDescl10dict = [];
     var serviceFilterDescKey = [];
-    <c:if test="${not empty serviceFilterNames}">
-      <c:forEach items="${serviceFilterNames}" var="filter" varStatus="status">
-        l10dict['${filter}' + '-name']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter}.name"/>';
-        l10dict['${filter}' + '-desc']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter}.description"/>';
-        serviceFilterNames.push('${filter}');
-        serviceFilterDescl10dict.push('<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter}.detail.desc"/>');
-        serviceFilterDescKey.push('${service.serviceName}' + '.Filter.' + '${filter}'+'.detail.desc');
+    <c:if test="${not empty service.serviceFilters}">
+      <c:forEach items="${service.serviceFilters}" var="filter" varStatus="status">
+        l10dict['${filter.discriminatorName}' + '-name']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter.discriminatorName}.name"/>';
+        l10dict['${filter.discriminatorName}' + '-desc']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter.discriminatorName}.description"/>';
+        serviceFilterNames.push('${filter.discriminatorName}');
+        serviceFilterDescl10dict.push('<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter.discriminatorName}.detail.desc"/>');
+        serviceFilterDescKey.push('${service.serviceName}' + '.Filter.' + '${filter.discriminatorName}'+'.detail.desc');
       </c:forEach>
     </c:if>
     
     var reconfigurableMap = {};
+    var groupNameList = [];
     var groups = [];
     var group;
+    <c:if test="${not empty groups}">
     <c:forEach items="${groups}" var="group">
       group = [];
       <c:forEach items="${group.serviceResourceGroupComponents}" var="serviceResourceGroupComponent">
@@ -94,21 +100,23 @@
         group.push('<c:out value="${serviceResourceGroupComponent.resourceComponentName}" escapeXml="false"/>');
       </c:forEach>
       groups.push(group);
+      groupNameList.push('${group.groupName}');
     </c:forEach>
+    </c:if>
     
-    var productProperties = [];
-    <c:if test="${not empty productProperties}">
-      <c:forEach items="${productProperties}" var="productProperty">
-        l10dict['${productProperty.name}' + '-name'] = '<spring:message  code="${service.serviceName}.ResourceType.${resourceType}.${productProperty.name}.name"/>';
-        l10dict['${productProperty.name}' + '-desc'] = '<spring:message code="${service.serviceName}.ResourceType.${resourceType}.${productProperty.name}.description"/>';
-        productProperties.push('${productProperty.name}');
+    var resourceProperties = [];
+    <c:if test="${not empty resourceProperties}">
+      <c:forEach items="${resourceProperties}" var="resourceProperty">
+        l10dict['${resourceProperty.name}' + '-name'] = '<spring:message javaScriptEscape="true" code="${service.serviceName}.ResourceType.${resourceType}.${resourceProperty.name}.name"/>';
+        l10dict['${resourceProperty.name}' + '-desc'] = '<spring:message javaScriptEscape="true" code="${service.serviceName}.ResourceType.${resourceType}.${resourceProperty.name}.description"/>';
+        resourceProperties.push('${resourceProperty.name}');
       </c:forEach>
     </c:if>
     
     var allConfigurationProperties = [];
     $.merge(allConfigurationProperties, serviceFilterNames);
     $.merge(allConfigurationProperties, uniqueResourceComponents);
-    $.merge(allConfigurationProperties, productProperties);
+    $.merge(allConfigurationProperties, resourceProperties);
     
     var pricingReccurenceFrequencyList = {};
     <c:forEach items="${chargeRecurrenceFrequencyList}" var="chargeType">
@@ -157,7 +165,7 @@
               </div>
               <div class="navbar-inner pull-right bs_catalog_pricing_nav_bar">
                 <ul id="pricing_filters" class="nav">
-                  <li class="active"><a href="javascript:void(0)" id="ALL"><spring:message code="label.all" /></a></li>
+                  <li class="active"><a href="javascript:void(0)" id="ALL"><spring:message code="label.all"/></a></li>
                   <c:forEach items="${chargeRecurrenceFrequencyList}" var="chargeType">
                     <c:if test="${chargeType.name != 'NONE'}">
                       <c:set var="chargeReccurrenceCode" value="charge.type.${chargeType.name}"></c:set>
@@ -179,6 +187,7 @@
                           </c:if> <c:if test="${chargeReccurenceDisplay ne chargeReccurrenceCode}">
                             <c:out value="${chargeReccurenceDisplay}" />
                           </c:if>
+                          &nbsp;(<span class="js_filter_count">0</span>)
                       </a></li>
                     </c:if>
                   </c:forEach>
@@ -224,9 +233,9 @@
   </c:forEach>
 </c:if>
 
-<c:if test="${not empty productProperties}">
-  <c:forEach items="${productProperties}" var="productProperty">
-    <input type="hidden" id="conf_prop_${productProperty.name}" name="${productProperty.name}" />
+<c:if test="${not empty resourceProperties}">
+  <c:forEach items="${resourceProperties}" var="resourceProperty">
+    <input type="hidden" id="conf_prop_${resourceProperty.name}" name="${resourceProperty.name}" />
   </c:forEach>
 </c:if>
 
@@ -241,10 +250,7 @@
 <input type="hidden" name="customComponentSelector" id="customComponentSelector" value="${customComponentSelector}" />
 <input type="hidden" name="customEditorTag" id="customEditorTag" value="${customEditorTag}" />
 <input type="hidden" name="tenantDataJsonStr" id="tenantDataJsonStr" value='${tenantDataJsonStr}' />
-<input type="hidden" name="uniqueResourceComponentNames" id="uniqueResourceComponentNames"
-  value="<c:out value="${uniqueResourceComponentNames}" />" />
 <input type="hidden" name="cloudServiceException" id="cloudServiceException" value="${cloudServiceException}" />
-<input type="hidden" name="serviceFilterNames" id="serviceFilterNames" value="<c:out value="${serviceFilterNames}" />" />
 <input type="hidden" id="channelParam" name="channelParam" value="<c:out value="${channel.param}"/>" />
 <input type="hidden" id="minFractionDigits" name="minFractionDigits" value="<c:out value="${minFractionDigits}" />" />
 <c:if test="${not empty subscription}">
@@ -276,6 +282,11 @@
 <c:set var="title_arg_1">
   <spring:message code="${service.serviceName}.ResourceType.${resourceType}.name" />
 </c:set>
+<c:if test="${resourceType == serviceBundleResourceType}">
+  <c:set var="title_arg_1">
+    <spring:message code="catalog.resource.type.selection.service.bundle"/>
+  </c:set>
+</c:if>
 <div id="launch_vm_dialog" title='<spring:message code="label.subscribing.to" arguments="${title_arg_1}"/>'
   style="display: none">
 
@@ -309,6 +320,6 @@
   </div>
 </div>
 
-<div id="tncDialog" title='<spring:message code="js.errors.register.tncDialog.title"/>' style="display:none">
+<div id="tncDialog" title='<spring:message code="js.errors.register.tncDialog.title"/>' style="display:none;padding:10px 10px 10px 20px;">
     <c:out value="${tnc}" escapeXml="false" />
 </div>

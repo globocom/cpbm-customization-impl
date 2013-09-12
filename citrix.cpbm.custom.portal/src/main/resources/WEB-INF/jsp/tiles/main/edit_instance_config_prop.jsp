@@ -65,7 +65,7 @@
                       </c:otherwise>
                     </c:choose>
                     </div>
-                    <div class="main_addnew_formbox_errormsg_popup" id="configproperty<c:out value='${instance_property.serviceConfigMetadata.id}'/>Error" style="margin:0 0 0 305px;"></div>
+                    <div class="main_addnew_formbox_errormsg_popup" id="configproperty<c:out value='${instance_property.serviceConfigMetadata.id}'/>Error"></div>
                   </c:otherwise>
                 </c:choose>
               </li>

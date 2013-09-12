@@ -54,11 +54,9 @@ import com.vmops.model.ProductBundle;
 import com.vmops.model.ProductBundleRevision;
 import com.vmops.model.ProductRevision;
 import com.vmops.model.Service;
-import com.vmops.model.ServiceFilter;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceResourceType;
 import com.vmops.model.ServiceResourceTypeGeneratedUsage;
-import com.vmops.model.ServiceResourceTypeGroup;
 import com.vmops.model.ServiceResourceTypeGroupComponent;
 import com.vmops.model.ServiceResourceTypeProperty;
 import com.vmops.model.Subscription;
@@ -72,6 +70,7 @@ import com.vmops.service.CurrencyValueService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.UserService.Handle;
 import com.vmops.service.billing.BillingAdminService;
+import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.CloudServiceException;
 import com.vmops.service.exceptions.SubscriptionServiceException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
@@ -293,7 +292,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     map.addAttribute("serviceCategoryList", serviceCategoryList);
     map.addAttribute("chargeRecurrenceFrequencyList", productBundleService.getChargeRecurrenceFrequencyList());
     // If there is a subscription get the service instance directly from subscription
-    if (!StringUtils.isBlank(subscriptionId)) {
+    if (StringUtils.isNotBlank(subscriptionId)) {
       Subscription subscription = subscriptionService.locateSubscriptionById(Long.parseLong(subscriptionId));
       resourceType = subscription.getResourceType().getResourceTypeName();
       serviceInstance = subscription.getServiceInstance();
@@ -336,41 +335,19 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
         map.addAttribute("resourceType", resourceType);
         map.addAttribute("serviceBundleResourceType", SERVICEBUNDLE);
 
-        List<String> uniqueResourceComponentNames = new ArrayList<String>();
-        List<ServiceResourceTypeGroup> groups = new ArrayList<ServiceResourceTypeGroup>();
         ServiceResourceType serviceResourceType = connectorConfigurationManager.getServiceResourceType(
             serviceInstanceUUID, resourceType);
         if (serviceResourceType != null) {
-          for (ServiceResourceTypeGroup serviceResourceTypeGroup : serviceResourceType.getServiceResourceGroups()) {
-            groups.add(serviceResourceTypeGroup);
-          }
+          List<String> uniqueResourceComponentNames = new ArrayList<String>();
           uniqueResourceComponentNames = getUniqueResourceComponents(serviceInstanceUUID, resourceType);
+          map.addAttribute("uniqueResourceComponentNames", uniqueResourceComponentNames);
+          map.addAttribute("groups", serviceResourceType.getServiceResourceGroups());
         }
-        map.addAttribute("uniqueResourceComponentNames", uniqueResourceComponentNames);
-        if (!StringUtils.isBlank(subscriptionId)) {
+        if (StringUtils.isNotBlank(subscriptionId)) {
           Subscription subscription = subscriptionService.locateSubscriptionById(Long.parseLong(subscriptionId));
           JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(subscription.getConfigurationData());
           map.addAttribute("subscription", subscription);
           map.addAttribute("configurationData", jsonObject);
-          Map<String, String> contextMap = new HashMap<String, String>();
-          groups = new ArrayList<ServiceResourceTypeGroup>();
-          for (ServiceResourceTypeGroup srtg : subscription.getResourceType().getServiceResourceGroups()) {
-            boolean groupSatisfied = true;
-            for (ServiceResourceTypeGroupComponent srgc : srtg.getServiceResourceGroupComponents()) {
-              if (jsonObject.get(srgc.getResourceComponentName()) == null) {
-                groupSatisfied = false;
-                break;
-              } else {
-                contextMap.put(srgc.getResourceComponentName(), jsonObject.get(srgc.getResourceComponentName())
-                    .toString());
-              }
-            }
-            if (groupSatisfied) {
-              groups.add(srtg);
-              break;
-            }
-
-          }
           com.citrix.cpbm.access.Subscription subscriptionProxy = (com.citrix.cpbm.access.Subscription) CustomProxy
               .newInstance(subscription);
           SubscriptionForm subscriptionForm = new SubscriptionForm(subscriptionProxy);
@@ -381,18 +358,10 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
           SubscriptionForm subscriptionForm = new SubscriptionForm(subscription);
           map.addAttribute("subscriptionForm", subscriptionForm);
         }
-        map.addAttribute("groups", groups);
-
-        // Adding Filter Related Data
-        List<ServiceFilter> filters = service.getServiceFilters();
-        List<String> serviceFilterNames = new ArrayList<String>();
-        for (ServiceFilter filter : filters) {
-          serviceFilterNames.add(filter.getDiscriminatorName());
-        }
-        map.addAttribute("serviceFilterNames", serviceFilterNames);
         addValuesForRenderingConnectorValues(map, serviceInstance, resourceType);
-        boolean isAlive = ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID)).getStatus();
-        if(!isAlive) {
+        boolean isAlive = ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID))
+            .getStatus();
+        if (!isAlive) {
           throw new CloudServiceException(messageSource.getMessage("cloud.service.down", null, user.getLocale()));
         }
       } catch (CloudServiceException cse) {
@@ -428,6 +397,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
         || (viewCatalog == true && getCurrentUser().getTenant().equals(tenantService.getSystemTenant()))) {
       filterComponents = privilegeService.runAsPortal(new PrivilegedAction<List<FilterComponent>>() {
 
+        @Override
         public List<FilterComponent> run() {
           return ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUuid))
               .getMetadataRegistry().getFilterValues(
@@ -509,6 +479,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
         || (viewCatalog == true && getCurrentUser().getTenant().equals(tenantService.getSystemTenant()))) {
       resourceComponents = privilegeService.runAsPortal(new PrivilegedAction<List<ResourceComponent>>() {
 
+        @Override
         public List<ResourceComponent> run() {
           return ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUuid))
               .getMetadataRegistry().getResourceComponentValues(
@@ -654,7 +625,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
               .getServiceResourceTypeProperty();
           map.addAttribute("customEditorTag", finalEditorTag);
           map.addAttribute("customComponentSelector", componentSelector);
-          map.addAttribute("productProperties", serviceResourceTypePropertyList);
+          map.addAttribute("resourceProperties", serviceResourceTypePropertyList);
         }
       } else {
         throw new ConnectorManagementServiceException(
@@ -706,6 +677,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     final Channel catalogChannel = channel;
     Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {
 
+      @Override
       public Map<String, Object> run() {
         ModelMap modelMap = new ModelMap();
         try {
@@ -775,6 +747,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       final Channel finalChannel = channel;
       Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {
 
+        @Override
         public Map<String, Object> run() {
           ModelMap modelMap = new ModelMap();
           try {
@@ -872,6 +845,11 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       }
       throw new SubscriptionServiceException(subscriptionActionMessage + ":" + e.getMessage());
     }
+
+    if (result.hasErrors()) {
+      throw new AjaxFormValidationException(result);
+    }
+
     if (subscription != null) {
       responseMap.put("subscriptionId", subscription.getUuid());
       String resourceHandle = "";

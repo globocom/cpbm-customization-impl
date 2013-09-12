@@ -13,11 +13,13 @@
   </div>
   <div class="secondlevel_menupanel" id="iframe_tabs">
   <a href="javascript:void(0);" id="iframe_tab_all_services" class="secondlevel_menutabs js_iframe_tabs on"><span class="navicon loading js_loading"  style="display:none;"></span><spring:message code="page.level2.allservices"/></a>
-  <c:forEach items="${serviceInstanceMap}" var="serviceInstanceEntry" varStatus="status">
-    <c:if test="${(serviceInstanceEntry.value == true)}">
-      <a href="javascript:void(0);" id="iframe_tab_${serviceInstanceEntry.key.uuid}" class="secondlevel_menutabs js_iframe_tabs"><span class="navicon loading js_loading"  style="display:none;"></span><c:out value="${serviceInstanceEntry.key.name}"/></a>
-    </c:if>
-  </c:forEach>
+  <c:if test="${userHasCloudServiceAccount}">
+    <c:forEach items="${serviceInstanceMap}" var="serviceInstanceEntry" varStatus="status">
+      <c:if test="${(serviceInstanceEntry.value == true)}">
+        <a href="javascript:void(0);" id="iframe_tab_${serviceInstanceEntry.key.uuid}" class="secondlevel_menutabs js_iframe_tabs"><span class="navicon loading js_loading"  style="display:none;"></span><c:out value="${serviceInstanceEntry.key.name}"/></a>
+      </c:if>
+    </c:forEach>
+  </c:if>
   </div>
   <div class="clearboth"></div>
 </div>

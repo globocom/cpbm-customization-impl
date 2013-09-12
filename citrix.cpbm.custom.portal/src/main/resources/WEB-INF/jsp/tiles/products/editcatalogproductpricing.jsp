@@ -46,7 +46,7 @@
              </c:forEach>
           </div>
 
-        <div class="widgetgrid_wrapper plangrid_lightbox" style="width:830px; overflow-x: hidden; overflow-y: auto;">
+        <div class="widgetgrid_wrapper plangrid_lightbox" style="width:830px; overflow-x: hidden; overflow-y: auto;min-width:830px;">
           <c:forEach items="${fullProductPricingMap}" var="product" varStatus="status">
             <c:choose>
               <c:when test="${status.index % 2 == 0}">

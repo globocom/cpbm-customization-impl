@@ -1049,6 +1049,7 @@ function recordOrMakePayment(makePayment) {
 					url : actionurl,
 					data : {
 						amount : $(form).find("#payAmount" ).val(),
+						memo : $(form).find("#paymentMemo" ).val(),
 						tenantParam : $("#tenantParam" ).val()
 					},
 					dataType : "text",
@@ -1065,6 +1066,7 @@ function recordOrMakePayment(makePayment) {
 							$( "#action_result_panel").removeClass("success" ).addClass("error").show();
 						}
 						$thisDialog.find("#payAmount" ).val('');
+						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
 						$thisDialog.dialog( "close");
 					},
@@ -1074,11 +1076,13 @@ function recordOrMakePayment(makePayment) {
 						$( "#action_result_panel").find("#status_icon" ).removeClass("successicon").addClass( "erroricon");
 						$( "#action_result_panel").removeClass("success" ).addClass("error").show();
 						$thisDialog.find("#payAmount" ).val('');
+						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
 						$thisDialog.dialog( "close");
 					},
 					complete : function() {
 						$thisDialog.find("#payAmount" ).val('');
+						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
 						$thisDialog.dialog( "close");
 					}
@@ -1087,8 +1091,10 @@ function recordOrMakePayment(makePayment) {
 		},
 		"Cancel" : function () {
 			$thisDialog.find("#payAmount" ).val('');
+			$thisDialog.find("#paymentMemo" ).val('');
 			$( this).dialog("close" );
 			 $("#payAmountError").text("");
+			 $("#paymentMemoError").text("");
 			return false;
 		}
 	});

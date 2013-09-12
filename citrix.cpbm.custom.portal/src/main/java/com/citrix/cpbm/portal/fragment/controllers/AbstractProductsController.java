@@ -19,6 +19,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonGenerationException;
@@ -61,6 +62,7 @@ import com.vmops.model.ServiceUsageType;
 import com.vmops.model.ServiceUsageTypeUomScale;
 import com.vmops.model.Tenant;
 import com.vmops.persistence.ServiceInstanceDao;
+import com.vmops.portal.config.Configuration;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ChannelService;
 import com.vmops.service.CurrencyValueService;
@@ -107,6 +109,9 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
 
   @Autowired
   protected ServiceInstanceDao serviceInstanceDao;
+
+  @Autowired
+  private Configuration configuration;
 
   Logger logger = Logger.getLogger(AbstractProductsController.class);
 
@@ -217,7 +222,18 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     if (historyDates != null && historyDates.size() > 0) {
       currentAndHistoryApplicabilityMap.put("history", "true");
     }
-
+    List<Service> serviceCategoryList = connectorConfigurationManager.getAllServicesByType(ConnectorType.CLOUD
+        .toString());
+    boolean isAtleastOneCloudServiceEnabled = false;
+    if (serviceCategoryList != null && serviceCategoryList.size() > 0) {
+      for (Service service : serviceCategoryList) {
+        if (CollectionUtils.isNotEmpty(service.getServiceInstances())) {
+          isAtleastOneCloudServiceEnabled = true;
+          break;
+        }
+      }
+    }
+    currentAndHistoryApplicabilityMap.put("isAtleastOneCloudServiceEnabled", isAtleastOneCloudServiceEnabled + "");
     logger.debug("### isCurrentAndHistoryApplicableForRPB method starting...");
     return currentAndHistoryApplicabilityMap;
   }
@@ -252,7 +268,11 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     try {
       serviceCategoryList = connectorConfigurationManager.getAllServicesByType(ConnectorType.CLOUD.toString());
       for (Service service : serviceCategoryList) {
-        serviceCategory.add(service.getCategory());
+        List<ServiceInstance> serviceInstances = connectorConfigurationManager.getServiceInstances(service.getUuid());
+        if (CollectionUtils.isNotEmpty(serviceInstances)) {
+          serviceCategory.add(service.getCategory());
+        }
+
       }
       if (serviceCategoryList != null && serviceCategoryList.size() > 0) {
         map.addAttribute("selectedCategory", serviceCategoryList.get(0).getCategory());
@@ -961,7 +981,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       mediationRules = productService.getProductRevision(product, date, null).getMediationRules();
     }
     map.addAttribute("mediationRules", mediationRules);
-
+    Integer HoursInMonths = configuration.getIntValue(Names.com_citrix_cpbm_portal_billing_hoursIn_month);
+    map.addAttribute("hoursInMonths", HoursInMonths);
     logger.debug("### viewmediationrules method ending...");
     return "view.product.mediation.rules";
   }
@@ -1102,10 +1123,13 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
   @RequestMapping(value = "/sortproducts", method = RequestMethod.GET)
   public String sortProducts(@RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID,
       @RequestParam(value = "whichPlan", required = false, defaultValue = "planned") String whichPlan,
-      @RequestParam(value = "historyDate", required = false) String historyDate, ModelMap map) {
+      @RequestParam(value = "historyDate", required = false) String historyDate,
+      @RequestParam(value = "filterBy", required = false) String filterBy,
+      @RequestParam(value = "category", required = false) String category, ModelMap map) {
     logger.debug("### sortProducts method starting...");
 
     List<Product> productsList = new ArrayList<Product>();
+    List<Product> productListByFilters = new ArrayList<Product>();
     Revision effectiveRevision = null;
     if (!(serviceInstanceUUID == null || serviceInstanceUUID.trim().equals(""))) {
       List<Product> products = new ArrayList<Product>();
@@ -1136,9 +1160,10 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
           productsList.add(product);
         }
       }
-      Collections.sort(productsList, new ProductSortOrderSort());
+      productListByFilters = getProductListByFilters(productsList, filterBy, category);
+      Collections.sort(productListByFilters, new ProductSortOrderSort());
     }
-    map.addAttribute("productsList", productsList);
+    map.addAttribute("productsList", productListByFilters);
 
     logger.debug("### sortProducts method ending...");
     return "products.sort";

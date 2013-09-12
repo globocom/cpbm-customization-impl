@@ -212,7 +212,9 @@
             <div class="widget_actionpopover_mid">
               <ul class="widget_actionpoplist">
                 <li id="editchannel_action" ><a href="javascript:void(0);"><spring:message code="label.channel.edit"/></a></li>
-                <li id="deletechannel_action" ><a href="javascript:void(0);"><spring:message code="label.channel.delete"/></a></li>
+                <c:if test="${isChannelDeletionAllowed eq true}">  
+                  <li id="deletechannel_action" ><a href="javascript:void(0);"><spring:message code="label.channel.delete"/></a></li>
+                </c:if>
               </ul>
             </div>
             <div class="widget_actionpopover_bot"></div>

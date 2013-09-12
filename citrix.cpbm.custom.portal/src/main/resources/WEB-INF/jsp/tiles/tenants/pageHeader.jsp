@@ -229,7 +229,6 @@ i18n.errors.tenants = {
 <jsp:include page="/WEB-INF/jsp/tiles/shared/country_states.jsp"></jsp:include>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.stateselect.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/tenants.js"></script>
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/auditlogs.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.validate.creditcard2-1.0.1.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/billing.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/tasks.js"></script>

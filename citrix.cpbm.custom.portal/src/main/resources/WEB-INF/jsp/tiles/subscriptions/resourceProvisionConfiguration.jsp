@@ -11,17 +11,10 @@
   <p id="msg"></p>
 </div>
 
-<div class="widgetcatalog_contentarea leftside">
-  <div id="headerSectionProvisionPage" style="display: none">
+<div class="widgetcatalog_contentarea leftside" style="margin-top:5px;">
+  <div id="componentsHeaderProvisionPage" style="display: none; margin-bottom:30px;">
     <h3 style="width: 400px">
-      <c:choose>
-        <c:when test="${resourceType == serviceBundleResourceType}">
-          <spring:message code="label.subscribe.subscribe" />
-        </c:when>
-        <c:otherwise>
-          <spring:message code="label.subscribe.configure.subscribe" />
-        </c:otherwise>
-      </c:choose>
+      <spring:message code="label.catalog.Select.required.components" />:
     </h3>
   </div>
   <div id="filterSectionProvisionPage"></div>
@@ -41,6 +34,19 @@
   <!-- /Custom Component Selector -->
 </div>
 <div id="configure_subscribe" style="display: none;">
+<div id="propertiesHeaderProvisionPage">
+    <h3 style="width: 400px">
+      <c:choose>
+        <c:when test="${resourceType == serviceBundleResourceType}">
+          <spring:message code="label.subscribe.subscribe" />:
+        </c:when>
+        <c:otherwise>
+          <spring:message code="label.subscribe.configure.subscribe" />:
+        </c:otherwise>
+      </c:choose>
+    </h3>
+  </div>
+<!-- move subscription custom fields to the bottom of the page -->
   <tiles:insertDefinition name="subscription.custom.fields" />
   <c:choose>
     <c:when test="${not empty customEditorTag}">
@@ -67,13 +73,13 @@
         </c:when>
         <c:otherwise>
 
-          <c:if test="${not empty productProperties}">
-            <c:forEach items="${productProperties}" var="productProperty" varStatus="productPropertyIndex">
+          <c:if test="${not empty resourceProperties}">
+            <c:forEach items="${resourceProperties}" var="resourceProperty" varStatus="resourcePropertyIndex">
               <div class="widgetcatalog_contentarea sectionbox">
                 <div class="catalogconfigure_sectionox_header">
                   <h4>
                     <spring:message
-                      code="${service.serviceName}.ResourceType.${resourceType}.${productProperty.name}.name" />
+                      code="${service.serviceName}.ResourceType.${resourceType}.${resourceProperty.name}.name" />
                   </h4>
                 </div>
                 <div class="catalogconfigure_sectionox_contentarea">
@@ -83,27 +89,27 @@
                   <div class="catalogconfigure_sectionox_contentarea compute">
                     <p>
                       <spring:message
-                        code="${service.serviceName}.ResourceType.${resourceType}.${productProperty.name}.description" />
+                        code="${service.serviceName}.ResourceType.${resourceType}.${resourceProperty.name}.description" />
                     </p>
                     <br>
                     <c:set var="propValue" value="" />
                     <c:if test="${not empty subscription}">
-                      <c:set var="propValue" value="${configurationData[productProperty.name]}" />
+                      <c:set var="propValue" value="${configurationData[resourceProperty.name]}" />
                     </c:if>
                     <c:choose>
-                      <c:when test="${productProperty.validations.required }">
+                      <c:when test="${resourceProperty.validations.required }">
                         <br>
                         <span style="color: rgb(255, 0, 0); padding-left: 2px;"><sup>*</sup></span>&nbsp;<input
-                          type="text" name="prop_${productProperty.name}"
-                          class="text ${productProperty.validations.classValidations}"
-                          ${productProperty.validations.validations} value="<c:out value="${propValue}" />"/>
+                          type="text" name="prop_${resourceProperty.name}"
+                          class="text ${resourceProperty.validations.classValidations}"
+                          ${resourceProperty.validations.validations} value="<c:out value="${propValue}" />"/>
                       </c:when>
                       <c:otherwise>
                         <br>
                         <span style="color: rgb(255, 0, 0); padding-left: 6px;"></span>
-                        <input type="text" name="prop_${productProperty.name}"
-                          class="text ${productProperty.validations.classValidations}"
-                          ${productProperty.validations.validations} value="<c:out value="${propValue}" />"/>
+                        <input type="text" name="prop_${resourceProperty.name}"
+                          class="text ${resourceProperty.validations.classValidations}"
+                          ${resourceProperty.validations.validations} value="<c:out value="${propValue}" />"/>
                       </c:otherwise>
                     </c:choose>
                   </div>
