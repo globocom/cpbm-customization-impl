@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.ArrayList;
@@ -108,7 +112,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     map.addAttribute("tenant", tenant);
     Capability capability = supportService.getTicketCapability();
-    if (capability.equals(Capability.C)) {
+    if (capability!=null && capability.equals(Capability.C)) {
       TicketForm ticketForm = new TicketForm();
       map.addAttribute("ticketForm", ticketForm);
       return "support.tickets.createonly";
@@ -154,10 +158,16 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
         Map<String, String> responseAttribute = new HashMap<String, String>();
         responseAttribute.put("queryLocator", queryLocator);
         List<Ticket> allTickets = new ArrayList<Ticket>();
-
         try {
+          map.put("ticketServiceConfigured", true);
           allTickets = supportService.list(page, perPage + 1, listTicketStatus, users, sortType, sortColumn,
               responseAttribute);
+          if(allTickets==null){
+            tickets=null;
+            map.put("ticketServiceConfigured", false);
+            return "support.tickets";
+           }
+          
         } catch (TicketServiceException e) {
           return "support.tickets";
         }
@@ -166,7 +176,6 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
           allTickets.remove(allTickets.size() - 1);
         }
         tickets = allTickets;
-
         map.addAttribute("queryLocator", responseAttribute.get("queryLocator"));
         map.addAttribute("hasMore", responseAttribute.get("hasMore"));
       }

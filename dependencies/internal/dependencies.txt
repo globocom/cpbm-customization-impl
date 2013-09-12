@@ -13,4 +13,4 @@ vmops/vmops.admin/2.1.0
 vmops/vmops.all/2.1.0
 vmops/vmops.core/2.1.0
 vmops/vmops.integration/2.1.0
-citrix/cloud.cloudplatform/1.1.7
+citrix/cloud.cloudplatform/1.1.0

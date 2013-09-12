@@ -580,14 +580,14 @@ var dictionary = {
                       <c:set var="resourceType" value="${entry.key}" ></c:set>
                       <c:set var="invoiceList" value="${entry.value}" ></c:set>
                       <c:if test="${not empty invoiceList }">
-                        <c:set var="resourceTypeName" value="${resourceType.resourceTypeName} ${subsciptions_label}" ></c:set>
+                        <c:set var="resourceTypeName" value="${resourceType.resourceTypeName}" ></c:set>
                         <c:set var="invoiceType" value="subscriptionInvoice"></c:set>
-                        <c:if test="${resourceTypeName=='__UTILITY__CHARGES__INVOICES__ Subscriptions'}">
+                        <c:if test="${resourceTypeName=='__UTILITY__CHARGES__INVOICES__'}">
                           <spring:message code="label.usage.billing.utility.charges" var="utilitychargeslabel"/>
                           <c:set var="resourceTypeName" value="${utilitychargeslabel} + ${otherchargeslabel}" ></c:set>
                           <c:set var="invoiceType" value="utilityInvoice"></c:set>
                         </c:if>
-                         <c:if test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__ Subscriptions'}">
+                         <c:if test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__'}">
                           <c:set var="resourceTypeName" value="${otherchargeslabel} ${subsciptions_label}" ></c:set>
                           <c:set var="invoiceType" value="serviceBundleInvoice"></c:set>
                          </c:if>
@@ -822,9 +822,9 @@ var dictionary = {
                       <c:set var="invoiceList" value="${entry.value}" ></c:set>
                       <c:set var="invoiceType" value="subscriptionInvoice"></c:set>
                       <c:if test="${not empty invoiceList }">
-                      <c:set var="resourceTypeName" value="${resourceType.resourceTypeName} ${subsciptions_label}" ></c:set>
+                      <c:set var="resourceTypeName" value="${resourceType.resourceTypeName}" ></c:set>
                       <c:choose>
-                         <c:when test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__ Subscriptions'}">
+                         <c:when test="${resourceTypeName=='__SERVICE__BUNDLE__INVOICES__'}">
                            <c:set var="resourceTypeName" value="${otherchargeslabel} ${subsciptions_label}" ></c:set>
                          </c:when>
                          <c:otherwise>

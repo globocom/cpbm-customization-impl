@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>citrix</groupId>
 	<artifactId>cloud.cloudplatform</artifactId>
-	<version>1.1.7</version>
+	<version>1.1.0</version>
 	<packaging>bundle</packaging>
   <name>cloudplatform</name>
 	<properties>
@@ -20,7 +20,7 @@
 	  <dependency>
       <groupId>citrix</groupId>
       <artifactId>cloud.apachecloudstack</artifactId>
-      <version>1.1.7</version>
+      <version>1.1.0</version>
       <scope>compile</scope>
     </dependency>
 		<dependency>

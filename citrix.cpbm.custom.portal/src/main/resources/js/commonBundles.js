@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 
 
 $(document).ready(function() {
@@ -2521,6 +2525,15 @@ function fetchBundleList(currentPage, searchPattern) {
   if (searchPattern != undefined) {
     data["namePattern"] = searchPattern;
   }
+  if ($("#whichPlan").val() == "history") {
+    if ($("#rpb_history_dates option:selected").val().trim() == "") {
+      return;
+    }
+    data["revisionDate"] = $("#rpb_history_dates option:selected").val().trim();
+  }
+  data["whichPlan"] = $("#whichPlan").val();
+
+  data["filterBy"] = productBundlefilterby;
   $.ajax({
     url: "/portal/portal/productBundles/list",
     dataType: "html",

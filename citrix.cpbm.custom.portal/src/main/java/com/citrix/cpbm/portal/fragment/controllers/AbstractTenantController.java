@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.File;
@@ -1317,8 +1321,16 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
    * @return
    */
   @RequestMapping(value = "/get_account_type", method = RequestMethod.GET)
-  public AccountType getAccountType(@RequestParam(value = "accountTypeName", required = true) String accountTypeName) {
-    return tenantService.getAccountTypeByName(accountTypeName);
+  @ResponseBody
+  public HashMap<String,Object> getAccountType(@RequestParam(value = "accountTypeName", required = true) String accountTypeName) {
+    AccountType accountType = tenantService.getAccountTypeByName(accountTypeName);
+    
+    HashMap<String, Object> accountTypeMap = new HashMap<String, Object>();
+    accountTypeMap.put("name", accountType.getName());
+    accountTypeMap.put("paymentModes", accountType.getPaymentModes());
+    accountTypeMap.put("autoPayRequired", accountType.isAutoPayRequired());
+    accountTypeMap.put("manualActivation", accountType.isManualActivation());
+    return accountTypeMap;
   }
 
   /**

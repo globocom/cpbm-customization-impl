@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 package com.citrix.cpbm.admin;
 
 import org.apache.log4j.Logger;
@@ -9,6 +13,7 @@ import com.vmops.event.CloudServiceEvent;
 import com.vmops.event.CreditCardFraudCheckEvent;
 import com.vmops.event.DepositReceived;
 import com.vmops.event.DeviceFraudDetectionEvent;
+import com.vmops.event.EmailVerified;
 import com.vmops.event.MissingProductEvent;
 import com.vmops.event.PasswordResetRequest;
 import com.vmops.event.PaymentInfoChangeEvent;
@@ -29,6 +34,7 @@ import com.vmops.event.UserCreation;
 import com.vmops.event.UserDeactivateEmail;
 import com.vmops.event.UserDeletion;
 import com.vmops.event.UtilitySubscriptionEvent;
+import com.vmops.event.VerifyEmailRequest;
 
 /**
  * A default implementation of TopicSubscriber which receives all CPBM events
@@ -179,6 +185,24 @@ public class CustomTopicSubscriber implements TopicSubscriber {
   public void receive(PaymentInfoChangeEvent event) {
     logger.info("###Received PaymentInfoChangeEvent event for business transaction: " + event.getTransactionId());
 
+  }
+  
+  /*
+   * (non-Javadoc)
+   * @see com.citrix.cpbm.subscriber.TopicSubscriber#receive(com.vmops.event.VerifyEmailRequest)
+   */
+  @Override
+  public void receive(VerifyEmailRequest event) {
+    logger.info("###Received VerifyEmailRequest event for user: " + event.getUsername());
+  }
+  
+  /*
+   * (non-Javadoc)
+   * @see com.citrix.cpbm.subscriber.TopicSubscriber#receive(com.vmops.event.EmailVerified)
+   */
+  @Override
+  public void receive(EmailVerified event) {
+    logger.info("###Received EmailVerified event ");
   }
 
 }

@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 $(document).ready(function() {
   $(".cc_icon").click(function() {
     if($(this).attr('class').indexOf("edit_page")!=-1 && $("#enableEdit").val()=="false"){
@@ -833,7 +837,7 @@ function accountTypeChanged(accountType){
 		data:{accountTypeName:$(accountType).val()},
 		dataType : "json",
 		success : function(jsonObj) {
-			var accountType = jsonObj.accountType;
+			var accountType = jsonObj;
 			var paymentMode = accountType.paymentModes;
 			var autoPayRequired = accountType.autoPayRequired;
 			 

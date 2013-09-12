@@ -21661,7 +21661,7 @@ span.icon.filter {
   height: 20px;
   margin: 0 0 0 15px;
   text-decoration: none;
-  width: auto;
+  width: 100%;
 }
 .no_border {
   border: none !important;

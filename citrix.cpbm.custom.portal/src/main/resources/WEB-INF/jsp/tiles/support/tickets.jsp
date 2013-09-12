@@ -28,6 +28,11 @@ var dictionary = {
 
 
 <input type="hidden" id="tenantParam" value="<c:out value="${tenant.param}"/>"/>
+<c:if test="${not ticketServiceConfigured}">
+          <div class="subscribe_dialog_message_box error" style="margin-left:20px;">
+            <p><spring:message code='no.cloud.service.account'/></p>
+        </div>
+</c:if>
 <div class="widget_box">
     <div class="widget_leftpanel">
         <div class="widget_titlebar">
@@ -51,6 +56,7 @@ var dictionary = {
                     </select>
               </div>
         </div>
+        
         <div class="widget_navigation">
             <ul class="widget_navigationlist" id="grid_row_container">
                 <c:choose>
@@ -200,6 +206,7 @@ var dictionary = {
 <input type="hidden" id="current_page"  value="<c:out value="${current_page}"/>"/>
 <input type="hidden" id="default_page_size"  value="<c:out value="${defaultPageSize}"/>"/>
     </div>
+   <c:if test="${(not empty tickets && tickets != null)}">
     <div class="widget_rightpanel" id="viewTicketDiv">    
     <div class="widget_actionbar">
       <div class="widget_actionarea" id="top_actions">
@@ -321,7 +328,7 @@ var dictionary = {
         </div>
     </div>
 </div>
-      
+      </c:if>
     </div>
 </div>
 <div id="addticketDiv" title='<spring:message code="ui.label.support.tickets.add.new.ticket"/>' style="display:none;">

@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 package fragment.web;
 
 import java.lang.reflect.Method;
@@ -1169,10 +1173,12 @@ public class TenantsControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testgetAccountType() {
-    AccountType type = controller.getAccountType("RETAIL");
-    Assert.assertNotNull(type);
-    Assert.assertEquals(type.getId().toString(), "3");
-    Assert.assertEquals(type.getDisplayName(), new String("Retail"));
+    HashMap<String, Object> accountTypeMap = controller.getAccountType("RETAIL");
+    Assert.assertNotNull(accountTypeMap);
+    Assert.assertEquals(accountTypeMap.get("name"), "Retail");
+    Assert.assertEquals(accountTypeMap.get("paymentModes"), "2");
+    Assert.assertEquals(accountTypeMap.get("autoPayRequired"), "true");
+    Assert.assertEquals(accountTypeMap.get("manualActivation"), "false");
 
   }
 

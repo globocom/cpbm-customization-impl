@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 var CODE_NOT_UNIQUE_ERROR_CODE = 601;
 var AJAX_FORM_VALIDATION_FAILED_CODE = 420;
 var INVALID_AJAX_REQUEST_ERROR_CODE = 420;

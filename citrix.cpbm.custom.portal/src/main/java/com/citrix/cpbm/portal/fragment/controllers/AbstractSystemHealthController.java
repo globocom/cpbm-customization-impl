@@ -1,4 +1,8 @@
-/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.text.ParseException;
@@ -81,11 +85,11 @@ public abstract class AbstractSystemHealthController extends AbstractAuthenticat
       map.addAttribute("dateStatusHistory", healthService.getHistoryList(serviceInstance, currentUser, page, perPage));
       map.addAttribute("notifications", list);
       map.addAttribute("today", new Date());
-      map.addAttribute("tenant", getTenant());
       map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(currentUser));
       int totalNumberOfDays = healthService.getNotificationDays(serviceInstance, currentUser);
       setPaginationValues(map, perPage, page, totalNumberOfDays, null);
     }
+    map.addAttribute("tenant", getTenant());
     logger.debug("###Exiting health(map) method @GET");
     return "system.health";
   }
