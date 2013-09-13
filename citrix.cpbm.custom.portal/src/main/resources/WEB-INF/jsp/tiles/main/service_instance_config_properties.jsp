@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -65,7 +65,7 @@
                           </c:otherwise>
                         </c:choose>
                         </div>
-                        <div class="main_addnew_formbox_errormsg_popup" id="configproperty<c:out value='${service_config_property.id}'/>Error" style="margin:0 0 0 155px;"></div>
+                        <div class="main_addnew_formbox_errormsg_popup" id="configproperty<c:out value='${service_config_property.id}'/>Error" style="margin:0 0 0 305px;"></div>
                       </c:otherwise>
                     </c:choose>
                 </li>

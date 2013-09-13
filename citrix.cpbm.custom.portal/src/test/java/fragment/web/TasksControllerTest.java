@@ -1,4 +1,4 @@
-/* Copyright (C) 2013 Citrix Systems, Inc. All rights reserved */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 /**
  * 
  */
@@ -27,13 +27,13 @@ import org.springframework.util.ReflectionUtils;
 import web.WebTestsBaseWithMockConnectors;
 import web.support.DispatcherTestServlet;
 
-import citrix.cpbm.portal.fragment.controllers.TasksController;
-
 import com.citrix.cpbm.core.workflow.model.BusinessTransaction;
 import com.citrix.cpbm.core.workflow.model.Task;
 import com.citrix.cpbm.core.workflow.model.Task.DisplayMode;
 import com.citrix.cpbm.core.workflow.model.TenantStateChangeTransaction;
+import com.citrix.cpbm.core.workflow.service.BusinessTransactionService;
 import com.citrix.cpbm.core.workflow.service.TaskService;
+import com.citrix.cpbm.portal.fragment.controllers.TasksController;
 import com.vmops.model.Tenant;
 import com.vmops.service.AuthorityService;
 
@@ -54,6 +54,9 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
   
   @Autowired
   private TaskService taskService;
+  
+  @Autowired
+  private BusinessTransactionService businessTransactionService;
 
   @Before
   public void setUp() {
@@ -204,13 +207,13 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testGetApprovalTask() {
     Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
-    BusinessTransaction bt = new TenantStateChangeTransaction();
-    bt.setUuid(UUID.randomUUID().toString());
+    
+    TenantStateChangeTransaction bt = new TenantStateChangeTransaction();
+    bt.setTenant(tenant);
+    bt.setTenantInitialState(tenant.getState());
+    bt.setTenantTargetState(Tenant.State.ACTIVE);
+    bt = (TenantStateChangeTransaction) businessTransactionService.save(bt);
     bt.setWorkflowId("1e42822b-cad6-4dc0-bb77-99abb9395f1a");
-
-    Field field = ReflectionUtils.findField(BusinessTransaction.class, "id");
-    field.setAccessible(true);
-    ReflectionUtils.setField(field, bt, 1l);
 
     Task task = new Task();
     task.setActorRole(authorityService.findByAuthority("ROLE_FINANCE_CRUD"));
@@ -249,5 +252,65 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(details.contains("New Account"));
     Assert.assertTrue(details.contains("Target State"));
     Assert.assertTrue(details.contains("Active"));
+  }
+  
+  @Test
+  public void testActOnPendingActionRejectWithMemo() {
+    Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
+    BusinessTransaction bt = new TenantStateChangeTransaction();
+    bt.setUuid(UUID.randomUUID().toString());
+    bt.setWorkflowId("1e42822b-cad6-4dc0-bb77-99abb9395f1a");
+
+    Field field = ReflectionUtils.findField(BusinessTransaction.class, "id");
+    field.setAccessible(true);
+    ReflectionUtils.setField(field, bt, 1l);
+
+    Task task = new Task();
+    task.setActorRole(authorityService.findByAuthority("ROLE_FINANCE_CRUD"));
+    task.setCreatedAt(new Date());
+    task.setState(com.citrix.cpbm.core.workflow.model.Task.State.PENDING);
+    task.setTenant(tenant);
+    task.setUser(tenant.getOwner());
+    task.setUpdatedBy(getRootUser());
+    task.setBusinessTransaction(bt);
+    task.setType("FINANCE_APPROVAL");
+    task.setDisplayMode(DisplayMode.POPUP);
+    task = taskService.save(task);
+    String memo = "Rejected";
+    String actedAction = tasksController.actOnApprovalTask(task
+        .getUuid(), Task.State.FAILURE.toString(), memo,request);
+    Assert.assertEquals("ui.task.state.FAILURE", actedAction);
+  }
+  
+  @Test
+  public void testActOnPendingActionRejectWithoutMemo() {
+	  try{
+		  Tenant tenant = tenantService.get("dfc84388-d44d-4d8e-9d6a-a62c1c16b7e4");
+		    BusinessTransaction bt = new TenantStateChangeTransaction();
+		    bt.setUuid(UUID.randomUUID().toString());
+		    bt.setWorkflowId("1e42822b-cad6-4dc0-bb77-99abb9395f1a");
+
+		    Field field = ReflectionUtils.findField(BusinessTransaction.class, "id");
+		    field.setAccessible(true);
+		    ReflectionUtils.setField(field, bt, 1l);
+
+		    Task task = new Task();
+		    task.setActorRole(authorityService.findByAuthority("ROLE_FINANCE_CRUD"));
+		    task.setCreatedAt(new Date());
+		    task.setState(com.citrix.cpbm.core.workflow.model.Task.State.PENDING);
+		    task.setTenant(tenant);
+		    task.setUser(tenant.getOwner());
+		    task.setUpdatedBy(getRootUser());
+		    task.setBusinessTransaction(bt);
+		    task.setType("FINANCE_APPROVAL");
+		    task.setDisplayMode(DisplayMode.POPUP);
+		    task = taskService.save(task);
+		    String memo = "";
+		    tasksController.actOnApprovalTask(task
+		        .getUuid(), Task.State.FAILURE.toString(), memo,request);
+	  }catch(Exception e){
+		  
+		  Assert.assertEquals("Memo is required in case of Rejection", e.getMessage());
+	  }
   }
 }

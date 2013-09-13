@@ -1,79 +1,156 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 package fragment.web;
+
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.orm.hibernate3.HibernateOptimisticLockingFailureException;
 import org.springframework.ui.ModelMap;
 
 import web.WebTestsBase;
+import web.WebTestsBaseWithMockConnectors;
 
-import citrix.cpbm.portal.fragment.controllers.ProfilesController;
-
+import com.citrix.cpbm.portal.fragment.controllers.ProfilesController;
 import com.vmops.model.Profile;
+import com.vmops.model.ProfileAuthority;
 import com.vmops.model.SecurityContextScope.Scope;
+import com.vmops.model.User;
 import com.vmops.persistence.ProfileDAO;
-import com.vmops.service.AuthorityService;
+import com.vmops.service.ProfileService;
+import com.vmops.web.forms.ProfileForm;
 
-public class AbstractProfilesControllerTest extends WebTestsBase {
+public class AbstractProfilesControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Autowired
-  ProfilesController controller;
+  ProfilesController profilesController;
 
   @Autowired
   ProfileDAO profileDAO;
-
+  
   @Autowired
-  AuthorityService authorityScopeService;
+  ProfileService profileService;
 
   private ModelMap map;
 
+  /**
+   * Author: vinayv
+   * Description: Test to get ServiceProvider and Customer users profiles
+   */
+  @SuppressWarnings("unchecked")
   @Test
-  public void testShowProfiles() {
-
-    map = new ModelMap();
-    Assert.assertEquals(controller.showProfiles(null, null, map), new String("profiles.show"));
-    Assert.assertTrue(map.containsAttribute("allProfileList"));
-    Assert.assertTrue(map.containsAttribute("opsProfileList"));
-    Assert.assertTrue(map.containsAttribute("nonOpsProfileList"));
-    Assert.assertTrue(map.containsAttribute("authorityNonopsTypes"));
-    Assert.assertTrue(map.containsAttribute("authorityOpsTypes"));
-    Assert.assertTrue(map.containsAttribute("authorityTypes"));
-    Assert.assertNotNull(map.get("allProfileList"));
-    Assert.assertNotNull(map.get("opsProfileList"));
-    Assert.assertNotNull(map.get("nonOpsProfileList"));
-    Assert.assertNotNull(map.get("authorityNonopsTypes"));
-    Assert.assertNotNull(map.get("authorityTypes"));
+  public void testShowProfiles(){
+	  
+	  map = new ModelMap();
+	  String result = profilesController.showProfiles(null, null, map);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("profiles.show", result);
+	  List<ProfileForm> allProfileList = (List<ProfileForm>) map.get("allProfileList");
+	  Assert.assertNotNull(allProfileList);
+	  Assert.assertEquals(profileDAO.count(), allProfileList.size());
+	  List<Profile> globalProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.GLOBAL);
+	  List<ProfileForm> opsProfileList = (List<ProfileForm>) map.get("opsProfileList");
+	  Assert.assertEquals(globalProfileList.size(), opsProfileList.size());
+	  List<Profile> tenantProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.TENANT);
+	  List<ProfileForm> nonOpsProfileList = (List<ProfileForm>) map.get("nonOpsProfileList");
+	  Assert.assertEquals(tenantProfileList.size(), nonOpsProfileList.size());
+	  String profileID = (String) map.get("selectedProfile");
+	  Assert.assertEquals(null, profileID);
   }
-
+  
+  /**
+   * Author: vinayv
+   * Description: Test to get ServiceProvider and Customer users profiles with profileId
+   */
+  @SuppressWarnings("unchecked")
   @Test
-  public void testeditProfile() {
-
-    Profile profile = new Profile("Test", Scope.GLOBAL);
-    profileDAO.save(profile);
-    String authorityNames = ",ROLE_ACCOUNT_CRUD,ROLE_ACCOUNT_MGMT";
-    map = new ModelMap();
-    try {
-      Assert.assertEquals(controller.editProfile(map, profile.getId().toString(), authorityNames), new String(
-          "profiles.show"));
-      Assert.assertNotNull(profile.getProfileAuthorities());
-      Assert.assertTrue(map.containsAttribute("updatedProfile"));
-      Assert.assertTrue(map.containsAttribute("isOpsProfile"));
-      Assert.assertTrue(map.containsAttribute("allProfileList"));
-      Assert.assertTrue(map.containsAttribute("opsProfileList"));
-      Assert.assertTrue(map.containsAttribute("nonOpsProfileList"));
-      Assert.assertTrue(map.containsAttribute("authorityNonopsTypes"));
-      Assert.assertTrue(map.containsAttribute("authorityOpsTypes"));
-      Assert.assertTrue(map.containsAttribute("authorityTypes"));
-      Assert.assertNotNull("opsProfileList");
-      Assert.assertNotNull("nonOpsProfileList");
-//      Assert.assertEquals(map.get("authorityNonopsTypes"), authorityScopeService.getOpsNonopsTypes(false));
-//      Assert.assertEquals(map.get("authorityOpsTypes"), authorityScopeService.getOpsNonopsTypes(true));
-      Assert.assertNotNull(map.get("authorityTypes"));
-
-    } catch (HibernateOptimisticLockingFailureException ex) {
-    } catch (DataAccessException ex) {
-    }
+  public void testShowProfilesWithProfileId(){
+	  
+	  map = new ModelMap();
+	  String result = profilesController.showProfiles("2", null, map);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("profiles.show", result);
+	  List<ProfileForm> allProfileList = (List<ProfileForm>) map.get("allProfileList");
+	  Assert.assertNotNull(allProfileList);
+	  Assert.assertEquals(profileDAO.count(), allProfileList.size());
+	  List<Profile> globalProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.GLOBAL);
+	  List<ProfileForm> opsProfileList = (List<ProfileForm>) map.get("opsProfileList");
+	  Assert.assertEquals(globalProfileList.size(), opsProfileList.size());
+	  List<Profile> tenantProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.TENANT);
+	  List<ProfileForm> nonOpsProfileList = (List<ProfileForm>) map.get("nonOpsProfileList");
+	  Assert.assertEquals(tenantProfileList.size(), nonOpsProfileList.size());
+	  String profileID = (String) map.get("selectedProfile");
+	  Assert.assertEquals("2", profileID);
+  }
+  
+  /**
+   * Author: vinayv
+   * Description: Test to edit ServiceProvider users profiles
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testEditServiceProviderUserProfiles(){
+	  
+	  map = new ModelMap();
+	  Profile profile = profileService.getProfile(4L);
+	  String authorityNames = ",ROLE_TICKET_MANAGEMENT";
+	  String result = profilesController.editProfile(map, "4", authorityNames);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("profiles.show", result);
+	  List<ProfileAuthority> authorityList = profile.getAuthorityList();
+	  Assert.assertEquals(1, authorityList.size());
+	  List<ProfileForm> allProfileList = (List<ProfileForm>) map.get("allProfileList");
+	  Assert.assertNotNull(allProfileList);
+	  Assert.assertEquals(profileDAO.count(), allProfileList.size());
+	  List<Profile> globalProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.GLOBAL);
+	  List<ProfileForm> opsProfileList = (List<ProfileForm>) map.get("opsProfileList");
+	  Assert.assertEquals(globalProfileList.size(), opsProfileList.size());
+	  List<Profile> tenantProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.TENANT);
+	  List<ProfileForm> nonOpsProfileList = (List<ProfileForm>) map.get("nonOpsProfileList");
+	  Assert.assertEquals(tenantProfileList.size(), nonOpsProfileList.size());
+  }
+  
+  /**
+   * Author: vinayv
+   * Description: Test to edit Customer users profiles
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testEditCustomerUserProfiles(){
+	  
+	  map = new ModelMap();
+	  Profile profile = profileService.getProfile(9L);
+	  String authorityNames = ",ROLE_USER";
+	  String result = profilesController.editProfile(map, "9", authorityNames);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("profiles.show", result);
+	  List<ProfileAuthority> authorityList = profile.getAuthorityList();
+	  Assert.assertEquals(1, authorityList.size());
+	  List<ProfileForm> allProfileList = (List<ProfileForm>) map.get("allProfileList");
+	  Assert.assertNotNull(allProfileList);
+	  Assert.assertEquals(profileDAO.count(), allProfileList.size());
+	  List<Profile> globalProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.GLOBAL);
+	  List<ProfileForm> opsProfileList = (List<ProfileForm>) map.get("opsProfileList");
+	  Assert.assertEquals(globalProfileList.size(), opsProfileList.size());
+	  List<Profile> tenantProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.TENANT);
+	  List<ProfileForm> nonOpsProfileList = (List<ProfileForm>) map.get("nonOpsProfileList");
+	  Assert.assertEquals(tenantProfileList.size(), nonOpsProfileList.size());
+  }
+  
+  /**
+   * Author: vinayv
+   * Description: Test to edit profiles logging in as User
+   */
+  @Test
+  public void testEditProfilesAsUser(){
+	  try{
+		  User user = userDAO.find(3L);
+		  asUser(user);
+		  map = new ModelMap();
+		  String authorityNames = ",ROLE_TICKET_MANAGEMENT";
+		  profilesController.editProfile(map, "4", authorityNames);
+	  }catch(Exception e){
+		 Assert.assertEquals("Access is denied", e.getMessage());
+	  }
   }
 }

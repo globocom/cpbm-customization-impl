@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
@@ -120,7 +120,7 @@
 	<h3><a href="#">Admin</a></h3>	
 	<div>
 		<sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
-		<div><a href="<%=request.getContextPath() %>/portal/home/config/showconfiguration">Configuration</a></div>
+		<div><a href="<%=request.getContextPath() %>/portal/home/config/show_configuration">Configuration</a></div>
 		</sec:authorize>
 		<div><a href="#">Jobs</a></div>
 		<div><a href="#">Cloud Administration</a></div>

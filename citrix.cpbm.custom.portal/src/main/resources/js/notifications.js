@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   
   currentPage = parseInt(currentPage);
@@ -326,7 +326,7 @@ function viewNotification(current){
 	 var param=divId.substr(3);
 	 resetGridRowStyle();
 	 $(current).addClass("selected active");
-	 var url = notificationUrl+"viewnotification";
+	 var url = notificationUrl+"view_notification";
 	 $.ajax( {
 			type : "GET",
 			url : url,
@@ -342,7 +342,7 @@ function viewNotification(current){
 }
 function viewFirstNotification(divId){
   var param=divId.substr(3);
-  var url = notificationUrl+"viewnotification";
+  var url = notificationUrl+"view_notification";
   $.ajax( {
      type : "GET",
      url : url,

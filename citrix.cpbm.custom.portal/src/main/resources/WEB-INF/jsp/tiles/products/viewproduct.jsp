@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -38,7 +38,7 @@ function retirePrdouct(current){
                 $("#dialog_retire_product_success").dialog("option", "buttons",
                   {"Ok": function(){
                     $(this).dialog("close");
-                    location.reload(true);
+                    $("#product_tab").click();
                   }
                 });
                 dialogButtonsLocalizer($("#dialog_retire_product_success"), {'Ok': g_dictionary.dialogOk});
@@ -105,7 +105,7 @@ function retirePrdouct(current){
                       $("#dialog_retire_product_success").dialog("option", "buttons",
                         {"Ok": function(){
                           $(this).dialog("close");
-                          location.reload(true);
+                          $("#product_tab").click();
                         }
                       });
                       dialogButtonsLocalizer($("#dialog_retire_product_success"), {'Ok': g_dictionary.dialogOk});

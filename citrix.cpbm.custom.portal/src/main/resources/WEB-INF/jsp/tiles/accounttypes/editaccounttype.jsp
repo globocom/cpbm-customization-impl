@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -11,7 +11,7 @@
   <div class="details_lightboxtitlebox">
   </div>
   <div class="details_lightboxformbox">
-    <spring:url value="/portal/admin/editaccounttype" var="edit_account_type_path" htmlEscape="false" /> 
+    <spring:url value="/portal/admin/edit_account_type" var="edit_account_type_path" htmlEscape="false" /> 
     <form:form commandName="accountTypeForm" cssClass="ajaxform" id="accountTypeEditForm" action="${edit_account_type_path}">
     <ul>
       <c:set var="detailStyle" value="display:none;" />

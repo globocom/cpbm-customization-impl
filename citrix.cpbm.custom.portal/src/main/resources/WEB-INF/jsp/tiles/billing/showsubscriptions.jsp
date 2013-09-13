@@ -1,9 +1,10 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>                
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/subscription.js"></script>
 <jsp:include page="js_messages.jsp"></jsp:include>
@@ -13,9 +14,12 @@
   var dictionary = {  
       terminatesubscription: '<spring:message javaScriptEscape="true" code="label.subscription.details.terminate"/>',
       lightboxterminatesubscription:'<spring:message javaScriptEscape="true" code="message.confirm.terminate.subscription"/>',
+      cancelsubscription: '<spring:message javaScriptEscape="true" code="label.subscription.details.cancel"/>',
+      lightboxcancelsubscription:'<spring:message javaScriptEscape="true" code="message.confirm.cancel.subscription"/>',
       lightboxbuttoncancel: '<spring:message javaScriptEscape="true" code="label.cancel"/>',  
       lightboxbuttonconfirm: '<spring:message javaScriptEscape="true" code="label.confirm"/>',
       terminatingSubscription:'<spring:message javaScriptEscape="true" code="message.terminating.subscription"/>',
+      cancellingSubscription:'<spring:message javaScriptEscape="true" code="message.cancelling.subscription"/>',
       showingdetails: '<spring:message javaScriptEscape="true" code="message.showing.details"/>',
       notApplicable:'<spring:message javaScriptEscape="true" code="ui.label.na"/>'
   };
@@ -26,18 +30,35 @@
     <div class="widget_titlebar">
       <h2 id="list_titlebar"><span id="list_all"><spring:message code="label.list.all"/> </span></h2>
     </div>
+      <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')">
     <div class="widget_searchpanel">
       <div id="search_panel" class="widget_searchcontentarea">
-      <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')">
        <spring:message code="page.level2.allusers" var="all_users"/>
-        <span class="label"><spring:message code="label.filter.by"/>:</span>
-        <select id="userfilterdropdownforinvoices" onchange="changeUser(this);" class="select">
+        <span class="label fixed_width"><spring:message code="label.filter.by"/>:</span>
+        <select id="userfilterdropdownforinvoices" onchange="filter_subscriptions(this);" class="select">
         <option id="ALL_USERS" value="ALL_USERS"><c:out value="${all_users}"></c:out></option>
         <c:forEach var="user" items="${tenant.users}" varStatus="usersStatus">
               <option id="${user.uuid}"  value="${user.uuid}" <c:if test="${user.uuid eq useruuid}">selected</c:if>><c:out value="${user.username}"></c:out> </option>
         </c:forEach>
         </select>
-        </sec:authorize>
+        
+           
+      </div>
+    </div>
+    </sec:authorize>
+    <div class="widget_searchpanel">
+      <div id="search_panel" class="widget_searchcontentarea">
+          <span class="label fixed_width"><spring:message code="label.state" />:</span> <select class="filterby select"
+            id="filter_dropdown" onchange="filter_subscriptions(this);" >
+            <option value="all">
+              <spring:message code="ui.product.category.all" />
+            </option>
+            <c:forEach items="${states}" var="choice" varStatus="status">
+              <option value='<c:out value="${choice.name}" />' <c:if test="${choice.name eq state}">selected</c:if>>
+               <spring:message code="subscription.state.${fn:toLowerCase(choice.name)}" />
+              </option>
+            </c:forEach>
+          </select>
       </div>
     </div>
     <div class="widget_navigation">
@@ -218,3 +239,4 @@
 <input type="hidden" id="current_page"  value="<c:out value="${current_page}"/>"/>
 <input type="hidden" id="selected_subs_for_details"  value="<c:out value="${idForDetails}"/>"/>
 <input type="hidden" id="tenantParam"  value="<c:out value="${tenant.param}"/>"/>
+<input type="hidden" id="states"  value="<c:out value="${states}"/>"/>

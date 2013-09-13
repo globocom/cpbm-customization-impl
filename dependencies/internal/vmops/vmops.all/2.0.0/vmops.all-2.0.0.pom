@@ -726,7 +726,7 @@
     <apache.commons.beanutils.version>1.8.0</apache.commons.beanutils.version>
     <portal.appresources.version>1.0.0</portal.appresources.version>
 	<easymock.version>3.0</easymock.version>
-    <virgo.repository.usr.location>${env.VIRGO_HOME}/repository/usr</virgo.repository.usr.location>
+    <virgo.repository.usr.location>/Volumes/Citrix/Devel/virgo-tomcat-server-3.0.3.RELEASE/repository/usr</virgo.repository.usr.location>
     <!-- Deployment -->
     <deploy.manager.url>http://localhost:8080/manager</deploy.manager.url>
     <!-- Resource properties -->

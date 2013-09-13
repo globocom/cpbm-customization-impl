@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -49,6 +49,7 @@ var dictionary = {
 
 <input type="hidden" id="accountStatementUuid"  value="<c:out value="${accountStatementUuid}"/>"/>
 <input type="hidden" id="useruuid"  value="<c:out value="${useruuid}"/>"/>
+<input type="hidden" id="state"  value="<c:out value="${state}"/>"/>
 <input type="hidden" id="current_page"  value="<c:out value="${current_page}"/>"/>
 <input type="hidden" id="accountStatementState"  value="<c:out value="${accountStatementState}"/>"/>
 

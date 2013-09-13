@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -98,7 +98,7 @@
            <span><spring:message code="ui.bath.job.view.status.page.description"/></span>
         </div>
         <div class="widget_grid_description" >
-          <span>
+          <span class="details_wide">
             <c:out value="${jobStatus.description}"/>
           </span>
         </div>

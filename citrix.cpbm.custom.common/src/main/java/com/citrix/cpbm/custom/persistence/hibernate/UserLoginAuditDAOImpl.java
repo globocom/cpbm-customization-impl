@@ -1,4 +1,4 @@
-/* Copyright (C) 2013 Citrix, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package com.citrix.cpbm.custom.persistence.hibernate;
 
 import java.util.List;
@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Repository;
 
+import com.citrix.cpbm.custom.model.UserLoginAudit;
 import com.citrix.cpbm.custom.persistence.UserLoginAuditDAO;
-import com.vmops.custom.model.UserLoginAudit;
 import com.vmops.model.User;
 import com.vmops.persistence.hibernate.GenericHibernateDAO;
 

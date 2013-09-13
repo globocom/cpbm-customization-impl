@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 /**
  * 
  */
@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.management.Notification;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.time.DateUtils;
@@ -25,14 +26,19 @@ import org.springframework.ui.ModelMap;
 import web.WebTestsBase;
 import web.support.DispatcherTestServlet;
 
-import citrix.cpbm.portal.fragment.controllers.SystemHealthController;
-
+import com.citrix.cpbm.portal.fragment.controllers.SystemHealthController;
 import com.vmops.model.Health;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceNotification;
+import com.vmops.model.Tenant;
+import com.vmops.model.User;
 import com.vmops.model.ServiceNotification.Type;
 import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.persistence.ServiceNotificationDAO;
+import com.vmops.utils.DateTimeUtils;
+import com.vmops.utils.GetHostName;
+import com.vmops.web.controllers.AbstractBaseController;
+import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ServiceNotificationForm;
 
 /**
@@ -62,6 +68,8 @@ public class SystemHealthControllerTest extends WebTestsBase {
     map = new ModelMap();
     calendar = Calendar.getInstance();
     defaultServiceInstance = serviceInstanceDao.find(1L);
+    request = new MockHttpServletRequest();
+
 
   }
 
@@ -72,7 +80,7 @@ public class SystemHealthControllerTest extends WebTestsBase {
     Class<? extends SystemHealthController> controllerClass = controller.getClass();
 
     Method expected = locateMethod(controllerClass, "health", new Class[] {
-        String.class, ModelMap.class
+        String.class, int.class, ModelMap.class
     });
     Method handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health"));
     Assert.assertEquals(expected, handler);
@@ -80,49 +88,49 @@ public class SystemHealthControllerTest extends WebTestsBase {
     expected = locateMethod(controllerClass, "showStatusDetails", new Class[] {
         String.class, String.class, String.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/showStatusDetails"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/show_status_details"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "getHealthStatusForServiceInstance", new Class[] {
         String.class, HttpServletRequest.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/getHealthStatusForServiceInstance"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/get_health_status_for_service_instance"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "showAddStatus", new Class[] {
-      ModelMap.class
+        String.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/addStatus"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/add_status"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "showAddSchedMaintenance", new Class[] {
-        String.class, ModelMap.class
+        String.class, String.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/addSchedMaintenance"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/add_scheduled_maintenance"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "addStatus", new Class[] {
         ServiceNotificationForm.class, HttpServletRequest.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/addStatus"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/add_status"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "saveMaintenanceSchedule", new Class[] {
         ServiceNotificationForm.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/saveMaintenanceSchedule"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/save_maintenance_schedule"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "updateMaintenanceSchedule", new Class[] {
         ServiceNotificationForm.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/updateMaintenanceSchedule"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/health/update_maintenance_schedule"));
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controllerClass, "editStatusDetails", new Class[] {
         String.class, ModelMap.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/editStatusDetails"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/health/edit_status_details"));
     Assert.assertEquals(expected, handler);
 
   }
@@ -144,29 +152,36 @@ public class SystemHealthControllerTest extends WebTestsBase {
       start = calendar.getTime();
       calendar.add(Calendar.HOUR_OF_DAY, random.nextInt(5) + 1);
       end = calendar.getTime();
-      notification = new ServiceNotification(getRootUser(), start, end, "planned", "planned down time", defaultServiceInstance);
+      notification = new ServiceNotification(getRootUser(), start, end, "planned", "planned down time",
+          defaultServiceInstance);
       serviceNotificationDAO.save(notification);
     }
     serviceNotificationDAO.flush();
 
-    String view = controller.health("1", map);
+    ServiceInstance instance = serviceInstanceDao.find(1L);
+    String view = controller.health(instance.getUuid(), 0, map);
     Assert.assertEquals("system.health", view);
+    
     Object o = map.get("dateStatus");
     Assert.assertTrue(o instanceof Map);
     Map<Date, Health> dates = (Map<Date, Health>) o;
-    Assert.assertEquals(SystemHealthController.DAYS_PER_PAGE, dates.keySet().size());
+    Assert.assertEquals(AbstractBaseController.getDefaultPageSize().intValue(), dates.keySet().size());
     for (Date date : dates.keySet()) {
       System.out.println(date);
       Assert.assertTrue(DateUtils.isSameDay(new Date(), date) || date.before(new Date()));
     }
-    o = map.get("maintenance");
-    Assert.assertTrue(o instanceof List<?>);
-    List<ServiceNotification> notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(4, notifications.size());
-    for (ServiceNotification item : notifications) {
-      Assert.assertEquals(Type.MAINTENANCE, item.getNotificationType());
-      Assert.assertTrue(item.getPlannedEnd().after(now));
+    
+    o = map.get("dateStatusHistory");
+    Assert.assertTrue(o instanceof Map);
+    Map<Date, List<ServiceNotification>> datesStatusHistory = (Map<Date, List<ServiceNotification>>) o;
+    Assert.assertEquals(AbstractBaseController.getDefaultPageSize().intValue(), datesStatusHistory.keySet().size());
+    for (Date date : datesStatusHistory.keySet()) {
+      System.out.println(date);
+      Assert.assertTrue(DateUtils.isSameDay(new Date(), date) || date.before(new Date()));
     }
+    
+    
+    
   }
 
   @SuppressWarnings("unchecked")
@@ -174,8 +189,9 @@ public class SystemHealthControllerTest extends WebTestsBase {
   public void testSystemStatus() throws Exception {
 
     controller.getCurrentUser().setTimeZone("GMT");
-
-    controller.showStatusDetails("07082011", "1", "ddMMyyyy", map);
+    ServiceInstance instance = serviceInstanceDao.find(1L);
+    
+    controller.showStatusDetails("07082011", instance.getUuid(), "ddMMyyyy", map);
     Object o = map.get("health");
     Assert.assertNotNull(o);
     Assert.assertTrue(o instanceof Health);
@@ -187,7 +203,7 @@ public class SystemHealthControllerTest extends WebTestsBase {
     List<ServiceNotification> notifications = (List<ServiceNotification>) o;
     Assert.assertEquals(0, notifications.size());
 
-    controller.showStatusDetails("08082011", "1", "ddMMyyyy", map);
+    controller.showStatusDetails("08052013", instance.getUuid(), "ddMMyyyy", map);
     o = map.get("health");
     Assert.assertNotNull(o);
     Assert.assertTrue(o instanceof Health);
@@ -200,46 +216,7 @@ public class SystemHealthControllerTest extends WebTestsBase {
     Assert.assertEquals(3, notifications.size());
     Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
 
-    controller.showStatusDetails("09082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.ISSUE, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(0, notifications.size());
-
-    controller.showStatusDetails("10082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.NORMAL, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(2, notifications.size());
-    Assert.assertEquals(Type.RESOLUTION, notifications.get(0).getNotificationType());
-
-    controller.getCurrentUser().setTimeZone("GMT-08:00");
-    controller.showStatusDetails("08082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.ISSUE, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(2, notifications.size());
-    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
-
-    controller.showStatusDetails("09082011", "1", "ddMMyyyy", map);
+    controller.showStatusDetails("11052013", instance.getUuid(), "ddMMyyyy", map);
     o = map.get("health");
     Assert.assertNotNull(o);
     Assert.assertTrue(o instanceof Health);
@@ -249,60 +226,87 @@ public class SystemHealthControllerTest extends WebTestsBase {
     Assert.assertNotNull(o);
     Assert.assertTrue(o instanceof List<?>);
     notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(1, notifications.size());
+    Assert.assertEquals(2, notifications.size());
     Assert.assertEquals(Type.DISRUPTION, notifications.get(0).getNotificationType());
 
-    controller.showStatusDetails("10082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.ISSUE, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(2, notifications.size());
-    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
-
-    controller.getCurrentUser().setTimeZone("GMT+06:00");
-    controller.showStatusDetails("08082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.ISSUE, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(3, notifications.size());
-    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
-
-    controller.showStatusDetails("09082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.ISSUE, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(0, notifications.size());
-
-    controller.showStatusDetails("10082011", "1", "ddMMyyyy", map);
-    o = map.get("health");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof Health);
-    health = (Health) o;
-    Assert.assertEquals(Health.NORMAL, health);
-    o = map.get("notifications");
-    Assert.assertNotNull(o);
-    Assert.assertTrue(o instanceof List<?>);
-    notifications = (List<ServiceNotification>) o;
-    Assert.assertEquals(2, notifications.size());
-    Assert.assertEquals(Type.RESOLUTION, notifications.get(0).getNotificationType());
+//    controller.getCurrentUser().setTimeZone("GMT-08:00");
+//    controller.showStatusDetails("08052013", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.ISSUE, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(2, notifications.size());
+//    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
+//
+//    controller.showStatusDetails("09082011", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.DOWN, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(1, notifications.size());
+//    Assert.assertEquals(Type.DISRUPTION, notifications.get(0).getNotificationType());
+//
+//    controller.showStatusDetails("10082011", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.ISSUE, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(2, notifications.size());
+//    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
+//
+//    controller.getCurrentUser().setTimeZone("GMT+06:00");
+//    controller.showStatusDetails("08082011", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.ISSUE, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(3, notifications.size());
+//    Assert.assertEquals(Type.ISSUE, notifications.get(0).getNotificationType());
+//
+//    controller.showStatusDetails("09082011", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.ISSUE, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(0, notifications.size());
+//
+//    controller.showStatusDetails("10082011", instance.getUuid(), "ddMMyyyy", map);
+//    o = map.get("health");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof Health);
+//    health = (Health) o;
+//    Assert.assertEquals(Health.NORMAL, health);
+//    o = map.get("notifications");
+//    Assert.assertNotNull(o);
+//    Assert.assertTrue(o instanceof List<?>);
+//    notifications = (List<ServiceNotification>) o;
+//    Assert.assertEquals(2, notifications.size());
+//    Assert.assertEquals(Type.RESOLUTION, notifications.get(0).getNotificationType());
   }
 
   @Test
@@ -314,16 +318,34 @@ public class SystemHealthControllerTest extends WebTestsBase {
     ServiceNotification notification = new ServiceNotification(getRootUser(), start, end, "planned",
         "planned down time", defaultServiceInstance);
     ServiceNotificationForm form = new ServiceNotificationForm(notification);
+    form.setServiceInstanceUUID(defaultServiceInstance.getUuid());
     controller.saveMaintenanceSchedule(form, map);
     Assert.assertTrue(map.containsKey("item"));
   }
 
   @Test
   public void testshowAddStatus() {
-    String showStatus = controller.showAddStatus(null, map);
-    Assert.assertEquals(showStatus, new String("system.health.addStatus"));
+    String showStatus = controller.showAddStatus(defaultServiceInstance.getUuid(), map);
+    Assert.assertEquals(new String("system.health.addStatus"), showStatus);
   }
 
+  @Test
+  public void testshowAddStatusWithInstanceNull() {
+    String showStatus = controller.showAddStatus(null, map);
+    Assert.assertEquals(new String("system.health.addStatus"), showStatus);
+  }
+
+  @Test
+  public void testshowAddStatusAsMasterUser() {
+
+    User user = userDAO.find(3L);
+    asUser(user);
+
+    String showStatus = controller.health(defaultServiceInstance.getUuid(), 1, map);
+    Assert.assertEquals(new String("system.health"), showStatus);
+  }
+
+  
   @Test
   public void testshowAddSchedMaintenance() {
     String showMaintenace = controller.showAddSchedMaintenance(null, null, map);
@@ -332,7 +354,6 @@ public class SystemHealthControllerTest extends WebTestsBase {
     ServiceNotificationForm serviceNotificationForm = ((ServiceNotificationForm) map.get("serviceNotificationForm"));
     Assert.assertNotNull(serviceNotificationForm.getServiceNotification());
     Assert.assertEquals(serviceNotificationForm.getServiceNotification().getNotificationType(), Type.MAINTENANCE);
-    Assert.assertNotNull(map.get("zones"));
 
     map.clear();
     showMaintenace = controller.showAddSchedMaintenance("1", null, map);
@@ -391,13 +412,11 @@ public class SystemHealthControllerTest extends WebTestsBase {
 
   @Test
   public void testdeleteServiceNotification() {
+    int beforeNotificationCount = serviceNotificationDAO.count();
     String delete = controller.deleteServiceNotification("1", map);
     Assert.assertEquals(delete, new String("success"));
-    // List<Map<String, String>> zones = (List<Map<String, String>>) (map.get("zones"));
-    // Assert.assertTrue(zones.size() == 1);
-    Assert.assertNotNull(map.get("today"));
-    Assert.assertNotNull(map.get("dateStatus"));
-    Assert.assertNotNull(map.get("dateStatusHistory"));
+    int afterNotificationCount = serviceNotificationDAO.count();
+    Assert.assertEquals(afterNotificationCount, beforeNotificationCount-1);
 
   }
 
@@ -406,11 +425,85 @@ public class SystemHealthControllerTest extends WebTestsBase {
   public void testhealthmaintainance() {
     String healthMaintainance = controller.healthmaintainance(defaultServiceInstance.getUuid(), "1", null, map);
     Assert.assertEquals(healthMaintainance, new String("system.health.maintenance"));
-    List<ServiceNotification> list = ((List<ServiceNotification>) map.get("notifications"));
-    Assert.assertEquals(list.size(), serviceNotificationDAO.count());
     Assert.assertNotNull(map.get("today"));
-    Assert.assertNotNull(map.get("dateStatus"));
-    Assert.assertNotNull(map.get("dateStatusHistory"));
-
+    Assert.assertEquals(new Date().toString(), ((Date)map.get("today")).toString());
+    Assert.assertNotNull(map.get("tenant"));
+    Tenant tenant = (Tenant) map.get("tenant");
+    Assert.assertEquals(getSystemTenant(), tenant);
+    Assert.assertNotNull(map.get("maintenance"));
+    List<ServiceNotification> serviceNotificationList = (List<ServiceNotification>) map.get("maintenance");
+    Assert.assertEquals(1, serviceNotificationList.size());
   }
+
+  @Test
+  public void testHealthStatusForServiceInstance() {
+    String healthMaintainance = controller.getHealthStatusForServiceInstance(defaultServiceInstance.getUuid(), request, map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("service.health.chart"), healthMaintainance);
+    Assert.assertEquals(Health.NORMAL.toString(), map.get("status"));
+  }
+
+
+  @Test
+  public void testHealthStatusForServiceInstanceAsMasterUser() {
+
+    User user = userDAO.find(3L);
+    asUser(user);
+
+    String healthMaintainance = controller.getHealthStatusForServiceInstance(defaultServiceInstance.getUuid(), request, map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("service.health.chart"), healthMaintainance);
+    Assert.assertEquals(Health.NORMAL.toString(), map.get("status"));
+  }
+
+  @Test
+  public void testHealthStatusForServiceInstanceAsNormalUser() {
+
+    User user = userDAO.find(22L);
+    asUser(user);
+
+    String healthMaintainance = controller.getHealthStatusForServiceInstance(defaultServiceInstance.getUuid(), request, map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("service.health.chart"), healthMaintainance);
+    Assert.assertEquals(Health.NORMAL.toString(), map.get("status"));
+  }
+
+  @Test
+  public void testHealthStatusForServiceInstanceAsNull() {
+    String healthMaintainance = controller.getHealthStatusForServiceInstance(null, request, map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("service.health.chart"), healthMaintainance);
+    Assert.assertEquals(Health.DOWN.toString(), map.get("status"));
+  }
+
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testmaintenanceView() {
+    ServiceNotification notification = serviceNotificationDAO.find(1L);
+    String healthMaintainance = controller.maintenanceView(defaultServiceInstance.getUuid(), "1", map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("system.health.maintenanceView"), healthMaintainance);
+    Assert.assertEquals(Page.SUPPORT_HEALTH, (Page)map.get("page"));
+    List<ServiceNotification> list = (List<ServiceNotification>) map.get("notifications");
+    Assert.assertEquals(13, list.size());
+    ServiceNotification obtainedNotification = (ServiceNotification) map.get("item");
+    Assert.assertEquals(notification, obtainedNotification);
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testmaintenanceViewWithServiceInstanceAsNull() {
+    ServiceNotification notification = serviceNotificationDAO.find(1L);
+    String healthMaintainance = controller.maintenanceView(null, "1", map);
+    Assert.assertNotNull(healthMaintainance);
+    Assert.assertEquals(new String("system.health.maintenanceView"), healthMaintainance);
+    Assert.assertEquals(Page.SUPPORT_HEALTH, (Page)map.get("page"));
+    List<ServiceNotification> list = (List<ServiceNotification>) map.get("notifications");
+    Assert.assertEquals(serviceNotificationDAO.count(), list.size());
+    ServiceNotification obtainedNotification = (ServiceNotification) map.get("item");
+    Assert.assertEquals(notification, obtainedNotification);
+  }
+
+  
 }

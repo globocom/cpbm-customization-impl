@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   $(function() {
     $('#start').datepicker( {
@@ -274,8 +274,8 @@ function generateCustReport(form,event){
           }else {
             alert(i18n.alerts.generateSuccess);
             var url = $(form).attr("action");
-            var downloadURL = url.substring(0,url.lastIndexOf("/"))+"/downloadcustomreport/"+result;
-            var emailURL = url.substring(0,url.lastIndexOf("/"))+"/emailcustomreport/"+result;
+            var downloadURL = url.substring(0,url.lastIndexOf("/"))+"/download_custom_report/"+result;
+            var emailURL = url.substring(0,url.lastIndexOf("/"))+"/email_custom_report/"+result;
             $("#reportdownload").attr('href',downloadURL);
             $("#reportdownload").removeClass("commonbuttondisabled");
             $("#reportdownload").addClass("commonbutton");

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.io.IOException;
@@ -77,9 +77,9 @@ public class AccessDecisionTest extends WebTestsBase {
         }, {
             HttpMethod.POST, "/portal/portal/reset_password"
         }, {
-            HttpMethod.GET, "/portal/portal/verifyemail"
+            HttpMethod.GET, "/portal/portal/verify_email"
         }, {
-            HttpMethod.GET, "/portal/portal/verifyUser"
+            HttpMethod.GET, "/portal/portal/verify_user"
         }
     };
     Object[][] anonymousAccessInvalid = {

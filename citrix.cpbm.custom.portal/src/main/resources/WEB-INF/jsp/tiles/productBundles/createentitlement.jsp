@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
  <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -18,10 +18,10 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
          action="${create_entitle_path}"  onsubmit="addNewEntitlement(event, this)">
       <div class="widget_grid_cell" style="width: 34%;">
                     <div class="mandatory_wrapper" style="width: 100%;">
-                    <form:select cssClass="select entitlement" id="productId" path="productId" cssStyle="width: 90%;">
+                    <form:select cssClass="select entitlement" id="productId" path="productId" cssStyle="width: 90%;" onchange="hideUnlimitedEntitlementCheckBoxIfNecessary(this);">
                       <option class="noProductSelected _hypervisor" value=""><spring:message code="label.bundle.entitlement.create.choose.product"/></option>
                       <c:forEach items="${products}" var="choice" varStatus="status">
-                        <option value=<c:out value="${choice.id}"/> > 
+                        <option value=<c:out value="${choice.id}"/> unlimitedallow= "${choice.allowedUnlimitedEntitlement}"> 
                           <c:out value="${choice.name}" />
                         </option>
                       </c:forEach>
@@ -29,10 +29,10 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
                     <div class="main_addnew_formbox_errormsg" id="productIdError" style="margin:5px 0 0 10px"></div>
                     </div>
       </div>
-      <div class="widget_grid_cell" style="width: 25%; margin-top: 5px">
+      <div class="widget_grid_cell" style="width: 41%; margin-top: 3px">
         <div class="mandatory_wrapper" style="width: 100%;">
-          <form:input path="entitlement.includedUnits" size="4" id="entitlement.includedUnits" cssStyle="margin-left:10px"/>
-          <form:checkbox path="unlimitedUsage" cssStyle="margin:3px 3px 0px 0px;" id="unlimitedUsage" onchange="removeError()"/><spring:message code="label.bundle.list.entitlement.unlimited.usage"/>
+          <form:input path="entitlement.includedUnits" size="4" id="entitlement.includedUnits" cssStyle="margin-left:10px; width:50px;padding:0;"/>
+          <span id="unlimitedEntitlementCheckBox"><form:checkbox path="unlimitedUsage" cssStyle="margin:0px 5px 0px 0px;" id="unlimitedUsage" onchange="removeError()"/><spring:message code="label.bundle.list.entitlement.unlimited.usage"/></span>
           <div class="main_addnew_formbox_errormsg" id="entitlement.includedUnitsError" style="margin:5px 0 0 10px"></div>
         </div>
       </div>

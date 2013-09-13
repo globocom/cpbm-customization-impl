@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -10,6 +10,7 @@
     	<div class="secondlevel_breadcrumbbox">
         	<p><c:out value="${tenant.name}"/></p>
       </div>
+      <div class="doc_help_link"></div>
     </div>        
      <div class="secondlevel_menupanel">
    			<spring:url value="/portal/home" var="dashboard_path" htmlEscape="false">
@@ -76,9 +77,10 @@
       </c:if>
       
 	 </div>
+     <div class="clearboth"></div>
       <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')">
         <c:if test="${showUserProfile}">
-          <div class="clearboth"></div>
+          
           <div class="info" style="margin-top:2px;">
             <spring:message code="account.view.for.admin.profile.message"/>
             <span id="back_to_all_accounts"><a href="/portal/portal/tenants/list" ><spring:message code="label.home.second.level.backtoallaccounts"/></a></span>
@@ -87,7 +89,7 @@
         </c:if>
       </sec:authorize>     
       <c:if test="${Dashboard eq 'on' && (currentLocale ne pageContext.request.locale)}">
-        <div class="clearboth"></div>
+        
         <div class="info" style="margin-top:2px;">
           <spring:message code="message.view.for.locale.mismatch"/><a href="/portal/portal/users/${currentUser.param}/myprofile" ><spring:message code="page.level2.myprofile"/></a>
         </div>

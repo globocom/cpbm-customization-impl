@@ -1,4 +1,4 @@
- <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -13,7 +13,7 @@
     <div class="widget_grid inline header widget_navtitlebox">
      <span class="widget_gridicon currentcalendar " style="margin:7px 0 0 5px;"> </span>
       <span  class="title" style="margin-left:5px;width: auto;color:#FFF;">
-        <spring:message code="dateonly.format" var="dateonly_format"/>
+        <spring:message code="date.format" var="dateonly_format"/>
         <spring:message code="label.bundle.list.ratecard.effective.date"/>
         <c:choose>
           <c:when test="${date != null}">

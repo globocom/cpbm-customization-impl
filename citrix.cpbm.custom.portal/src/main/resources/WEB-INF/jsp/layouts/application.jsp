@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -29,6 +29,9 @@
       </c:if>
     </c:if>
     <script type="text/javascript" src="<%=request.getContextPath()%>/csrf_js_servlet"></script>
+    <link rel="stylesheet" href="<%=request.getContextPath() %>/css/bootstrap.min.css" type="text/css">
+    <script type="text/javascript" src="<%=request.getContextPath() %>/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="<%=request.getContextPath() %>/js/bootstrap.dropdown.menu.js"></script>
     <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/resources/all.css"/>
     <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main.css"/>
     
@@ -61,6 +64,30 @@
     <link rel="stylesheet" type="text/css" media="only screen and (device-width: 768px) and (-webkit-min-device-pixel-ratio: 1)" href="<%=request.getContextPath()%>/css/ipad_custom.css"/>
 		<tiles:insertAttribute name="pageHeader" ignore="true"/>
 		<tiles:insertAttribute name="customHeader" ignore="true"/>
+		
+   <!-- Check for channel specific css -->
+  <c:if test="${not empty tenant.sourceChannel.code}">
+   	<link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${tenant.sourceChannel.code}"/>.css"/>
+   </c:if>
+   <c:if test="${not empty tenant.sourceChannel.code && not empty currentLocale && currentLocale.language ne 'en'}">
+      <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${tenant.sourceChannel.code}"/>_<c:out value="${currentLocale.language}"/>.css"/>
+      <c:if test="${not empty tenant.sourceChannel.code && not empty currentLocale.country}">
+        <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${tenant.sourceChannel.code}"/>_<c:out value="${currentLocale.language}"/>-<c:out value="${currentLocale.country}"/>.css"/>
+      </c:if>
+    </c:if>
+	
+	
+	<c:if test="${not empty channel.code}">
+   	<link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${channel.code}"/>.css"/>
+   </c:if>
+      <c:if test="${not empty channel.code && not empty currentLocale && currentLocale.language ne 'en'}">
+      <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${channel.code}"/>_<c:out value="${currentLocale.language}"/>.css"/>
+      <c:if test="${not empty channel.code && not empty currentLocale.country}">
+        <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/custom/css/channel/<c:out value="${channel.code}"/>_<c:out value="${currentLocale.language}"/>-<c:out value="${currentLocale.country}"/>.css"/>
+      </c:if>
+    </c:if>
+   
+   
 <c:if test="${isGoogleAnalyticsEnabled}">
     <script type="text/javascript">
 
@@ -167,7 +194,8 @@ var g_dictionary = {
   lableChoose: '<spring:message javaScriptEscape="true" code="label.choose"/>', 
   custom: '<spring:message javaScriptEscape="true" code="label.custom"/>',
   dialogInvalidUnit: '<spring:message javaScriptEscape="true" code="label.invalidUnit"/>',
-  dialogInvalidFactor: '<spring:message javaScriptEscape="true" code="label.invalidFactor"/>'
+  dialogInvalidFactor: '<spring:message javaScriptEscape="true" code="label.invalidFactor"/>',
+  error_single_sign_on: '<spring:message javaScriptEscape="true" code="error.single.signon.failure"/>'
 };
 var i18nDayNames = [
   '<fmt:formatDate pattern="EEE" value="<%=new java.util.Date(0,0,0)%>"/>',
@@ -212,8 +240,6 @@ var i18nMonthNames = [
   '<fmt:formatDate pattern="MMMM" value="<%=new java.util.Date(0,12,0)%>"/>'
 ];
 </script>
-
-
   </head>
 <body>
     <div id="overlay_black" style="display: none">
@@ -221,6 +247,7 @@ var i18nMonthNames = [
 	  <div id="main">
     	<tiles:insertAttribute name="header" />  				
     	<tiles:insertAttribute name="secondlevelheader" ignore="true" />
+        
     	<div id="maincontent_container">
         	<div class="maincontent">
           	<tiles:insertAttribute name="thirdlevelheader" ignore="true" />
@@ -229,6 +256,9 @@ var i18nMonthNames = [
     		    <tiles:insertAttribute name="instancecontent" ignore="true" />
     		</div>
     	</div>
+        <div id="manage_resources_container" class="manage_resources_container" style="display:none;">
+          <iframe id="manage_resources_iframe" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
     	<div class="clearboth">
     	</div>
    		<div id="footer">
@@ -240,10 +270,22 @@ var i18nMonthNames = [
     </div>    
     <div id="dialog_info" title='<spring:message code="lightbox.title.information"/>' style="margin:10px;display: none">
     </div>
-    <!--    
-    <div id="dialog_error" title='Error' style="display: none; color: red">
-    </div>
-    -->  
+    <div id="utilityrates_lightbox" class="utility_table" title='<spring:message code="view.utility.rates"/>' style="display:none;padding:10px;max-height:800px;">
+    </div> 
+    <div id="full_page_spinning_wheel" style="display: none;">
+      <div class="widget_blackoverlay widget_full_page"></div>
+      <div class="widget_loadingbox fullpage">
+        <div class="widget_loaderbox">
+          <span class="bigloader"></span>
+        </div>
+        <div class="widget_loadertext">
+          <p id="in_process_text">
+            <spring:message code="label.loading" />
+            &hellip;
+          </p>
+        </div>
+      </div>
+    </div> 
     <script type="text/javascript" src="<%=request.getContextPath() %>/resources/app.js"></script>
 </body>	
 </html>

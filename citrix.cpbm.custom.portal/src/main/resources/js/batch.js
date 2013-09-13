@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
   currentPage = parseInt(currentPage);
   perPageValue = parseInt(perPageValue);
@@ -13,7 +14,7 @@ $(document).ready(function() {
     $("#click_previous").unbind("click").bind("click", previousClick);
     $("#click_previous").removeClass("nonactive");
     
-    window.location=batchJobUrl+"?currentPage=" + currentPage;
+    window.location=batchJobUrl+"?currentpage=" + currentPage;
   }
 
   function previousClick(event) {
@@ -25,7 +26,7 @@ $(document).ready(function() {
     $("#click_next").removeClass("nonactive");
     $("#click_next").unbind("click").bind("click", nextClick);
     
-    window.location=batchJobUrl+"?currentPage=" + currentPage;
+    window.location=batchJobUrl+"?currentpage=" + currentPage;
   }
   
   if (currentPage > 1) {
@@ -54,11 +55,11 @@ function viewbatchjob(current){
 	 var ID=divId.substr(3);
 	 resetGridRowStyle();
 	 $(current).addClass("selected active");
-	 var url = "/portal/portal/admin/viewbatchjob";
+	 var url = "/portal/portal/admin/view_batch_job";
 	 $.ajax( {
 			type : "GET",
 			url : url,
-			data:{Id:ID},
+			data:{id:ID},
 			dataType : "html",
 			success : function(html) {				
 				$("#viewjobstatusDiv").html(html);
@@ -80,11 +81,11 @@ function viewbatchjob(current){
 
 	function viewFirstBatchJob(divId){
 	  var ID=divId.substr(3);
-	  var url = "/portal/portal/admin/viewbatchjob";
+	  var url = "/portal/portal/admin/view_batch_job";
 	  $.ajax( {
 	     type : "GET",
 	     url : url,
-	     data:{Id:ID},
+	     data:{id:ID},
 	     dataType : "html",
 	     success : function(html) {        
 	       $("#viewjobstatusDiv").html(html);

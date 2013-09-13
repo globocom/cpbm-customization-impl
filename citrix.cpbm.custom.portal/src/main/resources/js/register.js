@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   
   $("#syncAddressli").hide();
@@ -495,7 +495,7 @@ $(document).ready(function() {
 
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestCallByUser",
+      url : "/portal/portal/request_call_by_user",
       data: {"userName":username},        
       dataType : "text/html",
       success : function(response) {
@@ -520,7 +520,7 @@ $(document).ready(function() {
     $("#phoneVerificationSMSByUser").html("<span class='text_icon'></span>"+i18n.labels.phoneVerificationSending);
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestSMSByUser",
+      url : "/portal/portal/request_sms_by_user",
       data: {"userName":username},        
       dataType : "text/html",
       success : function(response) {
@@ -548,7 +548,7 @@ $(document).ready(function() {
     var phoneNo = getOnlyNosFromThePhoneNoString(phoneNumber);
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestCall",
+      url : "/portal/portal/request_call",
       data: {"phoneNumber":phoneNo,"countryCode":cntryCode},        
       dataType : "html",
       success : function(response) {
@@ -576,7 +576,7 @@ $(document).ready(function() {
     $("#phoneVerificationSMS").html("<span class='text_icon'></span>"+i18n.labels.phoneVerificationSending);
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestSMS",
+      url : "/portal/portal/request_sms",
       data: {"phoneNumber":phoneNo,"countryCode":cntryCode},        
       dataType : "html",
       success : function(response) {
@@ -620,7 +620,7 @@ $(document).ready(function() {
     var retVal = false;
     $.ajax( {
       type : "GET",
-      url : "/portal/portal/phoneverification/verifyPIN",
+      url : "/portal/portal/phoneverification/verify_pin",
       data: {"PIN":userEnteredPIN,"phoneNumber":phoneNo},        
       dataType : "html",
       async : false,

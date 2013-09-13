@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
 	
 	$(document).click(function(e){
@@ -33,7 +33,7 @@ $(document).ready(function() {
 
 	
 	
-	$(".userprofile_button").hover(function() {
+	$("#userprofile_button").hover(function() {
 	    $("#userprofile_dropdownbox").show();
 	  }, function() {
 	    $("#userprofile_dropdownbox").hide();
@@ -77,10 +77,6 @@ $(document).ready(function() {
     
     $("#top_right_nav_view_maintenance_link").unbind("click").bind("click", function (event) {
       window.location=health_maintenance_link_path;
-    });
-    
-    $("#top_right_nav_help_link").unbind("click").bind("click", function (event) {
-      window.open(help_link_path, '_blank');
     });
     
     $("#top_right_nav_balance_link").unbind("click").bind("click", function (event) {
@@ -215,9 +211,9 @@ function searchaccounts(even, current, charRange) {
 function view_service_health(current){
   var divId = $(current).attr('id');
   if (divId == null) return;
-  var zone_id=divId.substr(5);
+  var cloudService_id=divId.replace("cloudService_","");
   
-  window.location=health_link_path+"?zone="+zone_id;
+  window.location=health_link_path+"?serviceinstanceuuid="+cloudService_id;
 }
 
 function listProductsTabItems(current){

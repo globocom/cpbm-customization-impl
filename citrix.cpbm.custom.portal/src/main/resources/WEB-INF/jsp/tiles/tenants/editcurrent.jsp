@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -159,7 +159,7 @@
                 <div class="commonboxes_formbox_panels equalwidth" style="width:465px; border:none; ">
                   <ul>                                                              
                       <li class="commonboxes_formbox equalwidth" style="width:445px;">
-                            <label for="name"><spring:message code="label.editcurrent.customerId"/></label>
+                            <label for="name"><spring:message code="form.tenant.search.account_id"/></label>
                             <div class="commonboxes_formbox_withouttextbox"><c:out value="${tenantForm.tenant.accountId}"></c:out></div>
                         </li>
                     </ul>

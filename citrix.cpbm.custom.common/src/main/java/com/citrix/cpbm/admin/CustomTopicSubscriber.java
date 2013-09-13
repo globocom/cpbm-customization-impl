@@ -1,11 +1,17 @@
-/* Copyright (C) 2013 Citrix Systems, Inc. All rights reserved */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package com.citrix.cpbm.admin;
 
 import org.apache.log4j.Logger;
 
 import com.citrix.cpbm.subscriber.TopicSubscriber;
+import com.vmops.event.AccountConverted;
 import com.vmops.event.CloudServiceEvent;
+import com.vmops.event.CreditCardFraudCheckEvent;
+import com.vmops.event.DepositReceived;
+import com.vmops.event.DeviceFraudDetectionEvent;
 import com.vmops.event.MissingProductEvent;
+import com.vmops.event.PasswordResetRequest;
+import com.vmops.event.ProvisionResourceFailedEvent;
 import com.vmops.event.SubscriptionActivation;
 import com.vmops.event.SubscriptionChangeEvent;
 import com.vmops.event.SubscriptionCreation;
@@ -16,6 +22,8 @@ import com.vmops.event.TenantLock;
 import com.vmops.event.TenantReactivation;
 import com.vmops.event.TenantSuspension;
 import com.vmops.event.TenantTermination;
+import com.vmops.event.TrialExpiryWarning;
+import com.vmops.event.TrialSuspended;
 import com.vmops.event.UserCreation;
 import com.vmops.event.UserDeactivateEmail;
 import com.vmops.event.UserDeletion;
@@ -109,18 +117,56 @@ public class CustomTopicSubscriber implements TopicSubscriber {
   @Override
   public void receive(MissingProductEvent event) {
     logger.info("###Received MissingProductEvent ");
-
   }
 
   @Override
   public void receive(UserDeactivateEmail event) {
     logger.info("###Received UserDeactivateEvent ");
-
   }
 
   @Override
   public void receive(SubscriptionActivation event) {
     logger.info("###Received subscription activation event with id:" + event.getSubscriptionId());
+  }
+
+  @Override
+  public void receive(AccountConverted event) {
+    logger.info("###Received AccountConverted event with tenant uuid:" + event.getTenantUuid());
+  }
+
+  @Override
+  public void receive(CreditCardFraudCheckEvent event) {
+    logger.info("###Received CreditCardFraudCheckEvent event with details:" + event.getDetails());
+  }
+
+  @Override
+  public void receive(TrialExpiryWarning event) {
+    logger.info("###Received TrialExpiryWarning event with trial account id:" + event.getTrialAccountId());
+  }
+
+  @Override
+  public void receive(TrialSuspended event) {
+    logger.info("###Received TrialSuspended event with trial account id:" + event.getTrialAccountId());
+  }
+
+  @Override
+  public void receive(DeviceFraudDetectionEvent event) {
+    logger.info("###Received DeviceFraudDetectionEvent event");
+  }
+
+  @Override
+  public void receive(ProvisionResourceFailedEvent event) {
+    logger.info("###Received ProvisionResourceFailedEvent event for subscription id"+event.getSubscriptionId());
+  }
+
+  @Override
+  public void receive(PasswordResetRequest event) {
+    logger.info("###Received PasswordResetRequest event for user:"+event.getUsername());
+  }
+
+  @Override
+  public void receive(DepositReceived event) {
+    logger.info("###Received DepositReceived event for user:"+event.getUsername() +" with amount:"+event.getAmount());
   }
 
 }

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <TransactionWorkflowMap>
   <Match type="tenantStateChange" workflow="credit-card-account-activation">
     <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE' and  #transaction.tenant.accountType.paymentModes == 2}</Rule>

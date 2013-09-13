@@ -1,4 +1,4 @@
-  <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -25,7 +25,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
 
 <script type="text/javascript">
   var health_link_path = "<%=request.getContextPath() %>/portal/health";
-  var health_maintenance_link_path = "<%=request.getContextPath() %>/portal/health/healthmaintainance";
+  var health_maintenance_link_path = "<%=request.getContextPath() %>/portal/health/health_maintainance";
 </script>
 
 <script type="text/javascript">
@@ -44,47 +44,10 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
   <div class="header_left">
     <tiles:insertAttribute name="logo" />
   </div>
-  <div class="header_right">
-    <div class="userprofile_button">
-      <div class="userprofile_buttonlink"><c:out value="${currentUser.firstName}"/>&nbsp;&nbsp;<c:out value="${currentUser.lastName}"/></div>
-      <div class="userprofile_arrows"><img src="<%= request.getContextPath() %>/images/userprofile_downarrow.png" /></div>
-      <!--dropdown starts here-->
-      <div class="userprofile_dropdownbox" style="display:none;" id="userprofile_dropdownbox">
-        <div class="userprofile_dropdownbox_top"></div>
-        <div class="userprofile_dropdownbox_bot">
-          <div class="userprofile_dropdownlist">
-            <ul>
-      
-              <li><a href="<%=request.getContextPath() %>/portal/users/<c:out value="${currentUser.param}"/>/myprofile"><spring:message code="ui.header.page.title.myprofile"/></a></li>
-              <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD') or hasRole('ROLE_ACCOUNT_CRUD')">
-                 <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
-                   <li><a href="<%=request.getContextPath() %>/portal/admin/config/showconfiguration"><spring:message code="page.level1.admin"/></a></li>
-                 </sec:authorize>
-                 <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
-                   <li><a href="<%=request.getContextPath() %>/portal/users/listusersforaccount"><spring:message code="page.level1.admin"/></a></li>
-                 </sec:authorize>
-                 <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and !hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
-                   <li><a href="<%=request.getContextPath() %>/portal/admin/batch/status"><spring:message code="page.level1.admin"/></a></li>
-                 </sec:authorize>
-              </sec:authorize>
-              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')">
-                <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrent"><spring:message code="ui.header.page.title.companysetup"/></a></li>
-              </sec:authorize>
-              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD')">
-                <c:if test="${isAdmin}">
-                  <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrentlogo"><spring:message code="ui.header.page.title.customizecompany"/></a></li>
-                </c:if>
-              </sec:authorize>
-              <li><a href="<%= request.getContextPath() %>/portal/<c:out value="${currentUser.param}"/>/loggedout"><spring:message code="ui.header.page.title.logout"/></a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      <!--dropdown ends here-->
-    </div>
-  </div>
+  
 </div>
 <div id="mainmenu_panel">
+  <div class="mainmenu_panel_center">
   <div class="mainmenu_panel_left">
     <div class="mainmenu_button <c:out value="${Home}"/>">
       <div class="mainmenu_button_linkbox">
@@ -181,7 +144,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
     <sec:authorize access="hasAnyRole('ROLE_REPORTING_ADMIN')">
       <div class="mainmenu_button <c:out value="${Reports}"/>" id="reportstab" >
         <div class="mainmenu_button_linkbox">
-          <a href="<%=request.getContextPath() %>/portal/reports/newRegistrations">
+          <a href="<%=request.getContextPath() %>/portal/reports/new_registrations">
             <spring:message code="page.level1.reports"/>
           </a>
         </div>
@@ -196,7 +159,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
           <span class="icon notifications_numbersbg"><span class="noticationsnumber"><c:out value="${notifications_count_for_today}"/></span></span>
         </c:if> 
         <span class="icon notifications"></span>
-        <span class="title"><spring:message code="label.today"/></span>
+        
         <!-- dropdown starts here-->
           <div class="widget_actionpopover notificationsdropdown" id="top_nav_notifications_dropdown" style="display:none;">
           		<div class="widget_actionpopover_top notificationsdropdown"></div>
@@ -230,7 +193,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
         
         
         </li>
-      <c:if test="${!empty top_nav_health_status}">
+      <c:if test="${!empty top_nav_cs_instances}">
         <li class="mainmenu_infolinks" id="top_right_nav_health_link" title="<spring:message code="ui.header.page.title.servicehealth"/>">
           <c:if test="${top_nav_health_status=='NORMAL'}">
             <span class="icon servicehealth normal"></span>
@@ -244,14 +207,14 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
            <c:if test="${top_nav_health_status=='MAINTENANCE'}">
             <span class="icon servicehealth maintenance"></span>
           </c:if>
-          <span class="title"><spring:message code="label.top.right.nav.service.health"/></span>
+          
          <!-- dropdown starts here-->
           <div class="widget_actionpopover servicehealth_dropdown" id="top_nav_servicehealth_dropdown" style="display:none;">
           		<div class="widget_actionpopover_top OSdropdown"></div>
                 <div class="widget_actionpopover_mid OSdropdown">
                 	<ul class="widget_actionpoplist servicehealthdropdown" id="servicehealthdropdown">
-                    <c:forEach items="${top_nav_zones}" var="zone">
-                      <li id="zone_<c:out value="${zone.id}" />" onclick="view_service_health(this)"> <span class="icon servicehealth <c:out value="${zone.health_status}" />"></span><span class="servicename"><c:out value="${zone.name}" /></span></li>
+                    <c:forEach items="${top_nav_cs_instances}" var="healthMap">
+                      <li id="cloudService_<c:out value="${healthMap.id}" />" onclick="view_service_health(this)"> <span class="icon servicehealth <c:out value="${healthMap.health_status}" />"></span><span class="servicename"><c:out value="${healthMap.name}" /></span></li>
                     </c:forEach>
                     </ul>
                     <div class="widget_actionpopover_mid healthdropdown_footer">
@@ -268,11 +231,51 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
         <li class="mainmenu_infolinks" id="top_right_nav_balance_link" title="<spring:message code="label.usage.billing.net.balance"/>"><span class="icon currencyflags"><img src="/portal/images/flags/<c:out value="${tenant.currency.flag}" />" alt="" /></span><span class="title"><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" maxFractionDigits="${minFractionDigits}" value="${currentBalanceTopRightNav}" /></span></li>
         </sec:authorize>
       </c:if>
-      <li class="mainmenu_infolinks last" id="top_right_nav_help_link" title="<spring:message code="label.help.documentation"/>"><span class="title"><spring:message code="ui.header.page.title.help"/></span></li>
+     <li class="mainmenu_infolinks last">
+         
+    <div id="userprofile_button">
+      <div class="userprofile_buttonlink"><c:out value="${currentUser.firstName}"/>&nbsp;&nbsp;<c:out value="${currentUser.lastName}"/></div>
+      <div class="userprofile_arrows"><span class="caret"></span></div>
+      <!--dropdown starts here-->
+      <div class="userprofile_dropdownbox" style="display:none;" id="userprofile_dropdownbox">
+        <div class="userprofile_dropdownbox_top"></div>
+        <div class="userprofile_dropdownbox_bot">
+          <div class="userprofile_dropdownlist">
+            <ul>
+      
+              <li><a href="<%=request.getContextPath() %>/portal/users/<c:out value="${currentUser.param}"/>/myprofile"><spring:message code="ui.header.page.title.myprofile"/></a></li>
+              <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD') or hasRole('ROLE_ACCOUNT_CRUD')">
+                 <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
+                   <li><a href="<%=request.getContextPath() %>/portal/admin/config/show_configuration"><spring:message code="page.level1.admin"/></a></li>
+                 </sec:authorize>
+                 <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
+                   <li><a href="<%=request.getContextPath() %>/portal/users/listusersforaccount"><spring:message code="page.level1.admin"/></a></li>
+                 </sec:authorize>
+                 <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and !hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
+                   <li><a href="<%=request.getContextPath() %>/portal/admin/batch/status"><spring:message code="page.level1.admin"/></a></li>
+                 </sec:authorize>
+              </sec:authorize>
+              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')">
+                <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrent"><spring:message code="ui.header.page.title.companysetup"/></a></li>
+              </sec:authorize>
+              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD')">
+                <c:if test="${isAdmin}">
+                  <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrentlogo"><spring:message code="ui.header.page.title.customizecompany"/></a></li>
+                </c:if>
+              </sec:authorize>
+              <li><a href="<%= request.getContextPath() %>/portal/<c:out value="${currentUser.param}"/>/loggedout"><spring:message code="ui.header.page.title.logout"/></a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!--dropdown ends here-->
+    </div>
+ 
+     </li>
     </div>
     <!--new top statistics ends here-->
     
   </div>
 <div class="menu_dropdown_selectionbox" id="crm_drop_down" style="display:none;"></div>
-
+</div>
 </div>

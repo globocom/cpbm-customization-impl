@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   var selectedCategory=$("#selectedCategory").val();
   
@@ -168,6 +168,85 @@ $(document).ready(function() {
 	  $('#endDateField').datepicker('show');
   });
   
+  currentPage = parseInt(currentPage);
+  perPageValue = parseInt(perPageValue);
+  dateStatusLen = parseInt(dateStatusLen);
+  var selectedServiceInstanceUUID = $("#selectedCloudServiceInstance").val();
+  
+  function nextClick(event) {
+    
+    $("#click_next").unbind("click", nextClick);
+    $("#click_next").addClass("nonactive");
+    
+    currentPage = currentPage + 1;
+    
+    $("#click_previous").unbind("click").bind("click", previousClick);
+    $("#click_previous").removeClass("nonactive");
+    
+    var url = healthUrl.substring(0, healthUrl.length - 1)+"?page=" + currentPage;
+    
+    if(selectedServiceInstanceUUID != undefined && selectedServiceInstanceUUID != ""){
+    	url = url + "&serviceinstanceuuid=" + selectedServiceInstanceUUID;
+    }
+    
+    window.location = url;
+  }
+
+  function previousClick(event) {
+    $("#click_previous").unbind("click", previousClick);
+    $("#click_previous").addClass("nonactive");
+
+    currentPage = currentPage - 1;
+    
+    $("#click_next").removeClass("nonactive");
+    $("#click_next").unbind("click").bind("click", nextClick);
+    
+    var url = healthUrl.substring(0, healthUrl.length - 1)+"?page=" + currentPage;
+    
+    if(selectedServiceInstanceUUID != undefined && selectedServiceInstanceUUID != ""){
+    	url = url + "&serviceinstanceuuid=" + selectedServiceInstanceUUID;
+    }
+    
+    window.location = url;
+  }
+  
+  if (currentPage > 1) {
+    $("#click_previous").removeClass("nonactive");
+    $("#click_previous").unbind("click").bind("click", previousClick);
+  }
+  
+  if (dateStatusLen < perPageValue) {
+    $("#click_next").unbind("click");
+    $("#click_next").addClass("nonactive");
+
+  } else if (dateStatusLen == perPageValue) {
+    
+    if (currentPage < totalpages) {
+      
+      $("#click_next").removeClass("nonactive");
+      $("#click_next").unbind("click").bind("click", nextClick);
+    } else {
+      $("#click_next").unbind("click");
+      $("#click_next").addClass("nonactive");
+    }
+  }
+  
+  $("#grid_row_container").find(".widget_navigationlist").unbind("click").bind("click", function() {
+	  viewStatusDetails($(this));
+  });
+  
+  $("#grid_row_container").find(".widget_navigationlist").unbind("mouseover").bind("mouseover", function() {
+	  onHealthMouseover($(this));
+  });
+  
+  $("#grid_row_container").find(".widget_navigationlist").unbind("mouseout").bind("mouseout", function() {
+	  onHealthMouseout($(this));
+  });
+  
+  /*if($("#grid_row_container").children().length > 0 && $("#grid_row_container").children().first().attr("id") != "non_list"){
+	  $("#grid_row_container").children().first().click();
+  }*/
+  
 });
 
 var month_names = new Array("January", "February", "March", 
@@ -327,7 +406,7 @@ function resetGridRowStyle(){
 }
 
 var refreshStatus = function refreshServiceInstanceStatus(serviceInstanceUuid, tenantParam){
-    window.location="/portal/portal/health?serviceInstanceUUID="+serviceInstanceUuid;
+    window.location="/portal/portal/health?serviceinstanceuuid="+serviceInstanceUuid;
 };
 
 /**
@@ -350,11 +429,11 @@ function viewStatusDetails(current){
 	 cls = cls+" selected";
 	 $(current).attr('class',cls);
 	 
-	 var url = healthUrl+"showStatusDetails";
+	 var url = healthUrl+"show_status_details";
 	 $.ajax( {
 			type : "GET",
 			url : url,
-			data:{date:date,serviceInstanceUUID:selectedServiceInstanceUUID,dateFormat:dateFormat},
+			data:{date:date,serviceinstanceuuid:selectedServiceInstanceUUID,dateformat:dateFormat},
 			dataType : "html",
 			success : function(html) {
 				$("#viewStatusDetailsDiv").html(html);					
@@ -369,9 +448,9 @@ function addNewStatusGet(){
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
 	var actionurl;	
   if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
-    actionurl = healthUrl+"addStatus";
+    actionurl = healthUrl+"add_status";
   } else {
-    actionurl = healthUrl+"addStatus?serviceInstanceUUID="+selectedServiceInstanceUUID;
+    actionurl = healthUrl+"add_status?serviceinstanceuuid="+selectedServiceInstanceUUID;
   }
   $.ajax( {
 			type : "GET",
@@ -412,7 +491,7 @@ function addNewStatus(event,form){
 	  if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
 	    actionurl = "/portal/portal/health";
 	  } else {
-	    actionurl = "/portal/portal/health?serviceInstanceUUID="+selectedServiceInstanceUUID;
+	    actionurl = "/portal/portal/health?serviceinstanceuuid="+selectedServiceInstanceUUID;
 	  }
 		 $.ajax( {
 				type : "POST",
@@ -487,7 +566,7 @@ function resetGridRowStyleMaintenance() {
 		   }
 		var divId = $(current).attr('id');
 		 var ID=divId.substr(6);
-		 var actionurl = healthUrl+ID+"/removeStatus";
+		 var actionurl = healthUrl+ID+"/remove_status";
 		  $.ajax( {
 				type : "GET",
 				url : actionurl,

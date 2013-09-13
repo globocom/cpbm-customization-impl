@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2013 Citrix Systems Inc.  All rights reserved. -->
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -45,12 +45,57 @@
           </ul>
         </div>
       </div>
-      <c:if test="${userHasCloudServiceAccount && showCloudConsoleLink}">
-        <input type="hidden" name="currentTenantParam" id="currentTenantParam" value="<c:out value="${currentTenant.param}"/>">  
-        <div id="cloudServiceConsoleID" style="float:right;margin:8px 10px 0 0;display:none">
-          <a onclick="launchCloudServiceConsole(this);" target="cloudconsole" style="cursor:pointer;"><spring:message code="ui.home_service.page.title.launch.cloud.console"/></a>
+
+      <c:choose> 
+
+      <c:when test="${userHasCloudServiceAccount && showCloudConsoleLink}">
+        <input type="hidden" name="currentTenantParam" id="currentTenantParam" value="<c:out value="${currentTenant.param}"/>">
+        <div id="cloudServiceConsoleAll" style="float:right;margin:3px 20px 0 0;display:none;">
+          <div class="btn-group">
+            <button class="btn btn-info btn-mini" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false"><spring:message code="ui.home_service.page.title.launch.cloud.console"/></button>
+            <button class="btn btn-info btn-mini dropdown-toggle" data-toggle="dropdown" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" style="padding-bottom:8px;padding-top:0px;">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-50px;">
+                <c:forEach items="${cloudTypeServiceInstances}" var="cloudTypeServiceInstance">
+                  <li><a href="javascript:void(0);" onclick="launchCloudServiceConsoleWithServiceInstanceUUID(this, '<c:out value="${cloudTypeServiceInstance.uuid}" />');"><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
+            </c:forEach>
+            </ul>
+          </div>
         </div>
-      </c:if>
+
+
+        <div id="cloudServiceConsoleID" style="float:right;margin:3px 20px 0 0;display:none">
+            <div class="btn-group">
+              <button class="btn btn-info btn-mini" onclick="launchCloudServiceConsole(this);"><spring:message code="ui.home_service.page.title.launch.cloud.console"/></button>
+            </div>
+        </div>
+      </c:when> 
+
+      <c:otherwise> 
+        <c:if test="${userHasCloudServiceAccount}">
+        <div id="cloudServiceResourcesAll" style="float:right;margin:3px 20px 0 0;display:none;">
+          <div class="btn-group">
+            <button class="btn btn-info btn-mini" data-hover="dropdown" data-delay="1000" data-close-others="false"><spring:message  code="service.connectorlist.manage" /></button>
+            <button class="btn btn-info btn-mini dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" style="padding-bottom:8px;padding-top:0px;">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-34px;">
+                <li><a href="javascript:void(0);" onclick="launchMyResourcesWithServiceInstanceUUID();"><spring:message code="page.level2.allservices"/></a></li>
+                <c:forEach items="${cloudTypeServiceInstances}" var="cloudTypeServiceInstance">
+                  <li><a href="javascript:void(0);" onclick="launchMyResourcesWithServiceInstanceUUID('<c:out value="${cloudTypeServiceInstance.uuid}" />');"><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
+            </c:forEach>
+            </ul>
+          </div>
+        </div>
+        <div id="cloudServiceResources" style="float:right;margin:3px 20px 0 0;display:none;">
+            <div class="btn-group">
+              <button class="btn btn-info btn-mini"><spring:message  code="service.connectorlist.manage" /></button>
+            </div>
+        </div>
+        </c:if>
+      </c:otherwise>  
+      </c:choose> 
       <c:if test="${not empty selectedCloudServiceInstance}">
         <input type="hidden" name="selectedCloudServiceInstance" id="selectedCloudServiceInstance" value="<c:out value="${selectedCloudServiceInstance}"/>">  
       </c:if>

@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
  <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -8,7 +8,8 @@
   <div class="secondlevel_breadcrumb_panel">
      <div class="secondlevel_breadcrumbbox">
        <p><c:out value="${tenantForm.tenant.name}"/></p>
-     </div>     
+     </div> 
+     <div class="doc_help_link"></div>    
   </div>
 </div>
 

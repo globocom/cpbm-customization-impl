@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -200,7 +200,8 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
                     <span><spring:message code="label.bundle.business.constraint"/></span>
                 </div>
                 <div class="widget_grid_description" >
-                    <span id="bundle_businessConstraint"><spring:message code="label.${productBundle.businessConstraint.name}"/></span>
+                    <c:set var="constraintName" value="label.bundle.business.constraint.${productBundle.businessConstraint.name}"></c:set>
+                    <span id="bundle_businessConstraint"><spring:message code="${constraintName}"/></span>
                 </div>
          </div>
      </div>

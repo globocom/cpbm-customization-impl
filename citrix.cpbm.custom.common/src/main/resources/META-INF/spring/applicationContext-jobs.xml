@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. -->
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <beans 
   xmlns="http://www.springframework.org/schema/beans" 
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -117,5 +117,18 @@
     <property name="repeatInterval" value="3600000" />
     <property name="volatility" value="false" /> 
     <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_RESCHEDULE_NEXT_WITH_EXISTING_COUNT"></property>
+  </bean>
+  
+   <bean name="billingExportJob" class="org.springframework.scheduling.quartz.JobDetailBean">
+    <property name="jobClass" value="com.vmops.admin.jobs.BillingExportJob"/>
+    <property name="requestsRecovery" value="false"/>
+    <property name="volatility" value="true"/>
+  </bean>
+  
+  <bean id="billingExportJobTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+    <property name="jobDetail" ref="billingExportJob"/>
+    <property name="cronExpression" value="0 0 4 * * ?" />
+    <property name="volatility" value="true"/>    
+    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_DO_NOTHING"></property>
   </bean>
 </beans>

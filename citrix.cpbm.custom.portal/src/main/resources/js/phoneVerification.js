@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   $("#passwdResetForm input:first").focus();
   $("#passwdResetForm").validate( {
@@ -44,7 +44,7 @@ $(document).ready(function() {
 
     $.ajax({
       type: "POST",
-      url: "/portal/portal/requestCallByUser",
+      url: "/portal/portal/request_call_by_user",
       data: {"userName": null, "pickValFromReset": "pick"},
       dataType: "html",
 
@@ -67,7 +67,7 @@ $(document).ready(function() {
     $("#phoneVerificationSMSByUser").html("<span class='text_icon'></span>"+i18n.labels.phoneVerificationSending);
     $.ajax({
       type: "POST",
-      url: "/portal/portal/requestSMSByUser",
+      url: "/portal/portal/request_sms_by_user",
       data: {"userName": null, "pickValFromReset": "pick"},   
       dataType: "html",
 

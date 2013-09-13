@@ -1,30 +1,41 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 
 import web.WebTestsBase;
-import citrix.cpbm.portal.fragment.controllers.AdminController;
 
+import com.citrix.cpbm.platform.util.CssdkConstants;
+import com.citrix.cpbm.portal.fragment.controllers.AdminController;
 import com.vmops.internal.service.EmailService.EmailTemplate;
 import com.vmops.model.AccountType;
+import com.vmops.model.BaseServiceConfigurationMetadata;
 import com.vmops.model.Configuration;
 import com.vmops.model.EmailTemplates;
+import com.vmops.model.EmailTemplates.Category;
 import com.vmops.model.JobStatus;
 import com.vmops.model.ModuleType;
+import com.vmops.model.ServiceInstance;
+import com.vmops.model.ServiceInstanceConfig;
 import com.vmops.persistence.ConfigurationDAO;
+import com.vmops.persistence.EmailTemplatesDAO;
+import com.vmops.persistence.EventDAO;
 import com.vmops.persistence.JobStatusDAO;
+import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.service.AccountTypeService;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.EmailTemplateService;
@@ -54,13 +65,25 @@ public class AdminControllerTest extends WebTestsBase {
 
   @Autowired
   private ConfigurationDAO configurationDAO;
+ 
+  @Autowired
+  private ServiceInstanceDao serviceInstanceDao;
+  
+  @Autowired
+  private EmailTemplatesDAO emailTemplatesDAO;
+  
+  @Autowired
+  private EventDAO eventDAO;
 
   private MockHttpServletRequest request;
+  
+  private MockHttpServletResponse response;
 
   @Before
   public void init() throws Exception {
     map = new ModelMap();
     request = new MockHttpServletRequest();
+    response = new MockHttpServletResponse();
   }
 
   @SuppressWarnings("unchecked")
@@ -71,8 +94,8 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals("accounttypes.list", view);
     Assert.assertTrue(map.containsKey("accountTypesList"));
     List<AccountType> found = (List<AccountType>) map.get("accountTypesList");
-    Assert.assertTrue(found.containsAll(expected));
-    Assert.assertTrue(map.get("page") == Page.ADMIN_ACCOUNT_TYPES);
+    Assert.assertEquals(expected.size(), found.size());
+    Assert.assertTrue(map.get("page").equals(Page.ADMIN_ACCOUNT_TYPES));
   }
 
   @Test
@@ -102,7 +125,7 @@ public class AdminControllerTest extends WebTestsBase {
     long maxUsers = 100L;
     expected.setMaxUsers(maxUsers);
     AccountTypeForm form = new AccountTypeForm(expected);
-    BindingResult result = validate(form);
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
     AccountType returned = controller.edit(form, result, map);
     long foundMaxUsers = returned.getMaxUsers();
     Assert.assertEquals(foundMaxUsers, maxUsers);
@@ -112,7 +135,7 @@ public class AdminControllerTest extends WebTestsBase {
     try {
       expected.setMaxUsers(0L);
       form = new AccountTypeForm(expected);
-      result = validate(form);
+      result = new BeanPropertyBindingResult(form, "validation");
       returned = controller.edit(form, result, map);
       Assert.assertTrue(false);
     } catch (InvalidAjaxRequestException e) {
@@ -267,6 +290,12 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertTrue(list.size() == 14);
     Assert.assertEquals(map.get("filterBy"), new String("0"));
     Assert.assertNotNull(map.get("filtersMap"));
+    
+    Map<String,String> filterMap = (Map<String, String>) map.get("filtersMap");
+    Assert.assertTrue(filterMap.size() > 0);
+    for(Category category : Category.values()){
+      Assert.assertNotNull(filterMap.get(""+category.ordinal()));
+    }
     map.clear();
     controller.listEmailTemplates(null, "1", "1", "en_US", request, map);
     list = ((List<EmailTemplates>) map.get("templates"));
@@ -303,57 +332,142 @@ public class AdminControllerTest extends WebTestsBase {
 
   @Test
   public void testshowConfigurations() {
+	  
     String showconfigurations = controller.showConfigurations(Level3.ConfigAccountManagement.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
     Assert.assertEquals(map.get("module"), Level3.ConfigAccountManagement.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.AccountManagement.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.ConfigAccountManagement.getCode());
 
-    showconfigurations = controller.showConfigurations(Level3.AccountProvisioning.getName(), null, map);
-    Assert.assertEquals(map.get("module"), Level3.AccountProvisioning.getName());
-    Assert.assertEquals(map.get("moduleName"), ModuleType.AccountProvisioning.getModuleName());
-    Assert.assertEquals(map.get("labelCode"), Level3.AccountProvisioning.getCode());
-
-    showconfigurations = controller.showConfigurations(Level3.Billing.getName(), null, map);
-    Assert.assertEquals(map.get("module"), Level3.Billing.getName());
-    Assert.assertEquals(map.get("moduleName"), ModuleType.Billing.getModuleName());
-    Assert.assertEquals(map.get("labelCode"), Level3.Billing.getCode());
-
     showconfigurations = controller.showConfigurations(Level3.CRM.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
     Assert.assertEquals(map.get("module"), Level3.CRM.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.CRM.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.CRM.getCode());
 
-    showconfigurations = controller.showConfigurations(Level3.HelpDesk.getName(), null, map);
-    Assert.assertEquals(map.get("module"), Level3.HelpDesk.getName());
-    Assert.assertEquals(map.get("moduleName"), ModuleType.HelpDesk.getModuleName());
-    Assert.assertEquals(map.get("labelCode"), Level3.HelpDesk.getCode());
-
     showconfigurations = controller.showConfigurations(Level3.Integration.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
     Assert.assertEquals(map.get("module"), Level3.Integration.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.Integration.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.Integration.getCode());
 
-    showconfigurations = controller.showConfigurations(Level3.Marketing.getName(), null, map);
-    Assert.assertEquals(map.get("module"), Level3.Marketing.getName());
-    Assert.assertEquals(map.get("moduleName"), ModuleType.Marketing.getModuleName());
-    Assert.assertEquals(map.get("labelCode"), Level3.Marketing.getCode());
+    showconfigurations = controller.showConfigurations(Level3.Portal.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
+    Assert.assertEquals(map.get("module"), Level3.Portal.getName());
+    Assert.assertEquals(map.get("moduleName"), ModuleType.Portal.getModuleName());
+    Assert.assertEquals(map.get("labelCode"), Level3.Portal.getCode());
+    
+    showconfigurations = controller.showConfigurations(Level3.Reports.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
+    Assert.assertEquals(map.get("module"), Level3.Reports.getName());
+    Assert.assertEquals(map.get("moduleName"), ModuleType.Reports.getModuleName());
+    Assert.assertEquals(map.get("labelCode"), Level3.Reports.getCode());
 
     showconfigurations = controller.showConfigurations(Level3.Server.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
     Assert.assertEquals(map.get("module"), Level3.Server.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.Server.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.Server.getCode());
 
-    showconfigurations = controller.showConfigurations(Level3.SpendManagement.getName(), null, map);
-    Assert.assertEquals(map.get("module"), Level3.SpendManagement.getName());
-    Assert.assertEquals(map.get("moduleName"), ModuleType.SpendManagement.getModuleName());
-    Assert.assertEquals(map.get("labelCode"), Level3.SpendManagement.getCode());
-
     showconfigurations = controller.showConfigurations(Level3.TrialManagement.getName(), null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
     Assert.assertEquals(map.get("module"), Level3.TrialManagement.getName());
     Assert.assertEquals(map.get("moduleName"), ModuleType.TrialManagement.getModuleName());
     Assert.assertEquals(map.get("labelCode"), Level3.TrialManagement.getCode());
-
+    
+    showconfigurations = controller.showConfigurations(Level3.Server.getName(), "Notifications", map);
     Assert.assertNotNull(showconfigurations);
-
+    Assert.assertEquals("configuration.edit", showconfigurations);
+    Assert.assertEquals(map.get("module"), Level3.Server.getName());
+    Assert.assertEquals(map.get("moduleName"), ModuleType.Server.getModuleName());
+    Assert.assertEquals(map.get("labelCode"), Level3.Server.getCode());
+    List<Configuration> configList = (List<Configuration>) map.get("configurationList");
+    Assert.assertEquals(6, configList.size());
+    
+    showconfigurations = controller.showConfigurations(null, null, map);
+    Assert.assertNotNull(showconfigurations);
+    Assert.assertEquals("config.list", showconfigurations);
+    Assert.assertEquals(map.get("module"), Level3.ConfigAccountManagement.getName());
+    Assert.assertEquals(map.get("moduleName"), ModuleType.AccountManagement.getModuleName());
+    Assert.assertEquals(map.get("labelCode"), Level3.ConfigAccountManagement.getCode());
   }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testAddAccountTypeControls(){
+	  
+	  ServiceInstance serviceInstance = serviceInstanceDao.find(7L);
+	  String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("accounttypecontrols.edit", result);
+	  List<BaseServiceConfigurationMetadata> sortedProperties = (List<BaseServiceConfigurationMetadata>) map.get("account_control_add_properties");
+	  Assert.assertEquals(12, sortedProperties.size());
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testAddAccountTypeControlsExisting(){
+	  
+	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+	  String result = controller.addAccountTypeControls(serviceInstance.getUuid(), "3", map);
+	  Assert.assertNotNull(result);
+	  Assert.assertEquals("accounttypecontrols.edit", result);
+	  List<ServiceInstanceConfig> instanceProperties = (List<ServiceInstanceConfig>) map.get("account_control_edit_properties");
+	  Assert.assertEquals(1, instanceProperties.size());
+  }
+  
+  @Test
+  public void testPersistAccountTypeControlsUpdate(){
+	  
+	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+	  String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
+	  Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "update", configProperties);
+	  Assert.assertNotNull(resultMap);
+	  String status = (String) resultMap.get("result");
+	  Assert.assertEquals(CssdkConstants.SUCCESS, status);
+  }
+  
+  @Test
+  public void testPersistAccountTypeControlsAdd(){
+	  
+	  ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+	  String configProperties = "[{\"name\":\"defaultNetworkOffering\",\"value\":\"10\"}]";
+	  Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "add", configProperties);
+	  Assert.assertNotNull(resultMap);
+	  String status = (String) resultMap.get("result");
+	  Assert.assertEquals(CssdkConstants.SUCCESS, status);
+  }
+  
+  @Test
+  public void testEditInitialDeposit() throws Exception{
+	 
+	  AccountType accountType = accountTypeDAO.find(3L);
+	  accountType.getAccountTypeCreditExposureList().get(0).setInitialDeposit(BigDecimal.TEN);
+	  AccountTypeForm form  = new AccountTypeForm(accountType);
+	  BindingResult result = validate(form);
+	  String resultString =  controller.editInitialDeposit(form, result, map);
+	  Assert.assertNotNull(resultString);
+	  Assert.assertEquals("success", resultString);
+	  Assert.assertEquals(BigDecimal.TEN, accountType.getAccountTypeCreditExposureList().get(0).getInitialDeposit());
+  }
+  
+  @Test
+  public void testSendTestMail(){
+	  
+	  EmailTemplates emailTemplates = emailTemplatesDAO.find(1L);
+	  int before = eventDAO.count();
+	  String resultString = controller.sendEmailTemplate(emailTemplates.getTemplateName(), "test@test.com", response, "en_US", request, map);
+	  Assert.assertNotNull(resultString);
+	  Assert.assertEquals("success", resultString);
+	  int after = eventDAO.count();
+	  Assert.assertEquals(before+1, after);
+  }
+  
 }

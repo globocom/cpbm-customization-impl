@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
@@ -106,7 +106,7 @@ var dictionary = {
               </c:when>
               <c:otherwise>
                 <a id="${service.uuid}" class="cloud_button active" href="javascript:void(0);">
-                  <c:if test="${fn:length(service.serviceInstances) gt 1}">
+                  <c:if test="${fn:length(service.serviceInstances) gt 0}">
                     <div class="service_count">${fn:length(service.serviceInstances)}</div>
                   </c:if>
                 </a>
@@ -138,11 +138,16 @@ var dictionary = {
                   <span class="bigloader"></span>
                 </div>
               </div>
-              <div class="gridcell" style="width: 30%;">
-                <span id="instance_name" class="celltext"><c:out value="${instance.name}"/></span>
-              </div>
-              <div class="gridcell" style="width: 15%;">
-                <span id="instance_endpoint" class="celltext"></span>
+              <div class="gridcell" style="width: 45%;">
+                <c:choose>
+                  <c:when test="${not empty instance.imagePath}">
+                    <img src="/portal/portal/logo/serviceInstance/<c:out value='${instance.uuid}'/>" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
+                  </c:when>
+                  <c:otherwise>
+                    <img src="" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
+                  </c:otherwise>
+                </c:choose>    
+                <span id="instance_name" class="celltext" style="width:auto;"><c:out value="${instance.name}"/></span>
               </div>
               <div class="gridcell" style="width: 45%;">
                 <span id="instance_description" class="celltext ellipsis" title='<c:out value="${instance.description}"/>'><c:out value="${instance.description}"/></span>
@@ -177,7 +182,7 @@ var dictionary = {
   
    <div id="serviceAccountConfigDiv" style="margin:0; display:none;">     
       <div>
-      <h2 id="selectedInstanceH1"></h2>
+      <h3 id="selectedInstanceH1"></h3>
         <iframe id="serviceAccountConfigViewFrame" width="940px" height="700px" frameborder="0"></iframe>
       </div>
     </div>
@@ -189,11 +194,10 @@ var dictionary = {
         <span class="bigloader"></span> 
       </div>
     </div>
-    <div class="gridcell" style="width: 30%;">
-      <span id="instance_name" class="celltext"></span>
-    </div>
-    <div class="gridcell" style="width: 15%;">
-      <span id="instance_endpoint" class="celltext"></span>
+    
+    <div class="gridcell" style="width: 45%;">
+      <img id="instance_image_id" src="" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
+      <span id="instance_name" class="celltext" style="width:none;"></span>
     </div>
     <div class="gridcell" style="width: 45%;">
       <span id="instance_description" class="celltext ellipsis"></span>

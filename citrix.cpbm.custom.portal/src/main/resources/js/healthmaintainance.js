@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   var selectedCategory=$("#selectedCategory").val();
   
@@ -185,7 +185,7 @@ $(document).ready(function() {
     $("#click_previous").unbind("click").bind("click", previousClick);
     $("#click_previous").removeClass("nonactive");
     
-    window.location = healthUrl+'healthmaintainance?zone='+$('#selectedZone').val()+"&currentPage=" + currentPage;
+    window.location = healthUrl+'health_maintainance?zone='+$('#selectedZone').val()+"&currentpage=" + currentPage;
   }
 
   function previousClick(event) {
@@ -197,7 +197,7 @@ $(document).ready(function() {
     $("#click_next").removeClass("nonactive");
     $("#click_next").unbind("click").bind("click", nextClick);
     
-    window.location=healthUrl+'healthmaintainance?zone='+$('#selectedZone').val()+"&currentPage=" + currentPage;
+    window.location=healthUrl+'health_maintainance?zone='+$('#selectedZone').val()+"&currentpage=" + currentPage;
   }
   
   if (currentPage > 1) {
@@ -370,7 +370,7 @@ function addNewStatusUI(jsonResponse){
   }
     
 var refreshMaintainance = function refreshHealthMaintainance(serviceInstanceUuid, tenantParam){
-  window.location="/portal/portal/health/healthmaintainance?serviceInstanceUUID="+serviceInstanceUuid;
+  window.location="/portal/portal/health/health_maintainance?serviceinstanceuuid="+serviceInstanceUuid;
 };
 
 /**
@@ -388,9 +388,9 @@ function addSchedMaintenanceGet(){
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
   var actionurl;  
   if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
-    actionurl = healthUrl+"addSchedMaintenance";  
+    actionurl = healthUrl+"add_scheduled_maintenance";  
   } else {
-    actionurl = healthUrl+"addSchedMaintenance?serviceInstanceUUID="+selectedServiceInstanceUUID;
+    actionurl = healthUrl+"add_scheduled_maintenance?serviceinstanceuuid="+selectedServiceInstanceUUID;
   }
   $.ajax( {
 		type : "GET",
@@ -417,15 +417,15 @@ function editSchedMaintenanceGet(current) {
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
   var actionurl;  
   if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
-    actionurl = healthUrl+"addSchedMaintenance";  
+    actionurl = healthUrl+"add_scheduled_maintenance";  
   } else {
-    actionurl = healthUrl+"addSchedMaintenance?serviceInstanceUUID="+selectedServiceInstanceUUID;
+    actionurl = healthUrl+"add_scheduled_maintenance?serviceinstanceuuid="+selectedServiceInstanceUUID;
   }
 	$.ajax( {
 		type : "GET",
 		url : actionurl,
 		data : {
-			Id : ID
+			id : ID 
 		},
 		dataType : "html",
 		success : function(html) {
@@ -451,13 +451,13 @@ function editSchedMaintenanceGet(current) {
 		   }
 		var divId = $(current).attr('id');
 		 var ID=divId.substr(6);
-		 var actionurl = healthUrl+ID+"/removeStatus";
+		 var actionurl = healthUrl+ID+"/remove_status";
 		 var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
 		  var redirecturl;  
 		  if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
-		    redirecturl = healthUrl+'healthmaintainance';  
+		    redirecturl = healthUrl+'health_maintainance';  
 		  } else {
-		    redirecturl = healthUrl+'healthmaintainance?serviceInstanceUUID='+selectedServiceInstanceUUID;
+		    redirecturl = healthUrl+'health_maintainance?serviceinstanceuuid='+selectedServiceInstanceUUID;
 		  }
 		  $.ajax( {
 				type : "GET",
@@ -484,9 +484,9 @@ function editSchedMaintenanceGet(current) {
   var selectedServiceInstanceUUID = $("#selectedServiceInstance").find(".downarrow").attr("id");
   var redirecturl;  
   if(typeof selectedServiceInstanceUUID =='undefined' || selectedServiceInstanceUUID == null || selectedServiceInstanceUUID=="") {
-    redirecturl = healthUrl+'healthmaintainance';  
+    redirecturl = healthUrl+'health_maintainance';  
   } else {
-    redirecturl = healthUrl+'healthmaintainance?serviceInstanceUUID='+selectedServiceInstanceUUID;
+    redirecturl = healthUrl+'health_maintainance?serviceinstanceuuid='+selectedServiceInstanceUUID;
   }
 
 	if (isvalid) {
@@ -548,11 +548,11 @@ function editSchedMaintenanceGet(current) {
 	   var cls = $(current).attr('class');
 	   cls = cls+" selected";
 	   $(current).attr('class',cls);
-	   var url = healthUrl+"maintenanceView";
+	   var url = healthUrl+"maintenance_view";
 	   $.ajax( {
 	      type : "GET",
 	      url : url,
-	      data:{serviceInstanceUUID:selectedServiceInstanceUUID,id:id},
+	      data:{serviceinstanceuuid:selectedServiceInstanceUUID,id:id},
 	      dataType : "html",
 	      success : function(html) {
 	        $("#viewScheduledMaintainanceDiv").html(html);
@@ -568,11 +568,11 @@ function editSchedMaintenanceGet(current) {
       selectedServiceInstanceUUID = "";  
     }
 
-    var url = healthUrl+"maintenanceView";
+    var url = healthUrl+"maintenance_view";
     $.ajax( {
        type : "GET",
        url : url,
-       data:{serviceInstanceUUID:selectedServiceInstanceUUID,id:id},
+       data:{serviceinstanceuuid:selectedServiceInstanceUUID,id:id},
        dataType : "html",
        success : function(html) {
          $("#viewScheduledMaintainanceDiv").html(html);

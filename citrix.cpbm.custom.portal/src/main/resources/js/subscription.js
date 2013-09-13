@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
 
   activateThirdMenuItem("l3_subscriptions_tab");
@@ -25,7 +25,18 @@ $(document).ready(function() {
 	        refreshGridRow(resultObj, $("li[id^='sub'].selected.subscriptions"));
 	        viewSubscription($("li[id^='sub'].selected.subscriptions"));
         }
-      }
+      },
+  cancelsubscription: {
+    label: dictionary.cancelsubscription,
+    elementIdPrefix: "cancelsubscription",
+    inProcessText: dictionary.cancellingSubscription,
+    type:"POST",
+    afterActionSeccessFn: function (resultObj) {
+      $("#subscriptionState").html(resultObj.state);
+      refreshGridRow(resultObj, $("li[id^='sub'].selected.subscriptions"));
+      viewSubscription($("li[id^='sub'].selected.subscriptions"));
+    }
+  }
 	};
 	
   function getConfirmationDialogButtons(command) {
@@ -34,7 +45,10 @@ $(document).ready(function() {
     var actionMapItem;
     if (command == "terminatesubscription") {
       actionMapItem = topActionMap.terminatesubscription;
-    } 
+    }
+    else if (command == "cancelsubscription") {
+      actionMapItem = topActionMap.cancelsubscription;
+    }
 
     buttonCallBacks[dictionary.lightboxbuttonconfirm] = function () {
       $(this).dialog("close");
@@ -45,6 +59,11 @@ $(document).ready(function() {
       if (command == "terminatesubscription") {
         var subscriptionParam=$('#current_subscription_param').val();
         apiCommand = billingPath + "subscriptions/terminate/"+subscriptionParam; 
+        
+      }
+      if (command == "cancelsubscription") {
+        var subscriptionParam=$('#current_subscription_param').val();
+        apiCommand = billingPath + "subscriptions/cancel/"+subscriptionParam; 
         
       }
 
@@ -62,7 +81,9 @@ $(document).ready(function() {
   $(".terminatesubscription_link").live("click", function (event) {
     $("#dialog_confirmation").text(dictionary.lightboxterminatesubscription).dialog('option', 'buttons', getConfirmationDialogButtons("terminatesubscription")).dialog("open");
   });
-  
+  $(".cancelsubscription_link").live("click", function (event) {
+    $("#dialog_confirmation").text(dictionary.lightboxcancelsubscription).dialog('option', 'buttons', getConfirmationDialogButtons("cancelsubscription")).dialog("open");
+  }); 
 	viewSubscription($("li[id^='sub'].selected.subscriptions"));
 
 });
@@ -233,15 +254,18 @@ function previousClick() {
   }
 }
 
-function changeUser(current){
-  var useruuid = $(current).val();
+function filter_subscriptions(current){
+  var useruuid = $("#userfilterdropdownforinvoices option:selected").val();
+  var state = $("#filter_dropdown option:selected").val();
   var $currentPage=$('#current_page').val();
   var filterurl = "/portal/portal/usage/subscriptions?tenant="+$("#tenantParam").val()+"&page="+(parseInt($currentPage));
   if(useruuid != null && useruuid != 'ALL_USERS'){
     filterurl = filterurl+"&useruuid="+useruuid;
   }
+  filterurl = filterurl+"&state="+state;
   window.location=filterurl;
 }
+
 
 function provisionSubscription(subscriptionId){
   window.location =  "/portal/portal/subscription/createsubscription?tenant="+$("#tenantParam").val()+"&subscriptionId="+subscriptionId;

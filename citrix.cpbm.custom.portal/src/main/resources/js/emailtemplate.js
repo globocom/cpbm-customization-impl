@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() { 
   if(filterBy == ""){
     activateThirdMenuItem("12_content_0_tab");
@@ -9,6 +10,8 @@ $(document).ready(function() {
     activateThirdMenuItem("12_content_2_tab");
   }else if(filterBy == "3"){
     activateThirdMenuItem("12_content_3_tab");
+  }else if(filterBy == "4"){
+    activateThirdMenuItem("12_content_4_tab");
   }
 
   currentPage = parseInt(currentPage);
@@ -40,7 +43,7 @@ $(document).ready(function() {
     currentPage = currentPage + 1;
     $("#click_previous").unbind("click").bind("click", previousClick);
     $("#click_previous").removeClass("nonactive");
-    window.location=templatePageUrl+"?filterBy="+filterBy+"&currentPage=" + currentPage;
+    window.location=templatePageUrl+"?filterby="+filterBy+"&currentpage=" + currentPage;
   }
 
   function previousClick(event) {
@@ -49,7 +52,7 @@ $(document).ready(function() {
     currentPage = currentPage - 1;
     $("#click_next").removeClass("nonactive");
     $("#click_next").unbind("click").bind("click", nextClick);
-    window.location=templatePageUrl+"?filterBy="+filterBy+"&currentPage=" + currentPage;
+    window.location=templatePageUrl+"?filterby="+filterBy+"&currentpage=" + currentPage;
   }
   $("#localelist").bind("change", function (event) {
     
@@ -57,7 +60,7 @@ $(document).ready(function() {
     var $current=$(".widget_navigationlist.selected.active");
       var $name=$current.attr("name");
       var $category=$current.attr("category");
-      window.location=templatePageUrl+"?filterBy="+filterBy+"&currentPage=" + currentPage+"&userLang="+$(this).find("option:selected").val();
+      window.location=templatePageUrl+"?filterby="+filterBy+"&currentpage=" + currentPage+"&userlang="+$(this).find("option:selected").val();
       //viewemailtemplate($current,$name,$category,$(this).find("option:selected").val());
     });
 });
@@ -80,11 +83,11 @@ function viewemailtemplate(current, name, category, locale){
    resetGridRowStyle();
    emptyAllTemplateDivs();
    $(current).addClass("selected active");
-   var url = "/portal/portal/admin/emailtemplate/view";
+   var url = "/portal/portal/admin/email_template/view";
    $.ajax( {
       type : "GET",
       url : url,
-      data:{Name:name, userLang:locale},
+      data:{name:name, userlang:locale},
       dataType : "html",
       cache:true,
       success : function(html) {        
@@ -99,11 +102,11 @@ function viewemailtemplate(current, name, category, locale){
 }
 
 function viewFirstEmailTemplate(name, category, locale) {
-    var url = "/portal/portal/admin/emailtemplate/view";
+    var url = "/portal/portal/admin/email_template/view";
     $.ajax( {
        type : "GET",
        url : url,
-       data:{Name:name, userLang:locale},
+       data:{name:name, userlang:locale},
        dataType : "html",
        cache:true,
        success : function(html) {      
@@ -117,7 +120,7 @@ function viewFirstEmailTemplate(name, category, locale) {
 }
 
 function showHideControls(category) {
-  if (category == "Emails") {
+  if (category === "EMAILS") {
     $("#sendemailtemplate_action").show();
     $("#sendemailtemplate_action2").show();
   } else {
@@ -136,12 +139,12 @@ function sendemailtemplate(name){
     "OK": function () {
       var emailInputElement = $thisPanel.find("#confirm_email_id");
       var emailId = emailInputElement.val();
-      var url = "/portal/portal/admin/emailtemplate/send";
+      var url = "/portal/portal/admin/email_template/send";
       if(validateEmail("", $("#confirm_email_id"), $("#confirm_email_id_error"), false)) {
         $.ajax( {
            type : "POST",
            url : url,
-           data:{Name:name, EmailId:emailId, userLang:locale},
+           data:{name:name, emailid:emailId, userlang:locale},
            dataType : "html",
            success : function(html) {     
              $("#action_result_panel").find("#msg").html(dictionary.emailTemplateSendMessage);
@@ -168,12 +171,12 @@ function sendemailtemplate(name){
 
 function editemailtemplate(name){
   locale = $("#selected_locale").val();
-  var url = "/portal/portal/admin/emailtemplate/edit";
+  var url = "/portal/portal/admin/email_template/edit";
   $("#edit_email_template").remove();
   $.ajax( {
      type : "GET",
      url : url,
-     data:{Name:name, userLang:locale},
+     data:{name:name, userlang:locale},
      dataType : "html",
      success : function(html) {  
        $("#editEmailTemplateDiv").html(html); 
@@ -210,11 +213,11 @@ function updateemailtemplate(name, emailText, locale){
   locale = $("#selected_locale").val();
   $("#viewEmailTemplatePreviewDiv").html(""); 
   $("#email_last_updated_at").html("");
-  var url = "/portal/portal/admin/emailtemplate/update";
+  var url = "/portal/portal/admin/email_template/update";
   $.ajax( {
      type : "POST",
      url : url,
-     data : {name:name,updatedText:emailText, userLang:locale},
+     data : {name:name,updatedtext:emailText, userlang:locale},
      dataType : "json",
      success : function(json) { 
        if (json.parseError == false)

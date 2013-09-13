@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 package web.proxy;
 
 import java.io.FileNotFoundException;
@@ -17,8 +18,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.validation.BeanPropertyBindingResult;
 
-import citrix.cpbm.access.proxy.CustomProxy;
 
+import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
 
@@ -40,7 +41,7 @@ public class ProxyTest {
   public void testProxy() {
 
     testPattern();
-    citrix.cpbm.access.Tenant t = (citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant());
+    com.citrix.cpbm.access.Tenant t = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant());
 
     User user = new User();
     user.setUsername("proxyuser");
@@ -49,7 +50,7 @@ public class ProxyTest {
     t.setOwner(user);
 
     BeanPropertyBindingResult result = new BeanPropertyBindingResult(t, "tenant");
-    Set<ConstraintViolation<citrix.cpbm.access.Tenant>> constraintViolations = validator.validate(t);
+    Set<ConstraintViolation<com.citrix.cpbm.access.Tenant>> constraintViolations = validator.validate(t);
 
     CustomProxy invocationHandler = (CustomProxy) Proxy.getInvocationHandler(t);
     Class clazz = invocationHandler.getTenantInterfaces()[0];
@@ -59,13 +60,13 @@ public class ProxyTest {
 
     System.err.println("..Users.." + t.getOwner().getUsername());
 
-    citrix.cpbm.access.User u = (citrix.cpbm.access.User) CustomProxy.newInstance(new User());
+    com.citrix.cpbm.access.User u = (com.citrix.cpbm.access.User) CustomProxy.newInstance(new User());
 
     invocationHandler = (CustomProxy) Proxy.getInvocationHandler(u);
 
     System.err.println("..u.." + invocationHandler.getTarget().getClass());
 
-    for (ConstraintViolation<citrix.cpbm.access.Tenant> constraintViolation : constraintViolations) {
+    for (ConstraintViolation<com.citrix.cpbm.access.Tenant> constraintViolation : constraintViolations) {
       System.err.println(constraintViolation.getPropertyPath().toString() + "...constraint.."
           + constraintViolation.getMessage());
     }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   
   
@@ -611,6 +611,7 @@ function addNewCampaignGet(){
 	    $("#addnewcampaignDiv").html(html);	
       $.startDatePicker();
       $.endDatePicker();
+      initDialog("addnewcampaignDiv", 700);
       var $thisPanel = $("#addnewcampaignDiv");
       $thisPanel.dialog({ height: 500, width : 700 });
       $thisPanel.dialog('option', 'buttons', {

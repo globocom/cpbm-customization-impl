@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
@@ -38,6 +39,7 @@
 	 <osgi:reference interface="org.springframework.jms.core.JmsTemplate" id="jmsTemplate"/>
 	 <osgi:reference id="sessionFactory" interface="org.hibernate.SessionFactory"/>
    	 <osgi:reference interface="org.synyx.messagesource.InitializableMessageSource" id="messageSource"/>
+	 <osgi:reference interface="com.vmops.service.PromotionService" id="promotionService"/>
    
 	 <osgi:service interface="com.citrix.cpbm.workflow.pendingaction.resolver.ActionUrlResolver" ref="defaultActionUrlResolver"/>
 	 
@@ -52,7 +54,12 @@
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="verifyCreditCardInfoActivity" />
 	 <osgi:service interface="com.citrix.cpbm.subscriber.TopicSubscriber" ref="customTopicSubscriber"/>
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="dummyActivity" />
-	 <osgi:service interface="com.custom.service.TestModelService" ref="testModelService" />
+	 <osgi:service interface="com.citrix.cpbm.custom.service.TestModelService" ref="testModelService" />
    <osgi:service interface="com.vmops.service.CustomReportService" ref="customReportService"/>
-   <osgi:service interface="com.custom.service.UserLoginAuditService" ref="userLoginAuditService" />
+   <osgi:service interface="com.citrix.cpbm.custom.service.UserLoginAuditService" ref="userLoginAuditService" />
+   <osgi:service interface="java.util.List" ref="discountEngineList"/>
+   <osgi:service interface="java.util.List" ref="taxEngineList"/>
+   <osgi:reference interface="com.citrix.cpbm.billing.export.stream.service.StreamRepository" id="streamRepository"/>
+   <osgi:reference interface="com.citrix.cpbm.billing.export.stream.service.StreamExportService" id="streamExportService"/>
+	<osgi:reference id="transactionManager" interface="org.springframework.transaction.support.ResourceTransactionManager"/>	     
 </beans>

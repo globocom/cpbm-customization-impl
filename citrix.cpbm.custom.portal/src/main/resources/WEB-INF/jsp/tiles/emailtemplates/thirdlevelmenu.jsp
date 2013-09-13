@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -18,7 +18,9 @@
           <c:if test="${filter.key == '2'}">
             styles</c:if>
           <c:if test="${filter.key == '3'}">
-            invoices</c:if>"></div>
+            invoices</c:if>
+          <c:if test="${filter.key == '4'}">
+            contents</c:if>"></div>
         <p><c:out value="${filter.value}" />
         </p>
       </div>

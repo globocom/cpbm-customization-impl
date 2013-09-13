@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -11,18 +11,7 @@
 </script>
 
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/csInstanceAdd.js"></script>
-<style type="text/css">
-.tooltip {
-    background-color:#CCCCCC;
-    border:1px solid #fff;
-    padding:10px 15px;
-    width:280px;
-    display:none;
-    color:#fff;
-    text-align:left;
-    font-size:12px;
-}
-</style>
+
 <div class="dialog_formcontent ">
   <div class="dialog_detailsbox" style="padding:0px;">
     <div class="mainbox">

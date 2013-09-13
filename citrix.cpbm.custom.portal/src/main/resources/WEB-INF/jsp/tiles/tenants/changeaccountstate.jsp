@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -40,7 +40,7 @@ $(document).ready(function(){
             <label for="name"><spring:message code="ui.label.tenant.view.stateChanges.state"/></label>
             <div class="mandatory_wrapper">
                <select id="new_state" name="new_state" class="select" onchange="newStateChange(this);">
-                  <c:forEach items="${tenant.nextStates}" var="ts">
+                  <c:forEach items="${tenant.nextStatesForUI}" var="ts">
                         <c:choose>
                         <c:when test="${tenant.state.name == ts.name}">
                           <c:set var="selected" value="selected=\"true\""/>

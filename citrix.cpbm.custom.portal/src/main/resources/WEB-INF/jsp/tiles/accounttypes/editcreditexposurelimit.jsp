@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -10,7 +10,7 @@
   <div class="details_lightboxtitlebox">
   </div>
   <div class="details_lightboxformbox">
-    <spring:url value="/portal/admin/editcreditexposure" var="edit_credt_exposure_path" htmlEscape="false" /> 
+    <spring:url value="/portal/admin/edit_credit_exposure" var="edit_credt_exposure_path" htmlEscape="false" /> 
     <form:form commandName="accountTypeForm" cssClass="ajaxform" id="accountTypeCreditExposureEditForm" action="${edit_credt_exposure_path}">
     <ul>
       <c:forEach items="${accountTypeForm.accountType.accountTypeCreditExposureList}" varStatus="cestatus"  var="accountTypeCreditExposure">

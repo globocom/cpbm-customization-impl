@@ -1,5 +1,5 @@
 
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -123,7 +123,7 @@
                          <li id="description">
                             <span class="label"><spring:message code="label.description"/></span>
                             <div class="nonmandatory_wrapper">
-                              <form:textarea cssClass="textarea"   rows="5"  path="productBundle.description" tabindex="3"></form:textarea>   
+                              <form:textarea cssClass="textarea"   rows="3"  path="productBundle.description" tabindex="3"></form:textarea>   
                            </div>
                             <div class="main_addnew_formbox_errormsg_popup" id="productBundle.descriptionError"></div> 
                         </li>
@@ -188,8 +188,10 @@
                               <select class="select" tabindex="6" id="productBundle.businessConstraint" name="productBundle.businessConstraint">
                                 <option id="" value=""><spring:message code="label.choose"/></option>
                                   <c:forEach items="${constraints}" var="constraint" varStatus="status">
+                                  <c:set var="constraintName" value="label.bundle.business.constraint.${constraint.name}"></c:set>
+                                  <spring:message code="${constraintName}" var="constraintDisplay"/>
                                   <option value=<c:out value="${constraint}"/>>
-                                    <c:out value="${constraint.name}"/>
+                                    <c:out value="${constraintDisplay}"/>
                                   </option>
                                 </c:forEach>
                                </select>
@@ -202,9 +204,12 @@
                               <select class="select chargeTypeSelect" id="chargeType" tabindex="7" name="chargeType" >
                                 <option value=""><spring:message code="label.choose"/></option>
                                 <c:forEach items="${productBundleForm.chargeRecurrenceFrequencyList}" var="charge" varStatus="status">
-                                  <option value=<c:out value="${charge.name}"/>  >
-                                  <spring:message code="charge.type.${charge.name}"/>
-                                </option>
+                                  <c:set var="chargeReccurrenceCode" value="charge.type.${charge.name}"></c:set>
+                                  <spring:message code="${chargeReccurrenceCode}" var="chargeReccurenceDisplay"/>
+                                  <option value=<c:out value="${charge.name}"/>>
+                                  <c:if test="${chargeReccurenceDisplay eq chargeReccurrenceCode}"><c:out value="${charge.displayName}"/></c:if>
+                                  <c:if test="${chargeReccurenceDisplay ne chargeReccurrenceCode}"><c:out value="${chargeReccurenceDisplay}"/></c:if>
+                                  </option>
                               </c:forEach>
                              </select> 
                              </div>

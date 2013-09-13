@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 package com.citrix.cpbm.workflow.custom.activity;
 
 import com.citrix.cpbm.core.workflow.model.BusinessTransaction;

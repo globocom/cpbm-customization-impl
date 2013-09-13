@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
   var getTicketAjaxReq;
   var getTicketCountAjaxReq;
   var ajaxAborted = false;
@@ -117,7 +117,7 @@ function viewUsersGravtars() {
   $("#users_gravtars_spinner_div").css( { marginLeft : "50%", marginTop : "0px" } );
   $.ajax({
     type : "GET",
-    url : "/portal/portal/home/getGravtars?tenant=" + effectiveTenantParam,
+    url : "/portal/portal/home/getgravtars?tenant=" + effectiveTenantParam,
     async: true,
     dataType : "html",
     cache : false,
@@ -130,21 +130,14 @@ function viewUsersGravtars() {
 }
 
 
-function getServiceInstanceStatus(current) {
-	  var serviceInstanceUuid = null;
-	  if (current == null) {
-		  serviceInstanceUuid = $('#serviceInstanceHealthSelect').val();
-	  } else{
-		  serviceInstanceUuid = current.value;
-	  }
+function getServiceInstanceStatus() {
 	  
-	   var url = healthUrl + "/getHealthStatusForServiceInstance";
-	   if(serviceInstanceUuid!=null){
+	   var url = healthUrl + "/get_health_status_for_service_instances";
 		   $.ajax( {
 		      type : "GET",
 		      url : url,
 		      async: true,
-		      data:{serviceInstanceUUID:serviceInstanceUuid},
+		      data:{tenant:effectiveTenantParam},
 		      dataType : "html",
 		      success : function(html) {    
 		    	  $("#serviceHealthChart").empty();
@@ -154,7 +147,6 @@ function getServiceInstanceStatus(current) {
 		        //need to handle TO-DO
 		      }
 		   });
-	   }
 	}
 
 $(window).bind('beforeunload',function() {

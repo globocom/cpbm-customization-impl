@@ -1,6 +1,7 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
@@ -75,7 +76,7 @@ $(document).ready(function(){
             </div>  
             <div class="widget_grid_description">
               <span>
-                <spring:message code="ui.email.templates.type.${template.category}"/>
+                <spring:message code="ui.email.templates.type.${fn:toLowerCase(template.category)}"/>
               </span>
             </div>
           </div>
@@ -92,7 +93,7 @@ $(document).ready(function(){
           </div>
           
       </div>
-      <div class="widget_masterbigicons ${template.category}"></div>
+      <div class="widget_masterbigicons ${fn:toLowerCase(template.category)}"></div>
     </div>
   </div>
 

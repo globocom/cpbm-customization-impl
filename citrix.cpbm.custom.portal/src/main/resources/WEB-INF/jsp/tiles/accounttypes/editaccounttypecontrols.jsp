@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -6,18 +6,6 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 
 <style type="text/css">
-.tooltip {
-	background-color: #CCCCCC;
-	border: 1px solid #fff;
-	padding: 10px 15px;
-	width: 280px;
-	display: none;
-	color: #fff;
-	text-align: left;
-	font-size: 12px;
-	z-index: 10000;
-}
-
 .dialog_formcontent label.error {
 	margin-left: 265px;
 }
@@ -97,7 +85,7 @@
 							</li>
 						</c:forEach>
 						<li style="width:530px">
-							<div class="servicelist sections" style="height: 25px;float:right">
+							<div class="servicelist sections" style="height: 25px;float:right;min-height:0px">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);" onclick="closeAccountTypeControlsDialog()">
 									<spring:message code="label.cancel" />
 								</a>
@@ -161,7 +149,7 @@
 							</li>
 						</c:forEach>
 						<li style="width:530px">
-							<div class="servicelist sections" style="height: 25px;float:right">
+							<div class="servicelist sections" style="height: 25px;float:right;min-height:0px">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);" onclick="closeAccountTypeControlsDialog()">
 									<spring:message code="label.cancel" />
 								</a>

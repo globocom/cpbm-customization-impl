@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
@@ -424,6 +424,7 @@ $(document).ready(function() {
                         <!--Info popover ends here-->
                 </div>
             </c:forEach>
+            </div>
           <c:if test="${profile_choice.profile.name != 'Root'}">      
           <spring:url value="/portal/profiles/{profileId}/edit" var="edit_profile_path" htmlEscape="false">
             <spring:param name="profileId"><c:out value="${profile_choice.profile.id}" /></spring:param>
@@ -442,7 +443,7 @@ $(document).ready(function() {
                  
                  <!-- Data end -->       
           
-              </div>
+              
           </div>
         </div>
        

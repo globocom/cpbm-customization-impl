@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.math.BigDecimal;
@@ -12,11 +12,13 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.codehaus.jettison.json.JSONException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
@@ -25,18 +27,23 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 
 import web.WebTestsBase;
-import citrix.cpbm.portal.fragment.controllers.ChannelController;
-import citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
-import citrix.cpbm.portal.fragment.controllers.ProductsController;
 
+import com.citrix.cpbm.portal.fragment.controllers.ChannelController;
+import com.citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
+import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
 import com.vmops.model.AccountType;
 import com.vmops.model.Address;
 import com.vmops.model.Channel;
 import com.vmops.model.ChannelRevision;
 import com.vmops.model.CurrencyValue;
+import com.vmops.model.Product;
 import com.vmops.model.ProductBundle;
 import com.vmops.model.ProductBundleRevision;
+import com.vmops.model.ProductCharge;
+import com.vmops.model.ProductRevision;
 import com.vmops.model.RateCardCharge;
+import com.vmops.model.Revision;
+import com.vmops.model.SupportedCurrency;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
 import com.vmops.persistence.CatalogProductBundleDAO;
@@ -50,6 +57,7 @@ import com.vmops.service.CurrencyValueService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.ProductService;
 import com.vmops.utils.DateUtils;
+import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ChannelLogoForm;
 import com.vmops.web.forms.RateCardChargesForm;
 import com.vmops.web.forms.RateCardComponentChargesForm;
@@ -145,7 +153,6 @@ public class ChannelControllerTest extends WebTestsBase {
         "USD", "EUR"
     };
     channelController.createChannel("Veera", "Veera", "<HTML>", currencyvaluelist, map, response);
-
   }
 
   /*
@@ -430,10 +437,6 @@ public class ChannelControllerTest extends WebTestsBase {
           Assert.assertTrue(rcc.getPrice() != BigDecimal.valueOf(5000));
       }
 
-      // Step 4 : Activate the new channel
-
-      String ac = channelController.activatecatalog(obtainedChannel.getId().toString(), map);
-      Assert.assertNotNull(ac);
     }
   }
 
@@ -503,7 +506,6 @@ public class ChannelControllerTest extends WebTestsBase {
 
     Channel ch1 = channelDAO.find("1");
     String se = channelController.editCatalogProductBundlePricing(ch1.getId().toString(), "2", currencyValData, map);
-
   }
 
   /*
@@ -620,11 +622,6 @@ public class ChannelControllerTest extends WebTestsBase {
         if (rcc.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("EUR"))
           Assert.assertTrue(rcc.getPrice() != BigDecimal.valueOf(5000));
       }
-
-      // Step 4 : Activate the new channel
-
-      String ac = channelController.activatecatalog(obtainedChannel.getId().toString(), map);
-      Assert.assertNotNull(ac);
 
     }
   }
@@ -756,4 +753,640 @@ public class ChannelControllerTest extends WebTestsBase {
     }
   }
 
+  @Test
+  public void testEditCatalogProductBundlePricing() {
+    try {
+
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      Boolean found = false;
+
+      channelController.editCatalogProductBundlePricing(channel.getId().toString(), bundle.getId().toString(), map);
+
+      @SuppressWarnings("unchecked")
+      List<CurrencyValue> actualCurrencyList = (List<CurrencyValue>) map.get("supportedCurrencies");
+      List<CurrencyValue> supportedCurrencyList = channelService.listCurrencies(channel.getParam());
+   
+      for (int i = 0; i < supportedCurrencyList.size(); i++) {
+        Assert.assertEquals(supportedCurrencyList.get(i).getCurrencyCode(), actualCurrencyList.get(i).getCurrencyCode());
+      }
+
+      Assert.assertEquals(channel, map.get("channel"));
+
+      @SuppressWarnings("unchecked")
+      Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+          .get("fullBundlePricingMap");
+      Map<String, RateCardCharge> rateCardMap = fullBundlePricingMap.get(
+          bundleService.getProductBundleRevision(bundle, channelService.getFutureRevision(channel).getStartDate(),
+              channel)).get(currencyValueService.locateBYCurrencyCode("JPY"));
+      for (Map.Entry<String, RateCardCharge> entry : rateCardMap.entrySet()) {
+        if (rateCardComponentDAO.find(12L).getId().toString().equals(entry.getValue().getRateCardComponent().getId().toString())) {
+          BigDecimal charge = new BigDecimal("400.0000");
+          Assert.assertEquals(charge, entry.getValue().getPrice());
+          found = true;
+          break;
+        }
+      }
+      Assert.assertTrue(found);
+
+      ProductBundleRevision productBundleRevision = (ProductBundleRevision) map.get("productBundleRevision");
+      Assert.assertEquals(channelService.getFutureChannelRevision(channel, false).getProductBundleRevisionsMap().get(bundle).getId(),
+          productBundleRevision.getId());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testViewCatalogCurrent() {
+    try {
+      boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      channelController.viewCatalogCurrent(channel.getId().toString(), "1", "5", map);
+
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0) {
+          Assert.assertEquals(productCharge.getProduct().getPrice(), product.getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+      found = false;
+
+      Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+          .get("fullBundlePricingMap");
+      Map<String, RateCardCharge> rateCardMap = fullBundlePricingMap.get(
+          bundleService.getProductBundleRevision(bundle, channelService.getCurrentRevision(channel).getStartDate(),
+              channel)).get(currencyValueService.locateBYCurrencyCode("JPY"));
+      for (Map.Entry<String, RateCardCharge> entry : rateCardMap.entrySet()) {
+        if (rateCardComponentDAO.find(12L).getId().toString()
+            .equals(entry.getValue().getRateCardComponent().getId().toString())) {
+          BigDecimal charge = new BigDecimal("4000.0000");
+          Assert.assertEquals(charge, entry.getValue().getPrice());
+          found = true;
+          break;
+        }
+      }
+      Assert.assertTrue(found);
+
+      List<CurrencyValue> supportedCurrencies = (List<CurrencyValue>) map.get("supportedCurrencies");
+      int index = 0;
+      for (CurrencyValue c : channelService.listCurrencies(channel.getParam())) {
+        Assert.assertEquals(c.getCurrencyCode(), supportedCurrencies.get(index).getCurrencyCode());
+        index++;
+      }
+
+      List<ProductBundleRevision> productBundleRevisionList = channelService.getChannelRevision(channel,
+          channelService.getCurrentRevision(channel).getStartDate(), false).getProductBundleRevisions();
+            List<ProductBundleRevision> actualProductBundleRevisionList = (List<ProductBundleRevision>) map
+          .get("productBundleRevisions");
+      Assert.assertEquals(productBundleRevisionList.get(0).getId(), actualProductBundleRevisionList.get(0).getId());
+
+      Assert.assertEquals(channel, map.get("channel"));
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testViewCatalogPlanned() {
+    try {
+      Boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+
+      channelController.viewCatalogPlanned(channel.getId().toString(), "1", "5", null, map);
+
+      List<CurrencyValue> supportedCurrencies = (List<CurrencyValue>) map.get("supportedCurrencies");
+      int index = 0;
+      for (CurrencyValue c : channelService.listCurrencies(channel.getParam())) {
+        Assert.assertEquals(c.getCurrencyCode(), supportedCurrencies.get(index).getCurrencyCode());
+        index++;
+      }
+      Assert.assertEquals(channel, map.get("channel"));
+
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0) {
+          Assert.assertEquals(productCharge.getProduct().getPrice(), product.getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+
+      Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+          .get("fullBundlePricingMap");
+      Map<String, RateCardCharge> rateCardMap = fullBundlePricingMap.get(
+          bundleService.getProductBundleRevision(bundle, channelService.getFutureRevision(channel).getStartDate(),
+              channel)).get(currencyValueService.locateBYCurrencyCode("JPY"));
+      for (Map.Entry<String, RateCardCharge> entry : rateCardMap.entrySet()) {
+        if (rateCardComponentDAO.find(12L).getId().toString()
+            .equals(entry.getValue().getRateCardComponent().getId().toString())) {
+          BigDecimal charge = new BigDecimal("400.0000");
+          Assert.assertEquals(charge, entry.getValue().getPrice());
+          found = true;
+          break;
+        }
+      }
+      Assert.assertTrue(found);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testList() {
+    try {
+
+      String channelName = channelDAO.find(4L).getName();
+      org.apache.commons.configuration.Configuration config = new PropertiesConfiguration("pagination.properties");
+      int perPage = config.getInt("DEFAULT_PAGE_SIZE");
+      List<Channel> channels = channelService.getChannels(1, perPage, channelName.substring(0, 4));
+
+      channelController.list("1", channelName.substring(0, 4), map);
+      
+      Assert.assertEquals(channels, map.get("channels"));
+      Assert.assertEquals(channels.size(), map.get("channelsize"));
+      Assert.assertEquals(1, map.get("current_page"));
+
+      int totalSize = channelService.count(null);
+      if (totalSize - (1 * perPage) > 0)
+        Assert.assertTrue((Boolean) map.get("enable_next"));
+      else
+        Assert.assertFalse((Boolean) map.get("enable_next"));
+
+      channelController.searchChannelByPattern("1", channelName.substring(0, 4), map);
+      Assert.assertEquals(channels, map.get("channels"));
+      Assert.assertEquals(channels.size(), map.get("channelsize"));
+      Assert.assertEquals(1, map.get("current_page"));
+
+      if (totalSize - (1 * perPage) > 0)
+        Assert.assertTrue((Boolean) map.get("enable_next"));
+      else
+        Assert.assertFalse((Boolean) map.get("enable_next"));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannel() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      channelController.editChannel(channel.getId().toString(), map);
+      Assert.assertEquals(channel, map.get("channel"));
+      Assert.assertEquals(channelService.listCurrencies(channel.getParam()), map.get("currencies"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannelPost() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      String channelStr = "channel988";
+      channelController.editChannel(channel.getId().toString(), channelStr, channelStr, channelStr, map);
+      channel = channelDAO.find(4L);
+      Assert.assertEquals(channelStr, channel.getName());
+      Assert.assertEquals(channelStr, channel.getCode());
+      Assert.assertEquals(channelStr, channel.getDescription());
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreateChannelGet() {
+    try {
+      Boolean found=false;
+      channelController.createChannel(map, response);
+      
+      Assert.assertNotSame(HttpStatus.PRECONDITION_FAILED.value(), response.getStatus());
+      
+      @SuppressWarnings("unchecked")
+      List<Channel> channelList= (List<Channel>) map.get("channels");
+      for (Channel channel : channelList) {
+        if(channelDAO.find(4L).getCode().equals(channel.getCode())){
+          found=true;
+        }
+          
+      }
+      Assert.assertTrue(found);
+      Assert.assertEquals(currencyValueService.listActiveCurrencies(), map.get("currencies"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreateChannelWithExistingChannelCode() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      String[] currencyValues = {
+          currencyValueService.locateBYCurrencyCode("USD").getCurrencyName(),
+          currencyValueService.locateBYCurrencyCode("INR").getCurrencyName()
+      };
+      channelController.createChannel(channel.getCode(), channel.getCode(), channel.getCode(), currencyValues, map,
+          response);
+      Assert.assertEquals(601, response.getStatus());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testValidateChannelName() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      String result = channelController.validateChannelName(channel.getName());
+      Assert.assertFalse(Boolean.valueOf(result));
+
+      String channelStr = "channel9";
+      result = channelController.validateChannelName(channelStr);
+      Assert.assertTrue(Boolean.valueOf(result));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannelCurrencyGet() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      channelController.editChannelCurrency(channel.getId().toString(), map);
+
+      @SuppressWarnings("unchecked")
+      List<CurrencyValue> availableCurrencies = (List<CurrencyValue>) map.get("availableCurrencies");
+      int size = availableCurrencies.size();
+      List<CurrencyValue> currencyList = channelService.listCurrencies(channel.getParam());
+      availableCurrencies.removeAll(currencyList);
+      Assert.assertEquals(size, availableCurrencies.size());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannelCurrencyPost() {
+    try {
+      Channel channel = channelDAO.find(4L);
+
+      channelController.editChannelCurrency(channel.getId().toString(), map);
+      @SuppressWarnings("unchecked")
+      List<CurrencyValue> availableCurrencies = (List<CurrencyValue>) map.get("availableCurrencies");
+      String currencyCode = availableCurrencies.get(0).getCurrencyCode();
+      String currencyCodeArray = "['" + currencyCode + "']";
+
+      String status = channelController.editChannelCurrency(channel.getId().toString(), currencyCodeArray, map);
+      Assert.assertEquals("success", status);
+      Assert.assertTrue(channel.getCatalog().getSupportedCurrencyValuesByOrder()
+          .contains(currencyValueService.locateBYCurrencyCode(currencyCode)));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannelCurrencyPostNegative() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      
+      channelController.editChannelCurrency(channel.getId().toString(), map);
+      @SuppressWarnings("unchecked")
+      List<CurrencyValue> availableCurrencies = (List<CurrencyValue>) map.get("availableCurrencies");
+      String activeCurrencyCode = availableCurrencies.get(0).getCurrencyCode();
+      
+      List<CurrencyValue> activeCurrencyList = currencyService.listActiveCurrencies();
+      List<CurrencyValue> currencyList = currencyService.getCurrencyValues();
+      currencyList.removeAll(activeCurrencyList);
+      String currencyCodeArray = "['" + currencyList.get(0).getCurrencyCode() + "','"+activeCurrencyCode+"']";
+
+      String status=channelController.editChannelCurrency(channel.getId().toString(), currencyCodeArray, map); 
+      Assert.assertEquals("success",status);
+      Assert.assertFalse(channel.getCatalog().getSupportedCurrencyValuesByOrder()
+          .contains(currencyValueService.locateBYCurrencyCode(currencyList.get(0).getCurrencyCode())));
+      Assert.assertTrue(channel.getCatalog().getSupportedCurrencyValuesByOrder()
+          .contains(currencyValueService.locateBYCurrencyCode(activeCurrencyCode)));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditCatalogProductPricing() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      Boolean found = false;
+      Product product = productDAO.find(4L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+
+      channelController.editCatalogProductPricing(channel.getId().toString(), map);
+      
+      Assert.assertEquals(channelService.getFutureRevision(channel).getStartDate(), map.get("planDate"));
+      Assert.assertEquals(channel.getCatalog().getSupportedCurrencyValuesByOrder(), map.get("supportedCurrencies"));
+
+      @SuppressWarnings("unchecked")
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0) {
+          Assert.assertEquals(productCharge.getProduct().getPrice(), product.getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditCatalogProductPricingPost() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      String currencyValData = "[{'previousvalue':'14.0000','value':'200.0000','currencycode':'JPY','currencyId':'71','productId':'4'}]";
+      channelController.editCatalogProductPricing(channel.getId().toString(), currencyValData, map);
+
+      boolean productChargeSet = false;
+      List<ProductCharge> prodCharges = productService.getCatalogPlannedChargesForAllProducts(channel.getCatalog());
+      for (ProductCharge productCharge : prodCharges) {
+        if (productCharge.getProduct().equals(product)
+            && productCharge.getCurrencyValue().getCurrencyCode().equals("JPY")) {
+          productChargeSet = true;
+          Assert.assertEquals(0, productCharge.getPrice().compareTo(BigDecimal.valueOf(200.00)));
+        }
+      }
+      Assert.assertTrue(productChargeSet);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testShowDatePicker() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      Revision futureRevision = channelService.getFutureRevision(channel);
+
+      channelController.showDatePicker(channel.getId().toString(), map);
+
+      if (futureRevision != null && futureRevision.getStartDate() != null
+          && futureRevision.getStartDate().after(new Date())) {
+        Assert.assertEquals(true, map.get("planDateInFuture"));
+        Assert.assertEquals(futureRevision.getStartDate(), map.get("plan_date"));
+      }
+
+      Assert.assertTrue(DateUtils.isSameDay(DateUtils.addOneDay(new Date()), (Date) map.get("date_tomorrow")));
+      Assert.assertEquals(new Date(), map.get("date_today"));
+      Assert.assertEquals(channel, map.get("channel"));
+      Assert.assertEquals(true, map.get("isTodayAllowed"));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditChannelLogo() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      
+
+      channelController.editChannelLogo(channel.getId().toString(), map);
+      ChannelLogoForm channelLogoForm = (ChannelLogoForm) map.get("channelLogoForm");
+      Assert.assertEquals(channel.getId(),channelLogoForm.getChannel().getId());
+      Assert.assertEquals(Page.CHANNELS, map.get("page"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetNextSetOfBundles() {
+    try {
+      boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      channelController.getNextSetOfBundles(channel.getId().toString(), "5", "planned", "1", map);
+
+      List<CurrencyValue> currencyList = channelService.listCurrencies(channel.getParam());
+      
+      List<SupportedCurrency> supportedCurrencyList = (List<SupportedCurrency>) map.get("supportedCurrencies");
+      Assert.assertEquals(currencyList.size(), supportedCurrencyList.size());
+
+      Assert.assertTrue((Boolean) map.get("toalloweditprices"));
+      Assert.assertEquals(1, map.get("actiontoshow"));
+      Assert.assertEquals(channel, map.get("channel"));
+
+      Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+          .get("fullBundlePricingMap");
+      Map<String, RateCardCharge> rateCardMap = fullBundlePricingMap.get(
+          bundleService.getProductBundleRevision(bundle, channelService.getFutureRevision(channel).getStartDate(),
+              channel)).get(currencyValueService.locateBYCurrencyCode("JPY"));
+      for (Map.Entry<String, RateCardCharge> entry : rateCardMap.entrySet()) {
+        if (rateCardComponentDAO.find(12L).getId().toString()
+            .equals(entry.getValue().getRateCardComponent().getId().toString())) {
+          BigDecimal charge = new BigDecimal("400.0000");
+          Assert.assertEquals(charge, entry.getValue().getPrice());
+          found = true;
+          break;
+        }
+      }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testViewCatalogHistory() {
+    try {
+      boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+      
+      channelController.viewCatalogHistory(channel.getId().toString(), "30/04/2012", "MM/dd/yyyy", "true", map);
+
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0) {
+          Assert.assertEquals(productCharge.getProduct().getPrice(), product.getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+      found = false;
+
+      Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+          .get("fullBundlePricingMap");
+      BigDecimal charge = new BigDecimal("4000.0000");
+      for (Map.Entry<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> bundlepricemap : fullBundlePricingMap
+          .entrySet()) {
+        for (Map.Entry<CurrencyValue, Map<String, RateCardCharge>> map2 : bundlepricemap.getValue().entrySet()) {
+          CurrencyValue cv = map2.getKey();
+          if (cv.getCurrencyCode().equalsIgnoreCase("JPY")) {
+            for (Map.Entry<String, RateCardCharge> entry : map2.getValue().entrySet()) {
+              if (rateCardComponentDAO.find(12L).getId().toString()
+                  .equals(entry.getValue().getRateCardComponent().getId().toString())) {
+                Assert.assertEquals(charge, entry.getValue().getPrice());
+                found = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testsyncChannel() {
+    try {
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      
+      productService.removeProductById(product.getId().toString(), true);
+      
+      productService.setReferencePriceBookFutureRevisionDate(new Date());
+      Assert.assertTrue(DateUtils.isSameDay(new Date(), channelService.getCurrentRevision(null).getStartDate()));
+      
+      channelController.syncChannel(channel.getId().toString(), map);
+            
+      Boolean Found = false;
+      List<ProductRevision> catalogProductRevisions = channelService.getFutureChannelRevision(channel,false).getProductRevisions();
+      for (ProductRevision productRevision : catalogProductRevisions) {
+        for (ProductCharge productCharge : productRevision.getProductCharges()) {
+          if (productCharge.getProduct().getCode().equals(product.getCode())) {
+            Assert.fail();
+            Found = true;
+          }
+        }
+      }
+      Assert.assertFalse(Found);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testCurrentGetFullChargeListing() {
+    try {
+      boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+
+      channelController.getFullChargeListing(channel.getId().toString(), "current", null, "MM/dd/yyyy", "05/02/2012",
+          map);
+
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0) {
+          Assert.assertEquals(product.getPrice(), productCharge.getProduct().getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+      Assert.assertNull(map.get("fullBundlePricingMap"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testPlannedGetFullChargeListing() {
+    try {
+      boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      Product product = productDAO.find(4L);
+      CurrencyValue currencyValue = currencyService.locateBYCurrencyCode("JPY");
+      
+      
+      String currencyValData = "[{'previousvalue':'14.0000','value':'200.0000','currencycode':'JPY','currencyId':'71','productId':'4'}]";
+      channelController.editCatalogProductPricing(channel.getId().toString(), currencyValData, map);
+      
+      channelController.getFullChargeListing(channel.getId().toString(), "planned", null, "MM/dd/yyyy", "05/02/2012",
+          map);
+
+      Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = (Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>>) map
+          .get("fullProductPricingMap");
+      Map<String, ProductCharge> productChargeMap = fullProductPricingMap.get(product).get(currencyValue);
+      for (Map.Entry<String, ProductCharge> entry : productChargeMap.entrySet()) {
+        ProductCharge productCharge = entry.getValue();
+        if (productCharge.getProduct().compareTo(product) == 0 && productCharge.getCurrencyValue().getCurrencyCode().equals("JPY") &&channel.getCatalog().equals(productCharge.getCatalog())) {
+          Assert.assertEquals(new BigDecimal("200.0000"),productCharge.getPrice());
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+      Assert.assertNull(map.get("fullBundlePricingMap"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
 }

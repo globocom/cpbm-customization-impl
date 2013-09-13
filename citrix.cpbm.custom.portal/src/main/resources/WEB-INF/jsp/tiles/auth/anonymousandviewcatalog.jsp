@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -30,5 +30,6 @@
 <input type="hidden" id="revisionDate" value="<c:out value="${revisionDate}"/>" />
 <input type="hidden" id="dateFormat" value="<c:out value="${dateFormat}"/>" />
 <input type="hidden" id="channelId" value="<c:out value="${channel.id}"/>" />
+<input type="hidden" id="channelCode" value="<c:out value="${channel.code}"/>" />
 <input type="hidden" id="anonymousBrowsing" value="<c:out value="${anonymousBrowsing}"/>" />
   <tiles:insertAttribute name="createsubscription" ignore="true" />

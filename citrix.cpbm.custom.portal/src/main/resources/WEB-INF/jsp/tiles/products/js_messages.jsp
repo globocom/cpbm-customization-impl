@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -24,8 +24,6 @@ commmonmessages = {
     removedplannedcharges_successfully: '<spring:message javaScriptEscape="true" code="js.products.remove.planned.charges.successfully"/>',
     removedplanneddate_successfully: '<spring:message javaScriptEscape="true" code="js.products.remove.planned.date.successfully"/>',
     startDate:'<spring:message javaScriptEscape="true" code="js.errors.products.enter.valid.start.date"/>',
-    lightboxactivenowconfirmmessage:'<spring:message javaScriptEscape="true" code="js.confirm.activatenow"/>',
-    activatenow:'<spring:message javaScriptEscape="true" code="label.activate.now"/>',
     activated_successfully: '<spring:message javaScriptEscape="true" code="js.products.ratecard.activated.successfully"/>',
     activating: '<spring:message javaScriptEscape="true" code="message.activating.charges"/>',
     choose_label: '<spring:message javaScriptEscape="true" code="label.choose"/>'
@@ -61,6 +59,7 @@ var i18n = {
     	product_type: '<spring:message javaScriptEscape="true" code="js.errors.product.product.type"/>',
     	product_uom: '<spring:message javaScriptEscape="true" code="js.errors.product.product.uom"/>',
     	product_usage_type: '<spring:message javaScriptEscape="true" code="js.errors.product.product.usage.type"/>',
+    	usage_type_exclude: '<spring:message javaScriptEscape="true" code="js.errors.product.product.usage.type.exclude"/>',
     	componentIdso: '<spring:message javaScriptEscape="true" code="js.errors.product.service.offering"/>',
     	componentId: '<spring:message javaScriptEscape="true" code="js.errors.product.component.id"/>',
     	componentTag: '<spring:message javaScriptEscape="true" code="js.errors.product.component.tag"/>',

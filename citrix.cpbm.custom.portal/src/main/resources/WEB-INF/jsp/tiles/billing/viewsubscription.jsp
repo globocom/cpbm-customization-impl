@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -24,10 +24,13 @@
                 <div class="widget_actionpopover_mid">
                   <ul class="widget_actionpoplist">
                     <c:choose>
-                      <c:when test="${subscription.state=='ACTIVE'}">
+                      <c:when test="${subscription.state=='ACTIVE' or subscription.state=='NEW'}">
                         <c:if test="${allowTermination && hasCloudAccess && cloudStackCallFailed == false}">
                         <li class="terminatesubscription_link" id="<c:out value="term_subscription_1_${subscription.param}"/>" title='<spring:message code="label.subscription.details.terminate"/>'><spring:message code="label.subscription.details.terminate"/></li>
                        </c:if>
+                       <c:if test="${subscription.state=='NEW'}">
+                        <li class="cancelsubscription_link" id="<c:out value="cancel_subscription_1_${subscription.param}"/>" title='<spring:message code="label.subscription.details.cancel"/>'><spring:message code="label.subscription.details.cancel"/></li>
+                        </c:if>
                         <c:choose>
                           <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and toProvision}">
                             <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.provision.resource"/>'><spring:message code="ui.label.provision.resource"/></li>

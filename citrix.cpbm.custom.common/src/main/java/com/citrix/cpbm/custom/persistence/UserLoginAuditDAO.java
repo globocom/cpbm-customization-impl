@@ -1,9 +1,9 @@
-/* Copyright (C) 2013 Citrix, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package com.citrix.cpbm.custom.persistence;
 
 import java.util.List;
 
-import com.vmops.custom.model.UserLoginAudit;
+import com.citrix.cpbm.custom.model.UserLoginAudit;
 import com.vmops.model.User;
 import com.vmops.persistence.GenericDAO;
 

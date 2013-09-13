@@ -1,14 +1,16 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {	
   var trialAccount = false ;
   var trial_selected =false;
+  $("#spinning_wheel_rhs").hide();
   initDialog("editTenantDiv", 500);
   initDialog("issueCreditDiv", 700);
   initDialog("editTenantsLimitDiv", 600);
   initDialog("newTenantDiv", 900);
     
   initDialog("dialog_confirmation", 350, false);
-  
+ 
+  $("#trialCodeBox").hide();
   /**
    * add account wizard last step link.
    */   
@@ -147,7 +149,7 @@ $(".remove_tenant_link").live("click", function(event) {
     	    var password="dummy";
     	    $.ajax({
             type : 'POST',
-            url : "/portal/portal/tenants/getapidetails",
+            url : "/portal/portal/tenants/get_api_details",
             data : {'password':password},
             dataType : "json",
             success : function(data) {
@@ -565,7 +567,7 @@ $("#allowSecondaryId").live("click", function(event){
 	 jQuery.validator.addMethod('userlimitcheck', 
        function (value) {  
 	   
-	   var url =  "/portal/portal/tenants/validateUserLimit";
+	   var url =  "/portal/portal/tenants/validate_user_limit";
 	   var userlimit = value;
 	   var tenantid = $("#tenantEditForm").attr("tenantid");
 	   var returnValue = false;
@@ -914,7 +916,7 @@ $("#allowSecondaryId").live("click", function(event){
 
 });
 
-
+var showTrialCode = false; 
 $.validator
 .addMethod(
 		"twoDecimal",
@@ -1332,6 +1334,7 @@ function viewTenant(current){
 }
 function viewFirstTenant(divId){
   var ID=divId.substr(3);
+  $("#spinning_wheel_rhs").show();
   var url = "/portal/portal/tenants/viewtenant";
   $.ajax( {
      type : "GET",
@@ -1343,6 +1346,8 @@ function viewFirstTenant(divId){
        bindActionMenuContainers();
      },error:function(){ 
        //need to handle TO-DO
+     },complete:function(){
+       $("#spinning_wheel_rhs").hide();
      }
   });
 }
@@ -1409,7 +1414,7 @@ function showControls(){
 }
 
 function refreshAccountLimts(tenantParam, instanceParam){
-  var actionurl = "/portal/portal/tenants/listaccountlimits";
+  var actionurl = "/portal/portal/tenants/list_account_limits";
   $("#spinning_wheel_rhs").show();
   $.ajax( {
     type : "GET",
@@ -1437,7 +1442,7 @@ function refreshAccountLimts(tenantParam, instanceParam){
 function editAccountLimits(current) {
 	var instanceParam = $(current).attr('instanceparam');
 	var tenantParam = $(current).attr('tenantuuid');
-	var actionurl = "/portal/portal/tenants/editaccountlimits";	
+	var actionurl = "/portal/portal/tenants/edit_account_limits";	
 	$("#spinning_wheel_rhs").show();
 	$.ajax( {
 		type : "GET",
@@ -1495,7 +1500,7 @@ function saveAcccountControls() {
 */	
 	$.ajax({
 		type : "POST",
-		url : "/portal/portal/tenants/editaccountlimits",
+		url : "/portal/portal/tenants/edit_account_limits",
 		data : {
 			"configProperties" : JSON.stringify(configProperties),
 			"instanceParam" : instanceParam,
@@ -1606,7 +1611,12 @@ function addTenantNext(current) {
   }
   
   if ($("#accountForm").valid()) {
-    
+    if(showTrialCode == false){
+      $("#trialCodeBox").hide();
+      }
+        if(showTrialCode == true){
+          $("#trialCodeBox").show();
+        }
     if (currentstep == "step3") {
       var $step6 = $("#step6");
       $step6.find("#successmessage").empty();
@@ -1707,22 +1717,42 @@ function addTenantNext(current) {
 }
 
 function onAddTenantLoad(){
+  $("#trialCodeBox").hide();
   $("#channelParam").change(function(){
+    
     var channelParam = $(this).val();
+    $.ajax({
+      type: 'GET',
+      url: tenanturl+channelParam+"/list_currencies/",
+      dataType: 'text',
+      async:false,
+      success: function(data) {
+        $("#currency").html(data);
+        
+      },
+      error : function (request) {
+       alert('Failed to load currencies for channel');
+      }
+    });
+    
+   if($("#defaultChannel").val()!=""){
      $.ajax({
             type: 'GET',
-            url: tenanturl+channelParam+"/listcurrencies/",
-            dataType: 'text',
+            url: tenantUrl+channelParam+"/verify_channel_promocode/",
+            dataType: 'html',
             async:false,
-            success: function(data) {
-              $("#currency").html(data);
-              
+            success: function(result) {
+              if(result == "success"){
+                showTrialCode = true;
+              }else{
+                showTrialCode = false;
+                 }
             },
             error : function (request) {
-             alert('Failed to load currencies for channel');
+                showTrialCode = false;
             }
           });
-        
+        }       
     });
   
   $("#backtostep1").bind("click", function (event) {
@@ -2143,7 +2173,7 @@ function requiredField(element) {
  * 
  */
 function addNewTenantGet(){
-  //initDialog("newTenantDiv", 785);
+   //initDialog("newTenantDiv", 785);
   var actionurl = tenantUrl+"new";
     $.ajax( {
       type : "GET",
@@ -2166,11 +2196,35 @@ function addNewTenantGet(){
             }
           }
     });
+    
+    var channelParam =$("#defaultChannel").val();
+    if($("#defaultChannel").val()!=""){
+    $.ajax({
+           type: 'GET',
+           url: tenantUrl+channelParam+"/verify_channel_promocode/",
+           dataType: 'html',
+           async:false,
+           success: function(result) {
+             if(result == "success"){
+               showTrialCode = true;
+                }else{
+                  showTrialCode = false;
+              }
+           },
+           error : function (request) {
+               showTrialCode = false;
+           }
+         });
+    }
+
+    
 }
 /**
  * Edit tenant (GET)
  */
 function editTenantGet(current) {	
+  
+  
 	var divId = $(current).attr('id');
 	var tenant=divId.substr(4);
 	var actionurl = "/portal/portal/tenants/edit";		
@@ -2535,53 +2589,6 @@ function i18nAccountType(accountType){
   return i18nAccountType;
 }
 
-//This function is not used anymore. We can delete it in future.
-function cleantAccount(account_id) {
-  var r=confirm(i18n.confirm.cleantAccount);
-  if (r==true)
-    {
-      $(".clean_account_loader").html(
-          "<div class=\"overlay_black\"></div>" +
-          "<div class=\"common_loadingbox\">" +
-          "<div class=\"common_loadingbox_contentarea\">" +
-          "<div class=\"common_loadingbox_loading\"></div>" +
-          "<p><span>Deleting Account Data &hellip;</span></p>" +
-          "<p id=\"loading_para\"> Thank you for being patient while this account is being erased on CloudStack and on the CloudPortal </p>" +
-          "</div>"+
-          "</div>"
-          );
-
-      $.ajax( {
-
-        type : "GET",
-        url : "tenants/clean",
-        data : {account_id : account_id},
-        dataType : 'text',
-        success : function(data) {
-          if(data == "success") {
-            $(".clean_account_loader").html("");
-            alert("Request Succeeded !");  
-            location.reload();
-          }
-          else {
-              $(".clean_account_loader").html("");
-              alert(i18n.errors.tenants.cleantAccount.error); 
-          }
-        },
-       
-       error : function (request) {
-          if (request.status == 412) {
-            message.text(request.responseText);
-          }
-        }
-
-      });
-      
- 
-    }
- 
-}
-
 /**
  * Remove account/tenant (POST)
  */
@@ -2607,23 +2614,6 @@ function removeTenant(current) {
 		});		 
   }
 
-function approvePendingChange(id,tenantParam){
-	var actionurl = "/portal/portal/tenants/"+tenantParam+"/approvePendingChange";
-	var message = $("#messageBox");
-	$.ajax( {
-		type : "POST",
-		url : actionurl,
-		data:{Id:id},
-		dataType : "json",
-		success : function(jsonResponse) {
-			$.editTenant(jsonResponse);			
-		
-		},error:function(){	
-			message.text(i18n.errors.tenants.approve.error);
-		}
-	
-	});
-}
 
 
 $("#requestAccountTypeConversionLink").live("click", function(event){
@@ -2637,59 +2627,6 @@ function changeAccounttype(){
   $("#changeAccountTypeJsp").show();
   $("#accountTypeNameSelect").focus();
 }
-
-function actOnPendingChange(id,tenantParam,stateChangedTo){
-	initDialog("memoinput_panel", 350);
-	
-    var $thisDialog = $("#memoinput_panel");
-    $thisDialog.find("#memo").val(""); 
-    $thisDialog.find("#memo_errormsg").html("");
-    $thisDialog.find("#memo").removeClass("error_text").addClass("select");
-    $thisDialog.find("#memo_star").text("");
-    if("REJECTED" == stateChangedTo)
-    {
-    $thisDialog.find("#memo_star").text("_");
-    }
-    $thisDialog.dialog('option', 'buttons', { 						
-    	"OK" : function() {
-    		var memo = $thisDialog.find("#memo");
-    		var memoAlert = $thisDialog.find("#memo_errormsg");
-    		var isValid = true;
-    		if("REJECTED" == stateChangedTo && (memo.val() == null || memo.val() == '')) {
-    			showError(false, memo, memoAlert, viewtenantDictionary.MEMOREQUIRED);
-    			isValid = false;
-    		}
-    		if(memo.val() != null && memo.val().length >= 1025) {
-    			isValid = false;
-    			showError(false, memo, memoAlert, viewtenantDictionary.MEMOLENGTH);
-    		}
-    		if(!isValid) {
-    			return false;
-    		}
-    		$thisDialog.dialog("close");
-    		//Doing backend Ajax call
-    		var actionurl = "/portal/portal/tenants/"+tenantParam+"/actOnPendingChange";
-    		var message = $("#messageBox");
-    		$.ajax( {
-    			type : "POST",
-    			url : actionurl,
-    			data:{Id:id,State:stateChangedTo,Memo:memo.val()},
-    			dataType : "json",
-    			success : function(jsonResponse) {
-    			  $.editTenant(jsonResponse);
-    			},error:function(XMLHttprequest){ 
-    			  $("#top_message_panel").find("#msg").html(XMLHttprequest.responseText);
-    			  $("#top_message_panel").find("#status_icon").removeClass("successicon").addClass("erroricon");
-    			  $("#top_message_panel").removeClass("success").addClass("error").show();
-    			}
-    		});
-		},
-		"Cancel" : function() {
-			$(this).dialog("close");
-		} 
-    }).dialog("open");
-}
-
 
 function refreshDivs(id){
 	$(id).each( function() {
@@ -2874,7 +2811,7 @@ $(document).ready(function(){
     }
     $.ajax( {
           type : 'POST',
-          url : "/portal/portal/tenants/getapidetails",
+          url : "/portal/portal/tenants/get_api_details",
           data : {'password':password},
           dataType : "json",
           success : function(data) {
@@ -3010,6 +2947,9 @@ function changeAccountType1(current){
    		trialAccount = false ;
    		$("#trialCodeBox").hide();
    	}
+
+   
+   
    //do actions based on account type selection
    // donot show secondary address div regardless of account type
    /*

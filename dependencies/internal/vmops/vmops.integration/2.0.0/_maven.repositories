@@ -1,5 +1,4 @@
 #NOTE: This is an internal implementation file, its format can be changed without prior notice.
-#Wed Jul 24 18:56:21 GMT+05:30 2013
+#Wed Jul 17 14:10:20 GMT+05:30 2013
 vmops.integration-2.0.0.jar>=
 vmops.integration-2.0.0.pom>=
-vmops.integration-2.0.0-tests.jar>=

@@ -1,5 +1,5 @@
 
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -125,16 +125,18 @@ if( typeof i18n.labels === 'undefined' ) {
       
       <c:choose >
        <c:when test="${user.user.enabled == true && user.user.locked == false}">
-       <spring:url value="/portal/users/{user}/deactivateUser" var="deactivateUserPath" htmlEscape="false"> 
+       <spring:url value="/portal/users/{user}/deactivate_user" var="deactivateUserPath" htmlEscape="false"> 
           <spring:param name="user"><c:out value="${user.user.param}"/></spring:param>
       </spring:url>
       <p><a id="profile_deactivateuser" href="<c:out value="${deactivateUserPath}" />"><spring:message code="label.myprofile.deactivate"/></a> |</p>
       </c:when>
       <c:otherwise>
-        <spring:url value="/portal/users/{user}/activateUser" var="activateUserPath" htmlEscape="false"> 
+       <c:if test="${user.user.emailVerified == true}">
+        <spring:url value="/portal/users/{user}/activate_user" var="activateUserPath" htmlEscape="false"> 
           <spring:param name="user"><c:out value="${user.user.param}"/></spring:param>
       </spring:url>
       <p><a id="profile_activateuser" href="<c:out value="${activateUserPath}" />"><spring:message code="label.myprofile.activate"/></a> |</p>
+      </c:if>
       </c:otherwise>
       </c:choose>
       

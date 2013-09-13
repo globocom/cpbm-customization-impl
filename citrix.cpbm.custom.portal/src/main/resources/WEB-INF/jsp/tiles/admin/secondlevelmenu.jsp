@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -9,12 +9,13 @@
 		<div class="secondlevel_breadcrumb_panel">
    		<div class="secondlevel_breadcrumbbox" style="border-right:none;">
         <p><spring:message code="ui.menu.admin.secondlevel.page.detail"/></p>       		
-     	</div>       
+     	</div> 
+        <div class="doc_help_link"></div>      
     </div>   
 	     
 	     <div class="secondlevel_menupanel">
 	     	<sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
-	   			<a  class="secondlevel_menutabs <c:out value="${Configuiration}"/>" href="<%=request.getContextPath() %>/portal/admin/config/showconfiguration">
+	   			<a  class="secondlevel_menutabs <c:out value="${Configuiration}"/>" href="<%=request.getContextPath() %>/portal/admin/config/show_configuration">
 	        		<spring:message code="page.level2.configuration"/>
 	        	</a>
 	   		</sec:authorize>
@@ -34,17 +35,17 @@
 	        	</a>	
 	        	</sec:authorize>
           <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
-            <a  class="secondlevel_menutabs <c:out value="${AccountTypes}"/>"href="<%=request.getContextPath() %>/portal/admin/accounttypes/list">
+            <a  class="secondlevel_menutabs <c:out value="${AccountTypes}"/>"href="<%=request.getContextPath() %>/portal/admin/account_types/list">
               <spring:message code="page.level2.accounttypes"/>
             </a>  
             </sec:authorize>
             <sec:authorize access="hasRole('ROLE_CONFIGURATION_CRUD')">
-            <a  class="secondlevel_menutabs <c:out value="${ContentTemplates}"/>"href="<%=request.getContextPath() %>/portal/admin/emailtemplates">
+            <a  class="secondlevel_menutabs <c:out value="${ContentTemplates}"/>"href="<%=request.getContextPath() %>/portal/admin/email_templates">
               <spring:message code="page.level2.contenttemplates"/>
             </a>  
             </sec:authorize>
 		 </div>
-     
+     <div class="clearboth"></div>
  <tiles:insertDefinition name="warnings"></tiles:insertDefinition>  
 
 	</div>

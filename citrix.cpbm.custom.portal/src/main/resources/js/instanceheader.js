@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 /*js which will load instance specific resource body by calling fragment controller and let it provide the tile def.*/
 $(document).ready(function () {
 	
@@ -26,7 +27,7 @@ var refreshViewTabs = function loadViewTabs(serviceInstanceUUID, tenantParam) {
     var frame=document.getElementById("serviceInstanceResourceView");
     frame.src= "about:blank";
     $.ajax({
-        url: "/portal/portal/dashboard/manageresource/getresourceviews",
+        url: "/portal/portal/manage_resource/get_resource_views",
         dataType: "html",
         data: {
             serviceInstanceUUID: serviceInstanceUUID,

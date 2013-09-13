@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -244,7 +244,7 @@ cssClass="text"/>
           <h2><spring:message code="edit.payment.info.credit.card.title"/></h2>
             <div class="creditcard_typebox" id="from_edit">
               <c:forEach items="${billingInfo.ccTypes}" var="cc_choice" varStatus="status">
-                      <c:if test="${!billingInfo.creditCard.creditCardType}">
+                      <c:if test="${empty billingInfo.creditCard.creditCardType}">
                             <c:if test="${status.index==0}">
                                 <span id="<c:out value='${cc_choice.name}'/>" class="cc_icon <c:out value='${fn:toLowerCase(cc_choice.code)}'/> active edit_page"></span>
                                 <c:set var="defaultCreditCardName" value="${cc_choice.name}"></c:set>
@@ -253,12 +253,12 @@ cssClass="text"/>
                                 <span id="<c:out value='${cc_choice.name}'/>" class="cc_icon <c:out value='${fn:toLowerCase(cc_choice.code)}'/> nonactive edit_page"></span>
                               </c:if>
                       </c:if>
-                      <c:if test="${billingInfo.creditCard.creditCardType}">
-                         <c:if test="${billingInfo.creditCard.creditCardType==cc_choice.name}">
+                      <c:if test="${not empty billingInfo.creditCard.creditCardType}">
+                         <c:if test="${billingInfo.creditCard.creditCardType eq cc_choice.name}">
                             <span id="<c:out value='${cc_choice.name}'/>" class="cc_icon <c:out value='${fn:toLowerCase(cc_choice.code)}'/> active edit_page"></span>
                             <c:set var="defaultCreditCardName" value="${cc_choice.name}"></c:set>
                          </c:if>
-                          <c:if test="${billingInfo.creditCard.creditCardType!=cc_choice.name}">
+                          <c:if test="${billingInfo.creditCard.creditCardType ne cc_choice.name}">
                             <span id="<c:out value='${cc_choice.name}'/>" class="cc_icon <c:out value='${fn:toLowerCase(cc_choice.code)}'/> nonactive edit_page"></span>
                           </c:if>
                       </c:if>
@@ -410,7 +410,7 @@ cssClass="text"/>
                   <spring:message code="label.payment.info.state" var="i18nCreditCardState"/>
                   <span class="label"><spring:message code="label.payment.info.state"/></span>
                   <div class="form_element" id="billingStateInput">
-                    <div class="nonmandatory_wrapper write">                                             
+                    <div class="mandatory_wrapper write">                                             
                      <form:input tabindex="111" path="creditCard.creditCardAddress.state" cssClass="text" title="${i18nCreditCardState}"/>
                       </div>
                       <form:errors  element="label" path="creditCard.creditCardAddress.state" cssClass="error serverError"/>

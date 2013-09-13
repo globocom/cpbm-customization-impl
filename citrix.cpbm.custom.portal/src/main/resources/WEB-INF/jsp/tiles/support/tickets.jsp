@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -99,7 +99,7 @@ var dictionary = {
                   
                     <div class="widget_navtitlebox">
                         <span class="title" id="name_nav"><c:out value="${ticket.caseNumber}" /></span>
-                        <span class="subtitle" id="displaytext_nav"><c:out value="${ticket.formattedSubject}" /></span>
+                        <span class="subtitle" id="displaytext_nav"><c:out value="${ticket.subject}" /></span>
                         
                     </div>
                     
@@ -136,7 +136,7 @@ var dictionary = {
                                         </div>
                                         <div class="raw_contents_value">
                                             <span id="info_created_by" />
-                                            <c:out value="${ticket.ownerUsername}" />
+                                            <c:out value="${ticket.owner.username}" />
                                             </span>
                                         </div>
                                     </div>

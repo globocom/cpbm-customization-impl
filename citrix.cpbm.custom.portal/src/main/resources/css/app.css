@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 
 @CHARSET "UTF-8";
 
@@ -150,27 +150,6 @@ input[type='submit'].button.hover {
 }
 .recaptchatable input, .recaptchatatable label {
   height: auto;
-}
-
-#set_owner .odd {
-  background-color: #eeeeee;
-}
-
-#set_owner .user, #set_owner .user input[type=radio] {
-  height: 40px;
-  line-height: 40px;
-}
-
-#set_owner .user input[type=radio] {
-	float:left;
-	margin: 13px;
-}
-
-#set_owner .user div.profile {
-	height: 20px;
-	float: left;
-	line-height: 20px;
-	font-size: 16px;
 }
 
 .stopVMForm input[type="submit"] {

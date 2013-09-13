@@ -1,4 +1,4 @@
-$(document).ready(function() {
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 	
 	$("#entitlementForm").validate( {
 		success : "valid",
@@ -36,7 +36,6 @@ $(document).ready(function() {
 			}
 		}
 	});
-});
 
 function removeError() {
 	$("#entitlement\\.includedUnits").removeClass("error");

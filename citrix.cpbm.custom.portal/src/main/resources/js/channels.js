@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 var DEFAULT_PER_PAGE_SIZE = 5;
 var DEFAULT_CURRENT_PAGE = 1;
 var KEY_VALUE_ITEM_SEPERATOR = "::";
@@ -459,7 +460,7 @@ function viewCatalogCurrent(){
     $("#catalog_current_tab").find("a").attr("style", "color: #000");
     $("#catalog_planned_tab").find("a").attr("style", "color: #2C8BBC");
     $("#catalog_history_tab").find("a").attr("style", "color: #2C8BBC");
-    $("#catalog_current_tab").closest(".widget_details_actionbox").attr("style", "height: 30px");
+    $("#catalog_current_tab").closest(".widget_details_actionbox").attr("style", "height: auto");
     $("#catalog_content").html("");
     var channelId = $("li[id^='channel'].selected.channels").attr('id').substr(7);
     var url = "/portal/portal/channels/viewcatalogcurrent";
@@ -475,6 +476,10 @@ function viewCatalogCurrent(){
        dataType : "html",
        success : function(html) {
          $("#catalog_content").html(html);
+         $("#second_line_under_planned").show();
+         if( $("#currentEffectiveDate").val() != "" ){
+           $("#second_line_under_planned").find("#effective_date").text($("#currentEffectiveDate").val());
+         }
        },error:function(){ 
          // need to handle TO-DO
        }
@@ -564,6 +569,7 @@ function editCurrencies(event, current){
 // Handler to view the catalog's current bundle / utility rate planned charges. By default, bundle is selected
 function viewCatalogPlanned(){
     $("#catalog_content").html("");
+    $("#second_line_under_planned").hide();
     var channelId = $("li[id^='channel'].selected.channels").attr('id').substr(7);
     var editpriceisvalid = "0";
     if($("#planning_for_first_time").attr("value") == ""){
@@ -583,6 +589,10 @@ function viewCatalogPlanned(){
        dataType : "html",
        success : function(html) {
          $("#catalog_content").html(html);
+         $("#second_line_under_planned").show();
+         if( $("#currentEffectiveDate").val() != "" ){
+           $("#second_line_under_planned").find("#effective_date").text($("#currentEffectiveDate").val());
+       }
        },error:function(){ 
          // need to handle TO-DO
        }
@@ -753,7 +763,7 @@ function attachProductBundle(){
                    $("#spinning_wheel").show();
                    $.ajax({
                        type : "POST",
-                       url : "/portal/portal/channels/attachProductBundles",
+                       url : "/portal/portal/channels/attachproductbundles",
                        data: {"channelId": id,
                               "selectProductBundles": JSON.stringify(selectProductBundles)
                              },
@@ -778,49 +788,6 @@ function attachProductBundle(){
            // need to handle TO-DO
        }
       });
-}
-
-// Handler to detach ( remove ) a bundle from the catalog
-function detachBundleFromCatalog(event, current){
-   initDialog("dialog_detach_bundle", 390);
-
-   var $thisDialog = $("#dialog_detach_bundle");
-
-   var channelId = $("li[id^='channel'].selected.channels").attr('id').substr(7);
-   var url = "/portal/portal/channels/detachproductbundle";
-   var bundleId = $(current).attr('bundleId');
-
-   $thisDialog.dialog('option', 'buttons', {
-     "OK": function () {
-	   $("#spinning_wheel").show();
-      	 $.ajax( {
-      	    type : "POST",
-      	    url : url,
-      	    async : false,
-      	    cache: false,
-      	    data: {"channelId": channelId,
-      		       "bundleId": bundleId},
-      	    dataType : "html",
-      	    success : function(result) {
-      	    	$thisDialog.dialog("close");
-      	          if(result == "failure"){
-      	        	popUpDialogForAlerts("alert_dialog", $thisDialog.find("#e_msg_detach_bundle").attr("text"));
-      	          }
-      	          viewCatalogPlanned();
-      	        },
-      	    error:function(XMLHttpRequest){
-      	        popUpDialogForAlerts("alert_dialog", $thisDialog.find("#e_msg_detach_bundle").attr("text"));
-      	    }
-      	  });
-      	$("#spinning_wheel").hide();
-      	$(this).dialog("close");
-   },
-   "Cancel": function () {
-     $(this).dialog("close");
-   }
-   });
-   dialogButtonsLocalizer($thisDialog, {'OK': g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
-   $thisDialog.dialog("open");
 }
 
 // Handler to search the channel on text entered. Search right now is text*
@@ -1422,49 +1389,6 @@ $("#bundles_detail_area").scroll(function(){
   	  }); 
 	}
 });
-
-function activateCatalog(){
-	if($("#bundlesaddedtocatalog").attr("value") == "false"){
-		popUpDialogForAlerts("alert_dialog", i18n.errors.channels.no_bundle_added_to_catalog);
-		return;
-	}
-    var id = $("li[id^='channel'].selected.channels").attr('id').substr(7);
-    initDialog("activate_catalog", 500);
-    var $thisDialog = $("#activate_catalog");
-    $thisDialog.data("height.dialog", 110);
-    $thisDialog.dialog('option', 'buttons', {
-      "Confirm": function () {
-       	var url = "/portal/portal/channels/activatecatalog";
-       	 $.ajax( {
-       	    type : "POST",
-       	    url : url,
-       	    async : false,
-       	    cache: false,
-       	    data: {"Id": id},
-       	    dataType : "html",
-       	    success : function(result) {
-       	    	$thisDialog.dialog("close");
-       	          if(result == "failure"){
-       	        	  var message = $thisDialog.find("#e_msg_catalog_activate").attr("text");
-       	        	  popUpDialogForAlerts("alert_dialog", message);
-       	          }else{
-       	        	viewChannel($("li[id^='channel'].selected.channels"));
-       	          } 
-       	        },
-       	    error:function(XMLHttpRequest){
-   	        	var message = $thisDialog.find("#e_msg_catalog_activate").attr("text");
-   	        	popUpDialogForAlerts("alert_dialog", message);
-       	    }
-       	  });
-       	 $(this).dialog("close");
-    },
-    "Cancel": function () {
-      $(this).dialog("close");
-    }
-    });
-    dialogButtonsLocalizer($thisDialog, {'Confirm': g_dictionary.dialogConfirm, 'Cancel': g_dictionary.dialogCancel});
- 	$thisDialog.dialog("open");
- }
 
 function getFullListingOfCharges(bundleId){
 	var data = {};

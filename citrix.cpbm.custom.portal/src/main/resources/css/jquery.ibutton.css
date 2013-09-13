@@ -111,6 +111,8 @@ div.ibutton-label-off span {
 	cursor: inherit;
 	padding: 1px 3px;
 	font-size: 10px !important;
+	line-height:15px;
+	display:inline;
 }
 
 .ibutton-focus label {

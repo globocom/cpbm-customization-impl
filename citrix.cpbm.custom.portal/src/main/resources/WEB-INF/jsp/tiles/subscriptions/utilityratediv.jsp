@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -22,27 +22,12 @@
                    <div class="db_gridbox_celltitles header" style="margin-left: 30px;"> <c:out value="${instanceMapVar.key.name}"></c:out> </div>
                  </div>
               </div>
-                  <c:set var="serviceUsagetypeMap" value="${instanceMapVar.value}"></c:set>
-                  <c:forEach items="${serviceUsagetypeMap}" var="serviceUsagetypeMapVar" varStatus="serviceUsageTypeLoopStatus">
-                        <c:set var="ifGenerated" value="false"></c:set>
-                        <c:forEach items="${generatedUsageListForServiceResourceType}" var="generatedUsageListForServiceResourceTypeVar" varStatus="generatedUsageListForServiceResourceTypeLoopStatus">
-                          <c:if test="${serviceUsagetypeMapVar.key.usageTypeName eq generatedUsageListForServiceResourceTypeVar.usageTypeName}">
-                            <c:set var="ifGenerated" value="true"></c:set>
-                          </c:if>
-                        </c:forEach>
-                        <div class="db_gridbox_rows header" <c:if test="${ifGenerated == true && showGenerated == true}"> style="background:#efefb0;" </c:if> <c:if test="${ifGenerated == false }"> style="background:#c0c0c0;" </c:if> >
-                          <div class="db_gridbox_columns" style="width:45%;">
-                           <div class="db_gridbox_celltitles header" style="margin-left: 60px;"> <c:out value="${serviceUsagetypeMapVar.key.usageTypeName}"></c:out> <c:if test="${ifGenerated == true && showGenerated == true }"><c:out value="${generatedBy}"></c:out><c:out value="${resourceTypeName}"></c:out><c:out value="${bracket}"></c:out></c:if>
-                           </div>
-                          </div>
-                         
-                        </div>
                            <div class="db_gridbox_rows header">
                             <div class="db_gridbox_columns" style="width:22%;">
                                <div class="db_gridbox_celltitles header" style="margin-left: 30px;"><spring:message code="label.bundle.edit.urc.product"/></div>
                             </div>
                             <div class="db_gridbox_columns" style="width:40%;">
-                               <div class="db_gridbox_celltitles header" style="width:99%;"><spring:message code="label.bundle.edit.urc.description"/></div>
+                               <div class="db_gridbox_celltitles header" style="width:99%;"><spring:message code="label.catalog.utility.card.table.header.category"/></div>
                             </div>              
                             <div class="db_gridbox_columns" style="width:10%;">
                                <div class="db_gridbox_celltitles header"><spring:message code="label.bundle.edit.urc.units"/></div>
@@ -53,10 +38,10 @@
                                </div>
                             </div>               
                             </div>                        
-                            <c:set var="productsMap" value="${serviceUsagetypeMapVar.value}"></c:set>
+                            <c:set var="productsMap" value="${instanceMapVar.value}"></c:set>
                             <c:forEach items="${productsMap}" var="productsMapVar" varStatus="productMapLoopStatus">
                                    <c:choose>
-                                    <c:when test="${status.index % 2 == 0}">
+                                    <c:when test="${productMapLoopStatus.index % 2 == 0}">
                                       <c:set var="rowClass" value="odd"/>
                                     </c:when>
                                     <c:otherwise>
@@ -64,12 +49,13 @@
                                     </c:otherwise>
                                   </c:choose>                                          
                                 
-                                  <div class="db_gridbox_rows rowClass">
+                                  <div class="db_gridbox_rows ${rowClass}">
                                     <div class="db_gridbox_columns" style="width:22%;">
                                       <div class="db_gridbox_celltitles" style="margin-left: 30px;"><c:out value="${productsMapVar.key.name}"/></div>
+                                      <div class="db_gridbox_celltitles" style="margin-left: 30px;clear:both;"><c:out value="${productsMapVar.key.description}"/></div>
                                     </div>
                                     <div class="db_gridbox_columns" style="width:40%;">
-                                      <div class="db_gridbox_celltitles ellipsis"  title="<c:out value="${productsMapVar.key.description}"/>" style="width:99%;"><c:out value="${productsMapVar.key.description}"/></div>
+                                      <div class="db_gridbox_celltitles ellipsis"  title="<c:out value="${productsMapVar.key.category.name}"/>" style="width:99%;"><c:out value="${productsMapVar.key.category.name}"/></div>
                                     </div>
                                     <div class="db_gridbox_columns" style="width:10%;">
                                       <div class="db_gridbox_celltitles">
@@ -77,12 +63,12 @@
                                       </div>                   
                                     <div class="db_gridbox_columns last" style="width:28%;">
                                       <c:if test="${not empty productsMapVar.value}">
-                                        <div style="width:80%; margin-left: 50px;" class="db_gridbox_celltitles"><c:out value="${currency.sign}" />&nbsp;<fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${productsMapVar.value}"  /></div>
+                                        <div style="width:80%; margin-left: 50px;" class="db_gridbox_celltitles"><c:out value="${currency.sign}" />&nbsp;<fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${productsMapVar.value.price}"  /></div>
                                       </c:if>
                                     </div>
                                   </div>
                             </c:forEach>
-                  </c:forEach>
+                  
               </div>
           </c:forEach>       
       </div>

@@ -1,10 +1,11 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,9 +20,9 @@ import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 
 import web.WebTestsBase;
-import citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
-import citrix.cpbm.portal.fragment.controllers.SubscriptionController;
 
+import com.citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
+import com.citrix.cpbm.portal.fragment.controllers.SubscriptionController;
 import com.vmops.internal.service.SubscriptionService;
 import com.vmops.model.Catalog;
 import com.vmops.model.CatalogProductBundle;
@@ -30,6 +31,8 @@ import com.vmops.model.Channel.ChannelType;
 import com.vmops.model.Entitlement;
 import com.vmops.model.Product;
 import com.vmops.model.ProductBundle;
+import com.vmops.model.ProductBundleRevision;
+import com.vmops.model.ProvisioningConstraint;
 import com.vmops.model.RateCard;
 import com.vmops.model.RateCardCharge;
 import com.vmops.model.RateCardComponent;
@@ -1986,4 +1989,49 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     Assert.assertEquals(0, count);
   }
 
+  @Test
+  public void testEditProductBundle() throws Exception {
+
+    User user = userService.get("2ee0d598-00c8-4e12-b307-1cab5305e867");
+    ServiceInstance serviceInstance = serviceInstanceDAO.find(1L);
+    ServiceResourceType serviceResourceType = serviceResourceTypeDAO.find(1L);
+    Map<String, String> serviceDiscriminatorMap = new HashMap<String, String>();
+
+    serviceDiscriminatorMap.clear();
+    serviceDiscriminatorMap.put("Template", "210");
+    List<ProductBundleRevision> pbRevisions = bundleService.getProductBundleRevisions(serviceInstance,
+        serviceResourceType, serviceDiscriminatorMap, null, user, null);
+    Assert.assertNotNull("product bundle revision list cannot be null", pbRevisions);
+
+    // Verifying presence of a Bundle in which INCLUDES constrains matches
+    ProductBundle productBundle = bundleService.getProductBundleById(2L);
+
+    Revision futureRevision = channelService.getFutureRevision(null);
+    List<ProvisioningConstraint> provisioningConstraints = bundleService.getProductBundleRevision(productBundle,
+        futureRevision.getStartDate(), null).getProvisioningConstraints();
+
+    Assert.assertNotNull(provisioningConstraints);
+    Assert.assertFalse(provisioningConstraints.isEmpty());
+
+    String compAssociationJson = "[{compDbId: 1, association: INCLUDES, compName: ISO, compValue: DOS-ISO, compValueName: 10 }]";
+
+    ProductBundleForm form = new ProductBundleForm(productBundle);
+    form.setCompAssociationJson(compAssociationJson);
+    BindingResult result = validate(form);
+
+    ProductBundle obtainedProductBundle = bundleController.editProductBundle(form, result, map);
+    Assert.assertNotNull(obtainedProductBundle);
+    provisioningConstraints = bundleService.getProductBundleRevision(obtainedProductBundle, new Date(), null)
+        .getProvisioningConstraints();
+    Assert.assertNotNull(provisioningConstraints);
+    Assert.assertFalse(provisioningConstraints.isEmpty());
+
+  }
+
+  @Test
+  public void testGetComponentsContainsFilters() {
+    Map<String, List<String>> componentCollection = bundleController.getServiceResourceComponents(1L);
+    Assert.assertNotNull(componentCollection);
+    Assert.assertTrue(componentCollection.get("filters").contains("zone"));
+  }
 }

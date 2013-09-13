@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
 	/**
 	 * Creates new product row
@@ -520,7 +520,7 @@ function addNewAlertGet(){
 }
 
 function setAccountBudgetGet(){
-	var actionurl = alertsUrl+"setAccountBudget?tenant="+$("#tenantId").val();		
+	var actionurl = alertsUrl+"set_account_budget?tenant="+$("#tenantId").val();		
 	  $.ajax( {
 			type : "GET",
 			url : actionurl,			
@@ -540,7 +540,7 @@ function setAccountBudgetGet(){
 			$("#in_process_text").text(dictionary.settingAccountBudgetProcess);
                  $.ajax( {
                     type : "POST",
-                    url : "/portal/portal/tenants/setAccountBudget?tenantparam="+$("#tenantId").val(),
+                    url : "/portal/portal/tenants/set_account_budget?tenantparam="+$("#tenantId").val(),
                     data:$('#tenantForm').serialize(),
                     success : function(jsonResponse) {
                 	 $("#top_message_panel").show();

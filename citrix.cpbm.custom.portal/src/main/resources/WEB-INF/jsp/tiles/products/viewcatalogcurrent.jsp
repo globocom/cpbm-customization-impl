@@ -1,4 +1,4 @@
- <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -31,7 +31,7 @@
        </div>
      </div>
     </div>
-  <div class="widget_browsergrid_wrapper wsubaction" style="overflow-x: hidden; overflow-y: auto; height: 382px;" id="bundles_detail_area" which="current" gotall="false">
+  <div class="widget_browsergrid_wrapper wsubaction" style="overflow-x: hidden; overflow-y: auto; height: 365px;" id="bundles_detail_area" which="current" gotall="false">
      <div id="catalog_row_container">
         <c:forEach var="productBundleRevision" items="${productBundleRevisions}" varStatus="status">
            <c:set var="index" value="${status.index}" scope="request"></c:set>
@@ -65,3 +65,4 @@
     </div>
     </div>
 </div>
+<input type="hidden" id="currentEffectiveDate" value="<c:out value="${effectiveDate}"/>" />

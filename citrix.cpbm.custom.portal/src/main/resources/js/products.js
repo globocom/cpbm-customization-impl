@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
 	
   $(".dropdownbutton").hover(function() {
@@ -376,37 +377,6 @@ function viewProduct(current){
 }
 
 /**
- * Remove product (GET)
- */
-function removeProduct(current) { 
-  var r=confirm(i18n.errors.products.delete_confirm_message);
-   if(r == false){
-        return false;
-     }
-  var divId = $(current).attr('id');
-   var ID=divId.substr(6);
-  var actionurl = productsUrl+"removeproduct";  
-    $.ajax( {
-      type : "GET",
-      url : actionurl,
-      data:{Id:ID},
-      dataType : "html",
-      success : function(html) {
-          $("#viewproductDiv").html("");
-          $("#editproductDiv").html("");
-          $("#row"+ID).remove();
-          var count =$(".countDiv").attr("id");
-          var size = Number(count.substr(5));
-          size=size-1;
-          $(".countDiv").attr("id","count"+size);
-          resetGridRowStyle();            
-      },error:function(jsonResponse, status, error){  
-         alert(jsonResponse.responseText);
-      }
-    });    
-  }
-
-/**
  * Reset data row style
  * 
  * @return
@@ -573,6 +543,8 @@ function fetchScalesList(serviceUuid, UomName){
 	    async: false,
 	    cache: false,
 	    success: function (json) {
+	    	$("#originalScales").data("originalScales",json.original);
+	    	json = json.modified;
 	    	var defaultScale = null;
 	    	scaleDropdown.empty();
 	    	for(var i=0; i< json.length; i++){
@@ -586,7 +558,13 @@ function fetchScalesList(serviceUuid, UomName){
 	    	}
 	    	scaleDropdown.unbind("change").bind("change", function (event) {
 	    		if(scaleDropdown.val() != "custom"){
-	    		  conversionFactorBox.val(scaleDropdown.val());
+	    		  var selectedScale = $("#step4_scale :selected").attr("id");
+	    		  var originalScales = $("#originalScales").data("originalScales");
+	    		  if(originalScales != null && selectedScale != null){
+	    			 conversionFactorBox.val(originalScales[selectedScale]); 
+	    		  }else {
+	    			 conversionFactorBox.val(""); 
+	    		  }
 	    		  conversionFactorLabel.text(scaleDropdown.val());
 	    		  conversionFactorLabel.show();
 	    		  conversionFactorBox.hide();
@@ -603,6 +581,7 @@ function fetchScalesList(serviceUuid, UomName){
 	    	});
 	    },
 	    error: function (XMLHttpResponse) {
+	    	$("#originalScales").data("originalScales","");
 	        handleError(XMLHttpResponse);
 	      }
 	  });
@@ -888,7 +867,7 @@ function getMediationRules(){
     $('#addedDiscriminator_'+usageTypeId).find("div[id^='addedDiscriminatorValues_']").each(function(){
         var nestedRule = new Object();
         nestedRule.discriminatorId = $(this).find("#discriminatorName").attr("value");
-        nestedRule.operator = $(this).find("#discriminatorOperator option:selected").val();
+        nestedRule.operator = $(this).find(".select1 option:selected").val();
         var selectorinput = $(this).find("div[selectorinput^='opt_']");
         if(selectorinput.attr("selectorinput") == "opt_select"){
           if(selectorinput.find("#discvalue_selectbox option:selected").index() == 0){
@@ -981,11 +960,19 @@ function addProductNext(current) {
 
   if(currentstep == "step2" && product_action == "create"){
     var usageTypesList = [];
+    var onlyExclude = true;
     $("#mediationRules").find("div[id^='addedusage']").each(function(){
       usageTypesList.push($(this).find("#usagetype").find(':selected'));
+      if($(this).find("#operator").attr("value")== "combine"){
+        onlyExclude = false;
+      }
     });
     if(usageTypesList.length == 0){
       $("#productMedRuleSelectError").text(i18n.errors.products.product_usage_type);
+      return;
+    }
+    if(onlyExclude){
+      $("#productMedRuleSelectError").text(i18n.errors.products.usage_type_exclude);
       return;
     }
     $("#selectedUsageType").val($("#mediationRules").find("div[id^='addedusage_']").first().find("#uom").val());
@@ -1547,61 +1534,6 @@ function editplannedCharges(current){
         });
 }
 
-function addProductCurrentCharges(current){
-  
-  initDialog("dialog_add_product_default_price", 665,600);    
-   var actionurl = productsUrl+$('#productCode').val()+"/addproductcurrentcharges";    
-     $.ajax( {
-       type : "GET",
-       url : actionurl,
-       dataType : "html",
-       async:false,
-       success : function(html) {      
-                 var $thisDialog = $("#dialog_add_product_default_price");
-                 $thisDialog.html("");
-                 $thisDialog.html(html);
-                 $thisDialog.dialog('option', 'buttons', {
-                   "OK": function () {
-                   var productForm = $thisDialog.find("form");
-                     if($(productForm).valid()){
-                        $.ajax( {
-                                type : "POST",
-                                url : $(productForm).attr('action'),
-                                data:$(productForm).serialize(),
-                                dataType : "html",
-                                async:false,
-                                success : function(html) {
-                                  $("#productpricing_content").html(html);
-                                  bindActionMenuContainers();
-                                  $thisDialog.dialog("close");
-                                },error:function(XMLHttpRequest){
-                                  if(XMLHttpRequest.status === AJAX_FORM_VALIDATION_FAILED_CODE){
-                                   displayAjaxFormError(XMLHttpRequest, "productForm", "main_addnew_formbox_errormsg");
-                                  }
-                                  else if(XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE){
-                                    alert(i18n.errors.common.codeNotUnique);
-                                  }else{
-                                    // To do
-                                  }
-                                }
-                              });
-                     }
-                  
-                 },
-                 "Cancel": function () {
-                   $(this).dialog("close");
-                 }
-                 });
-                 dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
-                 $thisDialog.bind( "dialogbeforeclose", function(event, ui) {
-                   $thisDialog.empty();
-                   });
-                 $thisDialog.dialog("open");
-               },error:function(){                 
-               }
-         });
-}
-
 function viewProductChargesHistory(data){
   var url = productsUrl+ $('#productCode').val() + "/viewproductchargeshistory";
   var data = {};
@@ -1683,7 +1615,7 @@ function i18nProductTypeDisplayName(field){
   return field;
 }
 
-function pouplateUsageTypeDropDown(usageType){
+function pouplateUsageTypeDropDown(usageType,usageTypeId){
   var serviceUsageTypeOptions = [];
   serviceUsageTypeOptions.push('<option value="">' + commmonmessages.choose_label + '</option>');
   var serviceUsageTypes = JSON.parse($("#serviceUsageTypes").val());
@@ -1693,10 +1625,26 @@ function pouplateUsageTypeDropDown(usageType){
           l10discAndUsageTypeNames[serviceUsageTypes[i].usageTypeName + "-name"], '</option>');
     }
   } else {
+    var availableServiceUsageTypes = [];
     for(var i=0; i < serviceUsageTypes.length; i++){
-      if(usageType.trim().toLowerCase() == serviceUsageTypes[i].serviceUsageTypeUom.name.trim().toLowerCase()){
-        serviceUsageTypeOptions.push('<option value="', serviceUsageTypes[i].id, '"uom="', serviceUsageTypes[i].serviceUsageTypeUom.name,'"serviceUsageTypeId="',serviceUsageTypes[i].id,'">',
-            l10discAndUsageTypeNames[serviceUsageTypes[i].usageTypeName + "-name"], '</option>');
+      var usageTypeFound = false;
+      $("#mediationRules").find("div[id^='addedusage_']").each(function() {
+        if($(this).find("#usagetype").val()==serviceUsageTypes[i].id){
+          usageTypeFound = true;
+        }
+      });
+      if(usageTypeId == serviceUsageTypes[i].id){
+        usageTypeFound = true;
+      }
+      if(usageTypeFound == false){
+        availableServiceUsageTypes.push(serviceUsageTypes[i]);
+      }
+    }
+    
+    for(var i=0; i < availableServiceUsageTypes.length; i++){
+      if(usageType.trim().toLowerCase() == availableServiceUsageTypes[i].serviceUsageTypeUom.name.trim().toLowerCase()){
+        serviceUsageTypeOptions.push('<option value="', availableServiceUsageTypes[i].id, '"uom="', availableServiceUsageTypes[i].serviceUsageTypeUom.name,'"serviceUsageTypeId="',availableServiceUsageTypes[i].id,'">',
+            l10discAndUsageTypeNames[availableServiceUsageTypes[i].usageTypeName + "-name"], '</option>');
       }
     }
   }
@@ -1713,7 +1661,7 @@ function getUsageTypes(){
         dataType : "json",
         success : function(serviceUsageTypes) {
             $("#serviceUsageTypes").val(JSON.stringify(serviceUsageTypes));
-            pouplateUsageTypeDropDown("");
+            pouplateUsageTypeDropDown("",null);
         },error:function(){ 
         }
       }); 
@@ -1743,8 +1691,25 @@ function addDiscriminatorRow(current) {
     newDiscriminatorRow.find("#discriminatorName").remove();
     newDiscriminatorRow.find("#discriminatorNameSpan").show();
     newDiscriminatorRow.find("#discriminatorNameSpan").attr("id", "discriminatorName");
-    
+    var alreadyAddedDiscriminator = false;
+    var $discriminatorOperatorhtml ;
+    $("#addedDiscriminator_" + sourceUsageTypeId).find("div[id^='addedDiscriminatorValues_']").each(function() {
+      if($(this).find("#discriminatorName").text()==discriminatorRowTemplate.find("#discriminatorName option:selected").text()){
+        alreadyAddedDiscriminator = true;
+        $discriminatorOperatorhtml = $(this).find("#discriminatorOperatorDiv option").clone();
         
+      }
+    });
+    
+    var className = "js_addedDiscriminatorOperator_"+sourceUsageTypeId+"_"+discriminatorRowTemplate.find("#discriminatorName option:selected").val();
+    var discriminatorOperatorId = lastDiscAddedCount + "-" + className;
+    newDiscriminatorRow.find("#discriminatorOperator").addClass(className);
+    
+    if(alreadyAddedDiscriminator == true){
+      var first_selected_option=$("."+className).val();
+      newDiscriminatorRow.find("#discriminatorOperator").val(first_selected_option);
+      }
+    newDiscriminatorRow.find("#discriminatorOperator").attr("id",discriminatorOperatorId);
     newDiscriminatorRow.find("#discriminatorOperatorDiv").show();
     newDiscriminatorRow.find(".vm_tooltip").show();
     var count = 0;
@@ -1764,7 +1729,7 @@ function addDiscriminatorRow(current) {
       newDiscriminatorRow.find("#grid_cell_discvalue_inputbox").show();
     }
     var deleteDiscriminatorHtml = "<a class='delete' href='javascript:removeDiscriminatorValue("
-        + '"' + discriminatorRowId + '"' + ");'></a>";
+        + '"' + discriminatorRowId + '"' +',"'+ sourceUsageTypeId + '"'+ ");'></a>";
     newDiscriminatorRow.find("#add_discriminator_link_addedDiscriminator_"+sourceUsageTypeId).parent().html(deleteDiscriminatorHtml);
     discriminatorRowTemplate.find("#usagetype option:eq(" + 0 + ")").attr('selected',
         'selected');
@@ -1820,7 +1785,7 @@ function addDiscriminatorRowInEdit(current){
     newDiscriminatorRow.find("#grid_cell_discvalue_inputbox").show();
   }
   var deleteDiscriminatorHtml = "<a class='delete' href='javascript:removeDiscriminatorValue("
-                      + '"' + discriminatorRowId + '"' + ");'></a>";
+                      + '"' + discriminatorRowId + '"'+',"'+ medRuleId + '"' + ");'></a>";
   newDiscriminatorRow.find("#add_discriminator_link_"+sourceUsageTypeId).parent().html(deleteDiscriminatorHtml);
   discriminatorRowTemplate.find("#usagetype option:eq(" + 0 + ")").attr('selected',
         'selected');
@@ -1830,8 +1795,8 @@ function addDiscriminatorRowInEdit(current){
   newDiscriminatorRow.show();
 }
 
-function removeDiscriminatorValue(discriminatorRowId){
-  $("#mediationRuleDiscriminators").find("#"+discriminatorRowId).remove();
+function removeDiscriminatorValue(discriminatorRowId,sourceUsageTypeId){
+  $("#addedDiscriminator_"+sourceUsageTypeId).find("#"+discriminatorRowId).remove();
 }
 
 function addUsageType(current){
@@ -1862,12 +1827,11 @@ function addUsageType(current){
   newUsageType.find("#uom").text(usageTypeTemplate.find("#uom").text());
   newUsageType.find("#uom").attr("value", usageTypeTemplate.find("#uom").text());
   
-  if(usageTypeCount == 0){
-    var usageTypeUom = $("#mediationRules").find("#usageTypeAdd").find("#usagetype option:selected").attr("uom");
-    pouplateUsageTypeDropDown(usageTypeUom);
-  }
+  var usageTypeUom = $("#mediationRules").find("#usageTypeAdd").find("#usagetype option:selected").attr("uom");
+  var serviceUsageTypeId = usageTypeTemplate.find("#usagetype option:selected").attr("serviceusagetypeid");
+  pouplateUsageTypeDropDown(usageTypeUom,serviceUsageTypeId);
   
-  var deleteHtml = "<a class='delete' href='javascript:removeUsageType("+ '"' +usageTypeId + '"' + ");'></a>";
+  var deleteHtml = "<a class='delete' href='javascript:removeUsageType("+ '"' +usageTypeId + '"'+ ',"' +serviceUsageTypeId + '"' + ");'></a>";
   newUsageType.find("#operations").html(deleteHtml);
   
   // Reset the template html
@@ -1928,7 +1892,7 @@ function changeUom(sel){
   $(sel).parent().parent().find("#uom").html(uom);
 }
 
-function removeUsageType(usageId){
+function removeUsageType(usageId,serviceUsageTypeId){
   var usageIdNo = $("#mediationRules").find("#"+usageId).find("#usagetype").attr("value");
   if($("#usageTypeLeftPanel_" + usageIdNo) != undefined){
     $("#usageTypeLeftPanel_" + usageIdNo).remove();
@@ -1938,13 +1902,23 @@ function removeUsageType(usageId){
 
   var usageTypeCount = $("div[id^='addedusage']").size();
   if(usageTypeCount == 0){
-    pouplateUsageTypeDropDown("");
+    pouplateUsageTypeDropDown("",null);
 
     var usageTypeTemplate = $("#mediationRules").find("#usageTypeAdd");
     usageTypeTemplate.find("#conversionfactor").val("1.00");
     usageTypeTemplate.find("#uom").html("");
     usageTypeTemplate.find("#usagetype option:eq(0)").attr('selected', 'selected');
     usageTypeTemplate.find("#operator option:eq(0)").attr("selected", "selected");
+  }else{
+    var serviceUsageTypeOptions = [];
+    var serviceUsageTypes = JSON.parse($("#serviceUsageTypes").val());
+    for(var i=0; i < serviceUsageTypes.length; i++){
+      if( serviceUsageTypeId == serviceUsageTypes[i].id){
+        serviceUsageTypeOptions.push('<option value="', serviceUsageTypes[i].id, '"uom="', serviceUsageTypes[i].serviceUsageTypeUom.name,'"serviceUsageTypeId="',serviceUsageTypes[i].id,'">',
+            l10discAndUsageTypeNames[serviceUsageTypes[i].usageTypeName + "-name"], '</option>');
+      }
+    }
+    $("#usagetype").append(serviceUsageTypeOptions.join(''));
   }
 }
 
@@ -2389,6 +2363,10 @@ $(current).parents("#prod_bundles_container").find("li").each(function(){
       handleError(XMLHttpResponse);
     }
   });
+}
+function changeDiscriminatorOperator(current){
+  var className = $(current).attr("id").split("-")[1];
+  $("."+className).val($(current).val());
 }
 
 

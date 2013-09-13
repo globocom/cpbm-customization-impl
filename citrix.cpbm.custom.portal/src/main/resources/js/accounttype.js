@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
 	
   jQuery.validator.addMethod('allowminusone', 
@@ -299,11 +300,11 @@ function viewaccounttype(current, tab){
 	 var cls = $(current).attr('class');
 	 cls = cls+" selected";
 	 $(current).attr('class',cls);
-	 var url = "/portal/portal/admin/viewaccounttype";
+	 var url = "/portal/portal/admin/view_account_type";
 	 $.ajax( {
 			type : "GET",
 			url : url,
-			data:{Id:ID, tab:tab},
+			data:{id:ID, tab:tab},
 			dataType : "html",
 			async:false,
 			success : function(html) {				
@@ -342,13 +343,13 @@ function showControls(){
 }
 
 function addAccountTypeControlsGet(id, accounttype) {
-	var actionurl = "/portal/portal/admin/addaccounttypecontrols";
+	var actionurl = "/portal/portal/admin/add_account_type_controls";
 	$.ajax({
 		type : "GET",
 		url : actionurl,
 		data : {
 			id : id,
-			accountType : accounttype
+			accounttype : accounttype
 		},
 		dataType : "html",
 		success : function(html) {
@@ -410,12 +411,12 @@ function saveAcccountControls() {
 
 	$.ajax({
 		type : "POST",
-		url : "/portal/portal/admin/saveaccounttypecontrols",
+		url : "/portal/portal/admin/save_account_type_controls",
 		data : {
-			"configProperties" : JSON.stringify(configProperties),
+			"configproperties" : JSON.stringify(configProperties),
 			"id" : uuid,
 			"action" : action,
-			"accountTypeId" : accounttypeid
+			"accounttypeid" : accounttypeid
 		},
 		dataType : "json",
 		success : function(data) {
@@ -458,11 +459,11 @@ function saveAcccountControls() {
 function editAccountTypeGet(current, mode) { 
   var divId = $(current).attr('id');
   var ID=divId.substr(4);
-  var actionurl = "/portal/portal/admin/editaccounttype";    
+  var actionurl = "/portal/portal/admin/edit_account_type";    
     $.ajax( {
       type : "GET",
       url : actionurl,
-      data:{Id:ID, mode:mode},
+      data:{id:ID, mode:mode},
       dataType : "html",
       success : function(html) {
     	$("#editAccountTypeDivDetail").html("");
@@ -566,11 +567,11 @@ $('#editinitialdepositcancel').live('click',function(){
   function editinitialdepositGet(current) { 
 	  var divId = $(current).attr('id');
 	  var ID=divId.substr(4);
-	  var actionurl = "/portal/portal/admin/editinitialdeposit";    
+	  var actionurl = "/portal/portal/admin/edit_initial_deposit";    
 	    $.ajax( {
 	      type : "GET",
 	      url : actionurl,
-	      data:{Id:ID},
+	      data:{id:ID},
 	      dataType : "html",
 	      success : function(html) {
 	    	$("#initialDepositEditDiv").html(""); 
@@ -660,11 +661,11 @@ $('#editinitialdepositcancel').live('click',function(){
 	  var divId = $(current).attr('id');
 	  var ID=divId.substr(4);
 	  initDialog("creditExposureLimitsDiv", 700);
-	  var actionurl = "/portal/portal/admin/editcreditexposure";    
+	  var actionurl = "/portal/portal/admin/edit_credit_exposure";    
 	    $.ajax( {
 	      type : "GET",
 	      url : actionurl,
-	      data:{Id:ID},
+	      data:{id:ID},
 	      dataType : "html",
 	      success : function(html) {
 	        $("#creditExposureLimitsDiv").html(""); 

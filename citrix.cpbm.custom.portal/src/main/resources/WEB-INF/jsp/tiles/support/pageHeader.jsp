@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <link rel="stylesheet" href="<%= request.getContextPath() %>/css/jquery/jquery.treeview.css" type="text/css" />
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/developerapi.js"></script>

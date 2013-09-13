@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
 
     $.validator.addMethod('minlen', function (value, element, param) {

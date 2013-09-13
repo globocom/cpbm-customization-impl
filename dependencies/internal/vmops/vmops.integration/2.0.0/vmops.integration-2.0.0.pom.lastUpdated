@@ -1,24 +1,20 @@
 #NOTE: This is an internal implementation file, its format can be changed without prior notice.
-#Wed Jul 24 18:15:58 GMT+05:30 2013
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/vmops.admin/../dependencies/internal/.error=
-http\://repository.springsource.com/maven/libraries/release/.lastUpdated=1374669690669
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cpbm/../dependencies/internal/.error=
-http\://repository.springsource.com/maven/bundles/release/.lastUpdated=1374669687924
-http\://repository.springsource.com/maven/bundles/external/.lastUpdated=1374669688591
-http\://repository.springsource.com/maven/bundles/snapshot/.lastUpdated=1374669690012
+#Wed Oct 10 13:43:13 IST 2012
+file\:D\:\\repos\\cloud-portal\\vmops.admin/../dependencies/internal/.error=
+http\://repo1.maven.org/maven2/.lastUpdated=1349078694642
+http\://repository.springsource.com/maven/libraries/release/.lastUpdated=1349078678526
+http\://repository.springsource.com/maven/bundles/release/.lastUpdated=1349078676188
+http\://repository.springsource.com/maven/bundles/external/.lastUpdated=1349078676742
+http\://repository.springsource.com/maven/bundles/snapshot/.lastUpdated=1349078677964
 http\://repository.springsource.com/maven/bundles/milestone/.error=
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/cpbm/../dependencies/internal/.lastUpdated=1374669958478
-http\://mirrors.ibiblio.org/pub/mirrors/maven2/.lastUpdated=1374669691606
-http\://repo.maven.apache.org/maven2/.lastUpdated=1374669692413
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/vmops.admin/../dependencies/internal/.lastUpdated=1374669709770
-http\://repo.maven.apache.org/maven2/.error=
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.portal/../dependencies/internal/.error=
+file\:D\:\\repos\\cloud-portal\\cpbm/../dependencies/internal/.lastUpdated=1349078675621
+http\://mirrors.ibiblio.org/pub/mirrors/maven2/.lastUpdated=1349078679693
+file\:D\:\\repos\\cloud-portal\\vmops.admin/../dependencies/internal/.lastUpdated=1349856793880
 http\://repository.springsource.com/maven/bundles/external/.error=
 http\://repository.springsource.com/maven/libraries/release/.error=
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.portal.core/../dependencies/internal/.error=
 http\://mirrors.ibiblio.org/pub/mirrors/maven2/.error=
 http\://repository.springsource.com/maven/bundles/snapshot/.error=
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.custom.portal/../dependencies/internal/.lastUpdated=1374669717883
-file\:/Users/manish/dev/sourcecode/cloud-portal-virgo/citrix.cpbm.portal.core/../dependencies/internal/.lastUpdated=1374669687219
+file\:D\:\\repos\\cloud-portal\\cpbm/../dependencies/internal/.error=
 http\://repository.springsource.com/maven/bundles/release/.error=
-http\://repository.springsource.com/maven/bundles/milestone/.lastUpdated=1374669689282
+http\://repo1.maven.org/maven2/.error=
+http\://repository.springsource.com/maven/bundles/milestone/.lastUpdated=1349078677340

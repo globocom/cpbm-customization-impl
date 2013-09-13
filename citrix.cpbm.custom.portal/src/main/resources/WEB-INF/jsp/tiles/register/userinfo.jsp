@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ page import="net.tanesha.recaptcha.ReCaptcha" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -57,7 +57,7 @@ $(function(){
                           <div class="common_messagebox success"><p><spring:message code="signup.integration.device.fraud.error"/></p></div>
                     </c:if>
                     <div class="registration_formbox">
-                    	<spring:url value="/portal/userinfo" var="userinfo" htmlEscape="false" />
+                    	<spring:url value="/portal/user_info" var="userinfo" htmlEscape="false" />
                     	<form:form name="registration" commandName="registration" id="registrationForm" cssClass="registration formPanel" action="${userinfo}">
                             <ul>
                            

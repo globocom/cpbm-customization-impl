@@ -1,4 +1,4 @@
-/* Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
 
   $("#serviceInstanceForm").validate({
@@ -10,7 +10,7 @@ $(document).ready(function() {
       return false;
     }
   });
-  
+
   $('input[id^="configproperty"]').tooltip({
     // place tooltip on the right edge
     position : "center right",
@@ -37,19 +37,22 @@ $(document).ready(function() {
     if($("#backtolisting").attr("reload")=="true"){
       $.ajax({
         type : "GET",
-        url : connectorPath + "/viewInstances" + "?id=" + id,
+        url : connectorPath + "/view_instances" + "?id=" + id,
         dataType : 'json',
         success : function(responseJson) {
           $servicelist_extended_instancelist.empty();
-          
+
           for ( var i = 0; i < responseJson.instances.length; i++) {
             var instance = responseJson.instances[i];
             var alive = responseJson.isAliveMap[instance.uuid];
             var $newInstance = $("#service_instance_default_template").clone();
+            if(instance.imagePath) {
+              $newInstance.find("#instance_image_id").attr("src", instance.imagePath);
+            }
             $newInstance.find("#instance_name").text(instance.name);
             $newInstance.find("#instance_description").text(instance.description);
             $newInstance.find(".actionbutton").parents('li').attr("serviceid", instance.uuid);
-            
+
             if(!alive){
               $newInstance.find("#instance_icon").removeClass('running_listicon').addClass('stopped_listicon');
             }
@@ -61,7 +64,7 @@ $(document).ready(function() {
             $servicelist_mainbox.find(".cloud_button").removeClass("nonactive").addClass("active");
             $servicelist_extended.show();
           }
-          if(responseJson.instances.length > 1){
+          if(responseJson.instances.length > 0){
             $servicelist_mainbox.find(".service_count").text(responseJson.instances.length);
           }
         },
@@ -83,25 +86,25 @@ $(document).ready(function() {
 });
 
 function showHideUnmaskedField(show_unmasked_link) {
-	
-		var selected_field_id = $(show_unmasked_link).attr("id").replace("_show_unmasked", "");
-		var masked_field = $("#"+selected_field_id).get(0);
-		if($(show_unmasked_link).attr('disabled') == 'disabled') {
-		  return;
-		}
-		if(masked_field.getAttribute('type') == 'text') {
-			masked_field.setAttribute('type', 'password');
-			$(show_unmasked_link).text(dictionary.viewMasked);
-		} else {
-			masked_field.setAttribute('type', 'text');
-			$(show_unmasked_link).text(dictionary.hideMasked);
-		}
+
+    var selected_field_id = $(show_unmasked_link).attr("id").replace("_show_unmasked", "");
+    var masked_field = $("#"+selected_field_id).get(0);
+    if($(show_unmasked_link).attr('disabled') == 'disabled') {
+      return;
+    }
+    if(masked_field.getAttribute('type') == 'text') {
+      masked_field.setAttribute('type', 'password');
+      $(show_unmasked_link).text(dictionary.viewMasked);
+    } else {
+      masked_field.setAttribute('type', 'text');
+      $(show_unmasked_link).text(dictionary.hideMasked);
+    }
 }
 
 function showHideUnmaskedLink(masked_field) {
   var value = $("#"+$(masked_field).attr("id")).val();
   var $link = $("#"+$(masked_field).attr("id")+"_show_unmasked");
-  
+
     if(value != "") {
       $link.css({opacity: 1.0, visibility: "visible"});
       $link.attr('disabled', false);
@@ -125,7 +128,7 @@ function addServiceInstanceNext(current) {
   }
 
   if(currentstep == "step2" && product_action == "create"){
-    
+
   }
   if ($(serviceInstanceForm).valid()) {
     if (currentstep == "step1") {
@@ -133,14 +136,14 @@ function addServiceInstanceNext(current) {
       $step4.find("#confirmProductDetails").find("#name").attr("title", $("#product\\.name").val());
       $step4.find("#confirmProductDetails").find("#code").text($("#product\\.code").val());
       $step4.find("#confirmProductDetails").find("#code").attr("title", $("#product\\.code").val());
-      $step4.find("#confirmProductDetails").find("#product_category").text($("#categoryID option:selected").text());   
+      $step4.find("#confirmProductDetails").find("#product_category").text($("#categoryID option:selected").text());
       $step4.find("#confirmProductDetails").find("#product_category").attr("title", $("#categoryID option:selected").text());
       $step5.find("#confirmProductDetails").find("#name").text($("#product\\.name").val());
       $step5.find("#confirmProductDetails").find("#code").text($("#product\\.code").val());
       $step5.find("#confirmProductDetails").find("#product_category").text($("#categoryID option:selected").text());
     }
     if (currentstep == "step5") {
-      
+
     }
     if ((product_action == "create" && currentstep == "step5") {
       //call submit

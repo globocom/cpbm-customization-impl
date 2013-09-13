@@ -1,3 +1,4 @@
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. --> 
    <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
    <link href="/portal/portal/spfavicon" type="image/x-icon" rel="shortcut icon" />
    <script language="javascript">

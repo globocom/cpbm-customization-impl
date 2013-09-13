@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
@@ -21,6 +21,11 @@
   </sec:authorize>
 
   var healthUrl = "<%=request.getContextPath() %>/portal/health/";
+  
+  var totalpages = "<c:out value="${totalpages}"/>";
+  var currentPage = "<c:out value="${currentPage}"/>";
+  var perPageValue = "<c:out value="${perPage}"/>";
+  var dateStatusLen = "<c:out value="${dateStatusLen}"/>";
 
 </script>
 
@@ -70,7 +75,7 @@
                         </c:otherwise>
                       </c:choose>
                       <c:set var="iso8601_date_format" value="yyyy-MM-dd"/>
-                      <li class="<c:out value="widget_navigationlist ${selected} ${active} "/>" id="row<fmt:formatDate value="${item.key}"  pattern="${iso8601_date_format}" timeZone="${currentUser.timeZone}"/>" onclick="viewStatusDetails(this);" onmouseover="onHealthMouseover(this);" onmouseout="onHealthMouseout(this);">
+                      <li class="<c:out value="widget_navigationlist ${selected} ${active} "/>" id="row<fmt:formatDate value="${item.key}"  pattern="${iso8601_date_format}" timeZone="${currentUser.timeZone}"/>" >
                           <c:set var="doesHistoryHasIssue" value="none"/>
                           <c:if test="${not empty dateStatusHistory[item.key]}"   >  
                               <c:forEach items="${dateStatusHistory[item.key]}" var="statusitem" varStatus="historystatus">
@@ -151,7 +156,12 @@
         <script type="text/javascript">
           var systemHealthListLen = "<c:out value="${systemHealthListLen}"/>";
         </script>
-        
+        <div class="widget_panelnext">
+          <div class="widget_navnextbox">
+              <a class="widget_navnext_buttons prev nonactive" href="javascript:void(0);" id="click_previous"><spring:message code="label.previous.short"/></a>
+                <a class="widget_navnext_buttons next" href="javascript:void(0);" id="click_next"><spring:message code="label.next"/></a>
+            </div>
+        </div>
     </div>
     
     <div class="widget_rightpanel" id="viewStatusDetailsDiv">

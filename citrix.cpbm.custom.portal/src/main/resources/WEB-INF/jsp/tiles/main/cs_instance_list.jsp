@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
@@ -44,7 +44,7 @@ var dictionary = {
 <c:set var="apostropy" value="'"/>
 <c:set var="escapedeapostropy" value="\\'"/>
 <c:choose>
-    <c:when test="${is_admin || userHasCloudServiceAccount}">
+    <c:when test="${(is_admin || userHasCloudServiceAccount) && !iframe_view}">
     <div id="manage_services_info">
         <div class="page_heading">
             <h3><spring:message code="message.myservices.header"/></h3>
@@ -70,7 +70,7 @@ var dictionary = {
         <c:forEach items="${serviceInstanceMap}" var="serviceInstanceEntry" varStatus="status">
         <c:if test="${(serviceInstanceEntry.value == true) || auth_enable_service}">
           <div class="servicelist mainbox" category="${serviceInstanceEntry.key.service.category}" serviceid="${serviceInstanceEntry.key.service.uuid}">
-            <div class="servicelist sections col6" style="width:470px">
+            <div class="servicelist sections col6" style="width:470px;min-height:88px;">
             <c:choose>
                 <c:when test="${not empty serviceInstanceEntry.key.imagePath}">
                   <span class="logobox">
@@ -101,7 +101,7 @@ var dictionary = {
                                   <div id="learn_more_content_${serviceInstanceEntry.key.uuid}" style="display:none;">
                                       <c:out value="${serviceInstanceEntry.key.description}"/>
                                   </div>
-                                  <a class="more_info more_down learn_more_link" id="learn_more_link_${serviceInstanceEntry.key.uuid}" href="javascript:void(0);">Learn more</a>
+                                  <a class="more_info more_down learn_more_link" id="learn_more_link_${serviceInstanceEntry.key.uuid}" href="javascript:void(0);"><spring:message  code="label.learn.more" /></a>
                               </div>
                           </c:when>
                           <c:otherwise>
@@ -121,15 +121,26 @@ var dictionary = {
                   <c:when test="${(serviceInstanceEntry.value == true)}">
                       <div class="link_wrapper" >
                         <c:if test="${userHasCloudServiceAccount}">
-                            <a id="${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links button_manage_service"  href="javascript:void(0);">
+                            <a id="${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links button_manage_service"  href="javascript:void(0);" style="padding-top: 2px;">
                              <spring:message  code="service.connectorlist.manage" />
                             </a>
+                            <a href="javascript:void(0);" id="subscribe_${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links subscibe_to_bundles_link"  style="padding-top: 2px;">
+<c:choose>
+    <c:when test="${!payAsYouGoMode}">
+                            <spring:message code="label.catalog.subscribe.to.bundles"/>
+    </c:when>
+    <c:otherwise>
+                            <spring:message code="subscribe"/>
+    </c:otherwise>
+</c:choose>
+                            </a>
+                            <a href="javascript:void(0);" id="uRates_${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links utility_rates_link" style="padding-top: 2px;"><spring:message code="view.utility.rates"/></a>
                         </c:if>
                         <c:if test="${userHasCloudServiceAccount && currentUser.id == effectiveUser.id}">
-                           <a class="vertical_stacked_links" href="javascript:resolveViewForSettingFromServiceInstance2('${serviceInstanceEntry.key.uuid}');"> <spring:message code="message.myprofile.mysettings"/> </a>
+                           <a class="vertical_stacked_links" href="javascript:resolveViewForSettingFromServiceInstance2('${serviceInstanceEntry.key.uuid}');" style="padding-top: 2px;"> <spring:message code="message.myprofile.mysettings"/> </a>
                         </c:if> 
                         <c:if test="${serviceInstanceViewMap[serviceInstanceEntry.key] == true && is_admin && effectiveTenant.id == currentTenant.id}">
-                            <a id="${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links" href="javascript:resolveViewForAccountSettingFromServiceInstance('${serviceInstanceEntry.key.uuid}','${currentTenant.param}','${escapedInstanceName}');">
+                            <a id="${serviceInstanceEntry.key.uuid}" class="vertical_stacked_links" href="javascript:resolveViewForAccountSettingFromServiceInstance('${serviceInstanceEntry.key.uuid}','${currentTenant.param}','${escapedInstanceName}');" style="padding-top: 2px;">
                                 <spring:message  code="service.connectorlist.companysettings" />
                             </a>
                         </c:if>
@@ -162,7 +173,7 @@ var dictionary = {
       
        <div id="serviceAccountConfigDiv" style="margin:0; display:none;">     
           <div>
-          <h2 id="selectedInstanceH1"></h2>
+          <h3 id="selectedInstanceH1"></h3>
             <iframe id="serviceAccountConfigViewFrame" width="940px" height="700px" frameborder="0"></iframe>
           </div>
         </div>
@@ -192,13 +203,19 @@ var dictionary = {
         <div id="userSubscribedServiceDetails" style="margin:0; display:none;">
             <span id="backToSubscribedServiceListing" class="title_listall_arrow biggerback" style="float:right;"><spring:message javaScriptEscape="true" code="label.backtolisting"/></span>
             <div>
-                <br><br>
                 <iframe id="userOrAccountSettingsViewFrame" width="940px" height="700px" frameborder="0"></iframe>
             </div>
         </div>
+        
     
     </div>
-</c:when>
+    </c:when>
+    <c:when test="${(is_admin || userHasCloudServiceAccount) && iframe_view}">
+      <script type="text/javascript">
+        var iframe_view = true;
+        var service_instance_uuid_for_iframe = '<c:out value="${serviceInstanceUUID}"/>';
+      </script>
+    </c:when>
     <c:otherwise>
         <div class="subscribe_dialog_message_box error">
             <p><spring:message code='no.cloud.service.account'/></p>

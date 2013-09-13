@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright (C) 2011 Cloud.com, Inc. All rights reserved. -->
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <beans:beans xmlns="http://www.springframework.org/schema/security" xmlns:beans="http://www.springframework.org/schema/beans"
   xmlns:aop="http://www.springframework.org/schema/aop" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.springframework.org/schema/beans
@@ -31,21 +31,22 @@
 
     <!-- REGISTRATION AND VERIFICATION URL PERMISSIONS -->
 	  <intercept-url pattern="/portal/signup*" access="permitAll" />
-    <intercept-url pattern="/portal/userinfo" access="permitAll" />
+    <intercept-url pattern="/portal/user_info" access="permitAll" />
     <intercept-url pattern="/portal/register" access="permitAll" />
-    <intercept-url pattern="/portal/requestCall" access="permitAll" />
-    <intercept-url pattern="/portal/requestSMS" access="permitAll" />
-    <intercept-url pattern="/portal/phoneverification/verifyPIN" access="permitAll" />
-    <intercept-url pattern="/portal/phoneverification" access="permitAll" />
+    <intercept-url pattern="/portal/request_call" access="permitAll" />
+    <intercept-url pattern="/portal/request_sms" access="permitAll" />
+    <intercept-url pattern="/portal/phoneverification/verify_pin" access="permitAll" />
+    <intercept-url pattern="/portal/phone_verification" access="permitAll" />
     <intercept-url pattern="/portal/validate_username" access="permitAll" />
     <intercept-url pattern="/portal/catalog/browse_catalog" access="permitAll" />
     <intercept-url pattern="/portal/subscription/browse_catalog" access="denyAll" />
     <intercept-url pattern="/portal/channel/catalog/browse_catalog" access="denyAll" />
     <intercept-url pattern="/portal/subscription/utilityrates_table" access="permitAll" />
     <intercept-url pattern="/portal/subscription/getResourceComponents" access="permitAll" />
+    <intercept-url pattern="/portal/subscription/getFilterComponents" access="permitAll" />
     <intercept-url pattern="/portal/productBundles/list.json" access="permitAll" />
-    <intercept-url pattern="/portal/verifyUser" access="permitAll" />
-    <intercept-url pattern="/portal/verifyemail" access="permitAll"/>
+    <intercept-url pattern="/portal/verify_user" access="permitAll" />
+    <intercept-url pattern="/portal/verify_email" access="permitAll"/>
     <intercept-url pattern="/portal/setpassword" access="permitAll" />
     <intercept-url pattern="/portal/verify_additional_email" access="permitAll" />
     <!-- REGISTRATION AND VERIFICATION URL PERMISSIONS END -->
@@ -72,18 +73,17 @@
     <intercept-url pattern="/portal/tenants/list" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')" />
     <intercept-url pattern="/portal/tenants/*/changeState" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/issueCredit" access="hasRole('ROLE_FINANCE_CRUD')" />
-    <intercept-url pattern="/portal/tenants/*/set_owner" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/search" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')" />
-    <intercept-url pattern="/portal/tenants/getAccountType"
+    <intercept-url pattern="/portal/tenants/get_account_type"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')" />
     <intercept-url pattern="/portal/tenants/*/resource_limit" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/tenants/viewnotification" access="hasAnyRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/tenants/view_notification" access="hasAnyRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/alert_prefs" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/change_primary_email" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/alert_prefs/*/verify" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/alert_prefs/*/delete" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/alerts" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT','ROLE_USER')" />
-    <intercept-url pattern="/portal/tenants/setAccountBudget" access="hasAnyRole('ROLE_FINANCE_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')" />
+    <intercept-url pattern="/portal/tenants/set_account_budget" access="hasAnyRole('ROLE_FINANCE_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')" />
     <intercept-url pattern="/portal/tenants/*/delete" access="hasRole('ROLE_ACCOUNT_CRUD')" />
 
     <intercept-url pattern="/portal/tenants" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')" />
@@ -92,14 +92,10 @@
     <intercept-url pattern="/portal/tenants/*/record_deposit" access="hasRole('ROLE_FINANCE_CRUD')" />
     <intercept-url pattern="/portal/tenants/editcurrentlogo" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_CRUD')" />  
     <intercept-url pattern="/portal/tenants/editcurrent" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')" />  
-    <intercept-url pattern="/portal/tenants/enableServiceForTenant" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_USER_CRUD')" />
-    <intercept-url pattern="/portal/tenants/enableServicesForThisUser" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_USER_CRUD')" />   
+    <intercept-url pattern="/portal/tenants/enable_service" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/tenants/editlogo" access="hasRole('ROLE_ACCOUNT_CRUD')" />    
-   <intercept-url pattern="/portal/tenants/getapidetails" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/tenants/clean" access="hasRole('ROLE_ACCOUNT_CRUD')" />
-    <intercept-url pattern="/portal/tenants/clean*" access="hasRole('ROLE_ACCOUNT_CRUD')" />
+   <intercept-url pattern="/portal/tenants/get_api_details" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/edit*" access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_CRUD')" />
-    <intercept-url pattern="/portal/tenants/tenants/clean*" access="hasRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/*/add_credit" access="hasRole('ROLE_FINANCE_CRUD')" />
     <intercept-url pattern="/portal/tenants/*/cancel_credit" access="hasRole('ROLE_FINANCE_CRUD')" />
     <intercept-url pattern="/portal/tenants/*/set_account_type" access="hasRole('ROLE_ACCOUNT_ADMIN')" />
@@ -121,8 +117,8 @@
     <intercept-url pattern="/portal/tenants/*/audit_log" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_ADMIN')" />
     <intercept-url pattern="/portal/tenants/mydetails/" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/*/approvePendingChange" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
-    <intercept-url pattern="/portal/tenants/*/actOnPendingChange" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/stateChanges" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
+    <intercept-url pattern="/portal/tenants/*/verify_channel_promocode" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/mydetails/" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/tenants/*/approvePendingChange" access="hasAnyRole('ROLE_ACCOUNT_CRUD')" />
     <intercept-url pattern="/portal/tenants/*/workflow" access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_ADMIN')" />
@@ -139,8 +135,8 @@
     <intercept-url pattern="/portal/users/new/step2" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/new/step3" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/new/" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
-    <intercept-url pattern="/portal/users/resolveViewForSettings" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/users/resolveViewForAccountSettings" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/resolve_view_for_Settings" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/resolve_view_for_account_settings" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/search" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
@@ -150,6 +146,8 @@
     <intercept-url pattern="/portal/users/*/deactivate" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/*/activate" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <intercept-url pattern="/portal/users/subscribe/verify_max_subscriptions" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/enable_services" access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_USER_CRUD')" />   
+    
     
 
     <intercept-url pattern="/portal/users/listusersforaccount"
@@ -172,7 +170,7 @@
     <intercept-url pattern="/portal/users/alert_prefs/*" access="hasRole('ROLE_USER')" />
 	<intercept-url pattern="/portal/users/verify_user" access="hasRole('ROLE_USER')" />
 	<intercept-url pattern="/portal/users/verify_password" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/users/userTimezoneOffset" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/user_timezone_offset" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/*/edit" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_PROFILE_CRUD')" />
     <intercept-url pattern="/portal/users/*/myprofile" access="hasAnyRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/changePassword" access="hasAnyRole('ROLE_USER')" />
@@ -184,7 +182,7 @@
       /> <intercept-url pattern="/portal/users/*" method="PUT" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" /> 
       <intercept-url pattern="/portal/users/*" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')" 
       /> -->
-    <intercept-url pattern="/portal/users/ISDCodeByCountryCode" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/users/ISD_code_by_country_code" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/users/**/" access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD')" />
     <!-- USER URL PERMISSIONS END -->
 
@@ -201,7 +199,6 @@
     <intercept-url pattern="/portal/promotions/create" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/promotions/list" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/promotions/editcampaign" access="hasRole('ROLE_PRODUCT_CRUD')" />
-    <intercept-url pattern="/portal/promotions/validate_campaign" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/promotions/createToken" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <!--This is the restrictive url -->
     <intercept-url pattern="/portal/promotions/**/" access="hasRole('ROLE_PRODUCT_CRUD')" />
@@ -213,18 +210,18 @@
     <intercept-url pattern="/portal/channels/**/" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <!-- CHANNELS URL PERMISSIONS END -->
     <!-- SYSTEM HEALTH URL PERMISSIONS -->
-    <intercept-url pattern="/portal/health/*/removeStatus" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/updateMaintenanceSchedule" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/editStatusDetails" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/saveMaintenanceSchedule" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/addSchedMaintenance" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/addStatus" access="hasRole('ROLE_OPS_COMMUNICATION')" />
-    <intercept-url pattern="/portal/health/getHealthStatusForServiceInstance" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/health/showStatusDetails" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/health/*/remove_status" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/update_maintenance_schedule" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/edit_status_details" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/save_maintenance_schedule" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/add_scheduled_maintenance" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/add_status" access="hasRole('ROLE_OPS_COMMUNICATION')" />
+    <intercept-url pattern="/portal/health/get_health_status_for_service_instances" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/health/show_status_details" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/health/update" access="hasRole('ROLE_OPS_COMMUNICATION')" />
     <intercept-url pattern="/portal/health*" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/health/healthmaintainance*" access="hasRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/health/maintenanceView*" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/health/health_maintainance*" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/health/maintenance_view*" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/health/*/edit" access="hasRole('ROLE_OPS_COMMUNICATION')" />
     <intercept-url pattern="/portal/health/*/delete" access="hasRole('ROLE_OPS_COMMUNICATION')" />
     <!--This is the restrictive url -->
@@ -244,16 +241,15 @@
 
     <!-- REPORT URL PERMISSIONS -->
     <intercept-url pattern="/portal/reports" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/newRegistrations" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/customerRank" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/productUsage" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/productbundleUsage" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/customreports" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/generatecustomreports" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/downloadcustomreport/*" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/emailcustomreport/*" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/generateCSV" access="hasRole('ROLE_REPORTING_ADMIN')" />
-    <intercept-url pattern="/portal/reports/sendEmail" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/new_registrations" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/customer_rank" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/product_usage" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/productbundle_usage" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/custom_reports" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/generate_custom_reports" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/download_custom_report/*" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/email_custom_report/*" access="hasRole('ROLE_REPORTING_ADMIN')" />
+    <intercept-url pattern="/portal/reports/generate_CSV" access="hasRole('ROLE_REPORTING_ADMIN')" />
     <!-- This is the restrictive url -->
     <intercept-url pattern="/portal/reports/**/" access="hasRole('ROLE_REPORTING_ADMIN')" />
     <!-- REPORT URL PERMISSIONS END -->
@@ -280,11 +276,10 @@
     <intercept-url pattern="/portal/usage/subscriptions" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/usage/subscriptions/showDetails" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/usage/subscriptions/terminate/*" access="hasRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/usage/subscriptions/cancel/*" access="hasRole('ROLE_USER')" />
     <intercept-url pattern="/portal/usage/**/"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')" />
 
-    <intercept-url pattern="/portal/invoice/*/invoiceDetails"
-      access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')" />
     <intercept-url pattern="/portal/billing/*/make_payment" access="hasRole('ROLE_ACCOUNT_BILLING_ADMIN')" />
     <intercept-url pattern="/portal/billing/make_payment/*" access="hasRole('ROLE_ACCOUNT_BILLING_ADMIN')" />
     <intercept-url pattern="/portal/billing/history" access="hasRole('ROLE_USER')" />
@@ -318,10 +313,10 @@
     <!-- USAGE AND BILLING URL PERMISSIONS END -->
 
     <!-- CONFIGURATION URL PERMISSIONS -->
-    <intercept-url pattern="/portal/admin/config/showconfiguration" access="hasRole('ROLE_CONFIGURATION_CRUD')" />
+    <intercept-url pattern="/portal/admin/config/show_configuration" access="hasRole('ROLE_CONFIGURATION_CRUD')" />
     <intercept-url pattern="/portal/admin/config/edit" access="hasRole('ROLE_CONFIGURATION_CRUD')" />
     <intercept-url pattern="/portal/admin/batch/status" access="hasAnyRole('ROLE_CONFIGURATION_CRUD','ROLE_ACCOUNT_CRUD')" />
-    <intercept-url pattern="/portal/admin/viewbatchjob" access="hasAnyRole('ROLE_CONFIGURATION_CRUD','ROLE_ACCOUNT_CRUD')" />
+    <intercept-url pattern="/portal/admin/view_batch_job" access="hasAnyRole('ROLE_CONFIGURATION_CRUD','ROLE_ACCOUNT_CRUD')" />
     <!-- THis is the restrictive url -->
     <intercept-url pattern="/portal/admin/**/" access="hasRole('ROLE_CONFIGURATION_CRUD')" />
     <!-- CONFIGURATION URL PERMISSIONS END -->
@@ -335,7 +330,6 @@
     <intercept-url pattern="/portal/products/listscales" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/viewproduct" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/editproduct" access="hasRole('ROLE_PRODUCT_CRUD')" />
-    <intercept-url pattern="/portal/products/removeproduct" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/listcatalogs" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/createcatalog" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/viewcatalog" access="hasRole('ROLE_PRODUCT_CRUD')" />
@@ -348,7 +342,7 @@
     <intercept-url pattern="/portal/products/*/viewproductchannelpricing" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/*/*/editproductchannelpricing" access="hasRole('ROLE_PRODUCT_CRUD')" />
     <intercept-url pattern="/portal/products/isCurrentAndHistoryApplicableForRPB" access="hasRole('ROLE_PRODUCT_CRUD')" />
-    <intercept-url pattern="/portal/products/listProductsForSelectedContext" access="hasAnyRole('ROLE_USER')" />
+    <intercept-url pattern="/portal/products/listProductsForSelectedContext" access="permitAll" />
     
   
     <!-- This is the restrictive url -->
@@ -384,13 +378,10 @@
 
     <!-- SUBSCRIPTIONS URL PERMISSIONS -->
     <intercept-url pattern="/portal/subscriptions/createsubscription" access="hasAnyRole('ROLE_USER')" />
-    <intercept-url pattern="/portal/subscription/utilityrates"
-      access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD', 'ROLE_USER')" />
     <intercept-url pattern="/portal/subscription/utilityrates_lightbox"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD', 'ROLE_USER')" />
     <intercept-url pattern="/portal/subscription/entitlements"
       access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD', 'ROLE_USER')" />
-    <intercept-url pattern="/portal/subscription/utilityrates.json" access="hasRole('ROLE_USER')" />
      <intercept-url pattern="/portal/subscription/taxable_amount" access="hasRole('ROLE_USER')" />
     <!-- THis is the restrictive url -->
     <intercept-url pattern="/portal/subscription/**/"
@@ -432,5 +423,8 @@
     <intercept-url pattern="/portal/tasks/approval-task/*" access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD', 'ROLE_ACCOUNT_CRUD')" />
     <!-- TASKS URLS -->
     
+    <!-- Connector resource url -->
+    <intercept-url pattern="/portal/connector_resources/**" access="hasRole('ROLE_USER')" />
+    <!-- Connector resource url -->
   </http>
 </beans:beans>

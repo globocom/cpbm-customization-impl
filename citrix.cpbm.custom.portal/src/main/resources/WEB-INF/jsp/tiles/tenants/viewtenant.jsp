@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -50,7 +50,7 @@ var viewtenantDictionary = {
                     </sec:authorize>
                   </c:if>
                   <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD')">
-                    <c:if test="${tenant.accountId != '00000000' && (tenant.state != 'TERMINATED' && tenant.state != 'NEW') }"> 
+                    <c:if test="${tenant.accountId != '00000000' && (tenant.state != 'TERMINATED') }"> 
                     <c:set var="hasAnyOfActions" value="true"/> 
                       <li id="editchannel_action4"><a href="javascript:void(0);" onclick="changeStateGet(this);" class="changeState" id="<c:out value="changeState${tenant.param}"/>"><spring:message code="ui.label.tenant.view.changeState"/></a></li>
                     </c:if>
@@ -249,7 +249,7 @@ var viewtenantDictionary = {
         </div>
         <div class="widget_grid_description" >
           <span>
-            <fmt:formatDate value="${tenant.tenantExtraInformation.anniversaryDate}" pattern="${dateonly_format}" timeZone="${currentUser.timeZone}"/>
+            <fmt:formatDate value="${tenant.createdAt}" pattern="${dateonly_format}" timeZone="${currentUser.timeZone}"/>
           </span>
         </div>
       </div>

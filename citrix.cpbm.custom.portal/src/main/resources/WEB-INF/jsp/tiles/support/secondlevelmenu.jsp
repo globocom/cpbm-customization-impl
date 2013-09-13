@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -11,6 +11,7 @@
     <div class="secondlevel_breadcrumbbox">
       <p><c:out value="${tenant.name}"/></p>
     </div>
+    <div class="doc_help_link"></div>
   </div>        
   <div class="secondlevel_menupanel">
   <c:choose>
@@ -38,7 +39,7 @@
   	<sec:authorize access="hasAnyRole('ROLE_TICKET_MANAGEMENT', 'ROLE_USER_TICKET_MANAGEMENT', 'ROLE_SPL_USER_TICKET_MANAGEMENT', 'ROLE_TENANT_TICKET_MANAGEMENT')">
   		<c:set var="hasTicketCreateRole" value="true"/>
     </sec:authorize>
-    <c:if test="${hasTicketCreateRole && ticketCapabilities == 'CRUD'}">
+    <c:if test="${hasTicketCreateRole}">
   		<spring:url value="/portal/support/tickets" var="tickets_path" htmlEscape="false">
     		<spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
     	</spring:url>   
@@ -50,7 +51,7 @@
 </c:choose>        
     
   </div>
-  
+  <div class="clearboth"></div>
   <tiles:insertDefinition name="warnings"></tiles:insertDefinition> 
   
 </div>  

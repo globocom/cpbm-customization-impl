@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -37,7 +37,7 @@ var dictionary = {
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/configurationList.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/thirdlevelmenuSlide.js"></script>
 <script type="text/javascript">
-var configPath = "<%=request.getContextPath() %>/portal/admin/config/showconfiguration";
+var configPath = "<%=request.getContextPath() %>/portal/admin/config/show_configuration";
 </script>
 
 <link rel="stylesheet" type="text/css" media="all" href="<%= request.getContextPath() %>/css/jquery/themes/base/jquery-ui-1.7.2.custom.css"/>

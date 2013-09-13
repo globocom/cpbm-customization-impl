@@ -1,4 +1,4 @@
- <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -32,7 +32,7 @@
                   <span class="subheader"><spring:message code="label.bundle.name"/></span>
               </div> 
               <div class="plan_bundle_charges_row" >
-               <div class="widget_grid_cell" style="width:130px;">
+               <div class="widget_grid_cell" style="width:155px;">
                   <span class="subheader"><spring:message code="charge.type"></spring:message> </span>
               </div>              
               <c:forEach var="currency" items="${currencieslist}" varStatus="status">
@@ -66,7 +66,7 @@
                 </div>
                 
                 <div class="plan_bundle_charges_row" style="height:30px;float:left; ">
-                <div class="widget_grid_cell" style="width:130px;">
+                <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.one.time"></spring:message> </strong></span>
               </div>
                    <c:forEach items="${rateCardChargesForm.nonRecurringRateCardChargesFormList}" var="nonrecurringCharge" varStatus="nonRecurringStatus">
@@ -88,7 +88,7 @@
                 <c:choose>
                   <c:when test="${rateCardChargesForm.bundle.rateCard.chargeType.frequencyInMonths != 0 }">
                      <div class="plan_bundle_charges_row" style="height:30px;float:left;">
-                 <div class="widget_grid_cell" style="width:130px;">
+                 <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.recurring"></spring:message>&nbsp;:&nbsp; <spring:message code="charge.type.${rateCardChargesForm.bundle.rateCard.chargeType.name}"/></strong></span>
                   </div> 
                    <c:forEach items="${rateCardChargesForm.recurringRateCardChargesFormList}" var="recurringCharge" varStatus="recurringStatus">

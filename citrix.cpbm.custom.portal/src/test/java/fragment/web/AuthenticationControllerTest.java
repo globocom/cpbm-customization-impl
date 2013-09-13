@@ -1,9 +1,10 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -30,9 +31,7 @@ import org.springframework.ui.ModelMap;
 import web.WebTestsBase;
 import web.support.DispatcherTestServlet;
 
-
-import citrix.cpbm.portal.fragment.controllers.AuthenticationController;
-
+import com.citrix.cpbm.portal.fragment.controllers.AuthenticationController;
 import com.vmops.event.PasswordResetRequest;
 import com.vmops.event.PortalEvent;
 import com.vmops.model.Tenant;
@@ -133,14 +132,14 @@ public class AuthenticationControllerTest extends WebTestsBase {
     expected = locateMethod(controller.getClass(), "requestCall", new Class[] {
         String.class, String.class, HttpServletRequest.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/requestCallByUser"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/request_call_by_user"));
     Assert.assertEquals(expected, handler);
 
     request.removeAllParameters();
     expected = locateMethod(controller.getClass(), "requestSMS", new Class[] {
         String.class, String.class, HttpServletRequest.class
     });
-    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/requestSMSByUser"));
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/request_sms_by_user"));
     Assert.assertEquals(expected, handler);
 
     request.removeAllParameters();
@@ -481,4 +480,67 @@ public class AuthenticationControllerTest extends WebTestsBase {
         getRequestTemplate(HttpMethod.GET, "/verify_additional_email"), map, session);
     userAlertPreferencesService.locateUserAlertPreference(uap.getId());
   }
+  
+  @Test
+  public void testRequestCall() throws Exception {
+    MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
+    request.getSession().setAttribute("phoneVerificationPin", "5555");
+    asRoot();
+    User user = createTestUserInTenant(getDefaultTenant());
+    Map<String, String> actualResult = controller.requestCall(user.getUsername(), null, request);
+    Assert.assertEquals("You will receive a call shortly", actualResult.get("message"));
+    Assert.assertEquals("success", actualResult.get("result"));
+    actualResult = controller.requestCall(user.getUsername(), "pick", request);
+    Assert.assertEquals("Failed to make call. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+    request.getSession().setAttribute("phoneVerificationPin", "PINS");
+    user.setCountryCode("480");
+    actualResult = controller.requestCall(user.getUsername(), null, request);
+    Assert.assertEquals("Failed to make call. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+    actualResult = controller.requestCall(null, "pickl3", request);
+    Assert.assertEquals("Failed to make call. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+    actualResult = controller.requestCall("pick", "pickl3", request);
+    Assert.assertEquals("Failed to make call. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+  }
+  
+  @Test
+  public void tesRequestSMS() throws Exception {
+    MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
+    request.getSession().setAttribute("phoneVerificationPin", "7896");
+    asRoot();
+    User user = createTestUserInTenant(getDefaultTenant());
+    Map<String, String> actualResult = controller.requestSMS(user.getUsername(), null, request);
+    Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
+    Assert.assertEquals("success", actualResult.get("result"));
+    request.getSession().setAttribute("vmops__reset_password__key",user.getUsername());
+    actualResult = controller.requestSMS(user.getUsername(), "pick", request);
+    Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
+    Assert.assertEquals("success", actualResult.get("result"));
+    user.setCountryCode("480");
+    actualResult = controller.requestSMS(user.getUsername(), null, request);
+    Assert.assertEquals("Failed to send text message. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+    actualResult = controller.requestSMS(null, "pickl3", request);
+    Assert.assertEquals("Failed to send text message. Please try later.", actualResult.get("message"));
+    Assert.assertEquals("failed", actualResult.get("result"));
+    actualResult = controller.requestSMS("picky", "pickl3", request);
+    Assert.assertEquals("You will receive a text message shortly", actualResult.get("message"));
+    Assert.assertEquals("success", actualResult.get("result"));
+  }
+  
+  @Test
+  public void testVerifyPhoneVerificationPINForUnlock() throws Exception {
+    MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
+    request.getSession().setAttribute("phoneVerificationPin", "496");
+    asRoot();
+    String actualResult = controller.verifyPhoneVerificationPINForUnlock("PIN", request);
+    Assert.assertEquals("failed", actualResult);
+    request.getSession().setAttribute("phoneVerificationPin", "PIN");
+    actualResult = controller.verifyPhoneVerificationPINForUnlock("PIN", request);
+    Assert.assertEquals("success", actualResult);
+  }
+  
 }

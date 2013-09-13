@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
   var serviceCategory=$('#service_category_list_container li').first().attr("category");
   
@@ -21,13 +22,15 @@ $(document).ready(function() {
 var refreshHomeItems = function loadHomeItems(serviceInstanceUUID, tenantParam){
   if(serviceInstanceUUID == null || serviceInstanceUUID=="") {
     $("#cloudServiceConsoleID").hide();
+    $("#cloudServiceConsoleAll").show();
   } else {
+    $("#cloudServiceConsoleAll").hide();
     $("#cloudServiceConsoleID").show();
   }
   if(typeof serviceInstanceUUID!="undefined" && typeof tenantParam!="undefined"){
       selectedServiceInstance = serviceInstanceUUID;
       $.ajax({
-          url:"/portal/portal/home/getHomeItems" ,
+          url:"/portal/portal/home/get_home_items" ,
           data: {
               serviceInstanceUUID: serviceInstanceUUID,
               tenant:tenantParam
@@ -44,8 +47,11 @@ var refreshHomeItems = function loadHomeItems(serviceInstanceUUID, tenantParam){
 };
 
 function launchCloudServiceConsole(current){
+  launchCloudServiceConsoleWithServiceInstanceUUID(current, selectedServiceInstance);
+}
+
+function launchCloudServiceConsoleWithServiceInstanceUUID(current, serviceInstanceUUID){
   var currentTenantParam = $("#currentTenantParam").val();
-  var serviceInstanceUUID = selectedServiceInstance;
   if(serviceInstanceUUID!=null){
     singleSignOn(currentTenantParam, serviceInstanceUUID);
     $.cookie('lang', '<c:out value="${pageContext.request.locale.language}"/>', {path: '/'});

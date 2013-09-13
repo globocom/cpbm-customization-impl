@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -59,13 +59,13 @@ function getResults(event,form){
             <c:forEach items="${customFieldList}"  varStatus="status">
             <c:choose>
               <c:when test="${(3 + status.index) % 2 == 0}">
-                <li style="margin-left: 15px; display: inline;">
+                <li style="display: inline;">
                   <span class="label"><spring:message htmlEscape="false" code="${customFieldList[status.index]}" />:</span>             
                   <form:input cssClass="text" path="customFields[${customFieldList[status.index]}]"/>  
                 </li>
               </c:when>        
               <c:otherwise>
-                <li style="margin-left: 15px; display: inline;">
+                <li style="display: inline;">
                   <span class="label"><spring:message htmlEscape="false" code="${customFieldList[status.index]}" />:</span>             
                   <form:input cssClass="text" path="customFields[${customFieldList[status.index]}]"/>  
                 </li>

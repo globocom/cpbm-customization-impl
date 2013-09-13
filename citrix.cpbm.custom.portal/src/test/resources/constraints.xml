@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://jboss.org/xml/ns/javax/validation/mapping validation-mapping-1.0.xsd"
 	xmlns="http://jboss.org/xml/ns/javax/validation/mapping">
 
-	<bean class="citrix.cpbm.access.Tenant">
+	<bean class="com.citrix.cpbm.access.Tenant">
 		<getter name="foo">
 			<constraint annotation="com.citrix.cpbm.validator.constraint.NotBlank">
 				<message>com.citrix.tenant.custom.getter.foo.required.message
@@ -32,7 +32,7 @@
 			<valid />
 		</getter>
 	</bean>
-	<bean class="citrix.cpbm.access.User">
+	<bean class="com.citrix.cpbm.access.User">
 		<getter name="firstName">
 			<constraint annotation="com.citrix.cpbm.validator.constraint.NotBlank">
 				<message>com.citrix.cpbm.validator.constraint.impl.NotBlank.message

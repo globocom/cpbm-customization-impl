@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   activateThirdMenuItem("l3_billing_invoices_tab");
   if (isDelinquent == true) {
@@ -22,26 +22,6 @@ $(document).ready(function() {
 	    $thisDialog.dialog("open");
 	    });
 });
-
-function viewInvoiceDetailsGet(element, invoiceId) {
-  
-    var url = billingUrl + "invoice/" + invoiceId + "/invoiceDetails";
-    $.ajax({
-      type : "GET",
-      url : url,
-      dataType : "html",
-      success : function(html) {
-        $("#invoiceItemsView").html(html);
-        $('#details_tab').removeClass('active').addClass("nonactive");
-        $('#viewCharges_tab').removeClass('nonactive').addClass("active");
-        $('#invoice_details_content').show();
-        $('#details_content').hide();
-      },
-      error : function() {
-        alert(i18n.errors.billingHistory.showDetails);
-      }
-    });
-}
 
 function details_tab_click(current) {
 

@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -76,7 +76,7 @@ $("#createTicketCommentForm").validate( {
                                       <form:hidden path="comment.parentId"/>
                                       <ol>   
                                         <li style="margin:10px 0 0 10px;">
-                                               <form:textarea cssClass="textarea" rows="4" cols="70" path="comment.comment" tabindex="31"></form:textarea>
+                                               <form:textarea cssClass="textarea" rows="3" cols="70" path="comment.comment" tabindex="31"></form:textarea>
                                                  <div class="main_addnew_formbox_errormsg" id="comment.commentBodyError" style="margin-left:-15px;"></div>
                                             </li>       
                                          </ol>
@@ -122,7 +122,7 @@ $("#createTicketCommentForm").validate( {
                         <span><spring:message code="ui.label.support.tickets.title"/></span>
                     </div>
                     <div class="widget_grid_description">
-                        <span id="ticket_title"><c:out value="${ticket.formattedSubject}" /></span>
+                        <span id="ticket_title"><c:out value="${ticket.subject}" /></span>
                     </div>
                 </div>
                 <div class="widget_grid master even">
@@ -175,7 +175,7 @@ $("#createTicketCommentForm").validate( {
                     <span><spring:message code="ui.label.support.tickets.created.by"/></span>
                 </div>
                 <div class="widget_grid_description">
-                    <span id="ticket_created_by"><c:out value="${ticket.ownerUsername}" /></span>
+                    <span id="ticket_created_by"><c:out value="${ticket.owner.username}" /></span>
                 </div>
             </div>
             <div class="widget_grid details odd">
@@ -298,7 +298,7 @@ $("#createTicketCommentForm").validate( {
                          <div class="db_gridbox_columns" style="width:75%;">
                          <div class="db_gridbox_celltitles details">
                             <div class="red_compulsoryicon">*</div>
-                            <form:input cssClass="text" cssStyle="width:470px" path="ticket.formattedSubject" tabindex="22"/>
+                            <form:input cssClass="text" cssStyle="width:470px" path="ticket.subject" tabindex="22"/>
                             <div class="main_addnew_formbox_errormsg" id="ticket.subjectError"></div>                  
                          </div>
                          </div>

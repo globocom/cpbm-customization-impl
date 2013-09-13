@@ -1,10 +1,11 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/health.js"></script>
 <jsp:include page="js_messages.jsp"></jsp:include>
 <script type="text/javascript">
@@ -12,7 +13,7 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
 </script>
 <!-- Start View Product Details --> 
 
-  <c:choose>
+    <c:choose>
 	<c:when test="${isfirsthealth == true}">
   
       <div class="widget_actionbar">
@@ -88,7 +89,52 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
           </div>
           <div class="widget_browsergrid_wrapper details" id="details_content">
             
-            <c:if test="${empty dateStatusHistory[health.key]}"   >  
+            
+            
+            <c:forEach items="${dateStatusHistory}" var="entry" varStatus="dateStatus">
+	            <fmt:formatDate value="${health.key}" pattern="MM/dd/yyyy HH:mm:ss" var="healthKey" />
+	            <fmt:formatDate value="${entry.key}" pattern="MM/dd/yyyy HH:mm:ss" var="entryKey" />
+	            <c:if test="${healthKey == entryKey}">
+	              <c:set var="healthKeyFound" value="true" />
+	            	<c:forEach items="${entry.value}" var="item" varStatus="status">
+			            <c:choose>
+			              <c:when test="${status.index % 2 == 0}">
+			                  <c:set var="rowClass" value="odd"/>
+			              </c:when>
+			              <c:otherwise>
+			                  <c:set var="rowClass" value="even"/>
+			              </c:otherwise>
+			            </c:choose>
+			            <div class="<c:out value="widget_grid details  ${rowClass}"/>">
+			              <div class="widget_grid_labels statushealth">
+			                <span class="healthstatusbox">
+			                  <c:if test="${item.notificationType=='RESOLUTION'}">
+			                    <div class="details_comments_statusicons normal" style="margin:5px 0 0 5px; display:inline;"></div>
+			                  </c:if> <c:if test="${item.notificationType=='ISSUE'}">
+			                    <div class="details_comments_statusicons peformanceissue" style="margin:5px 0 0 5px; display:inline;"></div>
+			                  </c:if> <c:if test="${item.notificationType=='DISRUPTION'}">
+			                    <div class="details_comments_statusicons disruption" style="margin:5px 0 0 5px; display:inline;"></div>
+			                  </c:if>
+			                </span>
+			              </div>
+			              <div class="widget_grid_description">
+			                  <span>
+			                  <span class="status_date">
+			                  <spring:message code="ui.label.service.health.date"/> : 
+			                  <spring:message code="date.format" var="date_format"/>
+			                  <fmt:formatDate value="${item.recordedOn}" pattern="${date_format}" timeZone="${currentUser.timeZone}" />
+			                  </span><br/>
+			                  <span class="status_subject"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span>
+			                  <span class="status_description"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
+			                  <sec:authorize access="hasRole('ROLE_OPS_COMMUNICATION')">
+			                  </sec:authorize>
+			                  </span>
+			              </div>
+			            </div>
+		            </c:forEach>
+	            </c:if>
+            </c:forEach>
+            <c:if test='${healthKeyFound != "true"}'>  
               <div class="widget_details_actionbox addlistbox" style="padding:5px;">
                 
                   <span>
@@ -98,42 +144,6 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
                 
               </div>
             </c:if>
-            <c:forEach items="${dateStatusHistory[health.key]}" var="item" varStatus="status">
-            <c:choose>
-              <c:when test="${status.index % 2 == 0}">
-                  <c:set var="rowClass" value="odd"/>
-              </c:when>
-              <c:otherwise>
-                  <c:set var="rowClass" value="even"/>
-              </c:otherwise>
-            </c:choose>
-            <div class="<c:out value="widget_grid details  ${rowClass}"/>">
-              <div class="widget_grid_labels statushealth">
-                <span class="healthstatusbox">
-                  <c:if test="${item.notificationType=='RESOLUTION'}">
-                    <div class="details_comments_statusicons normal" style="margin:5px 0 0 5px; display:inline;"></div>
-                  </c:if> <c:if test="${item.notificationType=='ISSUE'}">
-                    <div class="details_comments_statusicons peformanceissue" style="margin:5px 0 0 5px; display:inline;"></div>
-                  </c:if> <c:if test="${item.notificationType=='DISRUPTION'}">
-                    <div class="details_comments_statusicons disruption" style="margin:5px 0 0 5px; display:inline;"></div>
-                  </c:if>
-                </span>
-              </div>
-              <div class="widget_grid_description">
-                  <span>
-                  <span class="status_date">
-                  <spring:message code="ui.label.service.health.date"/> : 
-                  <spring:message code="date.format" var="date_format"/>
-                  <fmt:formatDate value="${item.recordedOn}" pattern="${date_format}" timeZone="${currentUser.timeZone}" />
-                  </span><br/>
-                  <span class="status_subject"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span>
-                  <span class="status_description"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
-                  <sec:authorize access="hasRole('ROLE_OPS_COMMUNICATION')">
-                  </sec:authorize>
-                  </span>
-              </div>
-            </div>
-            </c:forEach>
             <div id="grid_content"> </div>
           </div>
         </div>
@@ -267,6 +277,6 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
         </div>
       </div>     
       </c:otherwise>
-    </c:choose> 
+    </c:choose>
 <!-- End view Product Details -->
                     

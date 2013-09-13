@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -186,7 +186,7 @@
 }
 </style>
 
-<spring:message code="dateonly.format" var="ddMMMyyyy_format"/>
+<spring:message code="date.format" var="ddMMMyyyy_format"/>
 <input id="planning_for_first_time" type="hidden" name="planning_for_first_time" value="<c:out value="${futureRevisionDate}"/>"/>
 
 <div class="widget_actionbar">

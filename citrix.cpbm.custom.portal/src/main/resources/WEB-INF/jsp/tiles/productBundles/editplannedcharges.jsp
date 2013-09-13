@@ -1,4 +1,4 @@
- <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -26,13 +26,13 @@
       <span ><fmt:formatDate  value="${rateCardForm.startDate}" pattern="${dateonly_format}" /></span>
         </li> 
      </ul> 
-     <div class="widget_details_inlinegrid" style="width:882px;" >
-      <div class="widget_grid inline subheader"  style="width:882px;">
+     <div class="widget_details_inlinegrid" style="width:auto;" >
+      <div class="widget_grid inline subheader" >
               <div class="widget_grid_cell  plan_bundle_charges_row_bundle_cell">
                   <span class="subheader"><spring:message code="label.bundle.name"/></span>
               </div> 
               <div class="plan_bundle_charges_row" >
-               <div class="widget_grid_cell" style="width:130px;">
+               <div class="widget_grid_cell" style="width:155px;">
                   <span class="subheader"><spring:message code="charge.type"></spring:message> </span>
               </div>              
               <c:forEach var="currency" items="${currencieslist}" varStatus="status">
@@ -57,13 +57,13 @@
                   <c:set var="rowClass" value="even"/>
               </c:otherwise>
             </c:choose>
-             <div class="<c:out value="widget_grid inline ${rowClass}"/>" style="width:880px;">
+             <div class="<c:out value="widget_grid inline ${rowClass}"/>" >
                 <div class="widget_grid_cell plan_bundle_charges_row_bundle_cell" title="<c:out value="${rateCardChargesForm.bundle.name}"/>">
                  <span class='navicon <c:out value="${bundleTypeClass}"/>'
                 id="nav_icon" style="height: 19px;"></span> <span class="celltext ellipsis" style="font-weight:bold;width:80px; color:#0A79AC; margin:15px 0 0 5px;"><c:out value="${rateCardChargesForm.bundle.name}"/></span>
                 </div>
                 <div class="plan_bundle_charges_row" style="height:30px;float:left;">
-                <div class="widget_grid_cell" style="width:130px;">
+                <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.one.time"></spring:message> </strong></span>
                 </div>
                    <c:forEach items="${rateCardChargesForm.nonRecurringRateCardChargesFormList}" var="nonrecurringCharge" varStatus="nonRecurringStatus">
@@ -86,7 +86,7 @@
                   <c:choose>
                   <c:when test="${rateCardChargesForm.bundle.rateCard.chargeType.frequencyInMonths != 0 }">
                      <div class="plan_bundle_charges_row" style="height:30px;float:left;">
-                 <div class="widget_grid_cell" style="width:130px;">
+                 <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.recurring"></spring:message>&nbsp;:&nbsp;<spring:message code="charge.type.${rateCardChargesForm.bundle.rateCard.chargeType.name}"/></strong></span>
                   </div> 
                    <c:forEach items="${rateCardChargesForm.recurringRateCardChargesFormList}" var="recurringCharge" varStatus="recurringStatus">
@@ -123,7 +123,7 @@
           </div>
     </div>
 </form:form>
- <div class="common_messagebox error plangrid_lightbox"  style="width:882px;margin:0 0 0 10px; padding:0 0 5px 0; border:1px solid #CCCCCC; display:block;display:none;">
+ <div class="common_messagebox error plangrid_lightbox"  style="min-width:882px;margin:0 0 0 10px; padding:0 0 5px 0; border:1px solid #CCCCCC; display:block;display:none;">
         <span class="erroricon"></span>
         <p id="priceRequiredError" style="margin-top:7px;"></p>
     </div> 

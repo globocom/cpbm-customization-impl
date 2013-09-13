@@ -1,6 +1,7 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
@@ -9,7 +10,7 @@
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/date.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/date.format.js"></script>
 <script language="javascript">
-var templatePageUrl = "<%=request.getContextPath() %>/portal/admin/emailtemplates";
+var templatePageUrl = "<%=request.getContextPath() %>/portal/admin/email_templates";
 var filterBy = "<c:out value="${filterBy}"/>";
 var totalpages = "<c:out value="${totalpages}"/>";
 var currentPage = "<c:out value="${currentPage}"/>";
@@ -85,6 +86,12 @@ var dictionary = {
               <span class="newlist"> <spring:message code="message.emailtemplate.no.Invoices.found"/></span>
             </div>
           </c:if>
+		  <c:if test="${filterBy==4}">
+            <span id="nav_icon" class="navicon contents"></span>
+            <div class="widget_navtitlebox">
+              <span class="newlist"> <spring:message code="message.emailtemplate.no.Contents.found"/></span>
+            </div>
+          </c:if>          
         </li>
        </c:when>
        <c:otherwise>
@@ -115,13 +122,16 @@ var dictionary = {
               <c:if test="${filterBy==3}">
                 <span id="nav_icon" class="navicon invoices"></span>
               </c:if>
+              <c:if test="${filterBy==4}">
+                <span id="nav_icon" class="navicon contentTemplates"></span>
+              </c:if>
               <div class="widget_navtitlebox <c:out value="db_gridbox_rows"/>">
                 <span class="title">
                 <spring:message code="message.emailtemplate.${template.templateName}"/>
                   <%-- <c:out value="${template.templateName}"/> --%>
                 </span>
                 <span class="subtitle">
-                  <spring:message code="ui.email.templates.page.category"/>: <spring:message code="ui.email.templates.type.${template.category}"/>
+                  <spring:message code="ui.email.templates.page.category"/>: <spring:message code="ui.email.templates.type.${fn:toLowerCase(template.category)}"/>
                 </span>
               </div>
               <div class="widget_info_popover" id="info_bubble" style="display:none">
@@ -146,7 +156,7 @@ var dictionary = {
                       </div>
                       <div class="raw_contents_value">
                         <span>
-                          <spring:message code="ui.email.templates.type.${template.category}"/>
+                          <spring:message code="ui.email.templates.type.${fn:toLowerCase(template.category)}"/>
                         </span>
                       </div>
                     </div>
@@ -183,7 +193,7 @@ var dictionary = {
   
   <div id="<c:out value="count${size}"/>" class="countDiv"></div>
   <div class="widget_rightpanel" id="viewEmailTemplateDiv">
-    <c:if test="${firsttemplate != null}">
+    <c:if test="${firsttemplate != null}">                                             
       <script>
         var t_name = '<c:out value="${firsttemplate.templateName}"/>';
         var t_category = '<c:out value="${firsttemplate.category}"/>';

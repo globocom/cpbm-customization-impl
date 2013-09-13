@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -132,3 +132,4 @@
      <span id="e_msg_detach_bundle" style="display: none;" text='<spring:message code="js.errors.channel.failed.detach.bundle"/>'>
      </span>
 </div>
+<input type="hidden" id="currentEffectiveDate" value="<c:out value="${effectiveDate}"/>" />

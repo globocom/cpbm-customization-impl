@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 function createPieChartDoughnut2D(chart_container_id, width, height, chart_id, data){
     if ( FusionCharts( chart_id ) ){
         FusionCharts( chart_id ).dispose();

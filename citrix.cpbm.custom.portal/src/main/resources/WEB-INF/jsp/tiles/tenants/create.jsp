@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
@@ -57,7 +57,7 @@ var product_action="";
                       <li class="widgetwizard_selectionbox" style="background:none; border:none;">
 						<span class="channelicon"></span>
                         <spring:message code="label.channel.tooltip" var="i18nChannelTooltip"/>
-                        <form:select class="channelselect" path="channelParam" title="${i18nChannelTooltip}">
+                        <form:select class="channelselect" path="channelParam" title="${i18nChannelTooltip}" data-selected="${defaultChannel}">
                           <c:forEach items="${channels}" var="choice" varStatus="status">
                             <form:option value="${choice.param}" cssStyle="text-overflow: ellipsis; overflow:hidden;">
                               <c:out value="${choice.name}"></c:out>
@@ -187,10 +187,8 @@ var product_action="";
                         </li>
                         <li id ="trialCodeBox">
                           <span class="label" ><form:label  path="trialCode"><spring:message code="label.userInfo.promo.code"/></form:label></span>
-                          <div class="mandatory_wrapper" >
                             <spring:message code="label.userInfo.promo.code.tooltip" var="i18nUsernameTooltip"/>
                             <form:input cssClass="text" path="trialCode" tabindex="109" title="${i18nUsernameTooltip}" id="trialCode"/>
-                          </div>
                           <div class="label.userInfo.promo.code" id="trialCodeError"></div>
                         </li>
                         

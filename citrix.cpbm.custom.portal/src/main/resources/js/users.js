@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {	
   
 var $selectedTab = null ; 
@@ -85,15 +85,17 @@ $(".secondlevel_menutabs").live("click", function(event){
     	                  var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
     	                  var userCredentialLiCloned =null;
     	        $.each( instance, function( key, value ) {
+    	          if((key=="ServiceName" || key == "ServiceUuid" || key == "InstanceName")){
+    	          }else{
     	          userCredentialLiCloned= apiCredentialsDivCloned.find("#userCredentialLi").clone();
     	        userCredentialLiCloned.find('#userCredentialLable').text(key);
-    	                      userCredentialLiCloned.find("#userCredentialLable").attr("for", 'userCredentialLable_'+key);              
+    	        userCredentialLiCloned.find("#userCredentialLable").attr("for", 'userCredentialLable_'+key);              
     	        userCredentialLiCloned.find("#userCredentialLable").attr("id", 'userCredentialLable_'+key);             
     	        userCredentialLiCloned.find('#liCredentialValue').text(value);
     	        apiCredentialsDivCloned.find('#serviceLogo').html('<img class="apikeyLogo" src=/portal/portal/logo/connector/'+instance.ServiceUuid+'/logo>');
     	        apiCredentialsDivCloned.find("#userCredentialUl").append(userCredentialLiCloned);
     	        userCredentialLiCloned.attr('id','userCredentialLi_'+key);
-    	        
+    	          }
     	        });
     	        //var cls=apiCredentialsDivCloned.find('#titleDiv').attr('class');
     	        apiCredentialsDivCloned.find('#titleDiv').html('<h2>'+instance.ServiceName+'-'+instance.InstanceName+'</h2>');
@@ -721,16 +723,16 @@ $(".secondlevel_menutabs").live("click", function(event){
           
         }
         if(command == "activateuser") {
-        	apiCommand = usersUrl+user_id+"/activateUser";
+        	apiCommand = usersUrl+user_id+"/activate_user";
         }
         if(command == "deactivateuser"){
-        	apiCommand = usersUrl+user_id+"/deactivateUser";
+        	apiCommand = usersUrl+user_id+"/deactivate_user";
         }
         if(command == "resendverification"){
         	apiCommand = usersUrl+user_id+"/resendverification?action=ajax";	
         }
         if(command == "requestPasswordReset"){
-          apiCommand = "/portal/portal/users/" + $('#loggedInUserParam').val() + "/resetPassword?action=ajax";
+          apiCommand = "/portal/portal/users/" + $('#loggedInUserParam').val() + "/reset_password?action=ajax";
         }
         doActionButton(actionMapItem, apiCommand);
 
@@ -1272,7 +1274,7 @@ $(document).ready(function(){
     $("#phoneVerificationCall").html("<span class='call_icon'></span>"+i18n.labels.phoneVerificationCalling);
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestCall",
+      url : "/portal/portal/request_call",
       data: {"phoneNumber":phoneNo,"countryCode":cntryCode},        
       dataType : "html",
       success : function(response) {
@@ -1302,7 +1304,7 @@ $(document).ready(function(){
     $("#phoneVerificationSMS").html("<span class='text_icon'></span>"+i18n.labels.phoneVerificationSending);
     $.ajax( {
       type : "POST",
-      url : "/portal/portal/requestSMS",
+      url : "/portal/portal/request_sms",
       data: {"phoneNumber":phoneNo,"countryCode":cntryCode},        
       dataType : "html",
       success : function(response) {
@@ -1331,7 +1333,7 @@ $(document).ready(function(){
     var phoneVerified = false;
     $.ajax( {
       type      : "GET",
-      url       : "/portal/portal/phoneverification/verifyPIN",
+      url       : "/portal/portal/phoneverification/verify_pin",
       data      : {"PIN":userEnteredPIN,"phoneNumber":phoneNo},        
       dataType  : "html",
       async     : false,
@@ -1359,7 +1361,7 @@ $(document).ready(function(){
     var countyCode =  $("#country").val();
     $.ajax( {
       type : "GET",
-      url : "/portal/portal/users/ISDCodeByCountryCode",
+      url : "/portal/portal/users/ISD_code_by_country_code",
       data: {"countyCode":countyCode},        
       dataType : "html",
       success : function(result) {
@@ -1409,15 +1411,17 @@ $(document).ready(function(){
                   var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
                   var userCredentialLiCloned =null;
         $.each( instance, function( key, value ) {
+          if((key=="ServiceName" || key == "ServiceUuid" || key == "InstanceName")){
+          }else{
           userCredentialLiCloned= apiCredentialsDivCloned.find("#userCredentialLi").clone();
         userCredentialLiCloned.find('#userCredentialLable').text(key);
-                      userCredentialLiCloned.find("#userCredentialLable").attr("for", 'userCredentialLable_'+key);              
+        userCredentialLiCloned.find("#userCredentialLable").attr("for", 'userCredentialLable_'+key);              
         userCredentialLiCloned.find("#userCredentialLable").attr("id", 'userCredentialLable_'+key);             
         userCredentialLiCloned.find('#liCredentialValue').text(value);
         apiCredentialsDivCloned.find('#serviceLogo').html('<img class="apikeyLogo" src=/portal/portal/logo/connector/'+instance.ServiceUuid+'/logo>');
         apiCredentialsDivCloned.find("#userCredentialUl").append(userCredentialLiCloned);
         userCredentialLiCloned.attr('id','userCredentialLi_'+key);
-        
+          }
         });
         //var cls=apiCredentialsDivCloned.find('#titleDiv').attr('class');
         apiCredentialsDivCloned.find('#titleDiv').html('<h2>'+instance.ServiceName+'-'+instance.InstanceName+'</h2>');
@@ -1506,19 +1510,6 @@ function showInfoBubble(current) {
 	  window.location = "/portal/portal/users/listusersforaccount?tenant="+$('#tenantId').val()+"&page="+(parseInt($currentPage)-1);
 	}
 
-	var cloudStackConnected = false;
-
-	function ensureCloudStackIsConnected()
-	{
-		if(cloudStackConnected == false)
-		{
-			connectToCloudStack(tenantParam);
-			cloudStackConnected = true;
-		}
-	}
-
-	
-
 	function showPasswordVerificationBox(callback){
 	  $("#wrongPasswordError").hide();
 		var $thisPanel = $("#verifyUserDiv");
@@ -1596,7 +1587,7 @@ function showUserService(){
 
  function enableAllServiceForUser(userParam,currentTenantParam){
 		var instanceProperty = '{}';
-		var ajaxUrl = "/portal/portal/tenants/enableServicesForThisUser";
+		var ajaxUrl = "/portal/portal/users/enable_services";
 		$.ajax({
 			type : "POST",
 			data : {
@@ -1660,7 +1651,7 @@ function resolveViewForSettingFromServiceInstance(instanceUuid){
 	$(".left_filtermenu").hide();	
 	$("#userSubscribedServiceDetails").show();
 	//$("#userOrAccountSettingsViewFrame").attr("src", "http://www.espncricinfo.com/");
-	var actionurl = "/portal/portal/users/resolveViewForSettings?instanceUuid="+instanceUuid+"&tenantParam="+tenantParam;
+	var actionurl = "/portal/portal/users/resolve_view_for_Settings?instanceUuid="+instanceUuid;
 	$.ajax({
 		type : "GET",
 		url : actionurl,        

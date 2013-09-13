@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. -->
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -105,16 +105,10 @@ var dictionary = {
 		<div class="db_statsbox default">
 		  <div class="db_statsbox title user">
 		    <h2><spring:message code="ui.home.page.title.service.health"/></h2>
-		    <div class="dbboxes_tabswrapper">
-                <select id="serviceInstanceHealthSelect" class="select" onchange="getServiceInstanceStatus(this);" style="margin-top:4px;">
-                    <c:forEach items="${cloudTypeServiceInstances}" var="serviceInstance">
-	                  <option value="${serviceInstance.uuid}"> <c:out value="${serviceInstance.name}"/> </option>
-	                </c:forEach>
-                </select>
-            </div>
+		    
 		  </div>
 		  <div class="db_statsbox contentarea" >
-		       <div id="serviceHealthChart" style="min-height:110px;">
+		       <div id="serviceHealthChart" style="min-height:30px;">
                </div>
 		    <div class="db_statsbox_footerlinksbox">
                 <c:if test="${!currentUser.profile.operationsProfile}">
@@ -216,7 +210,7 @@ var dictionary = {
             <c:choose>
 	            <c:when test="${userHasCloudServiceAccount}">
 	          <div class="db_statsbox launch buttonarea">
-			                <a class="launch_button"  href="javascript:void(0);" id="browseCatalogButton" browseCatalog="${userHasCloudServiceAccount}">
+			                <a class="launch_button btn btn-info"  href="javascript:void(0);" id="browseCatalogButton" browseCatalog="${userHasCloudServiceAccount}">
                     <span class="cloud"></span>
                     <spring:message code="label.catalog.browse"/>
                     </a>
@@ -465,16 +459,7 @@ var dictionary = {
       </script>
     </sec:authorize>
   </c:if>
-  <!-- lightbox (begin) -->
-<div id="utilityrates_lightbox" title='<spring:message code="view.utility.rates"/>' style="display:none;">
-  <p> 
-  </p>
-  <div class="dialog_formcontent">  
-    <div class="utilityrates_container" id="container">
-    </div>
-  </div>
-</div>
-<!-- lightbox (end) -->
+
 <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')">
 <script type="text/javascript">
   var showNetBalanceDialog = true;

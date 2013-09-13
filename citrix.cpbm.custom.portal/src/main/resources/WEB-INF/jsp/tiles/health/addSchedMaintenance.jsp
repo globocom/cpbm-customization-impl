@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -24,11 +24,11 @@ var newSchedule = "<c:out value="${newSchedule}"/>";
   <div class="details_lightboxformbox">
     <c:if test="${newSchedule}">
       
-      <spring:url value="/portal/health/saveMaintenanceSchedule" var="save_status_path" htmlEscape="false" />
+      <spring:url value="/portal/health/save_maintenance_schedule" var="save_status_path" htmlEscape="false" />
     </c:if>
     <c:if test="${!newSchedule}">
       
-      <spring:url value="/portal/health/updateMaintenanceSchedule" var="save_status_path" htmlEscape="false" />
+      <spring:url value="/portal/health/update_maintenance_schedule" var="save_status_path" htmlEscape="false" />
     </c:if>
     <form:form commandName="serviceNotificationForm" id="healthStatusForm" cssClass="ajaxform"  action="${save_status_path}" onsubmit="saveSchedMaintenance(event,this, ${serviceNotificationForm.serviceNotification.id})">
           <ul>

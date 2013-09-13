@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 package test.constraint;
 
 import java.lang.annotation.Annotation;
@@ -40,7 +41,8 @@ import org.hibernate.validator.metadata.ConstraintHelper;
 import org.hibernate.validator.metadata.MetaConstraint;
 import org.hibernate.validator.util.ReflectionHelper;
 
-import citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.access.proxy.CustomProxy;
+
 
 public class CustomValidatorImpl implements Validator {
 

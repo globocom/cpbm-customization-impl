@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -90,7 +90,7 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 							</li>
 						</c:forEach>
 						<li style="width: 530px">
-							<div class="servicelist sections" style="height: 25px; float: right">
+							<div class="servicelist sections" style="height: 25px; float: right; min-height:25px;">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);"
 									onclick="closeAccountTypeControlsDialog()">
 									<spring:message code="label.cancel" />

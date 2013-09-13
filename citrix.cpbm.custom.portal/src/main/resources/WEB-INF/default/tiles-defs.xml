@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-	<!-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. -->
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <!DOCTYPE tiles-definitions PUBLIC
  "-//Apache Software Foundation//DTD Tiles Configuration 2.1//EN"
  "http://tiles.apache.org/dtds/tiles-config_2_1.dtd">
@@ -179,10 +179,6 @@
      <put-attribute name="secondlevelheader" value="/WEB-INF/jsp/tiles/users/secondlevelmenu.jsp"/>
      <put-attribute name="body" value="/WEB-INF/jsp/tiles/users/listusers.jsp" cascade="true"/>
   </definition>
-  <definition name="users.login.tenant" extends="application">
-  <put-attribute name="secondlevelheader" value="/WEB-INF/jsp/tiles/main/secondlevelmenu.jsp"/>
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/users/cloud_login.jsp" cascade="true"/>
-  </definition>
   
   <definition name="users.contact_admin" extends="application">
     <put-attribute name="body" value="/WEB-INF/jsp/tiles/users/contact_admin.jsp" cascade="true"/>
@@ -263,21 +259,6 @@
     <put-attribute name="pageHeader" value="/WEB-INF/jsp/tiles/tenants/pageHeader.jsp"/>
     <put-attribute name="body" value="/WEB-INF/jsp/tiles/spendLimit/spend_limit_manage.jsp" cascade="true"/>
   </definition>
-  
-   <!--RPC -->
-  <definition name="home.serviceofferings" extends="application">
-    <put-attribute name="pageHeader" value="/WEB-INF/jsp/tiles/tenants/pageHeader.jsp"/>
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/rpc/serviceofferings.jsp" cascade="true"/>
-  </definition>   
-   <definition name="home.diskofferings" extends="application">
-    <put-attribute name="pageHeader" value="/WEB-INF/jsp/tiles/tenants/pageHeader.jsp"/>
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/rpc/diskofferings.jsp" cascade="true"/>
-  </definition>   
-   <definition name="home.templates" extends="application">
-    <put-attribute name="pageHeader" value="/WEB-INF/jsp/tiles/tenants/pageHeader.jsp"/>
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/rpc/templates.jsp" cascade="true"/>
-  </definition>   
-     
   
   <!-- System Health -->
   <definition name="system.health" extends="application">
@@ -385,10 +366,7 @@
    
    <definition name="report.reportData" template="/WEB-INF/jsp/tiles/reports/reportData.jsp" >    
   	</definition>
-    <definition name="report.usageByProductDashboardView" template="/WEB-INF/jsp/tiles/main/widgetTopSellingProducts.jsp" >    
-    </definition>
-    <definition name="report.usageByProductBundleDashboardView" template="/WEB-INF/jsp/tiles/main/widgetTopSellingBundles.jsp" >    
-    </definition>
+   
    <definition name="report.dailyReportOut"  template="/WEB-INF/jsp/tiles/reports/dailyReportOut.jsp" >    
   	</definition>
   	
@@ -483,12 +461,6 @@
   <definition name="configuration.edit" template="/WEB-INF/jsp/tiles/config/editconfiguration.jsp">    
   </definition> 
  
-  
-  <definition name="catalog.vmbundles" extends="application">
-    <put-attribute name="secondlevelheader" value="/WEB-INF/jsp/tiles/subscriptions/secondlevelmenu.jsp"/>
-    <put-attribute name="thirdlevelheader" value="/WEB-INF/jsp/tiles/subscriptions/thirdlevelmenu.jsp"/>    
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/subscriptions/populatebundles.jsp" cascade="true"/>
-  </definition>  
   <definition name="catalog.utilityrates" extends="application">
     <put-attribute name="secondlevelheader" value="/WEB-INF/jsp/tiles/subscriptions/secondlevelmenu.jsp"/>    
     <put-attribute name="body" value="/WEB-INF/jsp/tiles/subscriptions/utilityrates.jsp" cascade="true"/>
@@ -496,10 +468,6 @@
  <definition name="catalog.utilityrates.lightbox" template="/WEB-INF/jsp/tiles/subscriptions/utilityrates.jsp"></definition>
  <definition name="catalog.utilityrates.table" template="/WEB-INF/jsp/tiles/subscriptions/utilityrates_table.jsp"></definition>
  <definition name="home.gravtars.show" template="/WEB-INF/jsp/tiles/main/home_gravtars.jsp"></definition>
- <definition name="catalog.entitlements" extends="application">
-    <put-attribute name="secondlevelheader" value="/WEB-INF/jsp/tiles/subscriptions/secondlevelmenu.jsp"/>    
-    <put-attribute name="body" value="/WEB-INF/jsp/tiles/subscriptions/entitlements.jsp" cascade="true"/>
-  </definition>
   
   <!-- Batch Runs -->
   <definition name="batch.list" extends="application" >
@@ -565,17 +533,13 @@
   </definition>
   <definition name="product.view.channelpricing"   template="/WEB-INF/jsp/tiles/products/viewproductchannelpricing.jsp">
   </definition> 
-  <definition name="add.product.current.charges"   template="/WEB-INF/jsp/tiles/products/addproductcurrentcharges.jsp">
-  </definition>
-   <definition name="products.sort"   template="/WEB-INF/jsp/tiles/products/sortproducts.jsp">
+  <definition name="products.sort"   template="/WEB-INF/jsp/tiles/products/sortproducts.jsp">
   </definition>
   <definition name="view.product.current.charges"   template="/WEB-INF/jsp/tiles/products/viewproductcurrentcharges.jsp">
   </definition>
  <definition name="view.product.planned.charges"   template="/WEB-INF/jsp/tiles/products/viewproductplannedcharges.jsp">
   </definition>
   <definition name="view.product.mediation.rules"   template="/WEB-INF/jsp/tiles/products/viewmediationrules.jsp">
-  </definition>
-  <definition name="plan.charges"   template="/WEB-INF/jsp/tiles/products/plancharges.jsp">
   </definition>
   <definition name="edit.planned.charges"   template="/WEB-INF/jsp/tiles/products/editplannedcharges.jsp">
   </definition>
@@ -757,8 +721,6 @@
   </definition>
   <definition name="warnings" template="/WEB-INF/jsp/tiles/shared/warnings.jsp">
   </definition>
-  <!-- <definition name="common.variables" template="/WEB-INF/jsp/tiles/shared/commonVariables.jsp">
-  </definition> -->
   
   
   <definition name="tenant.channel.currencies" template="/WEB-INF/jsp/tiles/tenants/channelcurrencies.jsp">   
@@ -779,13 +741,12 @@
  	<put-attribute name="instancecontent" value="/WEB-INF/jsp/tiles/main/instancecontent.jsp"/>
   </definition>
   
-  <definition name="resource.view.tab" template="/WEB-INF/jsp/tiles/main/resourceViewTab.jsp" >
-  </definition>
-  
 	<definition name="approval.task" template="/WEB-INF/jsp/tiles/tasks/approval_task.jsp" />
 	<definition name="home.items.view" template="/WEB-INF/jsp/tiles/main/home_items.jsp" >
   </definition>	
   <definition name="service.health.chart" template="/WEB-INF/jsp/tiles/health/serviceHealthChart.jsp">
+  </definition>
+  <definition name="service.health.list" template="/WEB-INF/jsp/tiles/health/serviceHealthList.jsp">
   </definition>
   <definition name="workflow.details.popup" template="/WEB-INF/jsp/tiles/workflows/workflow_details.jsp">
   </definition>
@@ -803,4 +764,10 @@
   <definition name="subscription.custom.fields" template="/WEB-INF/jsp/tiles/shared/custom_fields_subscription.jsp"/>
   <definition name="service.instance.editlogo"   template="/WEB-INF/jsp/tiles/main/serviceInstanceLogo.jsp">
   </definition>
+  
+  <definition name="subscribe.PAYG" template="/WEB-INF/jsp/tiles/subscriptions/subscribePAYG.jsp"/>
+  <definition name="subscribe.bundle.LHS" template="/WEB-INF/jsp/tiles/subscriptions/subscribeBundleLHS.jsp"/>
+  <definition name="resource.provision.configuration" template="/WEB-INF/jsp/tiles/subscriptions/resourceProvisionConfiguration.jsp"/>
+  <definition name="provision.resource.RHS" template="/WEB-INF/jsp/tiles/subscriptions/provisionResourceRHS.jsp"/>
+  <definition name="list.bundles.container" template="/WEB-INF/jsp/tiles/subscriptions/commonproductbundlediv.jsp"/>
 </tiles-definitions>

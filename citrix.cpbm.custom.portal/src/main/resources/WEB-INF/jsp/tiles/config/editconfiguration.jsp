@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -61,7 +61,7 @@
                                 </div> 
                         </div>
                     </div>
-                    <div class="widget_grid_cell" style="width:25%;">
+                    <div class="widget_grid_cell" style="width:37%;">
                        <span class="celltext" style="margin-left:10px;">
                           <c:catch var ="catchException"> 
                            <spring:message code="config.${configuration.name}.description"/>     

@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -44,7 +44,7 @@ $(function(){
                     <div class="registration_formbox">
                     <c:choose>
 	                    <c:when test="${registration.phoneVerificationEnabled}">
-	                    	<spring:url value="/portal/phoneverification" var="register" htmlEscape="false" />
+	                    	<spring:url value="/portal/phone_verification" var="register" htmlEscape="false" />
 	                    </c:when>
 	                    <c:otherwise>
 	                    	<spring:url value="/portal/register" var="register" htmlEscape="false" />

@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -309,7 +309,7 @@
                             </div>
 
                              <div class="gridcell" style="width:30%; display:none;" id="discriminatorOperatorDiv">
-                              <select class="select1" id ="discriminatorOperator">
+                              <select class="select1" id ="discriminatorOperator" onchange="changeDiscriminatorOperator(this);">
                                   <option value="equals"><spring:message htmlEscape="false" code="ui.label.includes" /></option>
                                   <option value="not_equals"><spring:message htmlEscape="false" code="ui.label.excludes" /></option>
                                </select>
@@ -356,6 +356,7 @@
       <input type="hidden" id="usageTypeChanged" name="usageTypeChanged" value='true' >
       <input type="hidden" id="selectedUsageType" name="selectedUsageType">
       <input type="hidden" id="showingScalesFor" name="showingScalesFor">
+      <input type="hidden" id="originalScales" name="originalScales">
       <form:input type="hidden" path="product.uom" id="product.uom"/>
       <form:input type="hidden" path="conversionFactor" id="conversionFactor"/>
 

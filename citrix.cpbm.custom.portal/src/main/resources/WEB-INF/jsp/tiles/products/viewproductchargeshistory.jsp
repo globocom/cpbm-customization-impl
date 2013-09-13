@@ -1,4 +1,4 @@
- <%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -27,7 +27,7 @@ var history_PerPage = parseInt(<c:out value="${history_PerPage}"/>);
               <span  class="title" style="margin-left:5px;width: auto;color:#FFF;">
                 <c:choose>
                   <c:when test="${historyDate != null}">
-                      <spring:message code="dateonly.format" var="dateonly_format"/>
+                      <spring:message code="date.format" var="dateonly_format"/>
                       <fmt:formatDate value="${historyDate}" pattern="${dateonly_format}"/>
                   </c:when>
                   <c:otherwise>

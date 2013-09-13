@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -17,7 +17,7 @@
       <div class="main_addnewbox_titlebox">
         <h2><spring:message code="ui.label.report.parameters"/></h2>
       </div>
-      <form:form id="reportForm" commandName="customerRankReport" action="/portal/portal/reports/productUsage" method="POST">
+      <form:form id="reportForm" commandName="customerRankReport" action="/portal/portal/reports/product_usage" method="POST">
         <div class="main_addnew_formbox" id="params">
           <div class="main_addnew_formpanels" style="border: none">
             <ol>

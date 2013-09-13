@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <Workflows>
   <Workflow name="credit-card-account-activation">
     <Bucket name="identity-verification" order="1">

@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 $(document).ready(function() {
 	var serviceCategory=$('#service_category_list_container li').first().attr("category");
 	
@@ -64,9 +65,19 @@ $(document).ready(function() {
 });
 
 var refreshHomeItems = function loadHomeItems(serviceInstanceUUID, tenantParam){
+  if(serviceInstanceUUID == null || serviceInstanceUUID=="") {
+    $("#cloudServiceResources").hide();
+    $("#cloudServiceResourcesAll").show();
+  } else {
+    $("#cloudServiceResourcesAll").hide();
+    $("#cloudServiceResources").show();
+    $("#cloudServiceResources").unbind("click").bind("click", function(){
+      launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID);
+    });
+  }
 	if(typeof serviceInstanceUUID!="undefined" && typeof tenantParam!="undefined"){
 		  $.ajax({
-		      url:"/portal/portal/home/getHomeItems" ,
+		      url:"/portal/portal/home/get_home_items" ,
 		      data: {
 		          serviceInstanceUUID: serviceInstanceUUID,
 		          tenant:tenantParam
@@ -81,6 +92,14 @@ var refreshHomeItems = function loadHomeItems(serviceInstanceUUID, tenantParam){
 		}
 	
 };
+
+function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID){
+	if(serviceInstanceUUID!=null){
+		window.location = "/portal/portal/connector/csinstances?tenant="+effectiveTenantParam+"&showIframe=true&serviceInstanceUUID="+serviceInstanceUUID;
+	}else{
+		window.location = "/portal/portal/connector/csinstances?tenant="+effectiveTenantParam;
+	}
+}
 
 
 

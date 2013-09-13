@@ -1,3 +1,4 @@
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */ 
 package web.Integration;
 
 import java.util.Date;
@@ -14,10 +15,9 @@ import org.springframework.validation.BindingResult;
 import web.WebTestsBase;
 import web.support.MockSessionStatus;
 
-import citrix.cpbm.access.proxy.CustomProxy;
-import citrix.cpbm.portal.forms.TenantForm;
-import citrix.cpbm.portal.fragment.controllers.AbstractTenantController;
-
+import com.citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.portal.forms.TenantForm;
+import com.citrix.cpbm.portal.fragment.controllers.AbstractTenantController;
 import com.vmops.event.PortalEvent;
 import com.vmops.event.TenantActivation;
 import com.vmops.model.Address;
@@ -62,7 +62,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
     campaignPromotion.setCode(code);
     campaignPromotion.setTitle("TestCPTitle");
     campaignPromotion.setCreateBy(getRootUser());
-    campaignPromotion.setUpdateBy(null);
+    campaignPromotion.setUpdateBy(getRootUser());
     campaignPromotion.setTrial(true);
     campaignPromotion.setStartDate(new Date());
     campaignPromotion.setEndDate(new Date());
@@ -80,8 +80,8 @@ public class TrialAccountCreationTest extends WebTestsBase {
   }
 
   private TenantForm setTrialTenantForm(String promocode) {
-    TenantForm form = new TenantForm((citrix.cpbm.access.Tenant)CustomProxy.newInstance(new Tenant()));
-    citrix.cpbm.access.Tenant newTenant = form.getTenant();
+    TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
+    com.citrix.cpbm.access.Tenant newTenant = form.getTenant();
     // Set Account Type as Trial
     form.setAccountTypeId("5");
     // Setting Company Name
@@ -97,7 +97,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
     // Create User
     User user = new User("test", "user", "test@test.com", VALID_USER + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
         VALID_TIMEZONE, null, null, null);
-    form.setUser((citrix.cpbm.access.User)CustomProxy.newInstance(user));
+    form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setConfirmEmail("test@test.com");
     form.setTrialCode(promocode);
     form.setTenant(newTenant);
@@ -108,7 +108,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
   public void createTrialAccountwithExpiredPromocode() {
     try {
       // Creates a new Trial Tenant
-      TenantForm form = new TenantForm((citrix.cpbm.access.Tenant)CustomProxy.newInstance(new Tenant()));
+      TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
       form = setTrialTenantForm("trial_camp");
       BindingResult result = valid(form);
       controller.create(form, result, map, status, new MockHttpServletRequest());
@@ -125,7 +125,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
   public void createTrialAccount() throws TrialCodeInvalidException {
     try {
       // Creates a new Trial Tenant
-      TenantForm form = new TenantForm((citrix.cpbm.access.Tenant)CustomProxy.newInstance(new Tenant()));
+      TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
       form = setTrialTenantForm(promotionToken.getCode());
       BindingResult result = valid(form);
       controller.create(form, result, map, status, new MockHttpServletRequest());
@@ -156,7 +156,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
     String invalidPromocode = "abc";
     try {
       // Creates a new Trial Tenant
-      TenantForm form = new TenantForm((citrix.cpbm.access.Tenant)CustomProxy.newInstance(new Tenant()));
+      TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
       form = setTrialTenantForm(invalidPromocode);
       BindingResult result = valid(form);
       controller.create(form, result, map, status, new MockHttpServletRequest());

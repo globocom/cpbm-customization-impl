@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -10,34 +10,12 @@
 <script language="javascript">
   var dictionary = {viewMasked: '<spring:message javaScriptEscape="true" code="label.show"/>',
         hideMasked: '<spring:message javaScriptEscape="true" code="label.hide"/>',
-        code_not_unique: '<spring:message javaScriptEscape="true" code="js.errors.channel.code.notunique"/>'
+        code_not_unique: '<spring:message javaScriptEscape="true" code="js.errors.channel.code.notunique"/>',
+        max_length_exceeded:"<spring:message javaScriptEscape="true" code='js.errors.channel.length.upperLimit'/>",
+        code_invalid:"<spring:message javaScriptEscape="true" code='js.errors.channel.catalogcode.invalid'/>"
         };
 </script>
 
-<style type="text/css">
-.tooltip {
-    background-color:#CCCCCC;
-    border:1px solid #fff;
-    padding:10px 15px;
-    width:280px;
-    display:none;
-    color:#fff;
-    text-align:left;
-    font-size:12px;
-}
-
-widgetwizard_detailsbox .textarea {
-  background: url("../images/widget_bigtextbg.gif") repeat-x scroll left top transparent;
-  color: #666666;
-  border:1px soild #CCCCCC;
-  float:left; 
-  width: 300px; 
-  height: 62px;
-  list-style:non outside none;
-  margin:10px 0 0 10px;
-  padding 0 0 5px;
-}
-</style>
 
 
 <div class="dialog_formcontent wizard">
@@ -76,7 +54,7 @@ widgetwizard_detailsbox .textarea {
                 <div class="mandatory_wrapper">
                   <input id="configproperty_instance_name" value="" name="instancename" title="<spring:message  code="instance.name"/>" type="text" class="text required"  maxlen="128" tabindex="1" />
                 </div>
-                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_nameError" style="margin: 0px 0 0 155px;"></div>
+                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_nameError" style="margin: 0px 0 0 305px;"></div>
               </li>
 
               <li>
@@ -84,7 +62,7 @@ widgetwizard_detailsbox .textarea {
                 <div class="mandatory_wrapper">
                   <input id="configproperty_instance_code" value="" name="instancecode" title="<spring:message  code="instance.code"/>" type="text" class="text required" maxlen="255" tabindex="2" onchange="validate_code(event, this, 'serviceInstanceCode')"/>
                 </div> 
-                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_codeError" style="margin: 0px 0 0 155px;"></div>
+                <div class="main_addnew_formbox_errormsg_popup" id="configproperty_instance_codeError" style="margin: 0px 0 0 305px;"></div>
               </li>
 
               <li>
@@ -133,9 +111,11 @@ widgetwizard_detailsbox .textarea {
           <div class="widgetwizard_detailsbox sixstepswizard">
             <c:set var="mandatory_fields" value="Y" scope="request"></c:set>
             <tiles:insertDefinition name="main.home_cs.instance.config.properties"/>
-            <li id="optionalSettings" style="background:none;display:none;">
+            <ul>
+              <li id="optionalSettings" style="background:none;display:none;">
                 <a href="javascript:void(0);" class="cancel optional_settings" style="margin:0 0 0 10px;font-weight:normal; font-size:13px;cursor: pointer; opacity: 1; visibility: visible;line-height:30px;"><spring:message code="ui.service.instance.advanced.settings" /></a>
-            </li>
+              </li>
+            </ul>
             <div id="optional_settings_div" style="display: none;">
                 <c:set var="mandatory_fields" value="N" scope="request"></c:set>
                 <tiles:insertDefinition name="main.home_cs.instance.config.properties"/>
@@ -176,8 +156,8 @@ widgetwizard_detailsbox .textarea {
             <h2><spring:message code="default.product.selection"/></h2>
             <span><spring:message code="service.instance.product.selection"/></span>
           </div>
-          <div class="widgetwizard_detailsbox sixstepswizard gridbox" id="productsList">
-            <div class="row header">
+          <div class="widgetwizard_detailsbox sixstepswizard gridbox" id="productsList" style="overflow:hidden;">
+            <div class="row header" style="overflow:hidden;">
               <div class="gridcell header" style="width: 5%;">
                 <span class="gridtext header"></span>
               </div>
@@ -197,41 +177,43 @@ widgetwizard_detailsbox .textarea {
                 <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.required.products" /></span>
               </div>
             </div>                
-            <c:forEach var="usageTypes" items="${service.serviceUsageTypes}" varStatus="usageStatus">
-               <div class="row highlighted" id="productListDiv.<c:out value="${usageTypes.usageTypeName}" />">
-                <div class="gridcell" style="width: 5%;">
-                  <input class="text" style="height:15px;width:15px;margin:13px 0 0 8px;" type="checkbox" id="selected_usage_type" name="<c:out value="${usageTypes.usageTypeName}" />" value="<c:out value="${usageTypes.id}" />"/>
+            <div class="widgetwizard_detailsbox sixstepswizard gridbox" style="overflow-x: hidden; overflow-y: auto; margin-left: 0px; margin-top: 0px; border-width: 0px; height: 237px;">               
+              <c:forEach var="usageTypes" items="${service.serviceUsageTypes}" varStatus="usageStatus">
+                 <div class="row highlighted" id="productListDiv.<c:out value="${usageTypes.usageTypeName}" />">
+                  <div class="gridcell" style="width: 5%;">
+                    <input class="text" style="height:15px;width:15px;margin:13px 0 0 8px;" type="checkbox" id="selected_usage_type" name="<c:out value="${usageTypes.usageTypeName}" />" value="<c:out value="${usageTypes.id}" />"/>
+                  </div>
+                  <div class="gridcell" style="width: 19%;">
+                    <span style="width:145px;margin:14px 0 0 10px;" class="gridtext ellipsis" id="usageType.name.<c:out value="${usageTypes.usageTypeName}" />" title="<c:out value="${usageTypes.usageTypeName}" />" ><spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/></span>
+                  </div>
+                  <div class="gridcell" style="width: 19%;">
+                      <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<c:out value="${usageTypes.usageTypeName}" />' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]"/>
+                  </div>
+                  <div class="gridcell" style="width: 19%;">
+                      <input class="text" id="product.code.<c:out value="${usageTypes.usageTypeName}" />" value='' name="product.code.[<c:out value="${usageTypes.usageTypeName}" />]" onchange="validate_code(event, this, 'productCode')"/>
+                      <div class="main_addnew_formbox_errormsg_popup" id="product.code.<c:out value="${usageTypes.usageTypeName}" />Error" style="margin: 0px 0 0 -5px;"></div>
+                  </div>
+                  <div class="gridcell" style="width: 19%;">
+                    <select id="product.category.<c:out value="${usageTypes.usageTypeName}" />" class="select1">
+                      <c:forEach var="category" items="${categories}" varStatus="categoryStatus">
+                        <option value='<c:out value="${category.id}"/>' >
+                          <c:out value="${category.name}" escapeXml="false"/>
+                        </option>
+                      </c:forEach>                  
+                    </select>
+                  </div>
+                  <div class="gridcell" style="width: 19%;">
+                    <select id="product.scale.<c:out value="${usageTypes.usageTypeName}" />" class="select1">
+                      <c:forEach var="scale" items="${usageTypes.serviceUsageTypeUom.serviceUsageTypeUomScale}" varStatus="uomScale">
+                        <option value='<c:out value="${scale.conversionFactor}"/>' <c:if test="${scale.defaultScale}">selected=selected</c:if>>
+                          <c:out value="${scale.name}" escapeXml="false"/>
+                        </option>
+                      </c:forEach>                  
+                    </select>
+                  </div>
                 </div>
-                <div class="gridcell" style="width: 19%;">
-                  <span style="width:145px;margin:14px 0 0 10px;" class="gridtext ellipsis" id="usageType.name.<c:out value="${usageTypes.usageTypeName}" />" title="<c:out value="${usageTypes.usageTypeName}" />" ><spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/></span>
-                </div>
-                <div class="gridcell" style="width: 19%;">
-                    <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<c:out value="${usageTypes.usageTypeName}" />' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]"/>
-                </div>
-                <div class="gridcell" style="width: 19%;">
-                    <input class="text" id="product.code.<c:out value="${usageTypes.usageTypeName}" />" value='' name="product.code.[<c:out value="${usageTypes.usageTypeName}" />]" onchange="validate_code(event, this, 'productCode')"/>
-                    <div class="main_addnew_formbox_errormsg_popup" id="product.code.<c:out value="${usageTypes.usageTypeName}" />Error" style="margin: 0px 0 0 -5px;"></div>
-                </div>
-                <div class="gridcell" style="width: 19%;">
-                  <select id="product.category.<c:out value="${usageTypes.usageTypeName}" />" class="select1">
-                    <c:forEach var="category" items="${categories}" varStatus="categoryStatus">
-                      <option value='<c:out value="${category.id}"/>' >
-                        <c:out value="${category.name}" escapeXml="false"/>
-                      </option>
-                    </c:forEach>                  
-                  </select>
-                </div>
-                <div class="gridcell" style="width: 19%;">
-                  <select id="product.scale.<c:out value="${usageTypes.usageTypeName}" />" class="select1">
-                    <c:forEach var="scale" items="${usageTypes.serviceUsageTypeUom.serviceUsageTypeUomScale}" varStatus="uomScale">
-                      <option value='<c:out value="${scale.conversionFactor}"/>' <c:if test="${scale.defaultScale}">selected=selected</c:if>>
-                        <c:out value="${scale.name}" escapeXml="false"/>
-                      </option>
-                    </c:forEach>                  
-                  </select>
-                </div>
-              </div>
-            </c:forEach>
+              </c:forEach>
+            </div>
           </div>
         </div>
       </div>  
@@ -277,8 +259,11 @@ widgetwizard_detailsbox .textarea {
                 <div class="widget_details_inlinegrid product_plan_charges_grid" id="productPriceDiv" style="margin-left: 0px; margin-top: 0px; border-top-width: 0px;">
 
                   <div class="widget_grid inline subheader product_plan_charges_grid" style="padding-left: 20px;">
-                    <div class="widget_grid_cell product_displayname_cell">
-                      <span class="subheader"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
+                    <div class="widget_grid_cell" style="width:18%;">
+                      <span class="subheader" style="margin-left: 2px;"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
+                    </div>
+                    <div class="widget_grid_cell" style="width:15%;">
+                      <span class="subheader"><spring:message htmlEscape="false" code="ui.label.product.unit" /></span>
                     </div>
                     <c:forEach var="currency" items="${activeCurrencies}">
                       <div class="widget_grid_cell currency_cell" >
@@ -292,11 +277,16 @@ widgetwizard_detailsbox .textarea {
                     </c:forEach>
                   </div>
 
-                  <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid" id="productPriceListDiv" style="overflow-x: hidden; overflow-y: auto;">
+                  <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid" id="productPriceListDiv" style="overflow-x: hidden; overflow-y: auto; height: auto;">
                   </div>
                   <div class="widget_grid inline odd product_plan_charges_innergrid" id="productItem" style="display:none; padding-left: 20px;">
-                    <div class="widget_grid_cell product_displayname_cell">
-                      <span class="subheader" id="selectedProductName"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
+                    <div class="widget_grid_cell" style="width:18%;">
+                      <span class="subheader ellipsis" id="selectedProductName" style="margin-left: 2px;width:100%;"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
+                      <span class="subheader" style="margin-left: 2px; margin-top:0px;font-weight:normal;" id="selectedProductCategory"><spring:message htmlEscape="false" code="ui.products.label.create.product.category" /></span>
+                      <span class="levelicon INFORMATION" style="margin-top: 0px; padding-bottom: 0px; margin-left: 5px;position:relative;" onmouseover="onProductDetailMouseover(this);" onmouseout="onProductDetailMouseout(this);"></span>
+                    </div>
+                    <div class="widget_grid_cell" style="width:15%;">
+                      <span class="subheader" style="font-weight:normal;" id="selectedUOM"><spring:message htmlEscape="false" code="ui.label.product.unit" /></span>
                     </div>
                     <c:forEach var="productCharge" items="${productCharges}" varStatus="priceStatus">
                       <div class="widget_grid_cell currency_cell" >
@@ -309,6 +299,24 @@ widgetwizard_detailsbox .textarea {
                         </div>
                       </div>
                     </c:forEach>
+                    <div class="widget_details_popover" id="info_bubble" style="width:auto;top: 5px; left: 18px; display:none; min-height:0px;padding:0px;">
+                      <div class="popover_wrapper" >
+                        <div class="popover_shadow"></div>
+                        <div class="popover_contents">
+                          <div class="raw_contents" style="margin-left: 7px;">
+                            <div class="raw_content_row"  style="border-bottom: none;">
+                              <div class="raw_contents_title">
+                                <span class="raw_contents_title"><spring:message htmlEscape="false" code="ui.label.product.code" />:</span>
+                              </div>
+                              <div class="raw_contents_value" style="width:auto;">
+                                <span id="selectedProductCode">
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                 </div>

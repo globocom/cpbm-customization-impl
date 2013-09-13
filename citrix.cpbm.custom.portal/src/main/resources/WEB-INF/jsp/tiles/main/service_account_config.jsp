@@ -1,3 +1,4 @@
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. --> 
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -8,10 +9,11 @@
 
 <script type="text/javascript" src="<%=request.getContextPath()%>/resources/all.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/common.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/apachecloudstack.fragment/common.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath()%>/csrf_js_servlet"></script>
 <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/resources/all.css"/>
 <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main.css"/>
-<link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/resourcesView.css"/>
+<link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/apachecloudstack.fragment/resourcesView.css"/>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/serviceAccountConfig.js"></script>
 <script type="text/javascript">
 var effectiveTenantParam = '<c:out value="${effectiveTenant.param}"/>';

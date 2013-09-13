@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.lang.reflect.Method;
@@ -19,8 +19,7 @@ import org.springframework.web.servlet.ModelAndView;
 import web.WebTestsBase;
 import web.support.DispatcherTestServlet;
 
-import citrix.cpbm.portal.fragment.controllers.StaticPagesController;
-
+import com.citrix.cpbm.portal.fragment.controllers.StaticPagesController;
 import com.vmops.service.UserService;
 
 public class StaticPagesControllerTest extends WebTestsBase {

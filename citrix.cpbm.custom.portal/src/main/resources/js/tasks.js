@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Citrix Systems, Inc. All rights reserved */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function(){
   /* approval popup related js start*/
   $(".taskPopup").live("click", function(){

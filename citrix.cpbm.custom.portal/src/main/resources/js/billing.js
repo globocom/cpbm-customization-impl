@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
   $(".cc_icon").click(function() {
     if($(this).attr('class').indexOf("edit_page")!=-1 && $("#enableEdit").val()=="false"){
@@ -559,6 +559,7 @@ $(document).ready(function() {
               maxlength:100
             },
             "creditCard.creditCardAddress.state" : {
+            	required:true,
                 maxlength: 100
               },
             "creditCard.creditCardAddress.country" : {
@@ -583,6 +584,7 @@ $(document).ready(function() {
               maxlength: i18n.errors.creditCard.maxLength
             },
             "creditCard.creditCardAddress.state" : {
+            	required:i18n.errors.creditCard.creditCardAddress.state,
                 maxlength: i18n.errors.creditCard.maxLength
               },
             "creditCard.creditCardAddress.country" : {
@@ -826,7 +828,7 @@ function viewbillingActivity(current){
 function accountTypeChanged(accountType){
 	$.ajax( {
 		type : "GET",
-		url : "/portal/portal/tenants/getAccountType",	
+		url : "/portal/portal/tenants/get_account_type",	
 		async: false,
 		data:{accountTypeName:$(accountType).val()},
 		dataType : "json",

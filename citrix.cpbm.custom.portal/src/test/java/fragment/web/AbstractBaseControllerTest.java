@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 package fragment.web;
 
 import java.util.List;
@@ -21,8 +21,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import web.WebTestsBase;
 
-import citrix.cpbm.portal.fragment.controllers.RegistrationController;
-
+import com.citrix.cpbm.portal.fragment.controllers.RegistrationController;
 import com.vmops.model.Tenant;
 import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.CreditCardFraudCheckException;

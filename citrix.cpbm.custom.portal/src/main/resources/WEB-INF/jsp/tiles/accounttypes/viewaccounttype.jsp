@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -195,7 +195,7 @@
 				<c:if test="${not empty mapOfControlsPerInstance}">
 					<c:if test="${not empty services}">
 						<spring:message code="ui.label.service.sub.title" />
-						<select id="selectedService" class="select" style="width: auto" onchange="changeInstances()">
+						<select id="selectedService" class="select" style="width: auto; margin-top:8px;" onchange="changeInstances()">
 							<c:forEach var="service" items="${services}" varStatus="status">
 								<option value="${service.uuid}"><spring:message code="${service.serviceName}.service.name" /></option>
 							</c:forEach>
@@ -203,12 +203,12 @@
 					</c:if>
 					<c:if test="${not empty instances}">
 						<spring:message code="ui.home_service.page.title.service.instance" />
-						<select id="selectedInstance" class="select" style="width: auto" onchange="showControls(this)">
+						<select id="selectedInstance" class="select" style="width: auto;margin-top:8px;" onchange="showControls(this)">
 							<!-- populate on service change -->
 						</select>
 					</c:if>
 					<c:if test="${not empty instances}">
-						<select id="hiddeninstances" class="select" style="display: none">
+						<select id="hiddeninstances" class="select" style="display: none;margin-top:8px;">
 							<c:forEach var="instance" items="${instances}" varStatus="status">
 								<option value="${instance.service.uuid}.${instance.uuid}">${instance.name}</option>
 							</c:forEach>

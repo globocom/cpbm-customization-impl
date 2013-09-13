@@ -1,8 +1,7 @@
-/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 
 
 $(document).ready(function() {
-
   $('#resourceType').change(function() {
     step2ResourceTypeChanged();
   });
@@ -40,8 +39,9 @@ $(document).ready(function() {
       async : false,
       success : function(result) {
         for ( var i = 0; i < result.length; i++) {
-          constrOpts.push('<option value="', result[i], '">',
-              result[i], '</option>');
+          var constrt = result[i];
+          constrOpts.push('<option value="', constrt, '">',
+              commmonmessages[constrt], '</option>');
         }
         $("#productBundle\\.businessConstraint").html(constrOpts.join(''));
       },
@@ -260,7 +260,18 @@ $(document).ready(function() {
 		  });   
 		}
 		});  
-	
+
+  $(".morelink").live("click", function(event) {
+    $(this).prevAll(".descp").switchClass("ellipsis", "dummydummy31415926535", 500);
+    $(this).hide();
+    $(this).nextAll(".lesslink").show();
+  });
+
+  $(".lesslink").live("click", function(event) {
+    $(this).prevAll(".descp").switchClass("dummydummy31415926535", "ellipsis", 500);
+    $(this).hide();
+    $(this).prevAll(".morelink").show();
+  });
 });
 
 /**
@@ -441,14 +452,13 @@ function addBundleNext(current) {
     
           $.ajax({
             type : "GET",
-            url : "/portal/portal/productBundles/getComponents",
+            url : "/portal/portal/productBundles/get_filters_and_components",
             data : {"resourceType": resTypeId},
             dataType : "json",
             async : false,
             success : function(components) {
-    
               //XXX step3 should not show if no components
-              if (components == null || components.length == 0) {
+              if (components == null || (components["filters"].length == 0 && components["components"].length == 0)) {
                 var $nextstepitem = $("#" + nextstep);
                 nextstep = $nextstepitem.find("#nextstep").val();
                 $("#spinning_wheel_cpb").hide();
@@ -460,126 +470,227 @@ function addBundleNext(current) {
               }
     
               var compListHtml = "";
-              for ( var i = 0; i < components.length; i++) {
-                var component = components[i];
-  
-                var compValBlock = $("#componentValues").find("#componentValuesBlock").clone();
-                $.ajax({
-                  type : "GET",
-                  url : "/portal/portal/productBundles/getComponentValue",
-                  data : {"component": component, "resourceType": resTypeId, "serviceInstance": serviceInstanceId},
-                  dataType : "json",
-                  async : false,
-                  success : function(values) {
-                    //XXX still there would be a case where step 3 would show blank.
-                    //    think why?
-                    if (values == null || values.length == 0){
-                      return;
-                    }
-
-                    compListHtml += '<li onclick="javascript:showComponentValues('+ "'"+ component+"'" + ');" class="widget_navigationlist" id="componentLeftPanel_'+ component + 
-                    '"><span style="margin-top:4px;"></span><span componentid="'+ component + '" class="title">'+ l10resourceTypeAndComponentNames[component + "-name"] + '</span></li>';
-  
-  
-                    compValBlock.attr("id", "componenttypeValues." + component);
-
-                    var compAssocHtml = "";
-                    var compValuesHtml = "";
-
-                    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    // FOR BUNDLE CREATE
-                    if(bundle_action == "create"){
-                      for ( var k = 0; k < associations.length; k++) {
-                        var checked = "";
-                        if(k == 0){
-                          checked = 'checked="checked"';
-                        }
-                        compAssocHtml += '<div style="float:left; width:20px"><input type="radio" '+ checked +' value="'+
-                                          associations[k]+'" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">'+
-                                          '<label>'+ associations[k] +'</label></div>';
+              var keys = ["filters", "components"];
+              for (var index = 0; index < keys.length; index++) {
+                var key = keys[index];
+                for ( var i = 0; i < components[key].length; i++) {
+                  var component = components[key][i];
+    
+                  var compValBlock = $("#componentValues").find("#componentValuesBlock").clone();
+                  var actionUrl; 
+                  if (key == "filters") {
+                    actionUrl = "/portal/portal/productBundles/get_filter_value";
+                  } else if (key == "components") {
+                    actionUrl = "/portal/portal/productBundles/getComponentValue";
+                  }
+                  $.ajax({
+                    type : "GET",
+                    url : actionUrl,
+                    data : {"component": component, "resourceType": resTypeId, "serviceInstance": serviceInstanceId},
+                    dataType : "json",
+                    async : false,
+                    success : function(values) {
+                      //XXX still there would be a case where step 3 would show blank.
+                      //    think why?
+                      if (values == null || values.length == 0){
+                        return;
                       }
-                      compValBlock.find("#compAsscoiation").html(compAssocHtml);
   
-                      for ( var j = 0; j < values.length; j++) {
-                        var oddOrEven = "odd";
-                        if(j % 2 == 0){
-                          oddOrEven = "even";
-                        }
-                          compValuesHtml += '<div style="width: 468px;" class="widget_grid details ' + oddOrEven + 
-                          '" compValue="' + values[j].value +'" compValueName="'+values[j].name+'"><div onclick="javascript:onClickOfWidgetCheckbox(this);" class="widget_checkbox widget_checkbox_wide"><span class="unchecked"></span></div>'+
-                          '<div style="margin:0; width: 400px;" class="widget_grid_description"><span class="ellipsis" style="width: 390px;" title="'+values[j].name+'"><strong>'+values[j].name+'</strong></span></div></div>';
-                      }
-                    } else if(bundle_action == "edit"){
-
+                      compListHtml += '<li onclick="javascript:showComponentValues('+ "'"+ component+"'" + ');" class="widget_navigationlist" id="componentLeftPanel_'+ component + 
+                      '"><span style="margin-top:4px;"></span><span componentid="'+ component + '" class="title">'+ l10resourceTypeAndComponentNames[component + "-name"] + '</span></li>';
+    
+    
+                      compValBlock.attr("id", "componenttypeValues." + component);
+  
+                      var compAssocHtml = "";
+                      var compValuesHtml = "";
+  
                       ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                      // FOR BUNDLE EDIT
-
-                      // Check if assoictaion is already there
-                      var associationAlreadyThere = "";
-                      if(provisionalConstraints != null){
-                        for( var m = 0 ; m < provisionalConstraints.length; m++){
-                          if(provisionalConstraints[m].componentName == component){
-                            associationAlreadyThere = provisionalConstraints[m].association;
-                            break;
+                      // FOR BUNDLE CREATE
+                      if(bundle_action == "create"){
+                        for ( var k = 0; k < associations.length; k++) {
+                          var checked = "";
+                          if(k == 0){
+                            checked = 'checked="checked"';
                           }
+                          compAssocHtml += '<div style="float:left; width:20px"><input type="radio" '+ checked +' value="'+
+                                            associations[k]+'" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">'+
+                                            '<label>'+ associations[k] +'</label></div>';
                         }
-                      }
-
-                      for ( var k = 0; k < associations.length; k++) {
-                        var checked = "";
-                        if(k == 0 && associationAlreadyThere == ""){
-                          checked = 'checked="checked"';
-                        } else if(associationAlreadyThere.toLowerCase() == associations[k].toLowerCase()){
-                          checked = 'checked="checked"';
+                        compValBlock.find("#compAsscoiation").html(compAssocHtml);
+    
+                        for ( var j = 0; j < values.length; j++) {
+                          var extras = getFormattedDisplayAttribtutesString(values[j].displayAttributes);
+                          if(isBlank(extras)) {
+                            extras = getFormattedAttribtutesString(values[j].attributes);
+                          }
+  
+                          var displayMoreLink = "none";
+                          if(extras.length > 65) {
+                            displayMoreLink = "inline";
+                          }
+                          
+                          var oddOrEven = "odd";
+                          if(j % 2 == 0){
+                            oddOrEven = "even";
+                          }
+                            compValuesHtml += 
+                                      '<div ' + 
+                                          'style="width: 468px;" ' + 
+                                          'class="widget_grid details ' + oddOrEven + '" ' + 
+                                          'compValue="' + values[j].value +'" ' + 
+                                          'compValueName="'+values[j].name+'">' + 
+                                        '<div ' + 
+                                            'onclick="javascript:onClickOfWidgetCheckbox(this);" ' + 
+                                            'class="widget_checkbox widget_checkbox_wide">' + 
+                                          '<span class="unchecked"></span>' + 
+                                        '</div>' +
+                                        '<div ' + 
+                                            'style="margin:0; width: 400px; padding-bottom: 5px;" ' + 
+                                            'class="widget_grid_description">' + 
+                                          '<span ' + 
+                                              'class="ellipsis" ' + 
+                                              'style="width: 390px;" ' + 
+                                              'title="'+values[j].name+'"><strong>'+values[j].name+'</strong>' + 
+                                          '</span>' + 
+                                          '<div> ' + 
+                                            '<span class="descp ellipsis subtxt">' + extras + '</span>' + 
+                                            '<a class="morelink" href="javascript:void(0);" style="display:'+displayMoreLink+';">more..</a>' + 
+                                            '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' + 
+                                          '</div>' + 
+                                        '</div>' + 
+                                      '</div>';
                         }
-                        compAssocHtml += '<div style="float:left; width:20px"><input type="radio" '+ checked +' value="'+
-                                          associations[k]+'" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">'+
-                                          '<label>'+ associations[k] +'</label></div>';
-                      }
-                      compValBlock.find("#compAsscoiation").html(compAssocHtml);
-
-
-                      for ( var j = 0; j < values.length; j++) {
-                        var oddOrEven = "odd";
-                        if(j % 2 == 0){
-                          oddOrEven = "even";
-                        }
-
-                        var constraintFound = null;
-
+                      } else if(bundle_action == "edit"){
+  
+                        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        // FOR BUNDLE EDIT
+  
+                        // Check if assoictaion is already there
+                        var associationAlreadyThere = "";
                         if(provisionalConstraints != null){
-                          for( var m = 0 ; m < provisionalConstraints.length ;m++){
-                            var constraint = provisionalConstraints[m];
-                            if(constraint.value == values[j].value && constraint.componentName == component){
-                              constraintFound = constraint;
+                          for( var m = 0 ; m < provisionalConstraints.length; m++){
+                            if(provisionalConstraints[m].componentName == component){
+                              associationAlreadyThere = provisionalConstraints[m].association;
+                              break;
                             }
                           }
                         }
-                        if(constraintFound != null){
-                          compValuesHtml += '<div style="width: 468px;" class="widget_grid details ' + oddOrEven + 
-                          '" compValue="' + values[j].value  +'" compValueName="'+values[j].name+'" dbId="'+ constraintFound.id +'"><div onclick="javascript:onClickOfWidgetCheckbox(this);" class="widget_checkbox widget_checkbox_wide"><span class="checked"></span></div>'+
-                          '<div style="margin:0; width: 400px;" class="widget_grid_description"><span class="ellipsis" style="width: 390px;" title="'+values[j].name+'"><strong>'+values[j].name+'</strong></span></div></div>';
+  
+                        for ( var k = 0; k < associations.length; k++) {
+                          var checked = "";
+                          if(k == 0 && associationAlreadyThere == ""){
+                            checked = 'checked="checked"';
+                          } else if(associationAlreadyThere.toLowerCase() == associations[k].toLowerCase()){
+                            checked = 'checked="checked"';
+                          }
+                          compAssocHtml += '<div style="float:left; width:20px"><input type="radio" '+ checked +' value="'+
+                                            associations[k]+'" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">'+
+                                            '<label>'+ associations[k] +'</label></div>';
                         }
-                        else{
-                          compValuesHtml += '<div style="width: 468px;" class="widget_grid details ' + oddOrEven + 
-                          '" compValue="' + values[j].value  +'" compValueName="'+values[j].name+'" dbId="-1"><div onclick="javascript:onClickOfWidgetCheckbox(this);" class="widget_checkbox widget_checkbox_wide"><span class="unchecked"></span></div>'+
-                          '<div style="margin:0; width: 400px;" class="widget_grid_description"><span class="ellipsis" style="width: 390px;" title="'+values[j].name+'"><strong>'+values[j].name+'</strong></span></div></div>';
-                        }
+                        compValBlock.find("#compAsscoiation").html(compAssocHtml);
+  
+  
+                        for ( var j = 0; j < values.length; j++) {
+                          var extras = getFormattedDisplayAttribtutesString(values[j].displayAttributes);
+                          if(isBlank(extras)) {
+                            extras = getFormattedAttribtutesString(values[j].attributes);
+                          }
                           
+                          var displayMoreLink = "none";
+                          if(extras.length > 65) {
+                            displayMoreLink = "inline";
+                          }
+                          
+                          var oddOrEven = "odd";
+                          if(j % 2 == 0){
+                            oddOrEven = "even";
+                          }
+  
+                          var constraintFound = null;
+  
+                          if(provisionalConstraints != null){
+                            for( var m = 0 ; m < provisionalConstraints.length ;m++){
+                              var constraint = provisionalConstraints[m];
+                              if(constraint.value == values[j].value && constraint.componentName == component){
+                                constraintFound = constraint;
+                              }
+                            }
+                          }
+                          if(constraintFound != null){
+                            compValuesHtml += 
+                              '<div ' + 
+                                  'style="width: 468px;" ' + 
+                                  'class="widget_grid details ' + oddOrEven + '" ' + 
+                                  'compValue="' + values[j].value +'" ' + 
+                                  'dbId="'+ constraintFound.id +'" ' + 
+                                  'compValueName="'+values[j].name+'">' + 
+                                '<div ' + 
+                                    'onclick="javascript:onClickOfWidgetCheckbox(this);" ' + 
+                                    'class="widget_checkbox widget_checkbox_wide">' + 
+                                  '<span class="checked"></span>' + 
+                                '</div>' +
+                                '<div ' + 
+                                    'style="margin:0; width: 400px; padding-bottom: 5px;" ' + 
+                                    'class="widget_grid_description">' + 
+                                  '<span ' + 
+                                      'class="ellipsis" ' + 
+                                      'style="width: 390px;" ' + 
+                                      'title="'+values[j].name+'"><strong>'+values[j].name+'</strong>' + 
+                                  '</span>' + 
+                                  '<div> ' + 
+                                    '<span class="descp ellipsis subtxt">' + extras + '</span>' + 
+                                    '<a class="morelink" href="javascript:void(0);" style="display:'+displayMoreLink+';">more..</a>' + 
+                                    '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' + 
+                                  '</div>' + 
+                                '</div>' + 
+                              '</div>';
+                          }
+                          else{
+                            compValuesHtml += 
+                              '<div ' + 
+                                  'style="width: 468px;" ' + 
+                                  'class="widget_grid details ' + oddOrEven + '" ' + 
+                                  'compValue="' + values[j].value +'" ' + 
+                                  'dbId="-1" ' + 
+                                  'compValueName="'+values[j].name+'">' + 
+                                '<div ' + 
+                                    'onclick="javascript:onClickOfWidgetCheckbox(this);" ' + 
+                                    'class="widget_checkbox widget_checkbox_wide">' + 
+                                  '<span class="unchecked"></span>' + 
+                                '</div>' + 
+                                '<div ' + 
+                                    'style="margin:0; width: 400px; padding-bottom: 5px;" ' + 
+                                    'class="widget_grid_description">' + 
+                                  '<span ' + 
+                                      'class="ellipsis" ' + 
+                                      'style="width: 390px;" ' + 
+                                      'title="'+values[j].name+'"><strong>'+values[j].name+'</strong>' + 
+                                  '</span>' + 
+                                  '<div> ' + 
+                                    '<span class="descp ellipsis subtxt">' + extras + '</span>' + 
+                                    '<a class="morelink" href="javascript:void(0);">more..</a>' + 
+                                    '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' + 
+                                  '</div>' + 
+                                '</div>' + 
+                              '</div>';
+                          }
+                            
+                        }
                       }
+  
+                      //push footer
+                      compValuesHtml += '<div class="error" style="display: none" id="componentsError[' + "'" + component + "'" + ']"></div>';
+  
+                      compValBlock.find("#compValuesList").html(compValuesHtml);
+                      $("#componentValues").append(compValBlock);
+                    },
+                    error : function(XMLHttpRequest) {
+                      //TODO: fix this
+                      alert(XMLHttpRequest.responseText);
                     }
-
-                    //push footer
-                    compValuesHtml += '<div class="error" style="display: none" id="componentsError[' + "'" + component + "'" + ']"></div>';
-
-                    compValBlock.find("#compValuesList").html(compValuesHtml);
-                    $("#componentValues").append(compValBlock);
-                  },
-                  error : function(XMLHttpRequest) {
-                    //TODO: fix this
-                    alert(XMLHttpRequest.responseText);
-                  }
-                });
+                  });
+                }
               }
 
               $("#bundleComponents").append(compListHtml);
@@ -1972,7 +2083,7 @@ function viewplannedcharges(current){
 }
 
 function editplannedCharges(current){
-  initDialog("dialog_edit_planned_charges",905,600);
+  initDialog("dialog_edit_planned_charges",950,600);
   var actionurl = productBundlesUrl+"/editplannedcharges";
     $.ajax( {
       type : "GET",
@@ -2341,4 +2452,13 @@ function fetchBundleList(currentPage, searchPattern){
         handleError(XMLHttpResponse);
       }
   });
+}
+function hideUnlimitedEntitlementCheckBoxIfNecessary(sel){
+  var unlimitedallow = $("#productId").find(':selected').attr('unlimitedallow');
+  if(unlimitedallow == "false"){
+    $("#unlimitedEntitlementCheckBox").hide();
+  }else{
+    $("#unlimitedEntitlementCheckBox").show();
+  }
+
 }

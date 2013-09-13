@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -73,7 +73,7 @@
     <br/><br/>
     <ol>
       <li style="margin:10px 0 0 10px;">
-        <span style="color:#111;font-weight: bold; width:30px; margin:4px 0 0 8px;">
+        <span style="color:#111;font-weight: bold; width:40px; margin:4px 0 0 8px;">
           <spring:message code="label.date"/>&nbsp;&nbsp;
         </span>
         <div style="margin:0 0 0 20px;" class="mandatory_wrapper">

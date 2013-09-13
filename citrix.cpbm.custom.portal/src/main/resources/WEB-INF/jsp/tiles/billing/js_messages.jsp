@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
@@ -23,7 +23,8 @@ var i18n = {
         street1 : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.street1"/>',
         city : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.city"/>',
         postalCode : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.postalCode"/>',
-        country : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.country"/>'
+        country : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.country"/>',
+        state : '<spring:message javaScriptEscape="true" code="js.errors.creditCard.creditCardAddress.state"/>'
       }
     },
     invoicePayAmount : '<spring:message javaScriptEscape="true" code="js.errors.invoicePayAmount"/>',

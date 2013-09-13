@@ -1,4 +1,4 @@
-/*Copyright (C) 2012 Citrix Systems, Inc.  All rights reserved*/
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 
 $(document).ready(function () {
   //Enable or leave the buttons
@@ -22,10 +22,10 @@ $(document).ready(function () {
           diff = selected_tab_offset - offset + 30;
           if (selected_tab_offset == last_tab_offset) {
               // Hide the 'next' button
-              $('.next', this.parentNode).css('visibility', 'hidden');
+              $('.thirdlevel_slidingbutton.next', this.parentNode).css('visibility', 'hidden');
           }
       }
-      $('.prev', this.parentNode).css('visibility', 'visible');
+      $('.thirdlevel_slidingbutton.prev', this.parentNode).css('visibility', 'visible');
       //move the menu
       $("#items_container").find("ul", $(this).parent()).animate({
           marginLeft: '-=' + diff
@@ -46,7 +46,7 @@ $(document).ready(function () {
           // Hide this
           $(this).css('visibility', 'hidden');
       }
-      $('.prev', this.parentNode).css('visibility', 'visible');
+      $('.thirdlevel_slidingbutton.prev', this.parentNode).css('visibility', 'visible');
 
       $("#items_container").find("ul", $(this).parent()).animate({
           marginLeft: "-=" + diff
@@ -62,7 +62,7 @@ $(document).ready(function () {
           $(this).css('visibility', 'hidden');
           diff = offset;
       }
-      $('.next', this.parentNode).css('visibility', 'visible');
+      $('.thirdlevel_slidingbutton.next', this.parentNode).css('visibility', 'visible');
 
       $("#items_container").find("ul", $(this).parent()).animate({
           marginLeft: '+=' + diff

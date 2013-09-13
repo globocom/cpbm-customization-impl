@@ -1,14 +1,14 @@
-/* Copyright (C) 2013 Citrix Systems, Inc. All rights reserved. */
+/* Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. */
 $(document).ready(function() {
-  
+
   activateThirdMenuItem("l3_home_connectors_oss_tab");
-  
+
 
   $("a.filters").bind("click", function(event) {
-    var category = $(this).attr('id'); 
+    var category = $(this).attr('id');
     showSelectedCategory(category);
   });
-  
+
   $(".servicedetails").bind("click", function(event) {
     var id = $(this).attr('id');
     initDialog("dialog_service_details", 720);
@@ -22,7 +22,7 @@ $(document).ready(function() {
         $thisDialog.bind("dialogbeforeclose", function(event, ui) {
           $thisDialog.empty();
         });
-        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel}); 
+        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
         $thisDialog.dialog('open');
       },
       error : function(error) {
@@ -30,7 +30,7 @@ $(document).ready(function() {
       }
     });
   });
-  
+
   $(".add_button.active.edit").live("click", function(event) {
     var id = $(this).attr('id').substr(10);
     $("#spinning_wheel").show();
@@ -43,7 +43,7 @@ $(document).ready(function() {
         $(".service_listpanel").hide();
         $(".widgetcatalog_filterpanel").hide();
         $("#spinning_wheel").hide();
-        
+
         var newpos = $("#main") .offset();
         window.scrollTo(newpos.left, newpos.top);
       },
@@ -57,22 +57,22 @@ $(document).ready(function() {
     var id = $(this).attr('id').substr(10);
     showAddInstanceForm(id);
   });
-  
+
   $(".termsandconditions").bind("click", function(event) {
-	  var id = $(this).parents('.servicelist.mainbox').attr('serviceid');
-	  dialog_enable_service(id);
+    var id = $(this).parents('.servicelist.mainbox').attr('serviceid');
+    dialog_enable_service(id);
   });
 
   $("#tncAccept").live("click", function(event) {
-	  if($(this).is(":checked")){
-		  $("#tncAcceptError").text("");
-	  }
+    if($(this).is(":checked")){
+      $("#tncAcceptError").text("");
+    }
   });
-  
+
   $("a.cancel").live("click", function(event) {
-	  closeDialog();
+    closeDialog();
   });
-  
+
   $(".toggleButton").iButton({
     labelOn: dictionary.toggleButtonEnable,
     labelOff: dictionary.toggleButtonDisable,
@@ -84,9 +84,9 @@ $(document).ready(function() {
             newvalue = false;
         }
         initDialogWithOK("dialog_info", 350, false);
-	$("#dialog_info").dialog("option", "height", 150);
+  $("#dialog_info").dialog("option", "height", 150);
         var $thisDialog = $("#dialog_info");
-        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel}); 
+        dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
         $.ajax({
 
             type: "POST",
@@ -112,7 +112,7 @@ $(document).ready(function() {
 
 function dialog_enable_service(id) {
   initDialog("dialog_enable_service", 785);
-  var actionurl = connectorPath + "/enableService?id=" + id;
+  var actionurl = connectorPath + "/enable_service?id=" + id;
   $.ajax({
     type : "GET",
     url : actionurl,
@@ -124,11 +124,11 @@ function dialog_enable_service(id) {
         $thisDialog.empty();
       });
       $currentDialog = $thisDialog;
-      dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel}); 
+      dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
       $currentDialog.dialog('open');
     },
     error : function() {
-      
+
     }
   });
 }
@@ -161,7 +161,7 @@ function createInstance() {
 
   $.ajax({
     type : "POST",
-    url : connectorPath + "/createInstance",
+    url : connectorPath + "/create_instance",
     data : {
       "configProperties" : JSON.stringify(configProperties),
       "id" : uuid,
@@ -206,81 +206,81 @@ function showSelectedCategory(category) {
 }
 
 function dialog_enable_service(id) {
-	initDialog("dialog_enable_service");
-	var actionurl = connectorPath + "/enableService?id=" + id;
-	$("#spinning_wheel").show();
-	$.ajax({
-		type : "GET",
-		url : actionurl,
-		dataType : "html",
-		success : function(html) {
-			var $thisDialog = $("#dialog_enable_service");
-			$thisDialog.dialog("option",{ height: "auto", width : 785});
-			$thisDialog.html(html);
-			$thisDialog.bind("dialogbeforeclose", function(event, ui) {
-				$thisDialog.empty();
-			});
-			$currentDialog = $thisDialog;
-			 dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel}); 
-			$currentDialog.dialog('open');
-			$("#spinning_wheel").hide();
-		},
-		error : function() {
-			$("#spinning_wheel").hide();
-		}
-	});
+  initDialog("dialog_enable_service");
+  var actionurl = connectorPath + "/enable_service?id=" + id;
+  $("#spinning_wheel").show();
+  $.ajax({
+    type : "GET",
+    url : actionurl,
+    dataType : "html",
+    success : function(html) {
+      var $thisDialog = $("#dialog_enable_service");
+      $thisDialog.dialog("option",{ height: "auto", width : 785});
+      $thisDialog.html(html);
+      $thisDialog.bind("dialogbeforeclose", function(event, ui) {
+        $thisDialog.empty();
+      });
+      $currentDialog = $thisDialog;
+       dialogButtonsLocalizer($thisDialog, {'OK':g_dictionary.dialogOK, 'Cancel': g_dictionary.dialogCancel});
+      $currentDialog.dialog('open');
+      $("#spinning_wheel").hide();
+    },
+    error : function() {
+      $("#spinning_wheel").hide();
+    }
+  });
 }
 
 function goToNextStep(current) {
-	var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
-	if(currentstep == "step1" && $("#tncAccept").is(':checked')==false){
-		$("#tncAcceptError").text(dictionary.tncAcceptMessage);
-	}else{
-		$("#spinning_wheel").show();
-		var id = $("#serviceParam").val();
-		$.ajax({
-			type : "POST",
-			url : connectorPath + "/enableService",
-			data : {
-				"id" : id,
-				"profiledetails" : ""
-			},
-			dataType : "text",
-			success : function(status) {
-				if(status =='success'){
-					showAddInstanceForm(id);
-					$("#reloadlist").val(true);
-					$("#dialog_enable_service").dialog("close");
-				}
-				$("#spinning_wheel").hide();				
-			},
-			error : function(status) {
-				$("#spinning_wheel").hide();
-			}
-		});
-	}
+  var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
+  if(currentstep == "step1" && $("#tncAccept").is(':checked')==false){
+    $("#tncAcceptError").text(dictionary.tncAcceptMessage);
+  }else{
+    $("#spinning_wheel").show();
+    var id = $("#serviceParam").val();
+    $.ajax({
+      type : "POST",
+      url : connectorPath + "/enable_service",
+      data : {
+        "id" : id,
+        "profiledetails" : ""
+      },
+      dataType : "text",
+      success : function(status) {
+        if(status =='success'){
+          showAddInstanceForm(id);
+          $("#reloadlist").val(true);
+          $("#dialog_enable_service").dialog("close");
+        }
+        $("#spinning_wheel").hide();
+      },
+      error : function(status) {
+        $("#spinning_wheel").hide();
+      }
+    });
+  }
 }
 
 function showAddInstanceForm(id){
-	$("#spinning_wheel").show();
-	$.ajax({
-		type : "GET",
-		url : connectorPath + "/" + type + "?id=" + id,
-		dataType : 'html',
-		success : function(html) {
-			$(".service_detailpanel").html(html).show();
-			$(".service_listpanel").hide();
-			$(".widgetcatalog_filterpanel").hide();
-			$("#spinning_wheel").hide();
-			var newpos = $("#main").offset();
-			window.scrollTo(newpos.left, newpos.top);
-		},
-		error : function(error) {
-			$("#spinning_wheel").hide();
-		}
-	});
+  $("#spinning_wheel").show();
+  $.ajax({
+    type : "GET",
+    url : connectorPath + "/" + type + "?id=" + id,
+    dataType : 'html',
+    success : function(html) {
+      $(".service_detailpanel").html(html).show();
+      $(".service_listpanel").hide();
+      $(".widgetcatalog_filterpanel").hide();
+      $("#spinning_wheel").hide();
+      var newpos = $("#main").offset();
+      window.scrollTo(newpos.left, newpos.top);
+    },
+    error : function(error) {
+      $("#spinning_wheel").hide();
+    }
+  });
 }
 
 function closeDialog() {
-	$("#dialog_enable_service").dialog("close");
+  $("#dialog_enable_service").dialog("close");
 }

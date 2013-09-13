@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2013 Citrix Systems, Inc. All rights reserved --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
@@ -9,6 +9,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <script type="text/javascript" src="<%=request.getContextPath()%>/resources/all.js"></script>
+<link rel="stylesheet" href="<%=request.getContextPath() %>/css/bootstrap.min.css" type="text/css">
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/bootstrap.min.js"></script>
 <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/resources/all.css"/>
 <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main.css"/>
 <script type="text/javascript" src="<%=request.getContextPath()%>/csrf_js_servlet"></script>
@@ -50,6 +52,7 @@ var g_dictionary = {
       <input type="hidden" id="channelId" value="<c:out value="${channel.id}"/>" />
       <input type="hidden" id="anonymousBrowsing" value="<c:out value="${anonymousBrowsing}"/>" />
         </div>
+        <div class="clearboth"></div>
         
         <tiles:insertAttribute name="createsubscription" ignore="true" />
     </div>

@@ -1,4 +1,4 @@
-<%-- Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. --%>
+<!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
 <%@ page language="java" contentType="text/html; charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -29,7 +29,7 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
 <div class="dialog_formcontent">
   
     <div class="details_lightboxformbox" style="border-bottom-style:none;padding-bottom:0px;width:auto">
-    <spring:url value="/portal/health/addStatus" var="add_new_status_path" htmlEscape="false" />
+    <spring:url value="/portal/health/add_status" var="add_new_status_path" htmlEscape="false" />
     <form:form commandName="serviceNotificationForm" id="healthStatusForm" cssClass="ajaxform"  action="${add_new_status_path}" onsubmit="addNewStatus(event,this)">
       <form:input type="hidden" id="dateFormat" path="dateFormat"></form:input>
       
