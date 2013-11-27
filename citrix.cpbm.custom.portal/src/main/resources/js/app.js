@@ -3044,7 +3044,6 @@ function singleSignOn(tenantParam, serviceInstanceUUID) {
 function updateServiceInstanceItems(current, fn, tenantParam) {
   var serviceInstanceUUID = $(current).attr("id");
   $selectedServiceInstance = $("#selectedServiceInstance");
-  $("#serviceInstanceUuid").val(serviceInstanceUUID);
   $selectedServiceInstance.html($(current).text() + "<div class='downarrow' id='" + $(current).attr("id") + "'></div>");
   $("#serviceInstanceDropdownlist").css('display', 'none');
   fn(serviceInstanceUUID, tenantParam);

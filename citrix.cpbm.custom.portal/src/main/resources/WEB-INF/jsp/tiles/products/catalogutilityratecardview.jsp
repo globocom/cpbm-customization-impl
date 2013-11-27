@@ -78,12 +78,16 @@
                 <c:if test="${(currencyCount < 4 and noDialog) or !noDialog}">
                     <div class="widget_grid_cell" style="width:<c:out value="${currency_width}"/>">
                        <span class="celltext" style="margin-left: 10px;">
-                          <c:out value="${currency.sign}"/><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${fullProductPricingMap[channelPriceMap.key][currency]['catalog'].price}"/>
+                          <c:set var="productPrice" value="${channelPriceMap.value[currency]['catalog'].price}" />
+                          <c:if test="${empty productPrice }">
+                            <fmt:formatNumber var="productPrice" pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="0" />
+                          </c:if>
+                          <c:out value="${currency.sign}"/><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${productPrice}"/>
                           <br/>
                           <span style="font-style:italic; color:#666; margin-left: -4px; margin:right:2px" title="<spring:message code='label.reference.price'/>">(
                           <c:choose>
-                            <c:when test="${fullProductPricingMap[channelPriceMap.key][currency]['rpb'] != null}">
-                              <c:out value="${currency.sign}"/><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${fullProductPricingMap[channelPriceMap.key][currency]['rpb'].price}"/>
+                            <c:when test="${channelPriceMap.value[currency]['rpb'] != null}">
+                              <c:out value="${currency.sign}"/><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${channelPriceMap.value[currency]['rpb'].price}"/>
                             </c:when>
                             <c:otherwise>
                               <spring:message code="ui.label.na"/>

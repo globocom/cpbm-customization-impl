@@ -376,7 +376,10 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
    * @param request
    * @return :- Jsp Prompting user to enter password
    */
-  @RequestMapping(value = "/verify_user", method = RequestMethod.GET)
+  // verifyUser mapping is to have upgrade compatibility for email verifyUser
+  @RequestMapping(value = {
+      "/verify_user", "/verifyUser"
+  }, method = RequestMethod.GET)
   public String updatePasswordAndVerifyEmail(@RequestParam(value = "a", required = true) final String auth,
       @RequestParam(value = "i", required = true) final String userParam, final HttpServletRequest request,
       ModelMap model, HttpSession session) {

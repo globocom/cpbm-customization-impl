@@ -577,7 +577,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
         .isAccountExistInPaymentGateway(effectiveTenant));
     try {
       CreditCard creditCard = form.getCreditCard();
-      billingService.editCreditCard(effectiveTenant, creditCard, request.getRemoteAddr(), request.getLocale(),
+      billingService.editCreditCard(effectiveTenant, creditCard, getRemoteUserIp(request), request.getLocale(),
           getCurrentUser());
     } catch (CreditCardFraudCheckException ex) {
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

@@ -8,6 +8,7 @@
 var productsUrl = "<%=request.getContextPath() %>/portal/products/";
 var productretireurl = "<%=request.getContextPath() %>/portal/products/retireproduct";
 
+initDialog("dialog_retire_product", 550);
 function retirePrdouct(current){
   initDialog("dialog_retire_product", 550);
   $("#dialog_retire_product").dialog("option", "closeOnEscape", false);
@@ -18,11 +19,7 @@ function retirePrdouct(current){
        {
         "Yes" : function() {
           $(this).dialog("close");
-          initDialog("spinning_wheel_for_retire", 550);
-          $("#spinning_wheel_for_retire").dialog("option", "closeOnEscape", false);
-          $("#spinning_wheel_for_retire").dialog("option", "minHeight", 215);
-          $("#spinning_wheel_for_retire").dialog("option", "right", 20);
-          $("#spinning_wheel_for_retire").dialog("open");
+          $(this).dialog("destroy"); 
           $.ajax({
             url : productretireurl,
             dataType : "html",
@@ -31,7 +28,7 @@ function retirePrdouct(current){
             async : false,
             cache : false,
             success : function(result) {
-              $("#spinning_wheel_for_retire").dialog("close");
+              
               if(result == "success"){
                 initDialog("dialog_retire_product_success", 390);
                 $("#dialog_retire_product_success").dialog("option", "closeOnEscape", false);
@@ -66,7 +63,6 @@ function retirePrdouct(current){
               }             
             },
             error : function() {
-              $("#spinning_wheel_for_retire").dialog("close");
               initDialog("dialog_retire_product_failure", 390);
               $("#dialog_retire_product_failure").dialog("option", "closeOnEscape", false);
               $("#dialog_retire_product_failure").dialog("option", "buttons",
@@ -78,7 +74,6 @@ function retirePrdouct(current){
               $("#dialog_retire_product_failure").dialog("open");             
             }
           });
-          $("#spinning_wheel_for_retire").dialog("close");
         },
         "No" : function() {
           $(this).dialog("close");
@@ -87,9 +82,6 @@ function retirePrdouct(current){
           $("#dialog_retire_product_nochosen").dialog("option", "buttons",
             {"Ok": function(){
               $(this).dialog("close");
-              initDialog("spinning_wheel_for_retire", 390);
-              $("#spinning_wheel_for_retire").dialog("option", "closeOnEscape", false);
-              $("#spinning_wheel_for_retire").dialog("open");
               $.ajax({
                   url : productretireurl,
                   dataType : "html",
@@ -98,7 +90,6 @@ function retirePrdouct(current){
                   async : false,
                   cache : false,
                   success : function(result) {
-                    $("#spinning_wheel_for_retire").dialog("close");
                     if(result == "success"){
                       initDialog("dialog_retire_product_success", 390);
                       $("#dialog_retire_product_success").dialog("option", "closeOnEscape", false);
@@ -123,7 +114,6 @@ function retirePrdouct(current){
                     }
                   },
                   error : function() {
-                    $("#spinning_wheel_for_retire").dialog("close");
                     initDialog("dialog_retire_product_failure", 390);
                     $("#dialog_retire_product_failure").dialog("option", "closeOnEscape", false);
                     $("#dialog_retire_product_failure").dialog("option", "buttons",
@@ -135,7 +125,6 @@ function retirePrdouct(current){
                     $("#dialog_retire_product_failure").dialog("open");
                   }
                 });
-                $("#spinning_wheel_for_retire").dialog("close");
             }
           });
           dialogButtonsLocalizer($("#dialog_retire_product_nochosen"), {'Ok': g_dictionary.dialogOk});
@@ -362,14 +351,3 @@ function retirePrdouct(current){
   </div>
 </div>
 
-<div id="spinning_wheel_for_retire" title='<spring:message htmlEscape="false" code="ui.products.label.retire.product"/>' style="display: none;">
-    <div class="widget_blackoverlay widget_rightpanel" style="top:0px;"></div>
-    <div class="widget_loadingbox widget_rightpanel" style="top:0px;">
-      <div class="widget_loaderbox">
-        <span class="bigloader"></span>
-      </div>
-      <div class="widget_loadertext">
-        <p id="in_process_text"><spring:message htmlEscape="false" code="label.loading"/> &hellip;</p>
-      </div>
-    </div>
-</div>

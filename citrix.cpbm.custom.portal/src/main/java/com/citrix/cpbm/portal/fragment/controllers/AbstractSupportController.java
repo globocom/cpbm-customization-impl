@@ -120,7 +120,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       List<Ticket> tickets = new ArrayList<Ticket>();
       Integer totalTickets = 0;
       String status = "All";
-      if (statusFilter != null) {
+      if (statusFilter != null && !statusFilter.equalsIgnoreCase("All")) {
         status = statusFilter;
         map.addAttribute("statusFilter", status.toUpperCase());
         logger.info(" filter by status = " + status);

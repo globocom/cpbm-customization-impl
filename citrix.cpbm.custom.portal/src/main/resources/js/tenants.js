@@ -1520,20 +1520,20 @@ function saveAcccountControls() {
     configProperty.value = $(this).attr("value");
     configProperties.push(configProperty);
   });
-  /*	$('input[id^="configbooleantrue"]:checked').each(function() {
-		var configProperty = new Object();
-		configProperty.name = $(this).attr("name");
-		configProperty.value = "true";
-		configProperties.push(configProperty);
-	});
+  $('input[id^="configbooleantrue"]:checked').each(function() {
+    var configProperty = new Object();
+    configProperty.name = $(this).attr("name");
+    configProperty.value = "true";
+    configProperties.push(configProperty);
+  });
 
-	$('input[id^="configbooleanfalse"]:checked').each(function() {
-		var configProperty = new Object();
-		configProperty.name = $(this).attr("name");
-		configProperty.value = "false";
-		configProperties.push(configProperty);
-	});
-*/
+  $('input[id^="configbooleanfalse"]:checked').each(function() {
+    var configProperty = new Object();
+    configProperty.name = $(this).attr("name");
+    configProperty.value = "false";
+    configProperties.push(configProperty);
+  });
+
   $.ajax({
     type: "POST",
     url: "/portal/portal/tenants/edit_account_limits",
@@ -1554,14 +1554,14 @@ function saveAcccountControls() {
             var value = $(this).attr("value");
             $limitdetails.find('#' + name).text(value);
           });
-          /*$('input[id^="configbooleantrue"]:checked').each(function() {
-						var name = $(this).attr("name");
-						$limitdetails.find('#' + name).text("true");			
-					});
-					$('input[id^="configbooleanfalse"]:checked').each(function() {
-						var name = $(this).attr("name");
-						$limitdetails.find('#' + name).text("false");		
-					});*/
+          $('input[id^="configbooleantrue"]:checked').each(function() {
+            var name = $(this).attr("name");
+            $limitdetails.find('#' + name).text("true");
+          });
+          $('input[id^="configbooleanfalse"]:checked').each(function() {
+            var name = $(this).attr("name");
+            $limitdetails.find('#' + name).text("false");		
+          });
         }
       } else {
         //TODO Need to display error if it fails

@@ -7,13 +7,24 @@
 <script type="text/javascript">
 <!--
 $(document).ready(function() {
+  $("#username").focus();
   setTimeout('$("#loginForm input:first").focus();', 1000);
   $('#login_button').click(function() {
     doLogin();
   });
   $(':input').keypress(function(e) {
     if (e.keyCode == 13) {
-      doLogin();
+      var usernameEntered = $("#username").val();
+      var passwordEntered = $("#passwordFilled").val();
+      if(usernameEntered == ""){
+        $("#username").focus();
+      }
+      else if(passwordEntered == ""){
+        $("#passwordFilled").focus();
+      }
+      else {
+        doLogin();
+      }
     }
   });
   
@@ -64,7 +75,7 @@ $(document).ready(function() {
 				          </li>  
 				          <li>
 				            <label><spring:message code="label.login.password"/></label>
-				            <input class="text" type="password" tabindex="2" name="j_password"  autocomplete="off" />
+				            <input class="text" type="password" tabindex="2" name="j_password"  id = "passwordFilled" autocomplete="off" />
 				          </li>
                   <c:if test="${showSuffixControl=='true'}">
                     <li>

@@ -20,7 +20,7 @@
   perPageValue = parseInt(perPageValue);
   bundlesLen = parseInt(bundlesLen);
   
-  $("#entitlements_click_next").live("click", function (event) {
+  $("#entitlements_click_next").die("click").live("click", function (event) {
     var currentPage = Number($("#entitlementsCurrentPage").val());
     var bundleCode = $('#bundleCode').val();
     var entitlementsPages = $('#entitlementsPages').val();
@@ -35,7 +35,7 @@
     }
   });
 
-  $("#entitlements_click_previous").live("click", function (event) {
+  $("#entitlements_click_previous").die("click").live("click", function (event) {
     var currentPage = Number($("#entitlementsCurrentPage").val());
     var filterDate = dateFormat($("#bundleEntitlementsHistoryId option:selected").val(),g_dictionary.filterDateFormat,false);
     var bundleCode = $('#bundleCode').val();

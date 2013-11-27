@@ -1457,7 +1457,7 @@ function initCreateSubscription() {
   function prepareSelectedCategory() {
 
     var refreshPage = function rePopulateCreateSubscription(serviceInstanceUuid, tenantParam) {
-      window.location = getPrefixedLocation($("#resourceType").val());
+      window.location = getPrefixedLocation($("#resourceType").val(), serviceInstanceUuid, tenantParam);
     };
 
     var selectedCategory = $("#selectedCategory").val();
@@ -1695,7 +1695,7 @@ function initCreateSubscription() {
   }
 
   function changeResourceType(selectedResourceType) {
-    window.location = getPrefixedLocation(selectedResourceType);
+    window.location = getPrefixedLocation(selectedResourceType, $("#serviceInstanceUuid").val(), $("#tenantParam").val());
   }
 
   function callBackAfterPromiseStep1() {
@@ -2193,8 +2193,8 @@ function enableProvisionButton(enable, msg) {
   }
 }
 
-function getPrefixedLocation(selectedResourceType) {
-  var locationPrefix = "/portal/portal/subscription/createsubscription";
+function getPrefixedLocation(selectedResourceType, serviceInstanceUuid, tenantParam) {
+  var locationPrefix = "";
   if ($("#anonymousBrowsing").val() == 'true') {
     locationPrefix = "/portal/portal/catalog/browse_catalog";
     var currencyCode = $("#selectedcurrencytext").html();
@@ -2211,18 +2211,17 @@ function getPrefixedLocation(selectedResourceType) {
     var revisionDate = $("#revisionDate").val();
     var currencyCode = $("#selectedcurrencytext").html();
     locationPrefix = locationPrefix + "?viewCatalog=true&revision=" + revision + "&channelParam=" + channelId +
-      "&currencyCode=" + currencyCode + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat
-    locationPrefix = locationPrefix + "&tenant=" + $("#tenantParam").val()
+      "&currencyCode=" + currencyCode + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat;
+    locationPrefix = locationPrefix + "&tenant=" + tenantParam;
   } else {
-    locationPrefix = locationPrefix + "?tenant=" + $("#tenantParam").val()
-    if (isPayAsYouGoChosen) {
-      locationPrefix += "&isPayAsYouGoChosen=true";
-    }
+    locationPrefix = "/portal/portal/subscription/createsubscription?tenant=" + tenantParam;
   }
-  if (selectedResourceType != null) {
+  if (selectedResourceType != null && serviceInstanceUuid == $("#serviceInstanceUuid").val()) {
+    // Reset the selected resource type in case service instance is changed (either of same category or different category)
+    // Because its not necessary that the new service instance has the resource type selected previously
     locationPrefix = locationPrefix + "&resourceType=" + selectedResourceType;
   }
-  locationPrefix = locationPrefix + "&serviceInstanceUUID=" + $("#serviceInstanceUuid").val()
+  locationPrefix = locationPrefix + "&serviceInstanceUUID=" + serviceInstanceUuid;
 
   return locationPrefix;
 }
