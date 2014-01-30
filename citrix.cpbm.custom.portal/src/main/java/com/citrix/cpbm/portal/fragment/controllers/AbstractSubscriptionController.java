@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -740,13 +741,13 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       map.addAttribute("channel", channel);
       map.addAttribute("currencies", currencies);
       map.addAttribute("anonymousBrowsing", true);
+      CurrencyValue currency = currencies.get(0);
       if (StringUtils.isNotBlank(currencyCode)) {
-        CurrencyValue currency = currencyValueService.locateBYCurrencyCode(currencyCode);
-        map.addAttribute("selectedCurrency", currency);
-      } else {
-        map.addAttribute("selectedCurrency", currencies.get(0));
+        currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
-
+      map.addAttribute("selectedCurrency", currency);
+      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode()).getDefaultFractionDigits());
+      
       final Tenant tenant = tenantService.getSystemTenant();
       final Channel finalChannel = channel;
       Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {
