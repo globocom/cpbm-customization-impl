@@ -34,7 +34,9 @@
   </c:forEach>
   
   var serviceUuid = '${serviceUuid}';
+  var currPrecision="<c:out value="${currencyFractionalDigitsLimit}"/>";
   </script>
+
 
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/products.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath()%>/resources/app.js"></script>
@@ -85,30 +87,30 @@
             <div class="widgetwizard_detailsbox sixstepswizard">
               <ul>
 
-                <li id="productname" style="height:38px;"><span class="label"><spring:message
+                <li id="productname"><span class="label"><spring:message
                       code="ui.products.label.create.name" /></span>
                   <div class="mandatory_wrapper">
-                    <form:input cssClass="text" path="product.name" tabindex="1" />
+                    <form:input cssClass="text" path="product.name" tabindex="1" maxlength="255"/>
                   </div>
-                  <div class="main_addnew_formbox_errormsg_popup" id="product.nameError" style="margin: -8px 0 0 155px;"></div>
+                  <div class="main_addnew_formbox_errormsg_popup" id="product.nameError" ></div>
                 </li>
 
-                <li id="productcode" style="height:38px;"><span class="label"><spring:message
+                <li id="productcode"><span class="label"><spring:message
                       code="ui.products.label.create.product.code" /></span>
                   <div class="mandatory_wrapper">
-                    <form:input cssClass="text" path="product.code" tabindex="2" />
+                    <form:input cssClass="text" path="product.code" tabindex="2" maxlength="64"/>
                   </div> <input id="product_code" type="hidden" value="<c:out  value="${productForm.product.code}" />" />
-                  <div class="main_addnew_formbox_errormsg_popup" id="product.codeError" style="margin: -8px 0 0 155px;"></div>
+                  <div class="main_addnew_formbox_errormsg_popup" id="product.codeError" ></div>
                 </li>
 
-                <li id="description" style="height:68px;"><span class="label"><spring:message
+                <li id="description"><span class="label"><spring:message
                       code="ui.products.label.create.product.description" /></span>
                   <div>
-                    <form:textarea cssClass="textarea" path="product.description" tabindex="4"></form:textarea>
+                    <form:textarea cssClass="textarea" path="product.description" tabindex="4" maxlength="4096"></form:textarea>
                   </div>
                 </li>
 
-                <li id="productCategory" style="height:38px;"><span class="label"><spring:message
+                <li id="productCategory"><span class="label"><spring:message
                       code="ui.products.label.create.product.category" /></span>
                   <div class="mandatory_wrapper">
                   <form:select tabindex="6" path="categoryID" title="${i18nCreditCardCountry}" cssClass="select">
@@ -119,13 +121,13 @@
                     </c:forEach>
                  </form:select>
                   </div>
-                  <div class="main_addnew_formbox_errormsg_popup" id="categoryError" style="margin: -8px 0 0 155px;"></div>
+                  <div class="main_addnew_formbox_errormsg_popup" id="categoryError" ></div>
                 </li>
                 
-                <li id="replacement_product_check" style="height:38px;">
+                <li id="replacement_product_check">
                 <div class="nonmandatory_wrapper">
-                   <input id="isReplacementProduct" class="text" type="checkbox" value="true" tabindex="8" style="width:auto;" name="isReplacementProduct">
-                   <span class="label" style="width: 450px; margin: 15px 0pt 0pt 10px;"><spring:message htmlEscape="false" code="ui.product.create.is.replacement" /></span>
+                   <input id="isNewProduct" class="text" type="checkbox" value="true" checked="checked" tabindex="8" style="width:auto;" name="isNewProduct">
+                   <span class="label" style="width: 450px; margin: 15px 0pt 0pt 10px;"><spring:message htmlEscape="false" code="ui.product.create.is.newProduct" /></span>
                    </div>
                 </li>
 
@@ -194,12 +196,13 @@
 
               <%-- row template for usage type --%>
               <div class="row highlighted" id="usageTypeAdd">
+                <input type="hidden" id="uom" name="uom" />
                 <div class="gridcell" style="width: 26%;">
-                  <select class="text" style="width: 100px;" tabindex="116" id="usagetype" onchange="changeUom(this)">
+                  <select class="text expandable-select" tabindex="116" id="usagetype" onchange="changeUom(this)">
                   </select>
                 </div>
                 <div class="gridcell" style="width: 40%;">
-                  <span class="gridtext" id="uom"></span>
+                  <span class="gridtext" id="uomtext"></span>
                 </div>
                 <div class="gridcell" style="width: 20%;">
                   <select class="select1" id="operator"><option value="combine">
@@ -215,11 +218,12 @@
               </div>
 
               <div class="row highlighted" id="usageTypeAdded" style="display:none">
+                <input type="hidden" id="uom" name="uom" />
                 <div class="gridcell" style="width: 26%;">
                   <span class="gridtext" value="" id="usagetype"></span>
                 </div>
                 <div class="gridcell" style="width: 41%;">
-                  <span class="gridtext" value="" id="uom"></span>
+                  <span class="gridtext" value="" id="uomtext"></span>
                 </div>
                 <div class="gridcell" style="width: 18%;">
                   <span class="gridtext" value="" id="operator"></span>
@@ -286,7 +290,7 @@
                   </div>
                 </div>
 
-                <div class="widgetwizard_detailsbox sixstepswizard gridbox griddescriptionbox" style="width: 630px;">
+                <div class="widgetwizard_detailsbox sixstepswizard gridbox griddescriptionbox" id="discriminatorsContainer" style="width: 630px;">
                     <div class="row header">
                       <div class="gridcell header" style="width:40%;">
                           <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.collect.usage.where" /></span>
@@ -315,12 +319,13 @@
                                </select>
                             </div>
 
-                          <div class="gridcell" style="width:20%; display:none;" id="grid_cell_discvalue_selectbox">
+                          <div class="gridcell  mandatory_wrapper" style="width:20%; display:none;" id="grid_cell_discvalue_selectbox">
                             <select class="select1 select_desc_name_class" id="discvalue_selectbox">
                               <option value="">
                                 <spring:message htmlEscape="false" code="label.choose" />
                               </option>
-                            </select> 
+                            </select>
+                            <div><label class="js_error error" style="width:150px;"></label></div> 
                           </div>
   
                           <div class="gridcell" style="width:20%;display: none;" id="grid_cell_discvalue_inputbox">
@@ -355,6 +360,7 @@
       <input type="hidden" id="serviceUsageTypes" name="serviceUsageTypes" value='{}' >
       <input type="hidden" id="usageTypeChanged" name="usageTypeChanged" value='true' >
       <input type="hidden" id="selectedUsageType" name="selectedUsageType">
+      <input type="hidden" id="isProductDiscrete" name="isProductDiscrete">
       <input type="hidden" id="showingScalesFor" name="showingScalesFor">
       <input type="hidden" id="originalScales" name="originalScales">
       <form:input type="hidden" path="product.uom" id="product.uom"/>
@@ -365,9 +371,9 @@
                 <div class="widgetwizard_stepscenterbar sixstepswizard">
                     <ul>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard first"><span class="steps completedsteps"><span class="stepsnumbers">1</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step1.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.product.step2.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step2.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step3.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.conversionFactor.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">4</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.product.conversionFactor.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps"><span class="stepsnumbers">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.add.charges.step.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps"><span class="stepsnumbers">6</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step6.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard last"><span class="steps last"><span class="stepsnumbers last">7</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.product.step5.title" /></span></li>                   
@@ -394,11 +400,11 @@
                 <div class="gridcell header" style="width: 25%;">
                   <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.required.products" /></span>
                 </div>
-                <div class="gridcell header" style="width: 25%;display:none" id="step4_customUnits">
+                <div class="gridcell header" style="width: 27%;display:none" id="step4_customUnits">
                   <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.custom.product.unit" /></span>
                 </div>
-                <div class="gridcell header" style="width: 25%;">
-                  <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.comversion.factor" /></spaan>
+                <div class="gridcell header" style="width: 23%;">
+                  <span class="gridtext header"><spring:message htmlEscape="false" code="ui.label.comversion.factor" /></span>
                 </div>
               </div>
 
@@ -409,12 +415,18 @@
                 <div class="gridcell" style="width: 25%;">
                   <select class="select1" id="step4_scale"style="width: 66%;"></select>
                 </div>
-                <div class="gridcell" style="width: 25%;display:none" id="step4_customUnitsName">
-                  <input type="text" id="step4_custom_units"  class="text" />
+                
+                <div class="gridcell" style="width: 27%;display:none" id="step4_customUnitsName">
+                <div class="mandatory_wrapper">
+                  <input type="text" id="step4_custom_units"  class="text" /> 
                 </div>
-                <div class="gridcell" style="width: 25%;">
+                </div>
+                
+                <div class="gridcell" style="width: 23%;">
                   <span class="gridtext" id="step4_conversionFactor_label"></span>
+                  <div class="mandatory_wrapper">
                   <input type="text" id="step4_conversionFactor" name="step4_conversionFactor" class="text" style="display:none;"/>
+                  </div>
                 </div>
               </div>
               
@@ -445,8 +457,8 @@
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard first"><span class="steps completedsteps"><span class="stepsnumbers">1</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step1.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step2.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step3.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">4</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.product.conversionFactor.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.add.charges.step.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.conversionFactor.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">5</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.product.add.charges.step.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps"><span class="stepsnumbers">6</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step6.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard last"><span class="steps last"><span class="stepsnumbers last">7</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.product.step5.title" /></span></li></ul>
                 </div>
@@ -563,8 +575,8 @@
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step2.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step3.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.conversionFactor.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">5</span></span><span class="stepstitle  active"><spring:message htmlEscape="false" code="ui.product.add.charges.step.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">6</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.step6.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps completedsteps"><span class="stepsnumbers">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.product.add.charges.step.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar sevenStepsWizard"><span class="steps active"><span class="stepsnumbers active">6</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.product.step6.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar sevenStepsWizard last"><span class="steps last"><span class="stepsnumbers last">7</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.product.step5.title" /></span></li>                    </ul>
                 </div>
             </div>

@@ -143,7 +143,7 @@ i18n.errors.tenants = {
         <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
     </spring:url>         
      
-    <form class="ajaxform" id="issueCreditForm" name="issueCreditForm" action="<c:out value="${issue_credit_path}"/>" onsubmit="issueCreditPost(event,this);">
+    <form class="ajaxform" id="issueCreditForm" name="issueCreditForm" action="<c:out value="${issue_credit_path}"/>" onsubmit="issueCreditPost(event,this,'<c:out value="${tenant.param}"/>');">
      <!-- Edit fields -->
      <ul>
        <li>    

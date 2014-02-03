@@ -73,7 +73,7 @@ function planRateCard(event) {
       $("#futureRateCard").html(html);
     },
     error: function() {
-      alert(i18n.errors.ratecards.planning_ratecard);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.planning_ratecard);
     }
   });
 }
@@ -111,7 +111,7 @@ function submitratecard(event, form) {
 
     },
     error: function() {
-      alert(i18n.errors.ratecards.submitting_rate_card);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.submitting_rate_card);
     }
   });
 }
@@ -135,11 +135,11 @@ function deleteFutureRateCard(event) {
       if (html == "success") {
         window.location = productBundlesUrl + "/" + id + "/manage";
       } else {
-        alert(i18n.errors.ratecards.deleting_rate_card);
+        popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.deleting_rate_card);
       }
     },
     error: function() {
-      alert(i18n.errors.ratecards.deleting_rate_card);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.deleting_rate_card);
     }
   });
 }
@@ -168,7 +168,7 @@ function editFutureRateCard(event) {
       $("#futureRateCard").html(html);
     },
     error: function() {
-      alert(i18n.errors.ratecards.editting_rate_card);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.editting_rate_card);
     }
   });
 }
@@ -198,7 +198,7 @@ function editCurrentRateCard(event) {
       $("#currentRateCard").html(html);
     },
     error: function() {
-      alert(i18n.errors.ratecards.editting.rate.card);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.editting.rate.card);
     }
   });
 }
@@ -228,7 +228,7 @@ function editURC(event) {
       $("#currentRateCard").html(html);
     },
     error: function() {
-      alert(i18n.errors.ratecards.editting.rate.card);
+      popUpDialogForAlerts("dialog_info", i18n.errors.ratecards.editting.rate.card);
     }
   });
 }

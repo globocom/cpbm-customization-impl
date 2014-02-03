@@ -5,7 +5,7 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/commonproducts.js"></script>
+<jsp:include page="js_messages.jsp"></jsp:include>
 <style>
 .datepicker_stlying{
   z-index: 9999
@@ -31,7 +31,7 @@
           <li style="margin:10px 0 0 10px;">
                 <label for="startDate" style="color:#111;font-weight: bold; width:80px; margin:4px 0 0 8px;" ><spring:message code="label.start.date"/></label>
                 <div class="mandatory_wrapper" style="margin:0 0 0 20px;">
-                   <input type="text" id="planstartDate" name="startDate" class="text j_startDate" tabindex="1" value="<fmt:formatDate  value="${planDateForm.startDate}" pattern="${dateonly_format}" />" />
+                   <input type="text" id="planstartDate" name="startDate" class="text j_startDate" readonly="readonly" tabindex="1" value="<fmt:formatDate  value="${planDateForm.startDate}" pattern="${dateonly_format}" />" />
                  </div>
                    <div class="main_addnew_formbox_errormsg" style="margin:5px 0 0 100px" id="planstartDateError" ></div>
           </li>

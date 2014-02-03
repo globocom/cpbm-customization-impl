@@ -38,22 +38,32 @@ var dictionary = {
 };
 </script>
 
-
-
-
-
-
 <div class="widget_box">
   <div class="widget_leftpanel">
     <div class="widget_titlebar">
       <h2 id="list_titlebar"><span id="list_all"><spring:message code="label.list.all"/> </span></h2>
       <a class="widget_addbutton" id="add_alert_link" href="javascript:void(0);"><spring:message code="label.add.new"/></a>
-      <sec:authorize access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')">
-        <a class="widget_addbutton" id="set_account_budget_link" href="javascript:void(0);"><spring:message code="label.set.budget"/></a>
-      </sec:authorize>
     </div>
-    <div class="widget_searchpanel">
-      <div id="search_panel" style="margin:8px 0 0 13px;color:#FFFFFF;">
+    <div class="widget_searchpanel big_search_box">
+      <div id="search_panel" style="margin:8px 0 2px 13px;color:#FFFFFF;">
+		<sec:authorize access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')">
+			<c:set var="tenantBudgetNotSet" value="display:none"/>
+			<c:set var="tenantBudgetSet" value="display:none"/>
+        	 <c:choose>
+     			<c:when test="${ not empty tenant.spendBudget && tenant.spendBudget > 0}">
+					<c:set var="tenantBudgetSet" value=""/>	
+				</c:when>
+				<c:otherwise>
+					<c:set var="tenantBudgetNotSet" value=""/>
+				</c:otherwise>
+     		</c:choose> 
+        	<span style="float:left;">
+        	  <spring:message code="label.alert.page.budget"/> :
+            </span> 
+        	<span id="tenantBudgetNotSet" style="<c:out value="${tenantBudgetNotSet}"/>"><spring:message code="label.alert.page.budget.not.set"/></span>	
+        	<span id="tenantBudgetSet" style="<c:out value="${tenantBudgetSet}"/>;float: left; max-width: 90px;" class="ellipsis"><c:out value="${tenant.currency.sign}" /><span id="budgetValue"><fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${tenant.spendBudget}"/></span>	</span>
+        	| <a id="set_account_budget_link" href="javascript:void(0);"><spring:message code="label.set.budget"/></a>
+      	</sec:authorize>      	
       </div>
     </div>
     <div class="widget_navigation">
@@ -128,7 +138,7 @@ var dictionary = {
                                           <span><spring:message code="ui.alerts.details.spendbudget"/>(<c:out value="${tenant.currency.sign}" />):</span>
                                         </div>
                                         <div class="raw_contents_value">
-                                          <span>
+                                          <span id = "spendBudgetOnHover">
                                             <fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${spendbudget_effectiveTenant}" />
                                           </span>
                                         </div>

@@ -25,4 +25,11 @@
   <Match type="paymentInfoChange" workflow="manual-activiation-type-payment-info-change">
     <Rule>{#transaction.tenant.accountType.manualActivation == true}</Rule>
   </Match>
+
+<!-- Uncomment below rule to enable workflow for cloud service activation. This default rule enable workflow for all cloud service activation request. 
+Change the rule accordingly if you want to enable workflow for only certain service or service instance. -->  
+  <!-- <Match type="cloudServiceActivation" workflow="cloud-service-activation-approval">
+    <Rule>{#transaction.type.name == 'cloudServiceActivation'}</Rule>
+  </Match> -->
+  
 </TransactionWorkflowMap>

@@ -84,7 +84,7 @@
         <div class="widget_searchpanel">
          <div class="widget_searchcontentarea" id="advanced_search">
             <span class="label"><spring:message code="label.category"/>:</span>     
-                 <select class="filterby select" id="filter_dropdown">                
+                 <select class="filterby select expandable-select" id="filter_dropdown">                
                  <option value="all"><spring:message code="ui.product.category.all"/></option>
                  <c:forEach items="${categories}" var="choice" varStatus="status">
                       <option value='<c:out value="${choice.name}"/>' >

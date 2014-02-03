@@ -65,12 +65,12 @@ var dictionary = {
                   <input class="text" id="defaultCreditCardNameHidden"  value="<c:out value='${defaultCreditCardName}'/>"/>
                    <form:input autocomplete="off" tabindex="101" path="creditCard.creditCardType" cssClass="text" value="${defaultCreditCardName}"/>
               </li>
-               <li style="width:200px;">
+               <li style="width:200px;" class="inline_user_first_name">
                 <span class="label"><spring:message code="label.payment.info.first.name.on.card"/></span><div class="mandatory_wrapper withlabel"></div>
                   <input  class="text" tabindex="102" id="creditCard.firstNameOnCard" name="creditCard.firstNameOnCard" value="<c:out value='${tenant.owner.firstName}'/>" title=""/>
                 <div class="main_addnew_formbox_errormsg_paymentinfo" id="creditCard.firstNameOnCardError" style="margin-left: 0px;"></div>
               </li>                                                                  
-              <li style="width:200px; float:right;">
+              <li style="width:200px;" class="inline_user_last_name">
                 <span class="label"><spring:message code="label.payment.info.last.name.on.card"/></span><div class="mandatory_wrapper withlabel"></div>
                   <input  class="text" tabindex="103" id="creditCard.lastNameOnCard" name="creditCard.lastNameOnCard" value="<c:out value='${tenant.owner.lastName}'/>" title=""/>
                 <div class="main_addnew_formbox_errormsg_paymentinfo" id="creditCard.lastNameOnCardError" style="margin-left: 0px;"></div>
@@ -275,7 +275,7 @@ cssClass="text"/>
                    <form:input autocomplete="off" tabindex="101" path="creditCard.creditCardType" cssClass="text" value="${defaultCreditCardName}"/>
               </li>
             <li style="width:200px;">
-                <span class="label"><spring:message code="label.payment.info.first.name.on.card"/></span><div class="mandatory_wrapper withlabel"></div>
+                <span class="label"><spring:message code="label.payment.info.first.name.on.card"/></span><div class="mandatory_wrapper withlabel" style="display:none;"></div>
                 <div class="commonboxes_formbox_withouttextbox ccbox read"><c:out value="${billingInfo.creditCard.firstNameOnCard}"></c:out></div>
                 <div> 
                 <div class="write">                                            
@@ -286,7 +286,7 @@ cssClass="text"/>
                 
               </li>
               <li style="width:200px; float:right;">
-                <span class="label"><spring:message code="label.payment.info.last.name.on.card"/></span><div class="mandatory_wrapper withlabel"></div>
+                <span class="label"><spring:message code="label.payment.info.last.name.on.card"/></span><div class="mandatory_wrapper withlabel" style="display:none;"></div>
                 <div class="commonboxes_formbox_withouttextbox ccbox read"><c:out value="${billingInfo.creditCard.lastNameOnCard}"></c:out></div>
                 <div class="write">                                          
                   <form:input cssClass="text" tabindex="103" id="creditCard.lastNameOnCard" path="creditCard.lastNameOnCard" title=""/>
@@ -296,7 +296,7 @@ cssClass="text"/>
               </li>
               
               <li style="width:260px;">
-                <span class="label"><spring:message code="label.payment.info.card.number"/></span><div class="mandatory_wrapper withlabel"></div>
+                <span class="label"><spring:message code="label.payment.info.card.number"/></span><div class="mandatory_wrapper withlabel" style="display:none;"></div>
                   <div class="commonboxes_formbox_withouttextbox ccbox read"><c:out value="${billingInfo.creditCard.creditCardNumber}"></c:out></div>
                     <div class="write">                         
                     <form:input autocomplete="off" tabindex="104" path="creditCard.creditCardNumber" title="0000 0000 0000 0000" cssClass="text"/>
@@ -305,7 +305,7 @@ cssClass="text"/>
                   
               </li>            
                 <li style="width:130px; float:right;">
-                <span class="label"><spring:message code="label.payment.info.cvv"/></span><div class="mandatory_wrapper withlabel"></div> <a class="helpicon" style="margin:0 0 0 5px;" title="<spring:message code="message.payment.info.cvv.help"/>" href="#"></a>
+                <span class="label"><spring:message code="label.payment.info.cvv"/></span><div class="mandatory_wrapper withlabel" style="display:none;"></div> <a class="helpicon" style="margin:0 0 0 5px;" title="<spring:message code="message.payment.info.cvv.help"/>" href="#"></a>
                   <div class="commonboxes_formbox_withouttextbox ccbox read"><c:out value="${billingInfo.creditCard.creditCardCVV}"></c:out></div>
  					 <div class="write"> 
                     <form:password autocomplete="off" tabindex="105" size="4" maxlength="4" path="creditCard.creditCardCVV" title="" cssClass="text j_credit_card_cvv" />
@@ -314,7 +314,7 @@ cssClass="text"/>
                     
               </li>
               <li style="width:260px;">
-                <span class="label"><spring:message code="label.payment.info.expiry"/></span><div class="mandatory_wrapper withlabel"></div>
+                <span class="label"><spring:message code="label.payment.info.expiry"/></span><div class="mandatory_wrapper withlabel" style="display:none;"></div>
                  <div class="commonboxes_formbox_withouttextbox ccbox read"></div>
                  
                  <span class="expirationwrapper write">                     
@@ -499,3 +499,6 @@ cssClass="text"/>
   </div>
 </c:otherwise>
 </c:choose>
+<script type="text/javascript">
+  swap_name_order_tab_index("inline_user_first_name", "inline_user_last_name");
+</script>

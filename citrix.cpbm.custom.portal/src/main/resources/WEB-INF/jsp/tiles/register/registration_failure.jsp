@@ -14,7 +14,7 @@
       <h1><spring:message code="label.registration.failure"/></h1>
     </div> 
     <div class="login_errorbox">                
-      <p><spring:message code="message.registration.failure"/></p> 
+      <p><spring:message code="message.registration.failure" arguments="${globalConfiguration['serviceProviderSupportEmailAddress']}"/></p> 
       <div class="clearboth"></div>
       <br/>
       <a href="<%= request.getContextPath() %>/portal/"><spring:message code="message.reset.password.login"/></a>

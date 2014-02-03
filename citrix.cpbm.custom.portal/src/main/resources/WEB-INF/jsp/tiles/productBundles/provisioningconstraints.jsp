@@ -49,7 +49,7 @@
 
          <div class="widget_grid_cell borders" style="height:27px; width: 150px;">
             <span class="celltext">
-               <c:out value="${constraint.association}" />
+               <spring:message code="ui.label.${fn:toLowerCase(constraint.association)}" />
             </span>
          </div>
 

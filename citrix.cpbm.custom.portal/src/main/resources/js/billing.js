@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -339,7 +339,10 @@ $(document).ready(function() {
               },
               "creditCard.creditCardAddress.postalCode" : {
                 required:true,
-                maxlength:100
+                maxlength:100,
+                postalcode: function() {
+                    return $('#creditCard\\.creditCardAddress\\.country').val();
+                  }
               },
               "creditCard.creditCardAddress.country" : {
                 required:true
@@ -472,7 +475,10 @@ $(document).ready(function() {
 	                }, 
 	              "creditCard.creditCardAddress.postalCode" : {
 	                required:true,
-                  maxlength:100
+                  maxlength:100,
+                  postalcode: function() {
+                      return $('#creditCard\\.creditCardAddress\\.country').val();
+                    }
 	              },
                 "creditCard.creditCardAddress.state" : {
                 maxlength: 100
@@ -560,7 +566,10 @@ $(document).ready(function() {
               }, 
             "creditCard.creditCardAddress.postalCode" : {
               required:true,
-              maxlength:100
+              maxlength:100,
+              postalcode: function() {
+                  return $('#creditCard\\.creditCardAddress\\.country').val();
+                }
             },
             "creditCard.creditCardAddress.state" : {
             	required:true,
@@ -804,11 +813,11 @@ function viewbillingActivity(current){
   var ID=divId.substr(3);
   resetGridRowStyle();
   $(current).addClass("selected active");
-  var url = "/portal/portal/billing/"+ID+"/viewbillingactivity";
+  var url = "/portal/portal/billing/"+ID+"/viewbillingactivity"+"?tenant="+$("#tenantParam" ).val();
   var selectedUserParam = $("#selectedUserfilter option:selected").val();
   
   if(typeof selectedUserParam!="undefined"){
-	  url = "/portal/portal/billing/"+ID+"/viewbillingactivity?user="+selectedUserParam;
+	  url = "/portal/portal/billing/"+ID+"/viewbillingactivity?user="+selectedUserParam+"&tenant="+$("#tenantParam" ).val();
   }
   
   $.ajax( {
@@ -982,6 +991,8 @@ function cancelCredit(current, cancelCredit) {
 						$( "#action_result_panel").find("#status_icon" ).removeClass("erroricon").addClass( "successicon");
 						$spinningWheel.hide();
 						$( "#action_result_panel").removeClass("error" ).addClass("success").show();
+						$("#"+divId).hide();
+						
 					} else {
 						var msg = dictionary.cancelCreditFailure;
 						$( "#action_result_panel").find("#msg" ).text(msg);
@@ -1016,11 +1027,22 @@ function makePayment(){
 	recordOrMakePayment(true);
 }
 
+var paymentInProgress = false;
+
 function recordOrMakePayment(makePayment) {
+  if(paymentInProgress){
+    return false;
+  }
 	$( "#action_result_panel").hide();
 	$( "#top_message_panel").hide();
+  
 	initDialog( "recordOrMakePaymentFormDiv", 420);
 	var $thisDialog = $("#recordOrMakePaymentFormDiv");
+	
+	$thisDialog.find("#payAmount" ).val('');
+  $thisDialog.find("#paymentMemo" ).val('');
+  $("#payAmountError").text("");
+  $("#paymentMemoError").text("");
 	var $spinningWheel = $("#spinning_wheel");
 	
 	$thisDialog.dialog({
@@ -1045,7 +1067,8 @@ function recordOrMakePayment(makePayment) {
 				}else{
 					$spinningWheel.find( "#in_process_text").text(dictionary.recordingPayment);
 				}
-				
+				$thisDialog.dialog( "close");
+				paymentInProgress = true;
 				$spinningWheel.show();
 				
 				$.ajax({
@@ -1069,36 +1092,26 @@ function recordOrMakePayment(makePayment) {
 							$( "#action_result_panel").find("#status_icon" ).removeClass("successicon").addClass( "erroricon");
 							$( "#action_result_panel").removeClass("success" ).addClass("error").show();
 						}
-						$thisDialog.find("#payAmount" ).val('');
-						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
-						$thisDialog.dialog( "close");
+						paymentInProgress = false;
 					},
 					error : function() {
 						var msg = dictionary.paymentFailureMessage;
 						$( "#action_result_panel").find("#msg" ).text(msg);
 						$( "#action_result_panel").find("#status_icon" ).removeClass("successicon").addClass( "erroricon");
 						$( "#action_result_panel").removeClass("success" ).addClass("error").show();
-						$thisDialog.find("#payAmount" ).val('');
-						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
-						$thisDialog.dialog( "close");
+						paymentInProgress = false;
 					},
 					complete : function() {
-						$thisDialog.find("#payAmount" ).val('');
-						$thisDialog.find("#paymentMemo" ).val('');
 						$spinningWheel.hide();
-						$thisDialog.dialog( "close");
+						paymentInProgress = false;
 					}
 				});
 			}
 		},
 		"Cancel" : function () {
-			$thisDialog.find("#payAmount" ).val('');
-			$thisDialog.find("#paymentMemo" ).val('');
 			$( this).dialog("close" );
-			 $("#payAmountError").text("");
-			 $("#paymentMemoError").text("");
 			return false;
 		}
 	});

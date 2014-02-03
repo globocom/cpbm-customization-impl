@@ -7,11 +7,11 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-<c:set var="netInvoiceItem" value="null"></c:set>
 <spring:message code="dateonly.format" var="date_only_format"/>
 <c:set var="invoiceUuid" value="${invoice.uuid}"></c:set>
 <c:set var="invoiceType" value="${invoice.type}"></c:set>
 <c:set var="invoiceitems" value="${invoice.invoiceItems}"></c:set>
+<c:set var="invoiceitemsForSummary" value="${invoice.invoiceItemsSortedForSummaryItems}"></c:set>
 <fmt:formatDate var="invoiceStartDate" pattern="${date_only_format}" value="${invoice.serviceStartDate}" timeZone="${currentUser.timeZone}"/>
 <fmt:formatDate var="invoiceEndDate" pattern="${date_only_format}" value="${invoice.serviceEndDate}" timeZone="${currentUser.timeZone}"/>
 
@@ -45,25 +45,40 @@
           <div class="db_gridbox_celltitles header more_details_grid"  style="width:100%;text-align:center;margin-left: 0px;"><spring:message code="label.usage.billing.subscription.charge.amount"/></div>
         </div>
        </div>
-
+     <c:set var="productServiceInstance" value=""></c:set>
+     <div style="max-height:300px;float:left;overflow:auto;width:100%;">
      <c:forEach items="${invoiceitems}" var="invoiceitem" varStatus="invoiceitemLoopStatus">
          <c:if test="${invoiceitem.chargeType eq 'CHARGE'}">
+         
+         <c:if test="${invoiceitem.product.serviceInstance.uuid!= productServiceInstance}">
+            <c:set var="productServiceInstance" value="${invoiceitem.product.serviceInstance.uuid}"></c:set>
+            <div class="db_gridbox_rows" style="background-color:#C2E6F8">
+              <span style="margin: 5px 0 0 10px;float:left;font-weight:bold;">
+                <c:out value="${invoiceitem.product.serviceInstance.category}"/>:&nbsp;<c:out value="${invoiceitem.product.serviceInstance.name}"/>
+              </span>
+            </div>
+          </c:if>
            <div class="db_gridbox_rows">    
                 <div class="db_gridbox_columns" style="width:19%;">
-                  <div class="db_gridbox_celltitles ellipsis" title="${invoiceitem.product.name}">
+                  <div class="db_gridbox_celltitles ellipsis" style="width:90%;" title="${invoiceitem.product.name}">
+                  
                     <c:out value="${invoiceitem.product.name}"></c:out>
                   </div>
                 </div>
                 <div class="db_gridbox_columns" style="width:19%;">
-                 <div class="db_gridbox_celltitles ellipsis" title="<c:out value="${invoiceitem.product.description}"></c:out>">
+                 <div class="db_gridbox_celltitles ellipsis" style="width:90%;" title="<c:out value="${invoiceitem.product.description}"></c:out>">
                    <c:out value="${invoiceitem.product.description}"></c:out>
                   </div>
+                  
                 </div>
                 <div class="db_gridbox_columns" style="width:14%;">
                   <div class="db_gridbox_celltitles" style="text-align: right; width: 100%; margin-left: 0px; margin-right: 0px;">
                       <c:choose>
+                        <c:when test="${invoiceitem.product.discrete}">
+                          <fmt:formatNumber maxFractionDigits="0" value="${invoiceitem.quantity}"/>
+                        </c:when>
                         <c:when test="${invoiceitem.quantity.unscaledValue() == 0}">
-                        0.0000000000
+                           0.0000000000
                         </c:when>
                         <c:otherwise>
                           <c:out value="${invoiceitem.quantity}" />
@@ -74,8 +89,11 @@
                 <div class="db_gridbox_columns" style="width:14%;">
                   <div class="db_gridbox_celltitles"style="text-align: right; width: 100%; margin-left: 0px; margin-right: 0px;">
                       <c:choose>
+                        <c:when test="${invoiceitem.product.discrete}">
+                          <fmt:formatNumber maxFractionDigits="0" value="${invoiceitem.chargeableUsage}"/>
+                        </c:when>
                         <c:when test="${invoiceitem.chargeableUsage.unscaledValue() == 0}">
-                        0.0000000000
+                          0.0000000000
                         </c:when>
                         <c:otherwise>
                           <c:out value="${invoiceitem.chargeableUsage}" />
@@ -86,25 +104,29 @@
                 <div class="db_gridbox_columns" style="width:10%;">
                   <div class="db_gridbox_celltitles" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 5px;">
                     <c:if test="${invoiceitem.unitPrice ne null}">
-                      <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.unitPrice}" minFractionDigits="${currencyFractionalDigitsLimit}" />
+                      <c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.unitPrice}" minFractionDigits="${currencyFractionalDigitsLimit}" />
                     </c:if>
                   </div>
                 </div>
                 <div class="db_gridbox_columns" style="width:14%;">
-                  <div class="db_gridbox_celltitles"  style="text-align: right; width: 100%; margin-left: 0px; margin-right: 5px;"><c:out value="${invoiceitem.product.uom}" /></div>
+                  <div class="db_gridbox_celltitles"  style="text-align: center; width: 100%; margin-left: 0px; margin-right: 5px;"><c:out value="${invoiceitem.product.uom}" /></div>
                 </div>
                 <div class="db_gridbox_columns" style="width:10%;">
                  <div class="db_gridbox_celltitles" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 5px;">
-                   <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${currencyFractionalDigitsLimit}" />
+                   <c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${currencyFractionalDigitsLimit}" />
                  </div>
                 </div>
           </div>
+         
           </c:if>
         <c:if test="${invoiceitem.chargeType eq 'NET_TOTAL_CHARGES'}">
           <c:set var="netInvoiceItem" value="${invoiceitem}"></c:set>
         </c:if>
       </c:forEach>
-      <c:forEach items="${invoiceitems}" var="invoiceitem" varStatus="invoiceitemLoopStatus">
+       </div>
+
+       
+      <c:forEach items="${invoiceitemsForSummary}" var="invoiceitem" varStatus="invoiceitemLoopStatus">
         <c:if test="${invoiceitem.chargeType ne 'CHARGE' and invoiceitem.chargeType ne 'NET_TOTAL_CHARGES'}">
            <div class="db_gridbox_rows"  <c:if test="${invoiceitem.chargeType eq 'TOTAL_CHARGES' or invoiceitem.chargeType eq 'TOTAL_DISCOUNTS' or invoiceitem.chargeType eq 'TOTAL_TAX'}">
                       style="border-top-color: #E1E1E1;border-top-style: solid;border-top-width: .5px;border-bottom-color: #E1E1E1;border-bottom-style: solid;border-bottom-width: .5px"
@@ -129,11 +151,11 @@
                    <c:choose>
                    <c:when test="${invoiceitem.chargeType ne 'TOTAL_CHARGES' and invoiceitem.chargeType ne 'TOTAL_DISCOUNTS' and invoiceitem.chargeType ne 'TOTAL_TAX'}">
                    <div class="db_gridbox_celltitles" style="text-align: right; width: 95%; margin-left: 0px; margin-right: 0px;">
-                    <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${currencyFractionalDigitsLimit}" />
+                    <c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${currencyFractionalDigitsLimit}" />
                     </c:when>
                     <c:otherwise>
                    <div class="db_gridbox_celltitles" style="text-align: right; width: 95%; margin-left: 0px; margin-right: 0px;">
-                     <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${minFractionDigits}" />
+                     <c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${minFractionDigits}" />
                     </c:otherwise>
                     </c:choose>
                    </div>
@@ -152,6 +174,6 @@
   <div class="db_gridbox_celltitles header more_details_grid" style="width: 100%; margin-left: 0px;"><b><spring:message code="label.usage.billing.invoiceitem.chargetype.NET_TOTAL_CHARGES"/></b></div>
 </div>
 <div class="db_gridbox_columns" style="width:20%;">
-  <div class="db_gridbox_celltitles header" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 0px;"><b><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${netInvoiceItem.amount}" minFractionDigits="${minFractionDigits}" /></b></div>
+  <div class="db_gridbox_celltitles header" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 0px;"><b><c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${netInvoiceItem.amount}" minFractionDigits="${minFractionDigits}" /></b></div>
 </div>
 </c:if>

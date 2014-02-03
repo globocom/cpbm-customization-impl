@@ -99,7 +99,7 @@
     </div>
 
     <c:if test="${filterDateInFuture}">
-      <div class="widget_details_actionbox addlistbox" id="create_entitlement_row" style="width: 100%">
+      <div class="widget_details_actionbox addlistbox" id="create_entitlement_row" style="width: 100%; padding:0px;">
               <input type="hidden" value="<c:out value='${productBundle.code}'/>" id="bundleCode"/>
               <jsp:include page="createentitlement.jsp"></jsp:include>
       </div>

@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.BufferedReader;
@@ -28,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -67,7 +67,9 @@ import com.vmops.model.ServiceResourceTypeProperty;
 import com.vmops.model.Subscription;
 import com.vmops.model.Tenant;
 import com.vmops.model.Tenant.State;
+import com.vmops.model.TenantHandle;
 import com.vmops.model.User;
+import com.vmops.model.UserHandle;
 import com.vmops.portal.config.Configuration;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ChannelService;
@@ -77,6 +79,7 @@ import com.vmops.service.UserService.Handle;
 import com.vmops.service.billing.BillingAdminService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.CloudServiceException;
+import com.vmops.service.exceptions.ProvisionResourceFailedException;
 import com.vmops.service.exceptions.SubscriptionServiceException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
@@ -166,7 +169,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       serviceResourceType = connectorConfigurationManager.getServiceResourceType(serviceInstanceUuid, resourceTypeName);
       Map<String, String> discriminators = createStringMap(contextString);
       discriminators.putAll(createStringMap(filters));
-      if (!resourceTypeName.equals(SERVICEBUNDLE)) {
+      if (!resourceTypeName.equals(ProductBundle.SERVICEBUNDLE)) {
         productRevisions = productService.listProductRevisions(serviceInstance, serviceResourceType, discriminators,
             getCurrentUser());
       }
@@ -291,6 +294,13 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     serviceCategoryList.retainAll(currentUserServiceCategoryList);
 
     boolean isPayAsYouGoChosen = config.getBooleanValue(Names.com_citrix_cpbm_catalog_payAsYouGoMode);
+    boolean noResourceType = false;
+    if (ProductBundle.SERVICEBUNDLE.equalsIgnoreCase(resourceType) && isPayAsYouGoChosen) {
+      // the case when you select drop down of service instance after hitting catalog first time - the default message
+// is shown again
+      noResourceType = true;
+    }
+    map.addAttribute("noResourceType", noResourceType);
     map.addAttribute("isPayAsYouGoChosen", isPayAsYouGoChosen);
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     map.addAttribute("tenant", tenant);
@@ -327,30 +337,69 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     }
     if (serviceInstance != null) {
       try {
-        String tenantDataJsonStr = tenantService.getTenantHandle(tenant.getUuid(), serviceInstanceUUID).getData();
-        Service service = serviceInstance.getService();
-        if (StringUtils.isBlank(resourceType)) {
-          // No resource type is given. Enable the first in the list.
-          resourceType = service.getServiceResourceTypes().get(0).getResourceTypeName();
+        TenantHandle tenantHandle = tenantService.getTenantHandle(tenant.getUuid(), serviceInstanceUUID);
+        UserHandle userHandle = userService.getUserHandleByServiceInstanceUuid(user.getUuid(), serviceInstanceUUID);
+        if (tenantHandle == null) {
+          throw new ConnectorManagementServiceException("Tenant Handle is required to subscribe to a resource");
         }
-        map.addAttribute("tenantDataJsonStr", tenantDataJsonStr);
+        String tenantHandleString = tenantHandle.getHandle();
+        String userHandleString = userHandle == null ? null : userHandle.getHandle();
+        Service service = serviceInstance.getService();
+        String requestedResourceType = resourceType;
+        map.addAttribute("tenantDataJsonStr", tenantHandle.getData());
         map.addAttribute("service", service);
         map.addAttribute("serviceInstanceUuid", serviceInstanceUUID);
-        map.addAttribute("resourceTypes", service.getServiceResourceTypes());
+        map.addAttribute("serviceBundleResourceType", ProductBundle.SERVICEBUNDLE);
+        if (StringUtils.isBlank(resourceType)) {
+          resourceType = ProductBundle.SERVICEBUNDLE;
+        }
+        // If the connector is down by default resourceType is Service Bundle and their will not be any available
+        // resource type
+        map.addAttribute("resourceTypes", new ArrayList<String>());
         map.addAttribute("resourceType", resourceType);
-        map.addAttribute("serviceBundleResourceType", SERVICEBUNDLE);
+        List<ServiceResourceType> resourceTypeNames = connectorConfigurationManager.getAvailableResourceTypes(
+            serviceInstanceUUID, tenantHandleString, userHandleString);
+        List<ServiceResourceType> availableResourceTypes = new ArrayList<ServiceResourceType>();
+        List<String> availableResourceTypeNames = new ArrayList<String>();
+        if (CollectionUtils.isNotEmpty(resourceTypeNames)) {
+          for (ServiceResourceType serviceResourceType : resourceTypeNames) {
+            if (StringUtils.isNotBlank(subscriptionId)
+                || productBundleService.validateBundleBusinessConstraints(null, tenant, user, serviceResourceType)) {
+              availableResourceTypes.add(serviceResourceType);
+              availableResourceTypeNames.add(serviceResourceType.getResourceTypeName());
+            }
+          }
+        }
+        availableResourceTypeNames.add(ProductBundle.SERVICEBUNDLE);
+        if (CollectionUtils.isNotEmpty(availableResourceTypes)) {
+          if (!availableResourceTypeNames.contains(requestedResourceType)) {
+            // No resource type is given or given one is not available. Enable the first in the list.
+            resourceType = availableResourceTypeNames.get(0);
+          }
+        } else {
+          // Initializing resource type as SERVICE when service has no resourceTypes
+          resourceType = ProductBundle.SERVICEBUNDLE;
+          noResourceType = true;
+          map.addAttribute("noResourceType", noResourceType);
+        }
+        // Override resourceTypes and resourceType if connector returns the resource type and available resource types
+        map.addAttribute("resourceTypes", availableResourceTypes);
+        map.addAttribute("resourceType", resourceType);
 
         ServiceResourceType serviceResourceType = connectorConfigurationManager.getServiceResourceType(
             serviceInstanceUUID, resourceType);
+        List<String> uniqueResourceComponentNames = new ArrayList<String>();
         if (serviceResourceType != null) {
-          List<String> uniqueResourceComponentNames = new ArrayList<String>();
           uniqueResourceComponentNames = getUniqueResourceComponents(serviceInstanceUUID, resourceType);
-          map.addAttribute("uniqueResourceComponentNames", uniqueResourceComponentNames);
-          map.addAttribute("groups", serviceResourceType.getServiceResourceGroups());
+          map.addAttribute("resourceComponents", serviceResourceType.getServiceResourceGroupsComponents());
         }
+        map.addAttribute("uniqueResourceComponentNames", uniqueResourceComponentNames);
         if (StringUtils.isNotBlank(subscriptionId)) {
           Subscription subscription = subscriptionService.locateSubscriptionById(Long.parseLong(subscriptionId));
           JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(subscription.getConfigurationData());
+
+          subscription = subscriptionService.updateFilterAndResourceComponentNamesinConfigurationData(subscription);
+
           map.addAttribute("subscription", subscription);
           map.addAttribute("configurationData", jsonObject);
           com.citrix.cpbm.access.Subscription subscriptionProxy = (com.citrix.cpbm.access.Subscription) CustomProxy
@@ -622,7 +671,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       map.addAttribute("prefix", service.getServiceName());
       ServiceResourceType serviceResourceType = connectorConfigurationManager.getServiceResourceType(
           serviceInstance.getUuid(), resourceTypeName);
-      if (resourceTypeName.equals(SERVICEBUNDLE) || serviceResourceType != null) {
+      if (resourceTypeName.equals(ProductBundle.SERVICEBUNDLE) || serviceResourceType != null) {
         if (serviceResourceType != null) {
           String finalEditorTag = serviceResourceType.getEditor();
           String componentSelector = serviceResourceType.getComponentSelector();
@@ -788,6 +837,7 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       @RequestParam(value = "productBundleId", required = false) String productBundleId,
       @RequestParam(value = "isProvision", required = false, defaultValue = "false") boolean isProvision,
       @RequestParam(value = "configurationData", required = false) String configurationData,
+      @RequestParam(value = "configurationNames", required = false) String configurationNames,
       @RequestParam(value = "serviceInstaceUuid", required = false) String serviceInstaceUuid,
       @RequestParam(value = "resourceType", required = false) String resourceType,
       @RequestParam(value = "filters", required = false) String filters,
@@ -797,31 +847,42 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       HttpServletResponse response, HttpServletRequest request) {
 
     Map<String, String> responseMap = new HashMap<String, String>();
-    if (!resourceType.equals(SERVICEBUNDLE)) {
+    if (!resourceType.equals(ProductBundle.SERVICEBUNDLE)) {
       Service service = connectorConfigurationManager.getInstance(serviceInstaceUuid).getService();
-      for (ServiceResourceType serviceResourceType : service.getServiceResourceTypes()) {
-        if (serviceResourceType.getResourceTypeName().equals(resourceType)) {
-          for (ServiceResourceTypeProperty serviceResourceTypeProperty : serviceResourceType
-              .getServiceResourceTypeProperty()) {
-            JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(configurationData);
-            String fieldValue = (String) jsonObject.get(serviceResourceTypeProperty.getName());
-            String validationResult = CssdkConstants.FAILURE;
-            try {
-              String propertyName = service.getServiceName() + ".ResourceType." + resourceType + "."
-                  + serviceResourceTypeProperty.getName() + ".name";
-              validationResult = ValidationUtil.valid(serviceResourceTypeProperty.getValidation(),
-                  messageSource.getMessage(propertyName, null, getSessionLocale(request)), fieldValue, messageSource);
-            } catch (Exception e) {
-              logger.error(e);
-            }
-            if (!CssdkConstants.SUCCESS.equals(validationResult)) {
-              responseMap.put("validationResult", validationResult);
-              response.setStatus(AJAX_FORM_VALIDATION_FAILED_CODE);
-              return responseMap;
-            }
+      Subscription currentSubscription = null;
+      if (StringUtils.isNotBlank(subscriptionId)) {
+        try {
+          currentSubscription = subscriptionService.locateSubscriptionById(Long.parseLong(subscriptionId));
+        } catch (NumberFormatException e) {
+          throw new SubscriptionServiceException("Invalid Subscription Id:" + subscriptionId);
+        }
+      }
 
+      if (currentSubscription == null || currentSubscription.getActiveHandle() == null) {
+        for (ServiceResourceType serviceResourceType : service.getServiceResourceTypes()) {
+          if (serviceResourceType.getResourceTypeName().equals(resourceType)) {
+            JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(configurationData);
+            for (ServiceResourceTypeProperty serviceResourceTypeProperty : serviceResourceType
+                .getServiceResourceTypeProperty()) {
+              String fieldValue = (String) jsonObject.get(serviceResourceTypeProperty.getName());
+              String validationResult = CssdkConstants.FAILURE;
+              try {
+                String propertyName = service.getServiceName() + ".ResourceType." + resourceType + "."
+                    + serviceResourceTypeProperty.getName() + ".name";
+                validationResult = ValidationUtil.valid(serviceResourceTypeProperty.getValidation(),
+                    messageSource.getMessage(propertyName, null, getSessionLocale(request)), fieldValue, messageSource);
+              } catch (Exception e) {
+                logger.error(e);
+              }
+              if (!CssdkConstants.SUCCESS.equals(validationResult)) {
+                responseMap.put("validationResult", validationResult);
+                response.setStatus(AJAX_FORM_VALIDATION_FAILED_CODE);
+                return responseMap;
+              }
+
+            }
+            break;
           }
-          break;
         }
       }
     }
@@ -836,7 +897,8 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
       effectiveUser = effectiveTenant.getOwner();
     }
-    Map<String, String> configurationJsonMap = getConfigurationJsonString(filterMap, contextMap, configurationData);
+    Map<String, String> configurationJsonMap = getConfigurationJsonString(filterMap, contextMap, configurationData,
+        configurationNames);
     Subscription subscription = null;
     ArrayList<String> subscriptionAction = new ArrayList<String>();
     try {
@@ -871,8 +933,11 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
 
   @SuppressWarnings("unchecked")
   private Map<String, String> getConfigurationJsonString(Map<String, String> filterMap, Map<String, String> contextMap,
-      String configurationData) {
+      String configurationData, String configurationNames) {
     JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(configurationData);
+    if (configurationNames != null) {
+      jsonObject.putAll((JSONObject) JSONSerializer.toJSON(configurationNames));
+    }
     for (String key : filterMap.keySet()) {
       jsonObject.put(key, filterMap.get(key));
     }

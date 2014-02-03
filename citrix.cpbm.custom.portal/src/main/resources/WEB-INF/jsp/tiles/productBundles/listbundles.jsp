@@ -5,7 +5,7 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-
+<jsp:include page="/WEB-INF/jsp/tiles/products/js_messages.jsp"></jsp:include>
 <script type="text/javascript">
   var JS_LOADED;
   //Need products url for plan date common code.

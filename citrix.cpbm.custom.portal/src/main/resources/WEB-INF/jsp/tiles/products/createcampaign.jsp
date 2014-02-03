@@ -69,6 +69,7 @@ $("#campaignPromotionsForm").validate( {
                 return 0;
               return 1;
             },
+            max:99999999,
             digits : true       
           },
           "campaignPromotion.maxAccounts" : {
@@ -78,6 +79,7 @@ $("#campaignPromotionsForm").validate( {
                 return 0;
               return 1;
             },
+            max:99999999,
             digits : true       
           },
         "campaignPromotion.percentOff" : {
@@ -162,7 +164,7 @@ $(function(){ $('#campaignStartDate').datepicker({
       $(this).datepicker("option", "minDate", new Date());
   },
   onClose: function(dateText, inst) { 
-          $("#campaignPromotionsForm").valid(); 
+          //$("#campaignPromotionsForm").valid(); 
         }
 
 });
@@ -182,20 +184,20 @@ $("#ui-datepicker-div").css("z-index", "9999" );
       commandName="campaignPromotionsForm" id="campaignPromotionsForm" cssClass="ajaxform" action="${create_campaign_path}">
       <div class="details_lightboxtitlebox">
      </div>
-        <div class="details_lightboxformbox">
+        <div class="details_lightboxformbox add_edit_campaign">
           <ul>
             <li><form:label path=""><spring:message code="ui.campaigns.label.create.code"/></form:label>
             <div class="mandatory_wrapper">
               <form:input cssClass="text" path="campaignPromotion.code" cssStyle="margin:0 5px 0 10px;" /></div>
               <input id="campaignPromotion_code" type="hidden" 
               value="<c:out  value="${campaignPromotionsForm.campaignPromotion.code}" />"/>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.codeError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.codeError"></div>
             </li>
             <li><form:label path=""><spring:message code="ui.campaigns.label.create.title"/></form:label>
               <div class="mandatory_wrapper">
                 <form:input cssClass="text" path="campaignPromotion.title" cssStyle="margin:0 5px 0 10px;"/>
               </div>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.titleError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.titleError"></div>
             </li>
             <li>
               <form:label path=""><spring:message code="ui.campaigns.label.create.promo.code"/></form:label>
@@ -203,21 +205,21 @@ $("#ui-datepicker-div").css("z-index", "9999" );
                 <form:input cssClass="text" path="promoCode" cssStyle="margin:0 5px 0 10px;"></form:input>
                 <input id="promoCode_old" type="hidden" value="<c:out  value="${campaignPromotionsForm.promoCode}" />"/>
               </div>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="promoCodeError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="promoCodeError"></div>
             </li>
             <li>
               <form:label path=""><spring:message code="ui.campaigns.label.create.startdate"/></form:label>
               <div class="mandatory_wrapper">
                 <form:input cssClass="text" path="campaignPromotion.startDate" cssStyle="margin:0 5px 0 10px;"/>
               </div>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.startDateError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.startDateError"></div>
             </li>   
             <li>
               <form:label path=""><spring:message code="ui.campaigns.label.create.enddate"/></form:label>
               <div class="nonmandatory_wrapper">
                 <form:input cssClass="text" path="campaignPromotion.endDate" cssStyle="margin:0 5px 0 10px;"/>
               </div>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.endDateError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.endDateError"></div>
             </li>                    
           <li style="width:430px;">
             <form:label path=""><spring:message code="ui.campaigns.label.create.trial"/></form:label>
@@ -283,7 +285,7 @@ $("#ui-datepicker-div").css("z-index", "9999" );
             <div class="mandatory_wrapper">
               <form:input cssClass="text" id="percentOff"  path="campaignPromotion.percentOff" style="margin:0 5px 0 10px;"/>
             </div>
-            <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="percentOffError"></div>            
+            <div class="main_addnew_formbox_errormsg add_edit_campaign" id="percentOffError"></div>            
           </li> 
           <li id="amountOffDiv" style="display:none;">
             <div id="supportedCurrencyDiv"></div>

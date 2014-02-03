@@ -5,6 +5,7 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <script type="text/javascript">
 var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
 </script>
@@ -22,7 +23,9 @@ var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
     <div class="widget_leftpanel">
       <div class="widget_titlebar">
         <h2 id="list_titlebar"><span id="list_all"><spring:message code="label.list.all"/> </span></h2>
-        <a class="widget_addbutton" onclick="addNewCampaignGet()" href="javascript:void(0);"  ><spring:message code="ui.products.label.list.add.new.campaign"/></a>
+        <c:if test="${atleastOneChannelPresent}">
+          <a class="widget_addbutton" onclick="addNewCampaignGet()" href="javascript:void(0);"  ><spring:message code="ui.products.label.list.add.new.campaign"/></a>
+        </c:if>
       </div>
       <div class="widget_searchpanel">
         <div id="search_panel" style="margin:8px 0 0 13px;color:#FFFFFF;">
@@ -80,12 +83,13 @@ var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
                     </c:if>
                    <spring:message code="ui.campaigns.label.create.add.channel"/>:
                     <c:if test="${campaign.campaignPromotionsInChannels != null}">
-                      <c:forEach var="campPromoChannel" items="${campaign.campaignPromotionsInChannels}">
-                        <c:out value="${campPromoChannel.channel.code}" />
-                      </c:forEach>
+                          <c:forEach var="campPromoChannel" items="${campaign.campaignPromotionsInChannels}" varStatus="count">
+                               <c:if test="${count.index > 0}">,</c:if>
+                               <c:out value="${campPromoChannel.channel.code}"/>
+                          </c:forEach>
                     </c:if>
                     <c:if test="${campaign.campaignPromotionsInChannels == null}">
-                      <spring:message code="ui.campaigns.label.create.channel.type"/>
+                          <spring:message code="ui.campaigns.label.create.channel.type"/>
                     </c:if>
                     </span>
                   </div>
@@ -144,6 +148,24 @@ var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
                                 <span id="enable"><spring:message code="label.${campaign.enabled}"/></span>
                               </div>
                             </div>
+                            
+                           <div class="raw_content_row">
+                              <div class="raw_contents_title">
+                                  <span><spring:message code="ui.campaigns.label.create.add.channel"/>:</span>
+                              </div>
+                              <div class="raw_contents_value">
+                               <c:if test="${campaign.campaignPromotionsInChannels != null}">
+                                  <c:forEach var="campPromoChannel" items="${campaign.campaignPromotionsInChannels}" varStatus="count">
+                                      <c:if test="${count.index > 0}">,</c:if>
+                                      <c:out value="${campPromoChannel.channel.code}"/>
+                                  </c:forEach>
+                               </c:if>
+                               <c:if test="${campaign.campaignPromotionsInChannels == null}">
+                                   <spring:message code="ui.campaigns.label.create.channel.type"/>
+                                </c:if>
+                              </div>
+                           </div>  
+                                
                           </div>
                         </div>
                       </div>
@@ -249,6 +271,13 @@ var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
                               <span id = "enable"></span>
                          </div>
                     </div>
+                    <div class="raw_content_row">
+                         <div class="raw_contents_title">
+                             <span><spring:message code="ui.campaigns.label.create.add.channel"/>:</span>
+                          </div>
+                          <div class="raw_contents_value" id = "channelSubtitle">
+                          </div>
+                    </div>  
              </div>
             </div>
            </div>

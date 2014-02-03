@@ -34,8 +34,14 @@ var dictionary = {
 		deactivatingUser: '<spring:message javaScriptEscape="true" code="message.deactivating.user"/>',
 		lightboxresendemail: '<spring:message javaScriptEscape="true" code="js.user.ver.confirm"/>',
 		resendEmail: '<spring:message javaScriptEscape="true" code="label.resendemail.verification"/>',
-		resendingEmail: '<spring:message javaScriptEscape="true" code="message.resendingemail.verification"/>'
-			
+		resendingEmail: '<spring:message javaScriptEscape="true" code="message.resendingemail.verification"/>',
+		userdisabled: '<spring:message javaScriptEscape="true" code="label.user.disabled"/>',
+		selectservice: '<spring:message javaScriptEscape="true" code="label.select.service"/>',
+		enableserviceerror: '<spring:message javaScriptEscape="true" code="label.error.service.enable"/>',
+		provisioning: '<spring:message javaScriptEscape="true" code="userHandle.state.provisioning"/>',
+		active: '<spring:message javaScriptEscape="true" code="userHandle.state.active"/>', 
+		notprovisioned: '<spring:message javaScriptEscape="true" code="label.not.provisioned"/>',
+		provisioningerror: '<spring:message javaScriptEscape="true" code="userHandle.state.error"/>'
 };
 
 </script>

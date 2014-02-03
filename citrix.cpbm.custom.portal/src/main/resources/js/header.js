@@ -233,7 +233,7 @@ function listProductsTabItems(current) {
     cache: false,
     success: function(currentAndHistoryApplicabilityMap) {
       if (currentAndHistoryApplicabilityMap["isAtleastOneCloudServiceEnabled"] == "false") {
-        alert($("#noServiceEnabledError").val());
+        popUpDialogForAlerts("dialog_info", $("#noServiceEnabledError").val());
         return;
       }
       $("#menu_dropdwon_for_products").find("#plannedDropdown").show();

@@ -76,12 +76,24 @@
 		<property name="userService" ref="userService"/>
 		<property name="messageSource" ref="messageSource"/>
 		<property name="appConfiguration" ref="appConfiguration"/>
+		<property name="businessTransactionService" ref="businessTransactionService"/>
 	</bean>
 	
 	<bean id="verifyCreditCardInfoActivity" scope="prototype"  class="com.citrix.cpbm.workflow.activity.impl.VerifyCreditCardInfoActivity" parent="abstractActivity">
     	<property name="failureThresholdInHours" value="72"/>
     	<property name="connectorManagementService" ref="connectorManagementService"/>
     </bean>
+
+	<bean id="serviceActivationApprovalActivity" class="com.citrix.cpbm.workflow.activity.impl.InternalApprovalActivity" parent="abstractRetriableActivity">
+		<property name="taskType" value="CLOUD_SERVICE_APPROVAL" />
+		<property name="actorRole" value="ROLE_ACCOUNT_MGMT"/>
+		<property name="appConfig" ref="appConfiguration"/>
+		<property name="toEmails" value="APPROVAL_REQUEST" />
+		<property name="noOfRetries" value="3" />
+		<property name="timeBetweenRetriesInHours" value="24" />
+		<property name="emailService" ref="emailService"/>
+		<property name="authorityService" ref="authorityService"/>
+	</bean>
     
     <bean id="defaultActionUrlResolver" class="com.citrix.cpbm.workflow.pendingaction.resolver.impl.DefaultActionUrlResolver">
 	    <property name="actionUrls">

@@ -5,26 +5,38 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
 <script type="text/javascript">
-<!--
+
 $(document).ready(function() {
   $("#username").focus();
   setTimeout('$("#loginForm input:first").focus();', 1000);
+  
+  $("#loginForm").validate( {
+    success : "valid",
+    ignoreTitle : true,
+    rules : {
+      "username" : {
+           required : true
+       },
+      "j_password" : {
+           required : true
+       }
+    },
+    messages: {
+    "username": {
+        required:'<spring:message javaScriptEscape="true" code="js.user.username"/>'
+    },
+    "j_password": {
+        required:'<spring:message javaScriptEscape="true" code="js.user.password"/>'
+    }
+   }
+  });
+  
   $('#login_button').click(function() {
     doLogin();
   });
-  $(':input').keypress(function(e) {
+  $(':input').keyup(function(e) {
     if (e.keyCode == 13) {
-      var usernameEntered = $("#username").val();
-      var passwordEntered = $("#passwordFilled").val();
-      if(usernameEntered == ""){
-        $("#username").focus();
-      }
-      else if(passwordEntered == ""){
-        $("#passwordFilled").focus();
-      }
-      else {
         doLogin();
-      }
     }
   });
   
@@ -33,6 +45,13 @@ $(document).ready(function() {
   });
 
   function doLogin(){
+    $(".login_messages").hide();
+    if($("#showCaptchaVar").val()=='true' && $("#recaptcha_response_field").val()=='') {
+      $("#login_error_empty_captcha").show();
+      return;
+    }
+    
+    
     if($("#showSuffixControlVar").val()=='true'){
       if($("#username").val()=="root"){
         if($("#suffix").val()=="root"){
@@ -50,9 +69,10 @@ $(document).ready(function() {
       }
     $("#loginForm").submit();
   }
+  
+  
 });
 
-//-->
 </script>
             	<div class="login_headerarea  <c:if test="${directoryServiceAuthenticationEnabled}">smaller_ver</c:if>">
                 	<div class="login_headerarea_left">
@@ -68,14 +88,15 @@ $(document).ready(function() {
 				      <form id="loginForm" method="post" action="<%= request.getContextPath() %>/j_spring_security_check" name="login">
 				        <input type="hidden" id="j_username" name="j_username" />
                 <input type="hidden" id="showSuffixControlVar" value="<c:out value='${showSuffixControl}'/>" />
+                <input type="hidden" id="showCaptchaVar" value="<c:out value='${showCaptcha}'/>" />
                 <ol>
-				          <li>
+                  <li>
 				            <label><spring:message code="label.login.username"/></label>
-				            <input class="text" tabindex="1" id="username" name="username" value="<c:out value='${lastUser}' escapeXml="false"/>"/>
+				            <input class="text" tabindex="1" id="username" name="username" value="<c:out value='${lastUser}'/>"/>
 				          </li>  
 				          <li>
 				            <label><spring:message code="label.login.password"/></label>
-				            <input class="text" type="password" tabindex="2" name="j_password"  id = "passwordFilled" autocomplete="off" />
+				            <input class="text js_login_page_pwd" type="password" tabindex="2" name="j_password"  autocomplete="off" />
 				          </li>
                   <c:if test="${showSuffixControl=='true'}">
                     <li>
@@ -105,7 +126,7 @@ $(document).ready(function() {
 				      </form> 
                         <div class="login_formbox_submitpanel">
                         	<div class="login_buttonscontainer">
-                            	<a id="login_button" tabindex="3" class="logincommonbutton" href="#"><spring:message code="label.login.login"/></a>
+                            	<a id="login_button" tabindex="3" class="logincommonbutton" href="javascript:void(0)"><spring:message code="label.login.login"/></a>
                             </div>
                         </div>				          
 			    </div> 
@@ -115,8 +136,10 @@ $(document).ready(function() {
               	<div class="login_infobox_mid">
               	
   		              <div class="login_infocontentbox">
-  		                <p><spring:message code="label.login.dontHaveAnAccount"/></p>
-  		                <a href="/portal/portal/account_type"><spring:message code="label.login.signUpNow"/></a>
+  		                <c:if test="${showSuffixControl!='true'}">
+                        <p><spring:message code="label.login.dontHaveAnAccount"/></p>
+    		                <a href="/portal/portal/account_type"><spring:message code="label.login.signUpNow"/></a>
+                      </c:if>
                       <p><spring:message code="label.login.forgotPassword"/></p>
                       <a href="/portal/portal/reset_password"><spring:message code="label.login.requestReset"/></a>
   		              </div>
@@ -126,6 +149,15 @@ $(document).ready(function() {
           </c:if>      
                 
 			  </div>
+
+<div id="login_error_empty_captcha" class="login_messages error" style="display:none;">
+  <p><strong><spring:message code="label.login.loginFailed"/> <spring:message code="error.auth.captcha.invalid"/></strong></p>
+  <p><spring:message code="label.login.reenterCredentials"/></p>
+  <c:if test="${!directoryServiceAuthenticationEnabled}"> 
+    <p><spring:message code="label.login.forgotPassword"/> <a href="<%= request.getContextPath() %>/portal/reset_password"><spring:message code="label.login.requestReset"/></a></p>
+  </c:if>
+</div>
+
 
 <c:set var="loginreturn" value="success" scope="session" />
 <c:if test="${loginFailed}">
@@ -153,6 +185,11 @@ $(document).ready(function() {
 	    <p><spring:message code="label.login.sessionTimeout"/></p>
 	  </div>
 	</c:when>
+	<c:when test="${email_verified eq 'Y' }">
+	  <div class="login_messages <c:if test="${directoryServiceAuthenticationEnabled}">smaller_ver</c:if> success">
+      <p><spring:message code="user.email.verified.successfully"/></p>
+    </div>
+  </c:when>
 </c:choose>
 
 <input id="from_login_page" value="true" style="display: None"></input>

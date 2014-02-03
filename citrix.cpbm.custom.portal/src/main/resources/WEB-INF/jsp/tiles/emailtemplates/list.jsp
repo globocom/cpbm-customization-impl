@@ -128,7 +128,6 @@ var dictionary = {
               <div class="widget_navtitlebox <c:out value="db_gridbox_rows"/>">
                 <span class="title">
                 <spring:message code="message.emailtemplate.${template.templateName}"/>
-                  <%-- <c:out value="${template.templateName}"/> --%>
                 </span>
                 <span class="subtitle">
                   <spring:message code="ui.email.templates.page.category"/>: <spring:message code="ui.email.templates.type.${fn:toLowerCase(template.category)}"/>
@@ -145,8 +144,7 @@ var dictionary = {
                       </div>
                       <div class="raw_contents_value">
                         <span>
-                          <spring:message code="message.emailtemplate.${template.templateName}.${selectedLanguage}"/>
-                          <%-- <c:out value="${template.templateName}"/> --%>
+                          <spring:message code="message.emailtemplate.${template.templateName}"/>
                         </span>
                       </div>
                     </div>

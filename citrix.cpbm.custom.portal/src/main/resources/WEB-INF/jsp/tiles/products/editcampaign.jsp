@@ -166,7 +166,7 @@ $("#campaignPromotionsForm").validate( {
 
 <div class="dialog_formcontent">
   <div class="details_lightboxtitlebox"></div>
-    <div class="details_lightboxformbox">
+    <div class="details_lightboxformbox add_edit_campaign">
       <spring:url value="/portal/promotions/editcampaign" var="edit_campaign_path" htmlEscape="false" /> 
       <form:form commandName="campaignPromotionsForm"  id="campaignPromotionsForm"  action="${edit_campaign_path}">
         <form:hidden path="campaignPromotion.id"/>
@@ -177,7 +177,7 @@ $("#campaignPromotionsForm").validate( {
             <div class="mandatory_wrapper">
               <form:input cssClass="text"  path="campaignPromotion.title" tabindex="1" cssStyle="margin:0 5px 0 10px;"/>              
             </div>
-            <div class="main_addnew_formbox_errormsg" id="campaignPromotion.titleError" style="margin: 5px 0 0 115px"></div>
+            <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.titleError"></div>
           </li> 
           <li>
             <form:label path="" ><spring:message code="ui.campaigns.label.create.promo.code"/></form:label>
@@ -185,7 +185,7 @@ $("#campaignPromotionsForm").validate( {
               <form:input cssClass="text" id="promoCodeId" path="promoCode" tabindex="2" readonly="${restrictedEdit}" disabled="${restrictedEdit}" style="margin:0 5px 0 10px;"/>
               <input id="promoCode_old" type="hidden" value="<c:out  value="${campaignPromotionsForm.promoCode}" />"/>
             </div>
-             <div class="main_addnew_formbox_errormsg" id="promoCodeIdError" style="margin: 5px 0 0 115px"></div>
+             <div class="main_addnew_formbox_errormsg add_edit_campaign" id="promoCodeIdError"></div>
           </li> 
           <li style="width:430px;">
           <form:label path="campaignPromotion.trial" ><spring:message code="ui.campaigns.label.create.trial"/></form:label>
@@ -212,7 +212,7 @@ $("#campaignPromotionsForm").validate( {
             <div class="mandatory_wrapper" >
             <form:input cssClass="text"  id="durationDays" style="margin:0 5px 0 10px;" path="campaignPromotion.durationDays" tabindex="4" readonly="${restrictedEdit}" disabled="${restrictedEdit}"/>
              </div> 
-              <div class="main_addnew_formbox_errormsg" id="durationDaysError" style="margin: 5px 0 0 115px"></div>                        
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="durationDaysError"></div>                        
           </li>  
           
           <li style="width:430px;">
@@ -226,14 +226,14 @@ $("#campaignPromotionsForm").validate( {
             <div class="mandatory_wrapper" >
               <form:input cssClass="text"  style="margin:0 5px 0 10px;" id="maxAccounts" path="campaignPromotion.maxAccounts" readonly="${restrictedEdit}" disabled="${restrictedEdit}"/>
              </div>     
-              <div class="main_addnew_formbox_errormsg" id="maxAccountsError"  style="margin: 5px 0 0 115px"></div>                    
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="maxAccountsError"></div>                    
           </li>  
           <li>
           <form:label path="campaignPromotion.startDate" ><spring:message code="ui.campaigns.label.create.startdate"/></form:label>
             <div class="mandatory_wrapper" >
                <form:input cssClass="text" cssStyle="margin:0 5px 0 10px;" path="campaignPromotion.startDate" tabindex="5" readonly="${restrictedEdit}" disabled="${restrictedEdit}"/>
               </div>
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.startDateError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.startDateError"></div>
           </li>  
           
           <li>
@@ -241,7 +241,7 @@ $("#campaignPromotionsForm").validate( {
             <div class="nonmandatory_wrapper" >
                <form:input cssClass="text" cssStyle="margin:0 5px 0 10px;" path="campaignPromotion.endDate" tabindex="6" />
              </div>                         
-              <div class="main_addnew_formbox_errormsg" style="margin: 5px 0 0 115px" id="campaignPromotion.endDateError"></div>
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="campaignPromotion.endDateError"></div>
           </li>  
 
           <li style="width:430px;">
@@ -303,7 +303,7 @@ $("#campaignPromotionsForm").validate( {
             <div class="mandatory_wrapper" >
               <form:input cssClass="text" cssStyle="margin:0 5px 0 10px;" id="percentOff" path="campaignPromotion.percentOff" tabindex="3" readonly="${restrictedEdit}" disabled="${restrictedEdit}"/>
              </div> 
-              <div class="main_addnew_formbox_errormsg" id="percentOffError" style="margin: 5px 0 0 115px"></div>                        
+              <div class="main_addnew_formbox_errormsg add_edit_campaign" id="percentOffError"></div>                        
           </li>  
 
           <li id="amountOffDivEdit" style="display:none; width:550px;">

@@ -44,7 +44,7 @@
       </c:choose>
   
       <div class="<c:out value="widget_grid inline ${rowClass}"/>">
-      
+       
   
           <div class="widget_grid_cell subheader borders" style="height:27px; width:200px" title="<spring:message code="${mediationRule.serviceInstance.service.serviceName}.UsageType.${mediationRule.serviceUsageType.usageTypeName}.name"/>">
              <span class="celltext right ellipsis" style="width: 80%;"><spring:message code="${mediationRule.serviceInstance.service.serviceName}.UsageType.${mediationRule.serviceUsageType.usageTypeName}.name"/></span>
@@ -52,13 +52,20 @@
   
            <div class="widget_grid_cell borders" style="height:27px; width: 150px;">
               <span class="celltext">
-                 <c:out value="${mediationRule.operator}" />
+              <spring:message htmlEscape="false" code="ui.label.${fn:toLowerCase(mediationRule.operator)}" />
               </span>
            </div>
   
            <div class="widget_grid_cell borders" style="height:27px; width: 143px;">
               <span class="celltext">
-                 <c:out value="${convFactor}" />
+                 <c:choose>
+                 <c:when test="${isProductDiscrete}">
+                   <fmt:formatNumber minFractionDigits="0" value="${convFactor}"/>
+                 </c:when>
+                 <c:otherwise>
+                    <c:out value="${convFactor}" />
+                 </c:otherwise>
+                 </c:choose>
               </span>
            </div>
   
@@ -113,7 +120,7 @@
                                           </div>
 
                                           <div class="widget_grid_cell" style="height:27px; width: 240px;">
-                                                 <span class="celltext">
+                                                 <span class="celltext ellipsis" style="width:90%;" title="<c:out value="${mediationRuleDiscriminator.discriminatorValueDisplayName}" />">
                                                     <c:out value="${mediationRuleDiscriminator.discriminatorValueDisplayName}" />
                                                  </span>
                                           </div>

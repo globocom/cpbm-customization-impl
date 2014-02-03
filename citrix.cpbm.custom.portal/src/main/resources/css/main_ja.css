@@ -35,7 +35,7 @@ span.title_listall_arrow {
 }
 .widgetcatalog_cataloglist.sections.subscription.contentarea a.subscribebutton
   {
-  font-size: 9px;
+  font-size: 8px;
   padding: 5px 0 0 0;
 }
 .db_statsbox.launch.buttonarea a.launch_button {
@@ -43,4 +43,26 @@ span.title_listall_arrow {
 }
 .db_statsbox.launch.buttonarea span.cloud {
   margin: -3px 2px 0 -28px;
+}
+.user_name_order .user_first_name {
+  display:table-footer-group;
+}
+.user_name_order .user_last_name {
+  display:table-header-group;
+}
+.creditcard_box.front.mid.contentarea li.inline_user_first_name {
+  float:right;
+}
+.creditcard_box.front.mid.contentarea li.inline_user_last_name {
+  float:left;
+}
+
+.btn-group>.btn.btn-info.custom_font{
+  font-size:12px;
+}
+.widget_searchcontentarea span.label {
+  font-size: 8px;
+}
+.maintitlebox h1 {
+  font-size: 15px;
 }

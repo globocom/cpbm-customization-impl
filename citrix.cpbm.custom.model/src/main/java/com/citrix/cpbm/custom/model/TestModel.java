@@ -38,7 +38,7 @@ public class TestModel implements EntityBase {
    */
   @Id
   @GeneratedValue(strategy = GenerationType.AUTO)
-  private Long id = (Long) 0L;
+  private Long id = 0L;
 
   /**
    * creationDate.

@@ -57,7 +57,7 @@ var viewtenantDictionary = {
                   </sec:authorize>
                   
                   <sec:authorize access="hasRole('ROLE_FINANCE_CRUD')">
-                    <c:if test="${tenant.accountId != '00000000' && tenant.state != 'TERMINATED' && tenant.state != 'NEW'}">
+                    <c:if test="${tenant.accountId != '00000000' && tenant.state != 'TERMINATED' }">
                       <c:set var="hasAnyOfActions" value="true"/>
                       <li id="editchannel_action5"><a href="javascript:void(0);" onclick="issueCreditGet(this);" class="issueCredit" id="<c:out value="issueCredit${tenant.param}"/>"><spring:message code="ui.label.tenant.view.issueCredit"/></a></li> 
                     </c:if>
@@ -113,9 +113,16 @@ var viewtenantDictionary = {
     
   </div>
 </div>
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-      
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>      
 <div class="widget_browser">
   <div class="widget_browsermaster">
     <div class="widget_browser_contentarea">
@@ -394,7 +401,7 @@ var viewtenantDictionary = {
                   <div class="row_celltitles"> 
 										<c:choose>
 										  <c:when test="${pendingChange.key.displayMode == 'POPUP'}">
-                        <a href="javascript:void(0);" class="taskPopup" id="taskPopup${pendingChange.key.uuid}">
+                        <a href="javascript:void(0);" class="taskPopup taskname" id="taskPopup${pendingChange.key.uuid}">
 														<spring:message code="message.view.pendingactions.click" />
 											  </a>
 										  </c:when>
@@ -411,10 +418,12 @@ var viewtenantDictionary = {
       </sec:authorize>
 		<div id="tenantAccountLimitsDivOuter" style="display: none">
 		  <div class="widget_details_actionbox" style="height:35px;">
-		    <div style="padding:3px;">
+		    <div style="padding:8px;">
 					<input type="hidden" id="tenantParam" value="${effectiveTenant.param}" />
 					<c:if test="${not empty services}">
-						<spring:message code="ui.label.service.sub.title" />
+						<span>
+							<spring:message code="ui.label.service.sub.title" />
+						</span>
 						<select id="selectedService" class="select" style="width: auto" onchange="changeInstances()">
 							<c:forEach var="service" items="${services}" varStatus="status">
 								<option value="${service.uuid}"><spring:message  code="${service.serviceName}.service.name"/></option>
@@ -422,8 +431,8 @@ var viewtenantDictionary = {
 						</select>
 					</c:if>
 					<c:if test="${not empty instances}">
-						<span><spring:message code="ui.home_service.page.title.service.instance" /></span>
-						<select id="selectedInstance" class="select" style="width: auto" onchange="showControls(this)">
+						<span><spring:message code="ui.home_service.page.title.service.instance" />:&nbsp;</span>
+						<select id="selectedInstance" class="select" style="max-width: 240px;" onchange="showControls(this)">
 							<!-- populate on service change -->
 						</select>
 					</c:if>
@@ -437,22 +446,11 @@ var viewtenantDictionary = {
 						</c:if>
 					</span>
 				</div>
+               <c:if test="${empty instances}">
+                  <div class="grid_header_title"><spring:message code="label.no.instance.enabled" /></div>
+               </c:if>
 			</div>
 			<div id="tenantAccountLimitsDiv"></div>
-			<%-- <div id="tenantMaxUserLimitsDiv">
-				<div class="widget_grid details even">
-					<div class="widget_grid_labels" style="width: 350px">
-						<span>
-							<spring:message code="label.accountcontrol.maxuser.limit" />
-						</span>
-					</div>
-					<div class="widget_grid_description">
-						<span>
-							<c:out value="${userLimit}"></c:out>
-						</span>
-					</div>
-				</div>
-			</div> --%>
 		</div>
 
 		<div id="viewStateChangesDiv"></div>

@@ -32,7 +32,7 @@
 			<div class="service_descriptionbox textbox">
 				<h3><spring:message  code="${service.serviceName}.service.name"/></h3>
 				<br><br><h5><spring:message  code="label.category"/>: <spring:message  code="${service.serviceName}.service.category"/></h5>
-				<p><span class="label"><spring:message  code="${service.serviceName}.service.description"/></p>
+				<p><span class="label"><spring:message  code="${service.serviceName}.service.description"/></span></p>
 			</div>
 		</div>
 	

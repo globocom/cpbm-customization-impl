@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright ¬© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.ArrayList;
@@ -100,7 +99,14 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
     int perPage = getDefaultPageSize();
     map.addAttribute("defaultPageSize", getDefaultPageSize());
 
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
+    if (isSurrogatedTenant(user.getTenant(), tenantParam)
+        && userService.hasAnyAuthority(user, "ROLE_TICKET_MANAGEMENT")) {
+      map.addAttribute("showUserProfile", true);
+      map.addAttribute("showHealthTab", false);
+    } else {
+      map.addAttribute("showHealthTab", true);
+    }
     setPage(map, Page.SUPPORT_ALL_TICKETS);
     if (tenantParam != null && !tenant.getParam().equals(tenantParam)) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
@@ -109,10 +115,11 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
         user = tenant.getOwner();
       }
     }
+
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     map.addAttribute("tenant", tenant);
     Capability capability = supportService.getTicketCapability();
-    if (capability!=null && capability.equals(Capability.C)) {
+    if (capability != null && capability.equals(Capability.C)) {
       TicketForm ticketForm = new TicketForm();
       map.addAttribute("ticketForm", ticketForm);
       return "support.tickets.createonly";
@@ -162,12 +169,12 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
           map.put("ticketServiceConfigured", true);
           allTickets = supportService.list(page, perPage + 1, listTicketStatus, users, sortType, sortColumn,
               responseAttribute);
-          if(allTickets==null){
-            tickets=null;
+          if (allTickets == null) {
+            tickets = null;
             map.put("ticketServiceConfigured", false);
             return "support.tickets";
-           }
-          
+          }
+
         } catch (TicketServiceException e) {
           return "support.tickets";
         }
@@ -256,7 +263,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       logger.debug("Leaving in listTicketsPage: queryLocator is null. No more data to show");
       return "support.tickets.list";
     }
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     if (tenantParam != null && !tenant.getParam().equals(tenantParam)) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
       if (effectiveTenant != null) {
@@ -327,7 +334,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
   public Ticket createTicket(@RequestParam(value = "tenant", required = false) String tenantParam,
       HttpServletRequest request, @ModelAttribute("createTicketForm") TicketForm ticketForm, ModelMap map) {
     logger.debug("###In createTicket method starting...(POST)");
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     Tenant tenant = user.getTenant();
     if (tenantParam != null && !tenant.getParam().equals(tenantParam)) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
@@ -361,7 +368,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
     logger.debug("###In viewTicket method starting...(GET) with tktNumber" + ticketNumber);
 
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     if (tenantParam != null && !tenant.getParam().equals(tenantParam)) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
       if (effectiveTenant != null) {
@@ -414,7 +421,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
     logger.debug("###In createNewComment method starting...(POST)");
     TicketComment comment = ticketCommentForm.getComment();
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     if (tenantParam != null) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
       if (effectiveTenant != null) {
@@ -458,6 +465,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
    * @return String
    */
   @RequestMapping(value = "/tickets/edit", method = RequestMethod.POST)
+  @ResponseBody
   public String editTicket(@ModelAttribute("currentTenant") Tenant tenant,
       @RequestParam(value = "statusFilter", required = false) String statusFilter,
       @RequestParam(value = "tenant", required = false) String tenantParam,
@@ -466,7 +474,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       @RequestParam(value = "caseNumber", required = false) String caseNumber, HttpServletRequest request,
       @ModelAttribute("ticketForm") TicketForm ticketForm, ModelMap map) {
     logger.debug("###In editTicket method starting...(POST)");
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     if (tenantParam != null) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
       if (effectiveTenant != null) {
@@ -491,8 +499,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       throw new InvalidAjaxRequestException(e.getMessage(), e);
     }
     logger.debug("###In editTicket method end...(POST)");
-    return "redirect:/portal/support/tickets?tenant=" + tenantParam + "&statusFilter=" + status + "&sortType="
-        + sortType + "&sortColumn=" + sortColumn;
+    return "success";
   }
 
   /**
@@ -517,7 +524,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
         Ticket tkt = supportService.get(ticketNumber);
         tkt.setStatus(TicketStatus.CLOSED);
         tkt.setUpdatedAt(new Date());
-        tkt.setUpdatedBy(getCurrentUser());
+        tkt.setUpdatedBy(getCurrentUser(true));
         supportService.update(tkt, tenant.getOwner());
         returnValue = "Success";
       }
@@ -545,7 +552,7 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       @RequestParam(value = "tenantParam", required = false) String tenantParam, ModelMap map, HttpSession session,
       HttpServletRequest request) {
     logger.debug("Entering in homeTicketsCount");
-    User user = getCurrentUser();
+    User user = getCurrentUser(true);
     if (tenantParam != null) {
       Tenant effectiveTenant = supportService.getEffectiveTenant(tenantParam);
       if (effectiveTenant != null) {
@@ -554,7 +561,6 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       }
     }
 
-    String error = null;
     try {
       List<TicketStatus> listTicketStatus = new ArrayList<Ticket.TicketStatus>();
       List<User> users = new ArrayList<User>();
@@ -584,9 +590,6 @@ public abstract class AbstractSupportController extends AbstractAuthenticatedCon
       map.addAttribute("escalated_tickets_count", escalated_tickets);
 
     } catch (SupportServiceException ex) {
-      if (ex.getMessage().equals("SERVICE_NOT_REACHABLE")) {
-        error = "SERVICE_NOT_REACHABLE".toLowerCase();
-      }
     } catch (TicketServiceException e) {
       throw new InvalidAjaxRequestException(e.getMessage(), e);
     }

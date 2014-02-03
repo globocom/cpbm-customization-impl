@@ -104,8 +104,8 @@
     </div>
   </div>
   <div class="subscribe_tnc_box">
-    <span class="checkbox_container"><input class="checkbox" type="checkbox" id="accept_checkbox" /></span> 
-    <span class="checkbox_description" ><spring:message code="label.subscribe.notice.terms" htmlEscape="false"/><img src="../../images/open_new_window.png" id="tncLink" alt="<spring:message code='terms.and.conditions' />" class="new_window" ></span>
+    <span class="checkbox_container"><input class="checkbox" type="checkbox"  style="padding-left:0px;" id="accept_checkbox" /></span> 
+    <span class="checkbox_description" ><spring:message code="label.subscribe.notice.terms" htmlEscape="false"/></span>
   </div>
 
   <div id="subtotal_content_area" class="launchvm_sub-totalbox">
@@ -122,35 +122,24 @@
   </div>
 
   <div class="widgetcatalog_contentarea sectionbox" style="border: none; background: none; margin-top: 10px;">
-    <c:choose>
-      <c:when test="${isReconfigure || isReprovision || resourceType == serviceBundleResourceType || isPayAsYouGoChosen}">
-        <div class="btn-group">
-          <button class="btn btn-info" style="width: 240px;" id="launchResource">
-              <c:if test="${isReprovision || isPayAsYouGoChosen}">
-                <spring:message code="ui.label.provision" />
-              </c:if>
-              <c:if test="${isReconfigure}">
-                <spring:message code="ui.label.subscription.Reconfigure" />
-              </c:if>
-              <c:if test="${resourceType == serviceBundleResourceType}">
-                <spring:message code="label.subscribe.confirm" />
-              </c:if>
-          </button>
-        </div>
-      </c:when>
-      <c:otherwise>
-        <div class="btn-group">
-          <button class="btn btn-info" style="width:210px;" data-hover="dropdown" data-delay="1000" data-close-others="false" id="launchResourcePrimary"><spring:message code="label.subscribe.summary.subscribe" /></button>
-          <button class="btn btn-info dropdown-toggle" data-hover="dropdown" data-delay="1000" data-close-others="false" data-toggle="dropdown" style="padding-bottom:12px;padding-top:4px;">
-          <span class="caret"></span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;width:235px;">
-            <li><a href="javascript:void(0);" id="launchResourcePrimaryMenu"><spring:message code="label.subscribe.summary.subscribe.provision" /></a></li>
-            <li><a href="javascript:void(0);" id="launchResourceSecondaryMenu"><spring:message code="label.subscribe.summary.subscribe.provision.later" /></a></li>
-          </ul>
-        </div>
-      </c:otherwise>
-     </c:choose>
+    <div class="btn-group">
+      <button class="btn btn-info custom_font" style="width: 240px;" id="launchResource">
+        <c:choose>
+          <c:when test="${isReprovision || isPayAsYouGoChosen}">
+            <spring:message code="ui.label.provision" />
+          </c:when>
+          <c:when test="${isReconfigure}">
+            <spring:message code="ui.label.subscription.Reconfigure" />
+          </c:when>
+          <c:when test="${resourceType == serviceBundleResourceType}">
+            <spring:message code="label.subscribe.confirm" />
+          </c:when>
+          <c:otherwise>
+            <spring:message code="label.subscribe.summary.subscribe.provision" />
+          </c:otherwise>
+        </c:choose>
+      </button>
+    </div>
   </div>
 </div>
 

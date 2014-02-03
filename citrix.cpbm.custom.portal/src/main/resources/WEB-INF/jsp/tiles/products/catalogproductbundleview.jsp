@@ -68,12 +68,13 @@
           </div>
 
             <div id="entitlements_dialog_<c:out value="${productBundleRevision.productBundle.id}"/>"
-                 style="display:none; overflow-x: hidden; overflow-y: auto;" title="<spring:message code="ui.label.product.entitlements"/>"
+                 style="display:none; overflow-x: hidden; overflow-y: auto;height:auto; max-height: 348px;" title="<spring:message code="ui.label.product.entitlements"/>"
                  class="ui-dialog-content ui-widget-content">
               <div class="dialog_formcontent entitlementlightbox" style="width: 380px;">
-                <div class="details_lightboxformbox" style="height: 348px; width: 300px; border-bottom:none;">
-		              <c:if test="${entitlements != null}">
-		                <ul id="totalentitlments">
+                <div class="details_lightboxformbox" style="height:auto; max-height: 348px; width: 300px; border-bottom:none;">
+                <c:choose>
+                	<c:when test="${not empty  entitlements}">
+                		    <ul id="totalentitlments">
 			                <c:forEach var="entitlement" items="${entitlements}">
 			                    <li style="color: #000">
 				                    <span class="text ellipsis" style="margin-top: 14px;">
@@ -93,7 +94,16 @@
 			                    </li>
 			                </c:forEach>
 			              </ul>
-		              </c:if>
+                	</c:when>
+                	<c:otherwise>
+								<ul id="totalentitlments">
+									<li style="color: #000; margin-top: 14px">
+											<spring:message
+												code="message.bundle.details.dialog.no.entitlements" />
+									</li>
+								</ul>
+							</c:otherwise>
+                </c:choose>
 		            </div>
 	            </div>
             </div>

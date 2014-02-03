@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package web.proxy;
 
 import java.io.FileNotFoundException;
@@ -20,7 +19,6 @@ import javax.validation.ValidatorFactory;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.validation.BeanPropertyBindingResult;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.vmops.model.Tenant;
@@ -52,11 +50,10 @@ public class ProxyTest {
     // t.setFoo("foo");
     t.setOwner(user);
 
-    BeanPropertyBindingResult result = new BeanPropertyBindingResult(t, "tenant");
     Set<ConstraintViolation<com.citrix.cpbm.access.Tenant>> constraintViolations = validator.validate(t);
 
     CustomProxy invocationHandler = (CustomProxy) Proxy.getInvocationHandler(t);
-    Class clazz = invocationHandler.getTenantInterfaces()[0];
+    Class clazz = CustomProxy.getTenantInterfaces()[0];
     System.err.println("..t.." + clazz.getName());
 
     System.err.println("..Proxy.isProxyClass(clazz)..." + Proxy.isProxyClass(invocationHandler.getTarget().getClass()));

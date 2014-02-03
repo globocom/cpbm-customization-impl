@@ -1,14 +1,10 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -18,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -82,10 +79,10 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
   protected ConnectorConfigurationManager connectorConfigurationManager;
 
   @Autowired
-  private UserService userService;
+  protected UserService userService;
 
   @Autowired
-  private ReportService reportService;
+  protected ReportService reportService;
 
   @Autowired
   protected EventService eventService;
@@ -94,25 +91,25 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
   protected ConfigurationService configurationService;
 
   @Autowired
-  private CurrencyValueService currencyValueService;
+  protected CurrencyValueService currencyValueService;
 
   @Autowired
-  JobManagementService jobManagementService;
+  protected JobManagementService jobManagementService;
 
   @Autowired
-  private SystemHealthService healthService;
+  protected SystemHealthService healthService;
 
   @Autowired
-  private CustomFieldService customFieldService;
+  protected CustomFieldService customFieldService;
 
   @Autowired
-  private DataSource dataSource;
+  protected DataSource dataSource;
 
   @Autowired
-  private BillingService billingService;
+  protected BillingService billingService;
 
   @Autowired
-  private TaskService taskService;
+  protected TaskService taskService;
 
   @Autowired
   protected BillingAdminService billingAdminService;
@@ -121,10 +118,10 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
   protected SubscriptionService subscriptionService;
 
   @Autowired
-  private ProductService productService;
+  protected ProductService productService;
 
   @Autowired
-  private UsageService usageService;
+  protected UsageService usageService;
 
   @RequestMapping(value = {
     "/home"
@@ -145,8 +142,6 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
       map.addAttribute("return_message", "true");
       map.addAttribute("return_message_type", "info");
       session.removeAttribute("loginreturn");
-      // login audit details
-      // createloginauditrecord(user, request);
     }
 
     if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
@@ -166,7 +161,6 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
 
-    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     if ((userService.hasAnyAuthority(user, "ROLE_ACCOUNT_CRUD", "ROLE_ACCOUNT_MGMT", "ROLE_FINANCE_CRUD"))
         && (Boolean) request.getAttribute("isSurrogatedTenant")) {
       user = tenant.getOwner();
@@ -177,7 +171,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     }
     fetchCurrencies(map);
     fetchEvents(user, map);
-
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     if (!userService.hasAuthority(user, "ROLE_TICKET_MANAGEMENT") && !tenant.equals(tenantService.getSystemTenant())) {
       if (user.equals(user.getTenant().getOwner()) || userService.hasAuthority(user, "ROLE_ACCOUNT_BILLING_ADMIN")
           || userService.hasAuthority(user, "ROLE_ACCOUNT_ADMIN")) {
@@ -219,7 +213,12 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     map.addAttribute("isOwner", getCurrentUser().equals(tenant.getOwner()));
     map.addAttribute("user", user);
     // check user limit
-    int userLimit = tenant.getAccountType().getMaxUsers().intValue();
+    int userLimit;
+    if (tenant.getMaxUsers() != null) {
+      userLimit = tenant.getMaxUsers().intValue();
+    } else {
+      userLimit = tenant.getAccountType().getMaxUsers().intValue();
+    }
     int noOfUsers = usersUnderTenant.size();
     if (userLimit >= 0 && noOfUsers >= userLimit) {
       map.addAttribute("isUsersMaxReached", "Y");
@@ -227,6 +226,12 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     map.addAttribute("currentDate", new Date());
     map.addAttribute("tenant", tenant);
 
+    List<ServiceInstance> ticketTypeServiceInstance = userService.getServiceInstance(user, "OSS", "TICKET");
+    if (!ticketTypeServiceInstance.isEmpty()) {
+      map.addAttribute("ticketServiceInstance", true);
+    } else {
+      map.addAttribute("ticketServiceInstance", false);
+    }
     // Fetching category list and prepending it with All category
     List<String> serviceCategoryList = userService.getAllAccessibleCloudServiceCategories(user);
     serviceCategoryList.retainAll(currentUserServiceCategoryList);
@@ -280,7 +285,8 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     } else {
       AccountStatement accountStatement = billingAdminService.getOrCreateProvisionalAccountStatement(tenant);
       map.addAttribute("currentBillingStart", accountStatement.getBillingPeriodStartDate());
-
+      Date nextInvoiceDate = DateUtils.addOneDay(accountStatement.getBillingPeriodEndDate());
+      map.addAttribute("nextInvoiceDate", nextInvoiceDate);
       view = "main.home_with_second_level";
     }
     logger.debug("###Exiting home(map) method");
@@ -362,8 +368,8 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     return "batch.list";
   }
 
-  @RequestMapping(value = "/home/getgravtars", method = RequestMethod.GET)
-  public String getGravtars(@ModelAttribute("currentTenant") Tenant currentTenant,
+  @RequestMapping(value = "/home/getgravatars", method = RequestMethod.GET)
+  public String getGravatars(@ModelAttribute("currentTenant") Tenant currentTenant,
       @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpServletRequest request) {
     logger.debug("###Entering in getGravtars method @GET");
 
@@ -380,53 +386,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     map.addAttribute("usersForGravatar", usersForGravatar);
     map.addAttribute("gravatars", gravatarUrlsForUsers);
     logger.debug("###Exiting getGravtars method @GET");
-    return "home.gravtars.show";
-  }
-
-  /**
-   * This method is the helper for the gravatar url generation This method gets the user email, trims it for leading and
-   * trailing white spaces and generates an md5 hash of this email address, finally returning this newly generated
-   * gravatar url in the format http://www.gravatar.com/avatar/<md5 hash>
-   */
-  private String generateGravatarUrl(String emailAddress) {
-    String trimmedEmailAddress = emailAddress.toLowerCase().trim();
-    StringBuilder gravatarUrl = new StringBuilder("http://www.gravatar.com/avatar/");
-    String md5Hash = md5Hex(trimmedEmailAddress);
-    gravatarUrl.append(md5Hash);
-    // this part appends the default img
-    gravatarUrl.append("?d=http://www.gravatar.com/avatar/6a33002708e4e19578cbadaaae09507d.png");
-
-    return gravatarUrl.toString();
-  }
-
-  /**
-   * Hex representation of the incoming email address string
-   * 
-   * @param array -- email address byte array
-   * @return -- hex rep string
-   */
-  private String hex(byte[] array) {
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < array.length; ++i) {
-      sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
-    }
-    return sb.toString();
-  }
-
-  /**
-   * This method represents the MD5 Hash of the input message
-   * 
-   * @param message
-   * @return -- md5 encoded string
-   */
-  private String md5Hex(String message) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("MD5");
-      return hex(md.digest(message.getBytes("CP1252")));
-    } catch (NoSuchAlgorithmException e) {
-    } catch (UnsupportedEncodingException e) {
-    }
-    return null;
+    return "home.gravatars.show";
   }
 
   private void fetchCurrencies(ModelMap map) {
@@ -440,6 +400,9 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     try {
       DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+      if (user.getTimeZone() != null) {
+        formatter.setTimeZone(TimeZone.getTimeZone(user.getTimeZone()));
+      }
       String date = formatter.format(new Date());
       alerts_for_today = eventService.showEvents(user, date, 1, 2, null, null, null, null, null, false);
       // alerts_for_today = eventService.showEventsByDate(user, date, 1, 2);
@@ -455,6 +418,9 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     try {
       DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+      if (user.getTimeZone() != null) {
+        formatter.setTimeZone(TimeZone.getTimeZone(user.getTimeZone()));
+      }
       String date = formatter.format(DateUtils.minusOneDay(new Date()));
       alerts_for_yesterday = eventService.showEvents(user, date, 1, 1, null, null, null, null, null, false);
 
@@ -548,13 +514,14 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
         logger.error(use);
       }
 
-      if (productUsages != null)
+      if (productUsages != null) {
         for (ProductUsage productUsage : productUsages) {
           List<BigDecimal> productUsageAmountAndQuantity = new ArrayList<BigDecimal>();
           productUsageAmountAndQuantity.add(productUsage.getRawUsage());
           productUsageAmountAndQuantity.add(productUsage.getRatedUsage());
           productInvoiceItemsMap.put(productUsage.getProductCode(), productUsageAmountAndQuantity);
         }
+      }
 
       List<Product> products = productService.listProductsByServiceInstance(serviceInstance, 0, 60);// adding
       // perPage as 60 for now so that dashboard UI pagination doesn't break
@@ -566,7 +533,11 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
           float quantityTotal = Math.round(productInvoiceItemsMap.get(product.getCode()).get(0).floatValue() * 100.0f) / 100.0f;
           BigDecimal amount = productInvoiceItemsMap.get(product.getCode()).get(1);
           totalSpendByInstance = totalSpendByInstance.add(amount);
-          productValues.put("itemValue", quantityTotal);// quantity
+          if (product.getDiscrete()) {
+            productValues.put("itemValue", new Float(quantityTotal).intValue());// quantity
+          } else {
+            productValues.put("itemValue", quantityTotal);// quantity
+          }
           productValues.put("itemValue2", amount);// amount
           productValues.put("itemValue2Type", "currency");
         }
@@ -738,13 +709,14 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
         logger.error(use);
       }
 
-      if (productUsages != null)
+      if (productUsages != null) {
         for (ProductUsage productUsage : productUsages) {
           List<BigDecimal> productUsageAmountAndQuantity = new ArrayList<BigDecimal>();
           productUsageAmountAndQuantity.add(productUsage.getRawUsage());
           productUsageAmountAndQuantity.add(productUsage.getRatedUsage());
           productInvoiceItemsMap.put(productUsage.getProductCode(), productUsageAmountAndQuantity);
         }
+      }
 
       List<Product> products = productService.listProductsByServiceInstance(serviceInstance, 0, 60);// adding
       // perPage as 60 for now so that dashboard UI pagination doesn't break
@@ -757,7 +729,11 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
           float quantityTotal = Math.round(productInvoiceItemsMap.get(product.getCode()).get(0).floatValue() * 100.0f) / 100.0f;
           BigDecimal amount = productInvoiceItemsMap.get(product.getCode()).get(1);
           totalSpendByTenantByInstance = totalSpendByTenantByInstance.add(amount);
-          productValues.put("itemValue", quantityTotal);// quantity
+          if (product.getDiscrete()) {
+            productValues.put("itemValue", new Float(quantityTotal).intValue());// quantity
+          } else {
+            productValues.put("itemValue", quantityTotal);// quantity
+          }
           productValues.put("itemValue2", amount);// amount
           productValues.put("itemValue2Type", "currency");
         }
@@ -824,10 +800,4 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
     dashboardItems.add(dashboardItem3);
   }
 
-  /*
-   * private void createLoginAuditRecord(User user, HttpServletRequest request) { UserLoginAudit userLoginAudit = new
-   * UserLoginAudit(user, getRemoteUserIp(request)); List<TestModel> data = testModelService.listTestModel(); TestModel
-   * testModel = new TestModel(new Date(), user); testModelService.save(testModel);
-   * userLoginAuditService.saveAudit(userLoginAudit); }
-   */
 }

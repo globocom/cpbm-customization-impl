@@ -9,7 +9,7 @@
  <c:when test="${isprofilepage == 'true' && (user.user.id != currentUser.id)}">
   <div class="secondlevel_breadcrumb_panel" >
      <div class="secondlevel_breadcrumbbox">
-       <p><c:out value="${user.user.tenant.name}"/></p>
+       <p title="${user.user.tenant.name}"><c:out value="${user.user.tenant.name}"/></p>
      </div>
      <div class="secondlevel_breadcrumbbox">
       <p><c:out value="${user.user.firstName} ${user.user.lastName}"/></p>
@@ -30,8 +30,8 @@
   </c:when>
   <c:otherwise>
   <div class="secondlevel_breadcrumb_panel">
-           <div class="secondlevel_breadcrumbbox">
-               <p><c:out value="${tenant.name}"/></p>
+           <div class="secondlevel_breadcrumbbox_tenant">
+               <p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
            </div>
            <div class="doc_help_link"></div>
       </div>

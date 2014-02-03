@@ -5,6 +5,7 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <jsp:include page="/WEB-INF/jsp/tiles/shared/js_messages.jsp"></jsp:include>
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/validator.js"></script>
@@ -24,8 +25,16 @@
   </div>
 </div>
 
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
       
 <div class="widget_browser">
   <div class="widget_browsermaster">
@@ -169,15 +178,17 @@
               <div class="widget_grid_description" >
                   <span id="accounttype_rgp"><c:out value="${accounttype.accountRestrictionGracePeriod}"/></span>
               </div>
-          </div>    
-          <div class="widget_grid details even">
-              <div class="widget_grid_labels" style="width:215px;">
-                  <span style="width:200px;"><spring:message code="ui.accounttypes.list.page.initialDepositRequired"/></span>
-              </div>
-              <div class="widget_grid_description">
-                  <span id="accounttype_depreq"><spring:message code="label.${accounttype.depositRequired}"/></span>
-              </div>
-          </div>
+          </div>  
+          <c:if test="${!(accounttype.trial)}">  
+	          <div class="widget_grid details even">
+	              <div class="widget_grid_labels" style="width:215px;">
+	                  <span style="width:200px;"><spring:message code="ui.accounttypes.list.page.initialDepositRequired"/></span>
+	              </div>
+	              <div class="widget_grid_description">
+	                  <span id="accounttype_depreq"><spring:message code="label.${accounttype.depositRequired}"/></span>
+	              </div>
+	          </div>
+          </c:if>
           <div class="widget_grid details odd">
               <div class="widget_grid_labels" style="width:215px;">
                   <span style="width:200px;"><spring:message code="ui.accounttypes.list.page.pin"/></span>
@@ -220,13 +231,17 @@
 
 						<div class="widget_details_actionbox" id="instanceparam_${key}">
 							<ul class="widget_detail_actionpanel">
-								<a href="javascript:void(0);"
-									onclick="addAccountTypeControlsGet('<c:out value="${key}"/>', '<c:out value="${accounttype.id}"/>')">
-									<spring:message code="label.edit" />
-								</a>
+								<c:if test="${mapOfControlMetaDataPerInstance[key] > 0}">
+									<a href="javascript:void(0);"
+									 onclick="addAccountTypeControlsGet('<c:out value="${key}"/>', '<c:out value="${accounttype.id}"/>')">
+									 <spring:message code="label.edit" /> 
+									</a>
+								</c:if>
 							</ul>
 						</div>
-						<div class="widget_browsergrid_wrapper details" id="instanceparam_${key}" style="height:420px" >
+						<c:choose>
+						<c:when test="${not empty controls}">
+						<div class="widget_browsergrid_wrapper details" id="instanceparam_${key}" style="height:380px" >
 							<c:forEach var="control" items="${controls}" varStatus="status">
 								<c:set var="rowClass" value="odd" />
 								<c:if test="${status.index % 2 ==0}">
@@ -246,6 +261,30 @@
 								</div>
 							</c:forEach>
 						</div>
+						</c:when>
+						<c:otherwise>
+						  <div class="widget_browsergrid_wrapper details" id="instanceparam_${key}" style="height:380px" >
+						  <c:set var="controls" value="${initialMapForView[key]}"></c:set>
+              <c:forEach var="control" items="${controls}" varStatus="status">
+                <c:set var="rowClass" value="odd" />
+                <c:if test="${status.index % 2 ==0}">
+                  <c:set var="rowClass" value="even" /> 
+                </c:if>
+                <div class="widget_grid details ${rowClass}">
+                  <div class="widget_grid_labels" style="width:200px">
+                    <span style="width:auto">
+                      <spring:message code="${control.service.serviceName}.${control.name}.name" />
+                    </span>
+                  </div>
+                  <div class="widget_grid_description">
+                  <span id="${control.name}">
+                    </span>
+                  </div>
+                </div>
+              </c:forEach>
+            </div>
+            </c:otherwise>
+            </c:choose>
 					</c:forEach>
 				</c:if>
 			</c:if>

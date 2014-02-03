@@ -79,11 +79,6 @@
           <div class="db_statsbox contentarea" >
                <div id="serviceHealthChart" style="min-height:30px;">
                </div>
-            <div class="db_statsbox_footerlinksbox">
-                <c:if test="${!currentUser.profile.operationsProfile}">
-                 <p><a id="details_link" href="<%=request.getContextPath() %>/portal/health"><spring:message code="labe.view.all"/></a></p>
-                </c:if>
-            </div>
           </div>
         </div>
         </c:if>
@@ -127,7 +122,7 @@
 	            <div class="db_statsbox title">
 	              <h2><spring:message code="ui.home.page.title.tickets"/></h2>
 	            </div>
-              <div id="top_message_panel" class="common_messagebox widget" ><p id="msg"></p></div>
+              <div id="top_message_panel" class="alert alert-success" style="float:left;width:390px;word-wrap:break-word;display:none;"><p id="msg"></p></div>
 	           <div class="db_statsbox contentarea">
 	                <div id="ticketsCountChart">
 	                  <div id="spinnerDiv" class="spinnerDiv" style="margin: 70px 0 0 200px;"> </div>
@@ -207,7 +202,7 @@
 		                            </c:otherwise>
 		                            </c:choose>
 		                          </div>
-		                            <span class="icon notification" ref="today" onclick="go_to_notifications(this);"></span>
+		                            <span class="icon notification ${level}" ref="today" onclick="go_to_notifications(this);"></span>
 		                        </li>
 		                      </c:forEach>
 		                        
@@ -265,7 +260,7 @@
 		                              </c:otherwise>
 		                            </c:choose>
 		                          </div>
-		                          <span class="icon notification" ref="yesterday" onclick="go_to_notifications(this);"></span>
+		                          <span class="icon notification ${level}" ref="yesterday" onclick="go_to_notifications(this);"></span>
 		                        </li>
 		                      </c:forEach>
 		                        

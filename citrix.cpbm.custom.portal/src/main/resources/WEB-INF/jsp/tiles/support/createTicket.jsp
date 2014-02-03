@@ -15,7 +15,8 @@ $("#createTicketForm").validate( {
           required : true
         },
         "ticket.subject" : {
-          required : true
+          required : true,
+          maxlength: 255
         },
         "ticket.status" : {
           required : true
@@ -26,7 +27,8 @@ $("#createTicketForm").validate( {
           required : i18n.errors.ticketDescription
         },
         "ticket.subject" : {
-          required : i18n.errors.ticketTitle
+          required : i18n.errors.ticketTitle,
+          maxlength: i18n.errors.ticketTitleMaxlength
         },
         "ticket.status" : {
           required : i18n.errors.ticketStatus
@@ -53,7 +55,7 @@ $("#createTicketForm").validate( {
             <li class="long">
               <form:label path="ticket.subject" style="width:70px;"><spring:message code="ui.label.support.tickets.title"/></form:label>
               <div class="mandatory_wrapper">
-                <form:input cssClass="text" cssStyle="width:575px;margin-left:10px;padding:2px 0 0 2px;" path="ticket.subject"  tabindex="1"/>
+                <form:input cssClass="text" cssStyle="width:575px;margin-left:10px;padding:2px 0 0 2px;" path="ticket.subject"  tabindex="1" maxlength="255"/>
               </div>
               <div class="main_addnew_formbox_errormsg" id="ticket.subjectError" style="margin-left:85px;">
                 <label for="ticket.subject" generated="true" class="error" style="width:200px;padding-left:6px;"></label>

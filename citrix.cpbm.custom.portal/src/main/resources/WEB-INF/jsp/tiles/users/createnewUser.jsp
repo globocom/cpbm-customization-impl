@@ -19,11 +19,13 @@ $("#add_user_form_step1").validate( {
       "user.firstName" : {
       required: true,
         minlength : 1,
+        maxlength: 255,
         flname:true
       },
       "user.lastName" : {
         required:true,
         minlength : 1,
+        maxlength: 255,
         flname:true
       },
       "user.email": {
@@ -40,7 +42,7 @@ $("#add_user_form_step1").validate( {
       minlength : 5,
       validateUsername : true,
       remote : {
-          url : '/portal/portal/validate_username'
+          url : '/portal/portal/users/validate_username'
         }
       },        
       "userProfile" : {
@@ -95,6 +97,25 @@ $("#add_user_form_step1").validate( {
   });
 
 });
+
+function toggleAdImport(){
+  if($("#add_user_form_step1").validate().element("#user\\.username"))
+    {
+      $("#import_user_info_from_ad").removeAttr("disabled");
+    }
+    else{
+      $("#import_user_info_from_ad").attr("disabled", true);
+    }
+}
+
+$("#user\\.username").mouseout(function(){
+  toggleAdImport();
+});
+
+$("#user\\.username").focusout(function(){
+  toggleAdImport();
+});
+
 var step1FinishUrl="<%=request.getContextPath() %>/portal/users/new/step1";
 var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2";
 </script>
@@ -134,6 +155,21 @@ var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2"
     
               <div class="widgetwizard_contentarea widgetwizard_contentareabig">
                          <div class="widgetwizard_boxes fullheight3step">
+                         
+                         <div id="inprogress_spinning_wheel_1" style="height:100%;width:100%; position:absolute;display:none;" >
+                           <div class="widget_blackoverlay " style="height:100%;"></div>
+                            <div class="widget_loadingbox " style="top:45%;">
+                              <div class="widget_loaderbox">
+                                <span class="bigloader"></span>
+                              </div>
+                              <div class="widget_loadertext">
+                                <p id="in_process_text">
+                                  <spring:message code="label.loading" />
+                                  &hellip;
+                                </p>
+                              </div>
+                            </div>
+                          </div> 
                               <div class="widgetwizard_titleboxes">
                                      <h2><spring:message code="label.newUserStep1.addUser" /></h2>
                              </div>
@@ -148,7 +184,7 @@ var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2"
                                                   <div class="main_addnew_formbox_errormsg_popup" id="user.usernameError"><form:errors path="user.username"
                                                     cssStyle="color:red"></form:errors></div>
                                                     <c:if test="${showImportAdButton=='true'}">
-                                                      <input type="button" id="import_user_info_from_ad" onclick="importAdUser()" value="<spring:message code="label.tenants.uername.import.ds.button" />" style="margin-top: 15px; margin-left: 10px;"/>
+                                                      <input class="basic_button adimport" type="button" onclick="importAdUser(this)" value="<spring:message code="label.tenants.uername.import.ds.button" />" name="<spring:message code="label.tenants.uername.import.ds.button"/>" id="import_user_info_from_ad" style="padding-left: 10px; margin-left: 88px; margin-top: -33px; margin-bottom: 0px;" disabled="disabled"/>
                                                       <input type="hidden" id="ad_import_enabled" value="ad_import_enabled"/>
                                                     </c:if>
                                                   </li>
@@ -160,28 +196,31 @@ var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2"
                                                   <form:input cssClass="text" tabindex="107" path="user.email" title="${i18nEmailTooltip}" maxlength="50"/></div>
                                                        <div class="main_addnew_formbox_errormsg_popup"  id="user.emailError"> <form:errors path="user.email"></form:errors></div>
                                                      </li>
-                                              
-                                                  <li><span class="label"> <form:label path="user.firstName">
-                                                    <spring:message code="label.newUserStep1.firstName" />
-                                                  </form:label></span>
-                                                  <div class="mandatory_wrapper"><spring:message code="label.userInfo.firstName.tooltip"
-                                                    var="i18nFirstNameTooltip" /> <form:input cssClass="text" tabindex="108" path="user.firstName"
-                                                    title="${i18nFirstNameTooltip}" maxlength="100"/></div>
-                                                  <div class="main_addnew_formbox_errormsg_popup" id="user.firstNameError"><form:errors path="user.firstName"
-                                                    cssClass="ErrorColor"></form:errors></div>
-                                                  </li>
-                                              
-                                              
-                                                  <li><span class="label"> <form:label path="user.lastName">
-                                                    <spring:message code="label.newUserStep1.lastName" />
-                                                  </form:label></span>
-                                              
-                                                  <div class="mandatory_wrapper"><spring:message code="label.userInfo.lastName.tooltip"
-                                                    var="i18nLastNameTooltip" /> <form:input cssClass="text" tabindex="109" path="user.lastName"
-                                                    title="${i18nLastNameTooltip}" maxlength="100"/></div>
-                                                    <div class="main_addnew_formbox_errormsg_popup" id="user.lastNameError"><form:errors path="user.lastName"
-                                                    cssStyle="color:red"></form:errors></div>
-                                                  </li>
+                                                  <div class="user_name_order">
+                                                    <div class="user_first_name">
+                                                      <li><span class="label"> <form:label path="user.firstName">
+                                                        <spring:message code="label.newUserStep1.firstName" />
+                                                      </form:label></span>
+                                                      <div class="mandatory_wrapper"><spring:message code="label.userInfo.firstName.tooltip"
+                                                        var="i18nFirstNameTooltip" /> <form:input cssClass="text" tabindex="108" path="user.firstName"
+                                                        title="${i18nFirstNameTooltip}" /></div>
+                                                      <div class="main_addnew_formbox_errormsg_popup" id="user.firstNameError"><form:errors path="user.firstName"
+                                                        cssClass="ErrorColor"></form:errors></div>
+                                                      </li>
+                                                    </div>
+                                                    <div class="user_last_name">
+                                                      <li><span class="label"> <form:label path="user.lastName">
+                                                        <spring:message code="label.newUserStep1.lastName" />
+                                                      </form:label></span>
+                                                  
+                                                      <div class="mandatory_wrapper"><spring:message code="label.userInfo.lastName.tooltip"
+                                                        var="i18nLastNameTooltip" /> <form:input cssClass="text" tabindex="109" path="user.lastName"
+                                                        title="${i18nLastNameTooltip}" /></div>
+                                                        <div class="main_addnew_formbox_errormsg_popup" id="user.lastNameError"><form:errors path="user.lastName"
+                                                        cssStyle="color:red"></form:errors></div>
+                                                      </li>
+                                                    </div>
+                                                  </div>
 
                                                   <c:if test="${displayChannel}">
                                                     <li><span class="label"> <form:label path="channelParam">
@@ -302,6 +341,20 @@ var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2"
                                   </div>
                                   <div class="widgetwizard_contentarea widgetwizard_contentareabig" style="height:auto;">
                                      <div class="widgetwizard_boxes fullheight3step">
+                                       <div id="inprogress_spinning_wheel_2" style="height:100%;width:100%; position:absolute;display:none;" >
+                                         <div class="widget_blackoverlay " style="height:100%;"></div>
+                                          <div class="widget_loadingbox " style="top:45%;">
+                                            <div class="widget_loaderbox">
+                                              <span class="bigloader"></span>
+                                            </div>
+                                            <div class="widget_loadertext">
+                                              <p id="in_process_text">
+                                                <spring:message code="label.loading" />
+                                                &hellip;
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div> 
                                          <div class="widgetwizard_titleboxes">
                                             <h2><spring:message code="label.newUserStep1.addUser" /></h2>
                                            </div>
@@ -368,4 +421,6 @@ var customEmailFinishURL="<%=request.getContextPath() %>/portal/users/new/step2"
 
 </form:form>
 
-
+<script type="text/javascript">
+  swap_name_order_tab_index("user_first_name", "user_last_name");
+</script>

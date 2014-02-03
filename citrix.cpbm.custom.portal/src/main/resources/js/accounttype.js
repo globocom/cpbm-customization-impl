@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -362,7 +362,7 @@ function addAccountTypeControlsGet(id, accounttype) {
       $("#editAccountTypeDivServiceControls").html("");
       $("#editAccountTypeDivBilling").html("");
       var $thisDialog = null;
-      initDialog("editAccountTypeDivServiceControls", 600);
+      initDialog("editAccountTypeDivServiceControls", 700);
       $("#editAccountTypeDivServiceControls").html(html);
       $thisDialog = $("#editAccountTypeDivServiceControls");
 
@@ -689,7 +689,7 @@ function viewinitialdeposit() {
 function editcreditlimitexposureGet(current) {
   var divId = $(current).attr('id');
   var ID = divId.substr(4);
-  initDialog("creditExposureLimitsDiv", 700);
+  initDialog("creditExposureLimitsDiv", 800);
   var actionurl = "/portal/portal/admin/edit_credit_exposure";
   $.ajax({
     type: "GET",
@@ -704,7 +704,7 @@ function editcreditlimitexposureGet(current) {
       var $thisDialog = $("#creditExposureLimitsDiv");
       $thisDialog.dialog({
         height: 320,
-        width: 700,
+        width: 800,
         title: $("#creditExposureLimitsDiv").attr("title") + " " + $("#accounttype_name" + ID).val()
       });
       $thisDialog.dialog('option', 'buttons', {

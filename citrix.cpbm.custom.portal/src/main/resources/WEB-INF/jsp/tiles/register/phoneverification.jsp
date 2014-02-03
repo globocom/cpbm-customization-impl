@@ -5,11 +5,16 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib uri="http://tiles.apache.org/tags-tiles" prefix="tiles" %>
 <script type="text/javascript">
-$(function(){
-  $("#user\\.phone").focus();
+$(document).ready(function() {
+    $("#user\\.phone").focus();
 });
-var phoneVerificationEnabled=true;
-var phoneVerified = false;
+  var phoneVerificationEnabled = true;
+  var phoneVerified = false;
+
+  dictionary = {
+    phoneVerificationPinMandatory : '<spring:message javaScriptEscape="true" code="js.errors.register.phonePin"/>',
+    phoneVerificationFailed : '<spring:message code="label.phoneVerification.unverified"/>'
+  };
 </script>
 <tiles:insertAttribute name="pageHeader" />
 
@@ -91,8 +96,7 @@ var phoneVerified = false;
                                         <span class="verified"><spring:message code="label.phoneVerification.verified"/></span>
                                     </div>
                                    	<div class="phonever_statusbox" id="verificationStatusFailed" style="display:none">
-                                        <div class="phonever_statusicon unverified"></div>
-                                        <span class="unverified"><spring:message code="label.phoneVerification.unverified"/></span>
+                                        <span class="unverified"></span>
                                     </div>                                    
                                 </li>
                             </ul>

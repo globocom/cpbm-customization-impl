@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.lang.reflect.InvocationTargetException;
@@ -345,7 +344,7 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "";
     String operator = "COMBINE";
@@ -358,10 +357,11 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
           break;
         }
       }
-      if (i == 2)
+      if (i == 2) {
         operator = "EXCLUDE";
-      else
+      } else {
         operator = "COMBINE";
+      }
       jsonString = jsonString + "{conversionFactor: 1.00, operator: " + operator + ", usageTypeId: "
           + serviceUsageType.getId() + "}";
       jsonString = jsonString + ",";
@@ -420,8 +420,9 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
       createdAt.add(Calendar.DATE, 0 - noOfdays);
       int beforeBundleCount = bundleService.getBundlesCount();
       boolean trialEligible = false;
-      if (i == 1)
+      if (i == 1) {
         trialEligible = true;
+      }
       ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency[i],
           chargeFrequency[i] + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
           ResourceConstraint.PER_USER, trialEligible);
@@ -488,8 +489,9 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
     List<User> userList = userDAO.findAll(null);
     Long userId = 0L;
     for (int i = 0; i < userList.size(); i++) {
-      if (userList.get(i).equals(tenant.getOwner()))
+      if (userList.get(i).equals(tenant.getOwner())) {
         userId = userList.get(i).getId();
+      }
     }
     int afterBusinessCount = businessTransactionDAO.count();
     int afterTenantCount = tenantDAO.count();
@@ -500,16 +502,18 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
     BusinessTransaction bt = null;
     List<BusinessTransaction> btlist = businessTransactionDAO.findAll(null);
     for (int i = 0; i < btlist.size(); i++) {
-      if (btlist.get(i).getTenant().equals(tenant))
+      if (btlist.get(i).getTenant().equals(tenant)) {
         bt = btlist.get(i);
+      }
     }
     Assert.assertEquals(State.NEW, bt.getState());
     Assert.assertEquals(Type.tenantStateChange, bt.getType());
     consumer.receive(new TriggerTransaction(bt.getId()));
     btlist = businessTransactionDAO.findAll(null);
     for (int i = 0; i < btlist.size(); i++) {
-      if (btlist.get(i).getTenant().equals(tenant))
+      if (btlist.get(i).getTenant().equals(tenant)) {
         bt = btlist.get(i);
+      }
     }
     int afterWrkflwCount = workflowDAO.count();
     Assert.assertEquals(beforeWrkflwCount + 1, afterWrkflwCount);
@@ -590,8 +594,9 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
 
     ServiceInstance serviceInstance = serviceInstanceDao.find(serviceInstanceID);
     ServiceResourceType resourceType = null;
-    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle"))
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
       resourceType = serviceResourceTypeDAO.find(resourceTypeID);
+    }
     List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
     RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode(currencyCode),
         catalogDAO.find(1L), currencyValue, "RateCharge", getRootUser(), getRootUser(),
@@ -616,8 +621,9 @@ public class SanityTestSuit extends WebTestsBaseWithMockConnectors {
     form.setResourceType(resourceType.getId().toString());
     form.setServiceInstanceUUID(serviceInstance.getUuid());
     form.setBundleOneTimeCharges(rateCardChargeList);
-    if (!chargeType.equalsIgnoreCase("NONE"))
+    if (!chargeType.equalsIgnoreCase("NONE")) {
       form.setBundleRecurringCharges(rateCardChargeList);
+    }
     form.setCompAssociationJson(compAssociationJson);
 
     BindingResult result = validate(form);

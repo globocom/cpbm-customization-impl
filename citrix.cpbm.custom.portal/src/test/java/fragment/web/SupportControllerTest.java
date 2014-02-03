@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,6 +43,7 @@ import com.vmops.model.User;
 import com.vmops.model.UserHandle;
 import com.vmops.service.ChannelService;
 import com.vmops.service.SupportService;
+import com.vmops.utils.DateUtils;
 import com.vmops.web.forms.TicketCommentForm;
 import com.vmops.web.forms.TicketForm;
 
@@ -75,6 +77,7 @@ public class SupportControllerTest extends WebTestsBase {
   public void init() {
     map = new ModelMap();
     status = new MockSessionStatus();
+    request = new MockHttpServletRequest();
     tenant = createTestTenant(accountTypeDAO.getDefaultRegistrationAccountType(), new Date());
     tenant.setSourceChannel(channelService.getDefaultServiceProviderChannel());
     user = createTestUserInTenant(tenant);
@@ -93,6 +96,7 @@ public class SupportControllerTest extends WebTestsBase {
     httpSession = new MockHttpSession();
   }
 
+  @Override
   protected Tenant createTestTenant(AccountType type, Date createdAt) {
     Tenant tenant = new Tenant("Acme Corp " + random.nextInt(), type, getRootUser(), randomAddress(), true,
         currencyValueDAO.findByCurrencyCode("USD"), getPortalUser());
@@ -104,13 +108,14 @@ public class SupportControllerTest extends WebTestsBase {
     privilegeService.newTenant(tenant);
     TenantHandle tenantHandle = new TenantHandle();
     tenantHandle.setHandle("Test" + System.currentTimeMillis());
-    tenantHandle.setServiceInstanceId("003fa8ee-fba3-467f-a517-fd806dae8a80");
+    tenantHandle.setServiceInstanceUuid("003fa8ee-fba3-467f-a517-fd806dae8a80");
     tenantHandle.setTenant(tenant);
     tenant.addHandle(tenantHandle);
     tenantDAO.merge(tenant);
     return tenant;
   }
 
+  @Override
   protected User createTestUserInTenant(Tenant tenant) {
     User user = new User("test", "user", "test@test.com", VALID_USER + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
         VALID_TIMEZONE, tenant, userProfile, getPortalUser());
@@ -645,7 +650,7 @@ public class SupportControllerTest extends WebTestsBase {
 
   private void createTestTicket(int count, Tenant tenant, User user) {
     for (int i = 0; i < count; i++) {
-      Ticket ticket = supportService.create("base test sub " + i, "base test desc " + i, "web", user);
+      supportService.create("base test sub " + i, "base test desc " + i, "web", user);
     }
   }
 
@@ -696,7 +701,6 @@ public class SupportControllerTest extends WebTestsBase {
     ticket = controller.createTicket(tenant.getUuid(), request, ticketForm, map);
     comment.setParentId(ticket.getUuid());
     controller.createNewComment(tenant, ticketCommentForm, ticket.getCaseNumber(), tenant.getParam(), map);
-    TicketForm ticketForm1 = (TicketForm) map.get("ticketForm");
     String view = controller.viewTicket(tenant, ticket.getCaseNumber(), tenant.getParam(), map);
     Assert.assertNotNull(map);
     Assert.assertEquals(map.get("ticket"), ticket);
@@ -709,5 +713,103 @@ public class SupportControllerTest extends WebTestsBase {
     view = controller.viewTicket(tenant, null, tenant.getParam(), map);
     Assert.assertNotNull(map.get("statuses"));
 
+  }
+
+  @Test
+  public void testEditTicketPost() {
+    String expectedResponse = "success";
+    Tenant tenant = tenantDAO.find(2L);
+
+    Ticket ticket = supportService.create("TestTitle", "TestDescription", "WEB", user);
+    String ticketNumber = ticket.getCaseNumber();
+    ticket.setStatus(TicketStatus.NEW);
+    ticket.setOwner(tenant.getOwner());
+
+    ticket.setDescription("New Description");
+    ticket.setStatus(TicketStatus.CLOSED);
+    TicketForm ticketForm = new TicketForm();
+    ticketForm.setTicket(ticket);
+
+    String response = controller.editTicket(tenant, null, tenant.getParam(), null, null, ticket.getCaseNumber(),
+        request, ticketForm, map);
+
+    Ticket newTicket = supportService.get(ticketNumber);
+    Assert.assertEquals(expectedResponse, response);
+    Assert.assertEquals("New Description", newTicket.getDescription());
+    Assert.assertEquals(TicketStatus.CLOSED, newTicket.getStatus());
+  }
+
+  @Test
+  public void testcloseTicket() {
+    try {
+      Tenant tenant = tenantDAO.find(4L);
+
+      Ticket ticket = supportService.create("TestTitle", "TestDescription", "WEB", user);
+      String ticketNumber = ticket.getCaseNumber();
+      TicketForm ticketForm = new TicketForm();
+      ticketForm.setTicket(ticket);
+
+      controller.closeTicket(tenant, ticketNumber, request, ticketForm, map);
+      Ticket newTicket = supportService.get(ticketNumber);
+      Assert.assertEquals(TicketStatus.CLOSED, newTicket.getStatus());
+      Assert.assertTrue(DateUtils.isSameDay(new Date(), newTicket.getUpdatedAt()));
+      Assert.assertEquals(getRootUser(), newTicket.getUpdatedBy());
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testhomeTicketsCount() {
+    try {
+      Tenant tenant = tenantDAO.find(4L);
+
+      Ticket ticket1 = supportService.create("TestTitle", "TestDescription", "WEB", user);
+      ticket1.setStatus(TicketStatus.NEW);
+      ticket1.setOwner(tenant.getOwner());
+
+      Ticket ticket2 = supportService.create("TestTitle", "TestDescription", "WEB", user);
+      ticket2.setStatus(TicketStatus.CLOSED);
+      ticket2.setOwner(tenant.getOwner());
+
+      Ticket ticket3 = supportService.create("TestTitle", "TestDescription", "WEB", user);
+      ticket3.setStatus(TicketStatus.WORKING);
+      ticket3.setOwner(tenant.getOwner());
+
+      controller.homeTicketsCount(tenant, tenant.getParam(), map, httpSession, request);
+
+      Assert.assertEquals(1, map.get("new_tickets_count"));
+      Assert.assertEquals(1, map.get("working_tickets_count"));
+      Assert.assertEquals(1, map.get("closed_tickets_count"));
+      Assert.assertEquals(0, map.get("escalated_tickets_count"));
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreateFormToEmail() {
+    try {
+      Tenant tenant = tenantDAO.find(4L);
+
+      Ticket ticket = supportService.create("TestTitle", "TestDescription", "WEB", user);
+      TicketForm ticketForm = new TicketForm();
+      ticketForm.setTicket(ticket);
+
+      request.setParameter("lang", Locale.getDefault().toString());
+
+      controller.createFormToEmail(tenant.getParam(), tenant, request, ticketForm, map);
+
+      Assert.assertEquals("Email Sent", map.get("message"));
+      Assert.assertEquals(tenant, map.get("tenant"));
+      Assert.assertTrue((Boolean) map.get("status"));
+      Assert.assertNotNull(map.get("ticketForm"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
   }
 }

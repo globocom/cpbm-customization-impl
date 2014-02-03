@@ -14,7 +14,8 @@ i18n = {
       ticketDescription  	: '<spring:message javaScriptEscape="true" code="js.error.tickets.description"/>', 
       ticketTitle  			: '<spring:message javaScriptEscape="true" code="js.error.tickets.title"/>', 
       ticketStatus  		: '<spring:message javaScriptEscape="true" code="js.error.tickets.status"/>',      
-      commentBody  			: '<spring:message javaScriptEscape="true" code="js.error.tickets.comments.body"/>'
+      commentBody  			: '<spring:message javaScriptEscape="true" code="js.error.tickets.comments.body"/>',
+      ticketTitleMaxlength  : '<spring:message javaScriptEscape="true" code="js.error.tickets.maxlength.title"/>'
 	},
 	alerts:{
       createFailure  		: '<spring:message javaScriptEscape="true" code="js.alert.tickets.create.failure"/>',

@@ -12,12 +12,14 @@ $(document).ready(function() {
     submitHandler: function(form) {},
     rules: {
       "memo": {
-        required: true
+        required: true,
+        maxlength: 4000
       }
     },
     messages: {
       "memo": {
-        required: i18n.change.state.memo
+        required: i18n.change.state.memo,
+        maxlength: i18n.change.state.memomaxlength
       }
     },
     errorPlacement: function(error, element) {

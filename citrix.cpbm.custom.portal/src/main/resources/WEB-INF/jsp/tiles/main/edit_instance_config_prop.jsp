@@ -50,18 +50,21 @@
                             class="text ${instance_property.serviceConfigMetadata.validations.classValidations}" ${instance_property.serviceConfigMetadata.validations.validations} onkeyup="showHideUnmaskedLink(this)"
                             value="${instance_property.value}"/>
                           </li>
+                          <!--[if !(IE 8)]><!-->
                           <li style="padding:0;margin:0 0 0 10px;">
                             <a <c:if test="${not empty instance_property.value}">style="cursor: pointer; visibility: 'visible'; opacity: 1.0;" </c:if>
                               <c:if test="${empty instance_property.value}">disabled=true style="cursor: pointer; visibility: 'visible'; opacity: 0.5;" </c:if>
                               id="configproperty<c:out value="${instance_property.serviceConfigMetadata.id}"/>_show_unmasked" onclick="showHideUnmaskedField(this)"><spring:message  code="label.show"/></a>
                           </li>
+                          <!--<![endif]-->
                         </ul>
                       </c:when>
                       <c:otherwise>
+                      <c:set var="instance_property_value" value="${instance_property.value}"></c:set>
                         <input type="text"  id="configproperty<c:out value="${instance_property.serviceConfigMetadata.id}"/>" name="${instance_property.serviceConfigMetadata.name}" 
                         title="<spring:message  code="${service.serviceName}.${instance_property.serviceConfigMetadata.name}.tooltip"/>"
                         class="text ${instance_property.serviceConfigMetadata.validations.classValidations}" ${instance_property.serviceConfigMetadata.validations.validations} 
-                        value="${instance_property.value}"/>
+                        value="<c:out value="${instance_property_value}" escapeXml="true"></c:out>"/>
                       </c:otherwise>
                     </c:choose>
                     </div>

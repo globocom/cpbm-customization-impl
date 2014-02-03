@@ -72,8 +72,8 @@
           </div>
         </c:when>
         <c:otherwise>
-
-          <c:if test="${not empty resourceProperties}">
+          <c:choose>
+          <c:when test="${not empty resourceProperties}">
             <c:forEach items="${resourceProperties}" var="resourceProperty" varStatus="resourcePropertyIndex">
               <div class="widgetcatalog_contentarea sectionbox">
                 <div class="catalogconfigure_sectionox_header">
@@ -99,7 +99,7 @@
                     <c:choose>
                       <c:when test="${resourceProperty.validations.required }">
                         <br>
-                        <span style="color: rgb(255, 0, 0); padding-left: 2px;"><sup>*</sup></span>&nbsp;<input
+                        <span style="color: rgb(255, 0, 0); padding-left: 2px;">*</span>&nbsp;<input
                           type="text" name="prop_${resourceProperty.name}"
                           class="text ${resourceProperty.validations.classValidations}"
                           ${resourceProperty.validations.validations} value="<c:out value="${propValue}" />"/>
@@ -116,7 +116,12 @@
                 </div>
               </div>
             </c:forEach>
-          </c:if>
+          </c:when>
+          <c:otherwise>
+            <div class="widgetcatalog_contentarea leftside plaintext"><spring:message code="message.subscribe.when.no.resource.properties" /></div>
+          </c:otherwise>
+          </c:choose>
+          
         </c:otherwise>
       </c:choose>
     </c:otherwise>

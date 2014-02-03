@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright Â© 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -33,7 +33,7 @@ function configuration_edit_dialog(module, component) {
       });
       $thisPanel.dialog('option', 'buttons', {
         "Close": function() {
-          $(".ui-dialog-buttonpane button:contains('Save')").hide();
+          $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.save +"')").hide();
           $thisPanel.find(".dialog_formcontent").html("");
           $(this).dialog("close");
 
@@ -41,22 +41,39 @@ function configuration_edit_dialog(module, component) {
         "Edit": function() {
           $('div[id^="valuenotedit"]').hide();
           $('div[id^="valueedit"]').show();
-          $(".ui-dialog-buttonpane button:contains('Edit')").hide();
-          $(".ui-dialog-buttonpane button:contains('Save')").show();
+          $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.edit +"')").hide();
+          $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.save +"')").show();
         },
         "Save": function() {
-          saveAllConfigValues();
-          $(".ui-dialog-buttonpane button:contains('Save')").hide();
-          $(".ui-dialog-buttonpane button:contains('Edit')").show();
+          if(saveAllConfigValues()) {
+            $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.save +"')").hide();
+            $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.edit +"')").show();
+          }
         },
       });
 
       dialogButtonsLocalizer($thisPanel, {
-        'OK': g_dictionary.dialogClose
+        'Close': g_dictionary.dialogClose,
+        'Edit' : g_dictionary.edit,
+        'Save' : g_dictionary.save
       });
-      $(".ui-dialog-buttonpane button:contains('Save')").hide();
+      $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.save +"')").hide();
       $("#spinning_wheel").hide();
       $thisPanel.dialog("open");
+      
+      $('input[id^="value"]').each(function() {
+        var configProperty = new Object();
+        configProperty.name = $(this).attr("id").substr(5);
+        var fullId = 'input[id^="value' +  configProperty.name +"\"]";
+        
+        if($(fullId).attr('restart') == 'true'){
+          $(fullId).bind("focusout", function() {
+            popUpDialogForAlerts("dialog_info", dictionary.configurationRestartRequiredAlert); 
+          });
+        }
+      });
+      
+      
     },
 
     error: function(request) {
@@ -72,6 +89,8 @@ function configuration_edit_dialog(module, component) {
 }
 
 function saveAllConfigValues() {
+  var editSuccess = true;
+	$(".error").remove();
   var configKeyValues = new Array();
   $('input[id^="value"]').each(function() {
     var configProperty = new Object();
@@ -83,26 +102,36 @@ function saveAllConfigValues() {
   $.ajax({
     type: "POST",
     url: "edit",
-    data: {
-      "configProperties": JSON.stringify(configKeyValues),
-    },
-    dataType: 'text',
+    dataType:"json",
+    async: false,
+    data: $("#configurationForm").serialize(),
     success: function(data) {
-      if (data == "success") {
-        $('input[id^="value"]').each(function() {
+      if (data.status == "SUCCESS") {
+        $('input[name$="value"]').each(function() {
           var configProperty = new Object();
-          configProperty.name = $(this).attr("id").substr(5);
+          configProperty.name = $(this).attr("id");
           configProperty.value = $(this).attr("value");
-          $("#valuenotedit" + configProperty.name).html(configProperty.value);
-        });
+		  if($(this).attr("isEncrypted") == "true"){
+		    $("#valuenotedit" + configProperty.name).html("****");
+		  }else{
+		    $("#valuenotedit" + configProperty.name).html(configProperty.value);
+		  }
+     });
         $('div[id^="valuenotedit"]').show();
         $('div[id^="valueedit"]').hide();
       } else {
+        editSuccess = false;
         $('div[id^="valueerror"]').show();
       }
     },
-    error: function(request) {
-
+    error: function(XMLHttpRequest) {
+      editSuccess = false;
+    	  if (XMLHttpRequest.status === AJAX_FORM_VALIDATION_FAILED_CODE) {
+              displayAjaxFormError(XMLHttpRequest,
+                "configurationForm",
+                "main_addnew_formbox_errormsg");
+            }
     }
   });
+  return editSuccess;
 }

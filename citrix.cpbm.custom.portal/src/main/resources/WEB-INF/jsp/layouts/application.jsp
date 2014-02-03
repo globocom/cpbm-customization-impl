@@ -15,6 +15,7 @@
     </title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name = "format-detection" content = "telephone=no">
     <script type="text/javascript" src="<%=request.getContextPath()%>/resources/all.js"></script>
     <c:if test="${empty currentLocale && pageContext.request.locale.language ne 'en'}">
       <script type="text/javascript" src='<%=request.getContextPath()%>/js/i18n/jquery-validate/messages_<c:out value="${pageContext.request.locale.language}"/>.js'></script>
@@ -63,7 +64,7 @@
     <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/<spring:theme code="css"/>"/>
     <link rel="stylesheet" media="all and (min-device-width: 481px) and (max-device-width: 1024px) and (orientationortrait)" href="<%=request.getContextPath()%>/css/ipad_custom.css" />
     <link rel="stylesheet" media="all and (min-device-width: 481px) and (max-device-width: 1024px) and (orientation:landscape)" href="<%=request.getContextPath()%>/css/ipad_custom.css" /> 
-    <link rel="stylesheet" media="all and (min-device-width: 1025px)" href="<%=request.getContextPath()%>/css/ipad_custom.css" /> 
+ 
     <link rel="stylesheet" type="text/css" media="only screen and (device-width: 768px) and (-webkit-min-device-pixel-ratio: 1)" href="<%=request.getContextPath()%>/css/ipad_custom.css"/>
 		<tiles:insertAttribute name="pageHeader" ignore="true"/>
 		<tiles:insertAttribute name="customHeader" ignore="true"/>
@@ -91,22 +92,7 @@
     </c:if>
    
    
-<c:if test="${isGoogleAnalyticsEnabled}">
-    <script type="text/javascript">
-
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', '<c:out value="${googleAnalyticsAccount}"/>']);
-  _gaq.push(['_setDomainName', '<c:out value="${googleAnalyticsDomain}"/>']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-</script>
-</c:if>
+<tiles:insertDefinition name="google.analytics"/>
 <!-- Adding css fix for IE8 - select box does not show full options - gets cut by defined width on expanding select box  -->
 <!--[if IE 8]>
 <style>
@@ -138,6 +124,7 @@ var g_dictionary = {
   labelFalse : '<spring:message javaScriptEscape="true" code="label.false"/>',	
   required : '<spring:message javaScriptEscape="true" code="label.required"/>',
   save: '<spring:message javaScriptEscape="true" code="label.save"/>',
+  edit: '<spring:message javaScriptEscape="true" code="label.edit"/>',
   doubleQuotesNotAllowed : '<spring:message javaScriptEscape="true" code="label.double.quotes.not.allowed"/>',      
   invalidNumber : '<spring:message javaScriptEscape="true" code="label.invalid.number"/>',	
   invalidInteger : '<spring:message javaScriptEscape="true" code="label.invalid.integer"/>',	
@@ -174,6 +161,7 @@ var g_dictionary = {
   highChartDownloadPNG: '<spring:message javaScriptEscape="true" code="highchart.chart.export.menu.downloadPNG"/>',
   highChartDownloadJPEG: '<spring:message javaScriptEscape="true" code="highchart.chart.export.menu.downloadJPEG"/>',
   highChartDownloadPDF: '<spring:message javaScriptEscape="true" code="highchart.chart.export.menu.downloadPDF"/>',
+  noDataToDisplay: '<spring:message javaScriptEscape="true" code="highchart.chart.no.data"/>',
   highChartDownloadSVG: '<spring:message javaScriptEscape="true" code="highchart.chart.export.menu.downloadSVG"/>',
   decPoint: '<fmt:formatNumber var="str" value="0.1"/><c:out value="${fn:substring(str,1,2)}"/>',
   thousandsSep: '<fmt:formatNumber var="str" value="1000"/><c:out value="${fn:substring(str,1,2)}"/>',
@@ -197,10 +185,19 @@ var g_dictionary = {
   custom: '<spring:message javaScriptEscape="true" code="label.custom"/>',
   dialogInvalidUnit: '<spring:message javaScriptEscape="true" code="label.invalidUnit"/>',
   dialogInvalidFactor: '<spring:message javaScriptEscape="true" code="label.invalidFactor"/>',
+  dialogInvalidFactorValue : '<spring:message javaScriptEscape="true" code="label.invalidValueForFactor"/>',
+  dialogNumberLessThanZero : '<spring:message javaScriptEscape="true" code="js.errors.priceRequired"/>',
   error_single_sign_on: '<spring:message javaScriptEscape="true" code="error.single.signon.failure"/>'
 };
 var fusion_chart_localized_strings={
-		ChartNoDataText:'<spring:message javaScriptEscape="true" htmlEscape="false" code="message.no.data.to.show"/>'
+		ChartNoDataText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.no.data.to.show"/>',
+		LoadDataErrorText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.error.loading.data"/>',
+		XMLLoadingText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.retrieving.data"/>',
+		InvalidXMLText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.invalid.XML.text"/>',
+		ReadingDataText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.reading.data.text"/>',
+		ChartNotSupported:'<spring:message javaScriptEscape="true" code="message.fusioncharts.chart.not.supported"/>',
+		LoadingText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.loading.text"/>',
+		RenderChartErrorText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.render.chart.error.text"/>'
 }
 var i18nDayNames = [
   '<fmt:formatDate pattern="EEE" value="<%=new java.util.Date(0,0,0)%>"/>',
@@ -262,7 +259,23 @@ var i18nMonthNames = [
     		</div>
     	</div>
         <div id="manage_resources_container" class="manage_resources_container" style="display:none;">
-          <iframe id="manage_resources_iframe" width="100%" height="100%" frameborder="0"></iframe>
+          <div id="iframe_spinning_wheel" style="display: none;">
+            <div class="widget_blackoverlay iframe_loader"></div>
+            <div class="widget_loadingbox iframe_loader_text">
+              <div class="widget_loaderbox">
+                <span class="bigloader"></span>
+              </div>
+              <div class="widget_loadertext">
+                <p id="in_process_text">
+                  <spring:message code="label.loading" />
+                  &hellip;
+                </p>
+              </div>
+            </div>
+          </div> 
+          
+          <iframe id="manage_resources_iframe" width="100%" height="100%" frameborder="0">
+          </iframe>
         </div>
     	<div class="clearboth">
     	</div>

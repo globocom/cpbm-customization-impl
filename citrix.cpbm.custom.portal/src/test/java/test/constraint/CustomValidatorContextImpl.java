@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/ 
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */ 
 package test.constraint;
 
 import javax.validation.ConstraintValidatorFactory;
@@ -22,12 +21,6 @@ public class CustomValidatorContextImpl extends ValidatorContextImpl {
 
   private final ConstraintValidatorFactory constraintValidatorFactory;
 
-  private final MessageInterpolator factoryMessageInterpolator;
-
-  private final TraversableResolver factoryTraversableResolver;
-
-  private final ConstraintValidatorFactory factoryConstraintValidatorFactory;
-
   private final ConstraintHelper constraintHelper;
 
   private final BeanMetaDataCache beanMetaDataCache;
@@ -39,9 +32,6 @@ public class CustomValidatorContextImpl extends ValidatorContextImpl {
     super(constraintValidatorFactory, factoryMessageInterpolator, factoryTraversableResolver, constraintHelper,
         beanMetaDataCache);
 
-    this.factoryConstraintValidatorFactory = constraintValidatorFactory;
-    this.factoryMessageInterpolator = factoryMessageInterpolator;
-    this.factoryTraversableResolver = factoryTraversableResolver;
     this.constraintHelper = constraintHelper;
     this.beanMetaDataCache = beanMetaDataCache;
     this.messageInterpolator = factoryMessageInterpolator;

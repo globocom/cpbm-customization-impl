@@ -83,13 +83,13 @@ $(document).ready(function() {
       dataType: "html",
       success: function(html) {
         if (html == 'Success') {
-          alert(i18n.errors.usage.usageReportExport);
+          popUpDialogForAlerts("dialog_info", i18n.errors.usage.usageReportExport);
         } else {
-          alert(i18n.errors.usage.usageReportUnable);
+          popUpDialogForAlerts("dialog_info", i18n.errors.usage.usageReportUnable);
         }
       },
       error: function(html) {
-        alert(i18n.errors.usage.usageReportError);
+        popUpDialogForAlerts("dialog_info", i18n.errors.usage.usageReportError);
       }
     });
 
@@ -97,26 +97,22 @@ $(document).ready(function() {
 
   $(".usagelist_header").click(function() {
     var div_id = $(this).attr('id');
+    
     $("#" + div_id + "data").slideToggle();
     var id = div_id.substring(6); //Opening the tab
-    if ($("#arrow" + id).hasClass('closed')) {
-      $("#arrow" + id).removeClass('closed');
-      $("#arrow" + id).addClass('opened');
-      $("#title" + id).removeClass('off');
-      $("#title" + id).addClass('on');
-      $("#total" + id).removeClass('off');
-      $("#total" + id).addClass('on');
-      $(this).removeClass('off');
-      $(this).addClass('on');
+    var $arrow = $(this).find('.usagelist_arrows');
+    var $title = $(this).find('.usagelist_title');
+    
+    if ($arrow.hasClass('closed')) {
+	  $arrow.removeClass('closed').addClass('opened');
+	  $title.removeClass('off').addClass('on');
+      $("#total" + id).removeClass('off').addClass('on');
+      $(this).removeClass('off').addClass('on');
     } else { // Closing the tab
-      $("#arrow" + id).removeClass('opened');
-      $("#arrow" + id).addClass('closed');
-      $("#title" + id).removeClass('on');
-      $("#title" + id).addClass('off');
-      $("#total" + id).removeClass('on');
-      $("#total" + id).addClass('off');
-      $(this).removeClass('on');
-      $(this).addClass('off');
+      $arrow.removeClass('opened').addClass('closed');
+      $title.removeClass('on').addClass('off');
+      $("#total" + id).removeClass('on').addClass('off');
+      $(this).removeClass('on').addClass('off');
 
     }
   });
@@ -257,3 +253,10 @@ function changeUser(current) {
   }
   window.location = filterurl;
 }
+
+$(function (){
+    $(".js_subscription_details_popover").popover({trigger:"hover",html : true, content: function() {
+  	  var popover_index = $(this).attr('id').substr(26);
+      return $('#subscription_popover_'+popover_index).html();
+  }});
+});

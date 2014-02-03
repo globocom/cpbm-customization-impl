@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright Â© 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -7,8 +7,63 @@
 var filledActiveCurrencies = new Array();
 
 $(document).ready(function() {
+	$("#manage_resources_iframe").bind("load", function(){
+		hide_iframe_loading();
+	});
 
+  // Following line enables the popover of error message if account registratoin failed for certain services 
+  $(".js_account_registration_error").popover();
+  
+  // Following block is responsible for auto refresh of those services on which account is still in provisioning state
+  if($(".js_provisioning_service").length > 0) {
+    $("body").everyTime(5000, "timerKey", function() {
+      $(".js_provisioning_service").each(function() {
+        var $element = $(this);
+        $.ajax({
+          type: "GET",
+          url: "/portal/portal/connector/getHandleState",
+          async: false,
+          data : {
+            tenant : effectiveTenantParam,
+            serviceInstanceUUID : $element.attr("serviceInstanceUuid")
+          },
+          dataType: "html",
+          success: function(handleState) {
+            if(handleState != null && handleState != 'PROVISIONING') {
+              location.reload();
+            }
+          }, error: function() {
+            // TODO
+            // Ideally this should never be hit
+          }
+        });
+      });
+    }, 0);
+  }
+  
+  
+  $(".subscibe_to_bundles_link").unbind("click").bind("click", function() {
+    if(!isDelinquent){
+      var serviceInstanceUUID = $(this).attr('id').substr(10);
+      window.location = "/portal/portal/subscription/createsubscription?tenant=" + effectiveTenantParam +
+        "&serviceInstanceUUID=" + serviceInstanceUUID;
+    } else {
+      if (showMakePaymentMessage != "") {
+        popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+        return;
+      }
+    }
+  });
+  
+  
+  
   $(".js_iframe_tabs").live("click", function() {
+    if(isDelinquent){
+      if(showMakePaymentMessage != ""){
+        popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+      }
+      return;
+    }
     var serviceInstanceUUID = $(this).attr('id').substr(11);
     if (serviceInstanceUUID == "all_services") {
       window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
@@ -23,6 +78,16 @@ $(document).ready(function() {
     $(".j_cloudservicepopup").hide();
     currentstep = "step1";
     $("#step1").show();
+  });
+  $("#backToaccountConfigurationDetails").live("click", function(event) {
+    $(".j_cloudservicepopup").hide();
+    currentstep = "stepOfAccountConfig";
+    $("#stepOfAccountConfig").show();
+  });
+  $("#backToenableServiceForAllUsersDetails").live("click", function(event) {
+    $(".j_cloudservicepopup").hide();
+    currentstep = "stepOfEnableServiceUser";
+    $("#stepOfEnableServiceUser").show();
   });
 
   $("#backToProductSelection").live("click", function(event) {
@@ -130,9 +195,13 @@ $(document).ready(function() {
       $("#tncAcceptError").text("");
     }
   });
+  
 
   $("a.close_enable_service_wizard").live("click", function(event) {
     closeDialog();
+  });
+  $("a.close_enable_service_user_wizard").live("click", function(event) {
+    closeEnableServiceDialog();
   });
 
   $("a.close_service_instance_wizard").live("click", function(event) {
@@ -246,15 +315,93 @@ $(document).ready(function() {
     $(this).addClass("active");
   });
   $(".button_manage_service").live("click", showResourcesIFrame);
+  
+  $(".button_manage_user_provisioning").bind("click", function(event) {
+
+    $("#final_step").hide();
+    $("#_stepOfEnableServiceUser").show();
+    var $manage_autoprovision_link = $(this);
+    var auto_provision = $(this).attr('enabled');
+    var $manageAutoProvision = $("#manage_user_provisioning_popup");
+    $manageAutoProvision.find("#_currentServiceInstanceUUID").val($(this).attr('id'));
+
+    $manageAutoProvision.dialog({
+      width: 900,
+      modal: true,
+      resizable: false,
+      autoOpen: false,
+      buttons: {
+        "OK": function() {
+          $("#manage_user_provisioning_popup").find("#spinning_wheel").show();
+          auto_provision = $("input[name=_enableAllUsers]:checked").val();
+          var _currentServiceInstanceUUID = $(this).find("#_currentServiceInstanceUUID").val();
+          var ajaxUrl = "/portal/portal/tenants/set_autoprovision";
+          $.ajax({
+            type : "POST",
+            data : {
+              "tenantparam" : effectiveTenantParam,
+              "instanceUuid" : _currentServiceInstanceUUID,
+              "enableAllUsers": auto_provision
+            },
+            url : ajaxUrl,
+            success : function(data) {
+              $("#manage_user_provisioning_popup").find("#spinning_wheel").hide();
+              $(".ui-dialog-buttonpane button:contains('"+ g_dictionary.dialogOK +"')").hide();
+              if (data.result == "SUCCESS") {
+                $("a.button_manage_user_provisioning[id="+ _currentServiceInstanceUUID +"]").attr('enabled',auto_provision);
+                if(auto_provision == "true")
+                  $("#final_step").find("#successmessage").text(dictionary.autoProvisioningEnabled + " " + (dictionary._true));
+                else
+                  $("#final_step").find("#successmessage").text(dictionary.autoProvisioningEnabled + " " + (dictionary._false));
+                $("#final_step").show();
+                $("#_stepOfEnableServiceUser").hide();
+              }
+              else{
+                $("#final_step").find("#successmessage").text(dictionary.autoProvisioningError);
+              }
+            },
+            error : function(error) {
+              $("#manage_user_provisioning_popup").find("#spinning_wheel").hide();
+              $("#final_step").find("#successmessage").text(dictionary.autoProvisioningError);
+            }
+          });
+        },
+        "Close": function() {
+          $manageAutoProvision.dialog("close");
+        }
+      }
+    });
+    dialogButtonsLocalizer($manageAutoProvision, {
+      'OK': g_dictionary.dialogOK,
+      'Close': g_dictionary.dialogClose
+    });
+
+    if(auto_provision == "true"){
+      $("#manage_user_provisioning_popup").find("#enable_yes").attr('checked',true);
+      $("#manage_user_provisioning_popup").find("#enable_no").attr('checked', false);
+    }else{
+      $("#manage_user_provisioning_popup").find("#enable_yes").attr('checked',false);
+      $("#manage_user_provisioning_popup").find("#enable_no").attr('checked', true);
+    }
+    $manageAutoProvision.html($("#manage_user_provisioning_popup").html());
+    $manageAutoProvision.dialog("open");
+  });
 
   $(".utility_rates_link").unbind("click").bind("click", function() {
     var serviceInstanceUUID = $(this).attr('id').substr(7);
     viewUtilitRates(effectiveTenantParam, "utilityrates_lightbox", null, serviceInstanceUUID);
   });
   $(".subscibe_to_bundles_link").unbind("click").bind("click", function() {
-    var serviceInstanceUUID = $(this).attr('id').substr(10);
-    window.location = "/portal/portal/subscription/createsubscription?tenant=" + effectiveTenantParam +
-      "&serviceInstanceUUID=" + serviceInstanceUUID;
+    if(!isDelinquent){
+      var serviceInstanceUUID = $(this).attr('id').substr(10);
+      window.location = "/portal/portal/subscription/createsubscription?tenant=" + effectiveTenantParam +
+        "&serviceInstanceUUID=" + serviceInstanceUUID;
+    } else {
+      if (showMakePaymentMessage != "") {
+        popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+        return;
+      }
+    }
   });
 
   $("#all_selected_usage_type").live("click", function(event) {
@@ -288,6 +435,7 @@ $(document).ready(function() {
         "Id": ID
       },
       async: false,
+      cache: false,
       dataType: "html",
       success: function(html) {
         var $thisDialog = $("#dialog_upload_service_instance_image");
@@ -306,7 +454,7 @@ $(document).ready(function() {
                 complete: function(text) {
                   if (text == 'success') {
                     $thisDialog.dialog('close');
-                    alert(dictionary.imageUploadedSuccessfully);
+                    popUpDialogForAlerts("dialog_info", dictionary.imageUploadedSuccessfully,refreshUploadedLogoCallback);
                   } else {
                     $("#logoError").text(text);
                   }
@@ -334,6 +482,9 @@ $(document).ready(function() {
   }
 });
 
+var refreshUploadedLogoCallback = function refreshUploadedLogo(){
+	location.reload();
+}
 function showSelectedCategory(category) {
   $('div.servicelist_extended').hide();
   if (category != "All") {
@@ -433,6 +584,147 @@ function goToNextStep(current) {
   }
 }
 
+function goToNextStepForTenant(current) {
+  var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
+  var $currentstep = $("#" + currentstep);
+  var nextstep = $currentstep.find("#nextstep").val();
+  var enableAllUsers = $("input[name=enableAllUsers]:checked").val();
+  var serviceEnableForm = $(current).closest("form");
+  $(serviceEnableForm).validate({
+    ignoreTitle: true,
+    errorPlacement: function(error, element) {
+      var name = element.attr('id');
+      name = ReplaceAll(name, ".", "\\.");
+      if (name != "") {
+        error.appendTo("#" + name + "Error");
+      }
+    }
+  });
+
+  var isValid = false;
+  if (nextstep != "stepOfSubmitAndFinish") {
+    if (currentstep == "stepOfTnc" && $("#tncAccept").is(':checked') == false) {
+    	popUpDialogForAlerts("dialog_info", g_dictionary.youCanNotContinueUntilYouAcceptTheTermsAndConditions);
+    	$currentstep.find("#tncAccept").focus();
+        
+      }
+    else if (currentstep == "stepOfAccountConfig") {
+      if (typeof accountConfigurationNext == 'function') { 
+        isValid = accountConfigurationNext(); 
+      }else{
+         if($(serviceEnableForm).valid()){
+           isValid = true;
+         }
+      }
+      if(isValid == true) {
+        var service_account_config_properties_list = $("#service_account_config_properties_list").val();
+        var propNames = service_account_config_properties_list.split(',');
+        for(var propIndex in propNames){
+          var eleName = propNames[propIndex];
+          if(eleName && typeof eleName =='string'){
+            var inputBox = $("input[name='"+eleName+"']");
+            if($(inputBox).attr('type')!='password'){
+              $("#confirmAccountConfigurationDetails").find("#"+eleName).text($(inputBox).val());
+            }else{
+              $("#confirmAccountConfigurationDetails").find("#"+eleName).text("****");
+            }
+          }
+        }
+        for(var propIndex in propNames){
+          var eleName = propNames[propIndex];
+          if(eleName && typeof eleName =='string'){
+            var inputBox = $("input[name="+eleName+"]:checked");
+            if($(inputBox).attr('type')!='password'){
+              $("#confirmAccountConfigurationDetails").find("#"+eleName).text($(inputBox).val());
+            }else{
+              $("#confirmAccountConfigurationDetails").find("#"+eleName).text("****");
+            }
+          }
+        }
+        $currentstep.hide();
+        $("#" + nextstep).show();
+      }
+    }else if(currentstep == "stepOfEnableServiceUser"){
+      var enableAllUsers = $("input[name=enableAllUsers]:checked").val();
+      if(enableAllUsers == 'false'){
+        $("#enableServiceForAllUsersDesc").text(dictionary.no);
+      }else{
+        $("#enableServiceForAllUsersDesc").text(dictionary.yes);
+      }
+      $currentstep.hide();
+      $("#" + nextstep).show();
+    }  
+    else{
+      $currentstep.hide();
+      $("#" + nextstep).show();
+    }
+  } else {
+    var propObject = new Object();
+    $("#enableServiceButton").prop("disabled",true);
+    $("#enableServiceButton").addClass("disabled");
+    var service_account_config_properties_list = $("#service_account_config_properties_list").val();
+    var propNames = service_account_config_properties_list.split(',');
+    for(var propIndex in propNames){
+      var eleName = propNames[propIndex];
+      if(eleName && typeof eleName =='string'){
+        var inputBox = $("input[name='"+eleName+"']");
+        if($(inputBox).attr('type')=='radio'){
+          var eleValue = $("input[name="+eleName+"]:checked").val();
+        }else{
+          var eleValue = $("input[name="+eleName+"]").val();
+        }
+        propObject[eleName] = eleValue;
+      }
+    }
+   
+     var currentServiceInstanceUUID =$("#currentServiceInstanceUUID").val();
+     var propConfigs = JSON.stringify(propObject);
+     $("#stepOfReviewAndConfirm").find("#spinning_wheel").show();
+      var $resultDisplayBanner = $("#validationError");
+      var ajaxUrl = "/portal/portal/tenants/enable_service";
+      $.ajax({
+        type : "POST",
+        data : {
+          "tenantparam" : effectiveTenantParam,
+          "instanceUuid" : currentServiceInstanceUUID,
+          "instanceProperty" : propConfigs,
+          "enableAllUsers":enableAllUsers
+        },
+        url : ajaxUrl,
+        success : function(data) {
+          $("#stepOfReviewAndConfirm").find("#spinning_wheel").hide();
+          if (data.result == "SUCCESS") {
+              $("#stepOfSubmitAndFinish").show();
+              $currentstep.hide();   
+          }
+          else{
+            $("#enableServiceButton").prop("disabled",false);
+            $("#enableServiceButton").removeClass("disabled");
+            $resultDisplayBanner.text(data.message);
+            $resultDisplayBanner.parent("#serviceEnableError").show();
+          }
+        },
+        error : function(error) {
+          $("#stepOfReviewAndConfirm").find("#spinning_wheel").hide();
+          $("#enableServiceButton").prop("disabled",false);
+          $("#enableServiceButton").removeClass("disabled");
+          $resultDisplayBanner.text(error.message);
+          $resultDisplayBanner.text(i18n.errors.connector.createfailed);
+          $resultDisplayBanner.parent("#serviceEnableError").show();
+        }
+      });
+  }
+}
+function goToPreviousStepForTenant(current) {
+  var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
+  var $currentstep = $("#" + currentstep);
+  var prevstep = $currentstep.find("#prevstep").val();
+
+  if (prevstep != "") {
+    $currentstep.hide();
+    $("#" + prevstep).show();
+  }
+}
 function goToPreviousStep(current) {
   var currentstep = $(current).parents(".j_cloudservicepopup").attr('id');
   var $currentstep = $("#" + currentstep);
@@ -448,6 +740,10 @@ function closeDialog() {
   $("#dialog_enable_service").dialog("close");
   window.location = "/portal/portal/connector/cs";
 }
+function closeEnableServiceDialog() {
+  $("#dialog_enable_service_user").dialog("close");
+  window.location = "/portal/portal/connector/csinstances?tenant="+effectiveTenantParam;
+}
 
 function closeAddServiceInstanceDialog() {
   $("#dialog_add_service_instance").dialog("close");
@@ -460,19 +756,94 @@ function closeEditServiceInstanceDialog() {
 }
 
 function resolveViewForSettingFromServiceInstance(serviceInstanceUUID, currentTenantParam, serviceInstanceName) {
-  $("#selectedInstanceH1").append(serviceInstanceName);
-  $("#serviceAccountConfigDiv").show();
-  $("#myServicesDiv").hide();
-  $("#serviceAccountConfigViewFrame").attr("src",
-    "/portal/portal/connector/account_config_params/?serviceInstanceUUID=" + serviceInstanceUUID + "&tenant=" +
-    effectiveTenantParam);
+  if(isDelinquent){
+    if(showMakePaymentMessage != ""){
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+    }
+    return;
+  }
+
+  
+
+  initDialog("dialog_enable_service");
+  var actionurl = "/portal/portal/connector/account_config_params/?serviceInstanceUUID=" + serviceInstanceUUID + "&tenant=" +
+  effectiveTenantParam;
+  $("#spinning_wheel").show();
+  var $thisDialog = $("#dialog_enable_service");
+  $.ajax({
+    type: "GET",
+    url: actionurl,
+    dataType: "html",
+    async: false,
+    success: function(html) {
+      $thisDialog.dialog("option", {
+        height: "auto",
+        width: 900
+      });
+      $thisDialog.html(html);
+      $thisDialog.bind("dialogbeforeclose", function(event, ui) {
+        $thisDialog.empty();
+      });
+      $currentDialog = $thisDialog;
+      dialogButtonsLocalizer($thisDialog, {
+        'OK': g_dictionary.dialogOK,
+        'Cancel': g_dictionary.dialogCancel
+      });
+      $currentDialog.dialog('open');
+      $("#spinning_wheel").hide();
+    },
+    error: function() {
+      $("#spinning_wheel").hide();
+    }
+  });
+  
+  var $extra_usage_div = $thisDialog.find(".js_extra_usage_div");
+  var html = "";
+    html = populateUtilityRatesTable(effectiveTenantParam,serviceInstanceUUID);
+    if(html != null) {
+      $thisDialog.find("#utilityrate_table_bundle_details").html(html);
+    } else {
+      $("#table_load_spinning_wheel").hide();
+      $("#utility_rates_message_box").addClass("alert-error").text(dictionary.noUtilityRateAvailable).show();
+    }
+    
 }
 
+function populateUtilityRatesTable(tenant, serviceInstanceUuid) {
+    var currencyCode = $("#selectedcurrencytext").text();
+    var returnHtml = null;
+   $.ajax({
+      type: "GET",
+      async: false,
+      url: "/portal/portal/subscription/utilityrates_table",
+      data: {
+        tenant: tenant,
+        serviceInstanceUuid: serviceInstanceUuid,
+        currencyCode: currencyCode
+      },
+      dataType: "html",
+      cache: false,
+      success: function(html) {
+        $("#utilityrate_table").empty();
+        $("#utilityrate_table").html(html);
+        returnHtml = html
+      }
+    });
+    return returnHtml;
+  }
+
 function resolveViewForSettingFromServiceInstance2(instanceUuid) {
+  if(isDelinquent){
+    if(showMakePaymentMessage != ""){
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+    }
+    return;
+  }
   $("#manage_services_info").hide();
   $("#myServicesDiv").hide();
   $(".left_filtermenu").hide();
   $("#userSubscribedServiceDetails").show();
+  var $iframe_tab = $("#iframe_tab_" + instanceUuid);
   var actionurl = "/portal/portal/users/resolve_view_for_Settings?instanceUuid=" + instanceUuid;
   $("#full_page_spinning_wheel").show();
   $.ajax({
@@ -482,6 +853,8 @@ function resolveViewForSettingFromServiceInstance2(instanceUuid) {
     success: function(json) {
       $("#full_page_spinning_wheel").hide();
       if (json != null && json.url != null) {
+        $(".js_iframe_tabs").removeClass("on");
+        $iframe_tab.addClass("on");
         $("#userOrAccountSettingsViewFrame").attr("src", json.url);
       }
     },
@@ -494,6 +867,8 @@ function resolveViewForSettingFromServiceInstance2(instanceUuid) {
 $("#backToSubscribedServiceListing").live("click", function(event) {
   $("#userOrAccountSettingsViewFrame").attr("src", "");
   $("#userSubscribedServiceDetails").hide();
+  $(".js_iframe_tabs").removeClass("on");
+  $("#iframe_tab_all_services").addClass("on");
   $("#manage_services_info").show();
   $("#myServicesDiv").show();
   $(".left_filtermenu").show();
@@ -502,6 +877,12 @@ $("#backToSubscribedServiceListing").live("click", function(event) {
 
 
 function resolveViewForAccountSettingFromServiceInstance(instanceUuid, tenantParam, serviceInstanceName) {
+  if(isDelinquent){
+    if(showMakePaymentMessage != ""){
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+    }
+    return;
+  }
   var actionurl = "/portal/portal/users/resolve_view_for_account_settings?instanceUuid=" + instanceUuid +
     "&tenantParam=" + tenantParam;
   $.ajax({
@@ -528,6 +909,11 @@ function resolveViewForAccountSettingFromServiceInstance(instanceUuid, tenantPar
 
 function validate_code(event, input, codeType) {
   clearCodeError(input);
+  
+  if(codeType == "productCode" && !$(input).parent().parent().find('#selected_usage_type').is(':checked')) {
+    return true;
+  }
+  
   var code = $(input).val().trim();
   if (input.defaultValue != null && input.defaultValue.trim() != "" && input.defaultValue.trim() == code) {
     return true;
@@ -537,6 +923,10 @@ function validate_code(event, input, codeType) {
     err_msg = dictionary.max_length_exceeded + " 64";
   }
 
+  if(code.length == 0){
+    err_msg = dictionary.product_code_empty;
+  }
+  
   if (code.length > 0 && !/^[a-zA-Z0-9_:\[\]-]+$/.test(code)) {
     err_msg = dictionary.code_invalid;
   }
@@ -576,6 +966,34 @@ function validate_code(event, input, codeType) {
     }
   });
   return returnVal;
+}
+
+function validate_name(input) {
+  clearCodeError(input);
+  
+  if(!$(input).parent().parent().find('#selected_usage_type').is(':checked')) {
+    return true;
+  }
+  
+  var code = $(input).val().trim();
+  if (input.defaultValue != null && input.defaultValue.trim() != "" && input.defaultValue.trim() == code) {
+    return true;
+  }
+  var err_msg = "";
+  if (code.length >= 255) {
+    err_msg = dictionary.max_length_exceeded + " 255";
+  }
+
+  if (code.length == 0) {
+    err_msg = dictionary.product_name_invalid;
+  }
+
+  
+  if (err_msg.trim().length > 0) {
+    codeErrorPlacement(input, err_msg);
+    return false;
+  }
+  return true;
 }
 
 function clearCodeError(element) {
@@ -742,6 +1160,7 @@ function addServiceInstanceNext(current) {
   var serviceInstanceForm = $(current).closest("form");
 
   $(serviceInstanceForm).validate({
+	  ignoreTitle: true,
     errorPlacement: function(error, element) {
       var name = element.attr('id');
       name = ReplaceAll(name, ".", "\\.");
@@ -755,6 +1174,7 @@ function addServiceInstanceNext(current) {
     var checkboxList = $("#productsList input:checked");
     $step4.find("#productPriceDiv").find("#productPriceListDiv").empty();
     var isProductCodeValid = true;
+    var isProductNameValid = true;
     var productCodeMap = new Array();
     checkboxList.each(function(idx, i) {
       var checkboxItem = $(i);
@@ -770,6 +1190,11 @@ function addServiceInstanceNext(current) {
         isProductCodeValid = false;
       } else {
         productCodeMap[prodCode] = "";
+      }
+      
+      var returnVal = validate_name(parentDiv.find("#product\\.name\\." + usageTypeName));
+      if (!returnVal) {
+        isProductNameValid = false;
       }
       var selectedProductName = parentDiv.find("#product\\.name\\." + usageTypeName).val();
       var selectedUOM = parentDiv.find("#product\\.scale\\." + usageTypeName + " :selected").text().trim();
@@ -793,7 +1218,7 @@ function addServiceInstanceNext(current) {
       $step4.find("#productPriceDiv").find("#productPriceListDiv").append(productItem);
       productItem.show();
     });
-    if (!isProductCodeValid) {
+    if (!isProductCodeValid || !isProductNameValid) {
       return;
     }
   }
@@ -842,16 +1267,29 @@ function addServiceInstanceNext(current) {
         var checkboxItem = $(i);
         var usageTypeName = checkboxItem.attr("name");
         var parentDiv = checkboxItem.parent().parent();
-        parentDiv.find("#product\\.code\\." + usageTypeName).val($("#configproperty_instance_code").val() + "_" +
-          usageTypeName);
+        if(parentDiv.find("#product\\.code\\." + usageTypeName).val() == undefined
+        		|| parentDiv.find("#product\\.code\\." + usageTypeName).val() == null
+        		|| parentDiv.find("#product\\.code\\." + usageTypeName).val() == ''){
+        	parentDiv.find("#product\\.code\\." + usageTypeName).val($("#configproperty_instance_code").val() + "_" +
+        			usageTypeName);
+      }
       });
     }
     if (currentstep == "step3") {
-      $(".j_cloudservicepopup").hide();
-      $step4.show();
-      fixupTooltipZIndex($step4.find("#productPriceDiv").find("#productPriceListDiv"));
-      return;
-    }
+        $(".j_cloudservicepopup").hide();
+        $step4.show();
+        $(function () {
+          $(".js_product_details_popover").popover({
+            trigger: "hover",
+            html: true,
+            content: function () {
+              $productPriceItem = $(this).parent().parent();
+              return $productPriceItem.find(".js_info_popover").html();
+            }
+          });
+        });
+        return;
+      }
     if (currentstep == "step4") {
       var checkboxList = $("#productsList input:checked");
       filledActiveCurrencies = new Array();
@@ -882,69 +1320,6 @@ function addServiceInstanceNext(current) {
       $("#" + nextstep).show();
     }
   }
-}
-
-function fixupTooltipZIndex(current) {
-  var initialIndex = 200;
-  $(current).find('.widget_grid').each(function() {
-    var style = $(this).attr('style');
-    if (style) {
-      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    } else {
-      $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
-    }
-    initialIndex -= 5;
-  });
-  initialIndex = 400;
-  $(current).find('.widget_grid_cell').each(function() {
-    var style = $(this).attr('style');
-    if (style) {
-      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    } else {
-      $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
-    }
-    initialIndex -= 5;
-  });
-  initialIndex = 700;
-  $(current).find('.subheader').each(function() {
-    var style = $(this).attr('style');
-    if (style) {
-      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:relative;");
-    } else {
-      $(this).attr('style', 'z-index:' + initialIndex + ";position:relative;");
-    }
-    initialIndex -= 5;
-  });
-  initialIndex = 1000;
-  $(current).find('.widget_details_popover').each(function() {
-    var style = $(this).attr('style');
-    var position = $(this).parent().find(".levelicon").position();
-    var left = position.left + 43;
-    var top = position.top + 5;
-    if (style) {
-      $(this).attr('style', style + ';z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top +
-        "px;");
-    } else {
-      $(this).attr('style', 'z-index:' + initialIndex + ";position:absolute;left:" + left + "px; top:" + top + "px;");
-    }
-    initialIndex -= 5;
-  });
-}
-
-function onProductDetailMouseover(current) {
-  var currentItem = $(current);
-  if ($(current).hasClass('active'))
-    return;
-  var productPriceItem = currentItem.parent().parent();
-  productPriceItem.find("#info_bubble").show();
-  return false;
-}
-
-function onProductDetailMouseout(current) {
-  var currentItem = $(current);
-  var productPriceItem = currentItem.parent().parent();
-  productPriceItem.find("#info_bubble").hide();
-  return false;
 }
 
 function showHideUnmaskedField(show_unmasked_link) {

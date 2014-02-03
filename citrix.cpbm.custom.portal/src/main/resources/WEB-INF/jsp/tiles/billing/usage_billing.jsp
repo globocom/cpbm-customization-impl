@@ -156,15 +156,16 @@ var dictionary = {
                                           <span><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${currentAccountStatement.subscriptionCharges + currentAccountStatement.utilityCharges - currentAccountStatement.discounts + currentAccountStatement.taxes}" /></span>
                                         </div>
                                       </div>
-                              <div class="raw_content_row">
-                                        <div class="raw_contents_title" style="width:120px;">
-                                          <span><spring:message code="label.usage.billing.renewal.charges"/>:</span>
-                                        </div>
-                                        <div class="raw_contents_value" style="width:100px;">
-                                          <span><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${currentAccountStatement.renewalCharges}" /></span>
-                                        </div>
-                                      </div>                                                                            
-
+                              <c:if test="${currentAccountStatement.state eq 'PROVISIONAL'}">
+                                <div class="raw_content_row">
+                                          <div class="raw_contents_title" style="width:120px;">
+                                            <span><spring:message code="label.usage.billing.renewal.charges"/>:</span>
+                                          </div>
+                                          <div class="raw_contents_value" style="width:100px;">
+                                            <span><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${currentAccountStatement.renewalCharges}" /></span>
+                                          </div>
+                                        </div>                                                                            
+                               </c:if>
                                                                             
                                 </div>
                                </div>
@@ -251,8 +252,16 @@ var dictionary = {
          
     </div>
   </div>
-  <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-  <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+  <div class="top_notifications">
+    <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+    <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+  </div>
 
   <div class="widget_browser">
     <div id="spinning_wheel" style="display:none">
@@ -308,7 +317,7 @@ var dictionary = {
                </div>
                <div class="usage_tablescell_icons equals"></div>
           </div>
-           <div class="usage_tablescell" style="z-index:2;">
+           <div class="usage_tablescell" style="z-index:2;padding-right:10px;">
            	<div class="usage_tablescell_netbalance">
               	<div class="usage_tablescell_header netbalance">
                   	<h2><spring:message code="label.usage.billing.net.balance"/></h2>
@@ -323,16 +332,18 @@ var dictionary = {
                	  </div>
                 </div>
            </div>
-          <div class="usage_tablescell" style="z-index:1; padding-left:10px; width:124px;">
-          	<div class="usage_tablescell_header pending">
-                <h2 style="width:124px;"><spring:message code="label.usage.billing.renewal.charges"/></h2>
-              </div>
-               <div class="usage_tablescell_contentbox">
-                <p style="margin-left:10px;">
-                  <span><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}"  maxFractionDigits="${minFractionDigits}" value="${accountStatement.renewalCharges}" /></span>
-                </p>
-               </div>
-          </div>  
+           <c:if test="${(accountStatementUuid ne null) && (accountStatementState eq 'PROVISIONAL')}">
+            <div class="usage_tablescell" style="z-index:1;width:124px;border-right:none;">
+            	<div class="usage_tablescell_header pending">
+                  <h2 style="width:124px;"><spring:message code="label.usage.billing.renewal.charges"/></h2>
+                </div>
+                 <div class="usage_tablescell_contentbox">
+                  <p style="margin-left:10px;">
+                    <span><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}"  maxFractionDigits="${minFractionDigits}" value="${accountStatement.renewalCharges}" /></span>
+                  </p>
+                 </div>
+            </div>
+          </c:if>  
       </div>
       <div style="clear:both;"></div>
       <div class="usage_tablesummarypanels" style="margin-top:20px;">
@@ -638,8 +649,8 @@ var dictionary = {
                                <div class="db_gridbox_columns" style="width:13%;">
                                 <div class="db_gridbox_celltitles header"><spring:message code="label.usage.billing.discount"/></div>
                               </div>
-                               <div class="db_gridbox_columns" style="width:9%;">
-                                <div class="db_gridbox_celltitles header"><spring:message code="label.usage.billing.taxes"/></div>
+                               <div class="db_gridbox_columns" style="width:9%;" title="<spring:message code="label.usage.billing.taxes"/>">
+                                <div class="db_gridbox_celltitles header ellipsis" style="width:45px;"><spring:message code="label.usage.billing.taxes"/></div>
                               </div>
                                <div class="db_gridbox_columns" style="width:13%;">
                                 <div class="db_gridbox_celltitles header"><spring:message code="label.subscribe.summary.total"/></div>
@@ -654,7 +665,6 @@ var dictionary = {
                                   <c:set var="rowClass" value="even"/>
                                 </c:otherwise>
                               </c:choose>
-                               <c:if test="${invoice.rawAmount > 0 }">
                                  <div class="db_gridbox_rows ${rowClass}">
                                         <c:choose>
                                           <c:when test="${invoiceType eq 'utilityInvoice'}">
@@ -672,7 +682,75 @@ var dictionary = {
                                           </c:when>
                                           <c:otherwise>
                                             <div class="db_gridbox_columns" style="width:15%;">
-                                              <div class="db_gridbox_celltitles" title="${invoice.subscription.uuid}"> <a href="/portal/portal/billing/subscriptions?tenant=<c:out value="${tenant.param}"/>&id=<c:out value="${invoice.subscription.uuid}" />"> <c:out value="${fn:substring(invoice.subscription.uuid, 0,15)}"></c:out> </a> </div>
+                                              <div class="db_gridbox_celltitles" > 
+                                                <c:choose>
+                                                  <c:when test="${not empty invoice.subscription.handle.resourceName}">
+                                                    <c:set var="subscription_name" value="${invoice.subscription.handle.resourceName}"></c:set>
+                                                  </c:when>
+                                                  <c:otherwise>
+                                                    <c:set var="subscription_name" value="${invoice.subscription.uuid}"></c:set>
+                                                  </c:otherwise>
+                                                </c:choose>
+																										<c:set var="isBillingAdmin" value="n" />
+																										  <sec:authorize access="hasRole('ROLE_ACCOUNT_BILLING_ADMIN')">
+																										  <c:set var="isBillingAdmin" value="y" />
+																										</sec:authorize>
+                                                      <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_FINANCE_CRUD')">
+                                                      <c:set var="isBillingAdmin" value="n" />
+                                                    </sec:authorize>																										
+                                                <c:choose>
+                                                  <c:when test="${isBillingAdmin == 'n'}">
+                                                    <a id="subscription_details_link_${invoice.subscription.uuid}" href="/portal/portal/billing/subscriptions?tenant=<c:out value="${tenant.param}"/>&id=<c:out value="${invoice.subscription.uuid}" />" 
+                                                     class="js_subscription_details_popover"> ${fn:substring(subscription_name, 0,15)}</a> 
+                                                  </c:when>
+                                                  <c:otherwise>
+                                                    <c:out value="${fn:substring(subscription_name, 0,15)}"></c:out>
+                                                  </c:otherwise>
+                                                </c:choose>
+                                                <sec:authorize>
+                                                </sec:authorize>
+                                                <div id="subscription_popover_${invoice.subscription.uuid}" style="display:none;">
+                                                  <div class="popover_content_container"> 
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.subscriptions.uuid"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span>
+                                                            <c:out value="${invoice.subscription.uuid}" />
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.subscription.details.bundle"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span>
+                                                            <c:out value="${invoice.subscription.productBundle.name}" />
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="ui.label.serviceinstance"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span><c:out value="${invoice.subscription.serviceInstance.name}" /></span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.state"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span><spring:message code="${invoice.subscription.state.code}" /></span>
+                                                      </div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                                
+                                              </div>
                                             </div>
                                           </c:otherwise>
                                         </c:choose>
@@ -689,23 +767,6 @@ var dictionary = {
                                                   <fmt:timeZone value="${currentUser.timeZone}">
                                                     <fmt:formatDate value="${invoice.serviceEndDate}" pattern="${date_only_format}"/>                      
                                                   </fmt:timeZone>
-                                                <!--  
-                                                <c:if test="${invoice.subscription.activationDate lt accountStatement.billingPeriodStartDate }">
-                                                  <i>
-                                                </c:if>
-                                                   <fmt:timeZone value="${currentUser.timeZone}">
-                                                    <fmt:formatDate value="${invoice.subscription.activationDate}" pattern="${date_only_format}"/>                      
-                                                  </fmt:timeZone>
-                                                  <c:if test="${invoice.subscription.activationDate lt accountStatement.billingPeriodStartDate }">
-                                                   </i>
-                                                  </c:if>
-                                                  <c:if test="${invoice.subscription.state eq 'EXPIRED'}">
-                                                    -
-                                                    <fmt:timeZone value="${currentUser.timeZone}">
-                                                      <fmt:formatDate value="${invoice.subscription.terminationDate}" pattern="${date_only_format}"/>                      
-                                                    </fmt:timeZone>
-                                                  </c:if>
-                                                  -->
                                               </div>
                                             </div>
                                           </c:when>
@@ -746,7 +807,6 @@ var dictionary = {
                                     <c:set var="invoice" value="${invoice}" scope="request"></c:set>
                                     <c:set var="currentUser" value="${currentUser}" scope="request"></c:set>
                                     <jsp:include page="dialog_invoice_details.jsp"></jsp:include>
-                                </c:if>      
                           </c:forEach>
                         </div>
                       </div>
@@ -809,7 +869,7 @@ var dictionary = {
               </div>
    
    <!--Renewal Charges-->
-
+        <c:if test="${(accountStatementUuid ne null) && (accountStatementState eq 'PROVISIONAL')}">
           <div class="usage_newcharges_box">
             <h2><spring:message code="label.usage.billing.renewal.charges"/></h2>
             <div class="usage_newcharges_wrapper">
@@ -876,7 +936,59 @@ var dictionary = {
                             <c:if test="${invoice.rawAmount > 0 }">
                                <div class="db_gridbox_rows ${rowClass}">    
                                       <div class="db_gridbox_columns" style="width:15%;">
-                                        <div class="db_gridbox_celltitles" title="${invoice.subscription.uuid}"> <a href="/portal/portal/billing/subscriptions?tenant=<c:out value="${tenant.param}"/>&id=<c:out value="${invoice.subscription.uuid}" />"><c:out value="${fn:substring(invoice.subscription.uuid, 0,15)}"> </c:out> </a> </div>
+                                       <c:choose>
+                                          <c:when test="${not empty invoice.subscription.handle.resourceName}">
+                                            <c:set var="subscription_name"
+                                              value="${invoice.subscription.handle.resourceName}"></c:set>
+                                          </c:when>
+                                          <c:otherwise>
+                                            <c:set var="subscription_name" value="${invoice.subscription.uuid}"></c:set>
+                                          </c:otherwise>
+                                        </c:choose>
+                                        <div class="db_gridbox_celltitles" title="${invoice.subscription.uuid}"> 
+                                          <a id="subscription_details_link_${invoice.subscription.uuid}" class="js_subscription_details_popover" href="/portal/portal/billing/subscriptions?tenant=<c:out value="${tenant.param}"/>&id=<c:out value="${invoice.subscription.uuid}" />">
+                                          <c:out value="${fn:substring(subscription_name, 0,15)}"> </c:out> </a> 
+                                          <div id="subscription_popover_${invoice.subscription.uuid}" style="display:none;">
+                                                  <div class="popover_content_container"> 
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.subscriptions.uuid"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span>
+                                                            <c:out value="${invoice.subscription.uuid}" />
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.subscription.details.bundle"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span>
+                                                            <c:out value="${invoice.subscription.productBundle.name}" />
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="ui.label.serviceinstance"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span><c:out value="${invoice.subscription.serviceInstance.name}" /></span>
+                                                      </div>
+                                                    </div>
+                                                    <div class="popover_rows">
+                                                      <div class="row_contents_title">
+                                                        <span><spring:message code="label.state"/>:</span>
+                                                      </div>
+                                                      <div class="row_contents_value">
+                                                        <span><spring:message code="${invoice.subscription.state.code}" /></span>
+                                                      </div>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                        </div>
                                       </div>
                                       <div class="db_gridbox_columns" style="width:11%;">
                                         <div class="db_gridbox_celltitles" title="${invoice.user.firstName} ${invoice.user.lastName}"> <c:out value="${invoice.user.firstName} ${invoice.user.lastName}"></c:out> </div>
@@ -884,7 +996,7 @@ var dictionary = {
                                       <div class="db_gridbox_columns" style="width:26%;">
                                         <div class="db_gridbox_celltitles">
                                           <fmt:timeZone value="${currentUser.timeZone}">
-                                            <fmt:formatDate value="${invoice.serviceStartDate}" pattern="${date_only_format}"/>                      
+                                            <fmt:formatDate value="${invoice.serviceStartDate}" pattern="${date_only_format}"/>                       
                                           </fmt:timeZone>
                                         </div>
                                       </div>
@@ -972,10 +1084,11 @@ var dictionary = {
             <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${renewBigTotal}" minFractionDigits="${minFractionDigits}"  maxFractionDigits="${minFractionDigits}" />
             </div>
           </div>
-        </div>
-                </div>
-              </div>
-              </div>
+         </div>
+             </div>
+         </div>
+      </div>
+   </c:if>
 
   <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')">
   <c:set var="auth" value="y" />    

@@ -89,6 +89,7 @@
   
   <definition name="blankview" template="/WEB-INF/jsp/tiles/shared/blank.jsp">
   </definition> 
+  <definition name="google.analytics" template="/WEB-INF/jsp/tiles/shared/google_analytics.jsp"/>
   
   
   <!-- Authentication -->
@@ -156,6 +157,8 @@
   <definition name="register.setpassword" extends="application.login" >
     <put-attribute name="body" value="/WEB-INF/jsp/tiles/register/set_password.jsp" cascade="true"/>
   </definition>
+
+  <definition name="captcha" template="/WEB-INF/jsp/tiles/register/captcha.jsp"/>
 
   <definition name="user.show" template="/WEB-INF/jsp/tiles/users/viewusers.jsp">    
   </definition> 
@@ -434,7 +437,7 @@
   </definition>  
  <definition name="catalog.utilityrates.lightbox" template="/WEB-INF/jsp/tiles/subscriptions/utilityrates.jsp"></definition>
  <definition name="catalog.utilityrates.table" template="/WEB-INF/jsp/tiles/subscriptions/utilityrates_table.jsp"></definition>
- <definition name="home.gravtars.show" template="/WEB-INF/jsp/tiles/main/home_gravtars.jsp"></definition>
+ <definition name="home.gravatars.show" template="/WEB-INF/jsp/tiles/main/home_gravatars.jsp"></definition>
   
   <!-- Batch Runs -->
   <definition name="batch.list" extends="application" >
@@ -736,5 +739,12 @@
   <definition name="subscribe.bundle.LHS" template="/WEB-INF/jsp/tiles/subscriptions/subscribeBundleLHS.jsp"/>
   <definition name="resource.provision.configuration" template="/WEB-INF/jsp/tiles/subscriptions/resourceProvisionConfiguration.jsp"/>
   <definition name="provision.resource.RHS" template="/WEB-INF/jsp/tiles/subscriptions/provisionResourceRHS.jsp"/>
-  <definition name="list.bundles.container" template="/WEB-INF/jsp/tiles/subscriptions/commonproductbundlediv.jsp"/>
+  <definition name="list.bundles.container" template="/WEB-INF/jsp/tiles/subscriptions/commonproductbundlediv.jsp"/> 
+  
+  <definition name="channel.service.settings" template="/WEB-INF/jsp/tiles/products/show-channel-settings.jsp">
+  </definition>
+  <definition name="channel.service.edit.settings" template="/WEB-INF/jsp/tiles/products/edit-channel-settings.jsp">
+  </definition>
+  <definition name="enable.service" template="/WEB-INF/jsp/tiles/main/enable_instance.jsp">    
+  </definition>
 </tiles-definitions>

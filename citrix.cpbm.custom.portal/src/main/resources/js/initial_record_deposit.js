@@ -1,11 +1,12 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ *  Copyright © 2013 Citrix Systems, Inc.
+ *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+ *  Citrix Systems, Inc.
+ */
 $(document).ready(function() {
   activateThirdMenuItem("l3_billing_record_deposit_tab");
-  initDialog("recordDepositDiv", 420);
+  initDialog("recordDepositDiv", 520);
+
   $('#record_initial_deposit_button').unbind('click').bind('click', function(event) {
 
     var actionurl = "/portal/portal/billing/record_deposit?tenant=" + $("#tenantId").val();
@@ -29,10 +30,7 @@ $(document).ready(function() {
         $thisDialog.dialog('option', 'buttons', {
           "OK": function() {
 
-
             if ($("#depositForm").valid()) {
-
-
               var newVal = $("#tenantPercentage").val();
               $.ajax({
                 type: "POST",
@@ -42,21 +40,13 @@ $(document).ready(function() {
                 success: function() {
                   $thisDialog.dialog("close");
                   window.location.href = "/portal/portal/billing/show_record_deposit?tenant=" + $('#tenantId')
-                    .val();
-
-
-
+                  .val();
                 },
-                error: function(XMLHttpRequest) {
-                  if (XMLHttpRequest.status === INVALID_AJAX_REQUEST_ERROR_CODE) {
-                    alert(XMLHttpRequest.responseText);
-                  }
-                  displayAjaxFormError(XMLHttpRequest, "depositForm", "main_addnew_formbox_errormsg");
+                error: function(response) {
+                  displayAjaxFormError(response, "depositForm", "error");
                 }
               });
-
             }
-
           },
           "Cancel": function() {
             $(this).dialog("close");
@@ -67,13 +57,9 @@ $(document).ready(function() {
           'Cancel': g_dictionary.dialogCancel
         });
         $thisDialog.dialog("open");
-
-
       },
       error: function() {}
     });
-
-
   });
 
 });

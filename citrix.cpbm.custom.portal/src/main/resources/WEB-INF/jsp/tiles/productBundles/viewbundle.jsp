@@ -56,8 +56,16 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
    </div>
 </div>
 
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 
 <div class="widget_browser">
   <div id="spinning_wheel" style="display:none">
@@ -116,10 +124,10 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
               <div class="thumbnail_defaulticon product">
               <c:choose>
                 <c:when test="${not empty productBundle.imagePath}">
-                <img src="/portal/portal/logo/productBundles/<c:out value="${productBundle.id}"/>" id="bundleimage<c:out value="${productBundle.id}"/>" style="height:99px;width:97px;" />
+                <img src="/portal/portal/logo/productBundles/<c:out value="${productBundle.id}"/>" id="bundleimage<c:out value="${productBundle.id}"/>" style="height:99px;width:99px;" />
                 </c:when>
                 <c:otherwise>
-                  <img src="<%=request.getContextPath() %>/images/default_productsicon.png" id="bundleimage<c:out value="${productBundle.id}"/>" style="height:99px;width:97px;" />
+                  <img src="<%=request.getContextPath() %>/images/default_productsicon.png" id="bundleimage<c:out value="${productBundle.id}"/>" style="height:99px;width:99px;" />
                 </c:otherwise>
               </c:choose>
               </div>
@@ -217,7 +225,7 @@ var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
             </p>
         </div>
       </div> 
-      <div class="widget_browsergrid_wrapper details" id="entitlements_content" style="display: none;">
+      <div class="widget_browsergrid_wrapper details" id="entitlements_content" style="display: none; height: 450px;">
         
       </div>
         <div class="widget_browsergrid_wrapper " id="bundlepricing_content" style="overflow:hidden; display: none;">

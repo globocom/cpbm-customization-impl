@@ -5,7 +5,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
-<div class="dialog_formcontent wizard">
+<div class="dialog_formcontent wizard upload_logo_dialog">
  <span class="helptext">
    <spring:message code="ui.text.message.product.image.message"></spring:message>
  </span>

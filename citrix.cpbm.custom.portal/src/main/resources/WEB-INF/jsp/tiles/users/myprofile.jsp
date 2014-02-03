@@ -13,6 +13,10 @@
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/date.format.js"></script>
 
 <script language="javascript">
+$(document).ready(
+  function() {
+    swap_name_order_tab_index("user_first_name", "user_last_name");
+});
 var dictionary = {
     lightboxbuttoncancel: '<spring:message javaScriptEscape="true" code="label.cancel"/>',  
     lightboxbuttonconfirm: '<spring:message javaScriptEscape="true" code="label.confirm"/>',
@@ -40,6 +44,7 @@ if( typeof i18n.labels === 'undefined' ) {
             channel: '<spring:message javaScriptEscape="true" code="js.user.channel"/>',
             title: '<spring:message javaScriptEscape="true" code="js.user.title"/>',
           del : '<spring:message javaScriptEscape="true" code="js.user.del.confirm"/>',
+          generateAPIKey : '<spring:message javaScriptEscape="true" code="js.user.generate.api.key"/>',
           deact: '<spring:message javaScriptEscape="true" code="js.user.deact.confirm"/>',
           act: '<spring:message javaScriptEscape="true" code="js.user.act.confirm"/>',
           delproject : '<spring:message javaScriptEscape="true" code="js.user.del.confirmproject"/>',           
@@ -113,14 +118,14 @@ if( typeof i18n.labels === 'undefined' ) {
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.stateselect.js"></script>
 
 <!-- Top links -->
-<div class="maintitlebox">
+<div class="maintitlebox ellipsis">
 <input type="hidden" id="loggedInUserParam" value="<c:out value="${user.user.param}"/>"/>
 <input type="hidden" id="activeTabName" value="<c:out value="${activeTab}"/>"/>
                
-<h1>
+<h1 title='<c:out value="${user.user.firstName} ${user.user.lastName}"></c:out>'>
 <c:out value="${user.user.firstName} ${user.user.lastName}"></c:out>
 </h1>
-      <c:if test="${user.user.id != currentUser.id && user.user.tenant.owner != user.user}">
+      <c:if test="${user.user.id ne currentUser.id && user.user.tenant.owner.id ne user.user.id}">
       <div class="maintitle_boxlinks_tab">
       
       <c:choose >
@@ -128,14 +133,14 @@ if( typeof i18n.labels === 'undefined' ) {
        <spring:url value="/portal/users/{user}/deactivate_user" var="deactivateUserPath" htmlEscape="false"> 
           <spring:param name="user"><c:out value="${user.user.param}"/></spring:param>
       </spring:url>
-      <p><a id="profile_deactivateuser" href="<c:out value="${deactivateUserPath}" />"><spring:message code="label.myprofile.deactivate"/></a> |</p>
+      <p><a id="profile_deactivateuser" href="javascript:void(0)" callbackurl="<c:out value="${deactivateUserPath}" />"><spring:message code="label.myprofile.deactivate"/></a> |</p>
       </c:when>
       <c:otherwise>
        <c:if test="${user.user.emailVerified == true}">
         <spring:url value="/portal/users/{user}/activate_user" var="activateUserPath" htmlEscape="false"> 
           <spring:param name="user"><c:out value="${user.user.param}"/></spring:param>
       </spring:url>
-      <p><a id="profile_activateuser" href="<c:out value="${activateUserPath}" />"><spring:message code="label.myprofile.activate"/></a> |</p>
+      <p><a id="profile_activateuser" href="javascript:void(0)" callbackurl="<c:out value="${activateUserPath}" />"><spring:message code="label.myprofile.activate"/></a> |</p>
       </c:if>
       </c:otherwise>
       </c:choose>
@@ -153,12 +158,12 @@ if( typeof i18n.labels === 'undefined' ) {
         <div class="commonboxes profileimagebox">
             <div class="commonboxes_contentcontainer smallbox">
                 <div class="profileimage_leftpanel">
-                    <div class="profileimage_container">
+                    <div class="profileimage_container" <c:if test="${doNotShowGravatarLink == true}">style="margin: 7px 0 0 50px;"</c:if>>
                         <div class="profilepic"><img src=<c:out value="${gravatarUrl}"></c:out> width="80px" height="80px"></img></div>
                       </div>
                   </div>
                   <div class="profileimage_rightpanel">
-                    <div class="profileimage_rightlinksbox">
+                    <div class="profileimage_rightlinksbox" <c:if test="${doNotShowGravatarLink == true}">style="display:none;"</c:if>>
                         <p><a href="http://en.gravatar.com/site/signup/" target="_blank"><spring:message code="label.myprofile.manage"/></a></p>
                       </div>
                   </div>
@@ -257,24 +262,30 @@ if( typeof i18n.labels === 'undefined' ) {
             <div class="commonboxes_formbox bigformbox">
                 <div class="commonboxes_formbox_panels">
                     <ul>
+                        <div class="user_name_order">
+                        <div class="user_first_name">
                         <li class="commonboxes_formbox">
                               <form:label path="user.firstName"><spring:message code="label.myprofile.firstName"/></form:label>
                               <div class="commonboxes_formbox_withouttextbox read" id="firstname_readvalue"><c:out value="${user.user.firstName}"></c:out></div>
-                              <div class="mandatory_wrapper write" >   
+                              <div class="mandatory_wrapper write" style="display:none;">
                                 <spring:message code="label.userInfo.firstName.tooltip" var="i18nFirstNameTooltip"/>
                                 <form:input id="firstname_writevalue" cssClass="text" tabindex="201" path="user.firstName" title="${i18nFirstNameTooltip}" maxlength="255"/>
                               </div>
                               <div class="main_addnew_formbox_myprofile_errormsg" id="firstname_writevalueError"></div>
                           </li>
+                          </div>
+                          <div class="user_last_name">
                           <li class="commonboxes_formbox">
                               <form:label path="user.lastName"><spring:message code="label.myprofile.lastName"/></form:label>
                               <div class="commonboxes_formbox_withouttextbox read" id="lastname_readvalue"><c:out value="${user.user.lastName}"></c:out></div>
-                              <div class="mandatory_wrapper write">   
+                              <div class="mandatory_wrapper write" style="display:none;">   
                                 <spring:message code="label.userInfo.lastName.tooltip" var="i18nLastNameTooltip"/>
                                 <form:input id="lastname_writevalue" cssClass="text" tabindex="202" path="user.lastName" title="${i18nLastNameTooltip}" maxlength="255"/>
                               </div>                                            
                               <div class="main_addnew_formbox_myprofile_errormsg" id="lastname_writevalueError"></div>
                           </li>
+                          </div>
+                          </div>
                           <li class="commonboxes_formbox last">
                             <form:label path="user.enabled"><spring:message code="label.status"/></form:label>
                             <c:choose>
@@ -300,9 +311,9 @@ if( typeof i18n.labels === 'undefined' ) {
                     <ul>
                     <li class="commonboxes_formbox">
                               <form:label path="user.emailVerified"><spring:message code="ui.users.all.header.email"/></form:label>
-	                      <div class="commonboxes_formbox_withouttextbox" id="PrimaryEmailDivId">
-	                           <c:out value="${user.user.email}"></c:out>
-	                      </div>
+                        <div class="commonboxes_formbox_withouttextbox" id="PrimaryEmailDivId">
+                             <c:out value="${user.user.email}"></c:out>
+                        </div>
                     </li>
 
                     <c:if test="${user.phoneVerificationEnabled}">
@@ -325,7 +336,7 @@ if( typeof i18n.labels === 'undefined' ) {
 
                               <c:choose>
                                 <c:when test="${user.countryCode != ''}">
-                               <div class="mandatory_wrapper write" >
+                               <div class="mandatory_wrapper write" style="display:none;">
                                   <div class="commonboxes_formbox_withouttextbox_plus_sign" >+</div>
                                </div>
                                <div class="read" >
@@ -354,11 +365,11 @@ if( typeof i18n.labels === 'undefined' ) {
                                    </c:when>
                                    <c:otherwise>
                                      <spring:message code="label.moreUserInfo.countryCode.tooltip" var="i18nCountryCodeTooltip"/>
-                                     <form:input cssClass="text write" tabindex="205" path="countryCode" title="${i18nCountryCodeTooltip}" cssStyle="width:30px" maxlength="5"/>
+                                     <form:input cssClass="text write" tabindex="205" path="countryCode" title="${i18nCountryCodeTooltip}" style="width:30px;display:none;" maxlength="5"/>
                                     </c:otherwise>
                                   </c:choose>
                                    <spring:message code="label.moreUserInfo.phoneNumber.tooltip" var="i18nPhoneTooltip"/>
-                                   <form:input cssClass="text write" tabindex="205" path="phone" title="${i18nPhoneTooltip}" cssStyle="width:90px" maxlength="15"/>
+                                   <form:input cssClass="text write" tabindex="205" path="phone" title="${i18nPhoneTooltip}" style="width:90px;display:none;" maxlength="15"/>
                                    
                                     </c:when>                               
                                <c:otherwise>
@@ -370,11 +381,11 @@ if( typeof i18n.labels === 'undefined' ) {
                                    </c:when>
                                    <c:otherwise>
                                      <spring:message code="label.moreUserInfo.countryCode.tooltip" var="i18nCountryCodeTooltip"/>
-                                     <form:input cssClass="text write" tabindex="205" path="countryCode" title="${i18nCountryCodeTooltip}" cssStyle="width:30px"/>
+                                     <form:input cssClass="text write" tabindex="205" path="countryCode" title="${i18nCountryCodeTooltip}" style="width:30px;display:none;"/>
                                     </c:otherwise>
                                   </c:choose>
                                    <spring:message code="label.moreUserInfo.phoneNumber.tooltip" var="i18nPhoneTooltip"/>
-                                   <form:input cssClass="text write" tabindex="205" path="phone" title="${i18nPhoneTooltip}" cssStyle="width:90px"/>
+                                   <form:input cssClass="text write" tabindex="205" path="phone" title="${i18nPhoneTooltip}" style="width:90px;display:none;"/>
                                    </div>
                                </c:otherwise>
                                </c:choose>
@@ -388,18 +399,18 @@ if( typeof i18n.labels === 'undefined' ) {
                                     <form:hidden path="userEnteredPhoneVerificationPin" />
                               </c:if> 
                                 <div class="main_addnew_formbox_myprofile_errormsg" id="countryCodeError"></div>
-                                <div class="main_addnew_formbox_myprofile_errormsg" style="margin: 5px 0 0 60px;" id="phoneError"></div>
-                                <div class="main_addnew_formbox_myprofile_errormsg" style="margin: 5px 0 0 60px;" id="userEnteredPhoneVerificationPinError"></div>
+                                <div class="main_addnew_formbox_myprofile_errormsg" style="margin: 5px 0 0 110px;" id="phoneError"></div>
+                                <div class="main_addnew_formbox_myprofile_errormsg" style="margin: 5px 0 0 110px;" id="userEnteredPhoneVerificationPinError"></div>
                                 <form:errors path="phone" cssClass="main_addnew_formbox_myprofile_errormsg"></form:errors>
                                 <c:if test="${user.phoneVerificationEnabled}">
                                  <div id="phone-dialog-modal" title="<spring:message code="ui.label.phoneverification.dialog.title"/>">
-                                      <a id="phoneVerificationCall"  class="callme_button" href="#" tabindex="205" style="margin-left:25px; height:20px;"><span class="call_icon"></span><spring:message code="label.phoneVerification.callMe"/></a>
-                                      <a id="phoneVerificationSMS"  class="callme_button" href="#" tabindex="205" style="margin-left:17px; height:20px;"><span class="text_icon"></span><spring:message code="label.phoneVerification.textMe"/></a>
-                                      <div style="margin-top:50px">
+                                      <div style="margin-top:10px; margin-left:20px;">
                                         <form:label path="userEnteredPhoneVerificationPin"><spring:message code="label.moreUserInfo.phoneVerificationPin"/></form:label> 
                                         <spring:message code="label.moreUserInfo.phoneVerificationPin.tooltip" var="i18nPhoneVerificationPinTooltip"/>
                                         <input class="text" tabindex="205" id="phoneVerificationPin" title="<c:out value="${i18nPhoneVerificationPinTooltip}"/>"/>
                                       </div>
+                                      <a id="phoneVerificationCall"  class="callme_button" href="#" tabindex="205" style="margin-left:25px; margin-top:25px; height:20px;"><span class="call_icon"></span><spring:message code="label.phoneVerification.callMe"/></a>
+                                      <a id="phoneVerificationSMS"  class="callme_button" href="#" tabindex="205" style="margin-left:17px; margin-top:25px; height:20px;"><span class="text_icon"></span><spring:message code="label.phoneVerification.textMe"/></a>
                                       <div class="phonever_statusbox" id="verificationStatusFailed" style="margin-left: 10px;display:none">
                                           <div class="phonever_statusicon unverified"></div>
                                           <span class="unverified"><spring:message code="label.phoneVerification.unverified"/></span>
@@ -474,7 +485,7 @@ if( typeof i18n.labels === 'undefined' ) {
                             <div class="commonboxes_formbox_withouttextbox"> <c:out value="${logins}"></c:out></div>
                         </li>
                        
-                        <li class="write" style="border-top:1px dotted #666666; padding: 8px 0 0;">
+                        <li class="write" style="border-top:1px dotted #666666; padding: 8px 0 0;display:none;">
                             <form:hidden path="username" />
                          <form:label cssClass="read" path="user.oldPassword" ><spring:message code="label.myprofile.oldPassword"/></form:label>
                           <form:label cssClass="write" path="user.oldPassword"><spring:message code="label.myprofile.oldPassword"/></form:label>
@@ -484,7 +495,7 @@ if( typeof i18n.labels === 'undefined' ) {
                             </div>
                             <div class="main_addnew_formbox_myprofile_errormsg" id="user.oldPasswordError"></div>
                          </li>
-                        <li class="write">
+                        <li class="write" style="display:none;">
                             <form:label cssClass="read" path="user.clearPassword" ><spring:message code="label.myprofile.password"/></form:label>
                             <form:label cssClass="write" path="user.clearPassword"><spring:message code="label.myprofile.newPassword"/></form:label>
                             <div class="mandatory_wrapper write">
@@ -493,7 +504,7 @@ if( typeof i18n.labels === 'undefined' ) {
                             </div>                                            
                             <div class="main_addnew_formbox_myprofile_errormsg" id="user.clearPasswordError"></div>
                         </li>
-                        <li class="write" style = "border-bottom: none;">
+                        <li class="write" style = "border-bottom: none;display:none;">
                             <label for="password_confirm"><spring:message code="label.myprofile.confirmNewPassword"/></label>
                             <div class="mandatory_wrapper">
                               <spring:message code="label.newPassword.confirm.tooltip" var="i18nConfirmNewPasswordTooltip"/>
@@ -538,6 +549,34 @@ if( typeof i18n.labels === 'undefined' ) {
 
 <div  class="maincontent" style="margin:0;">
     <div id="userCredentialDiv" class="maincontent_horizontalpanels" style="margin:0;">
+    
+        <div id="bssApiCredentialsDiv" class="commonboxes_container" style="display:none;" >
+             <div id="titleDiv" class="commonboxes_titlebox">
+                 <h2><spring:message code="label.myprofile.bss" /> - <spring:message code="page.level2.apicredentials"/></h2>
+              </div>
+              <div class="commonboxes">
+                <div class="commonboxes_contentcontainer fullwidthbox">
+                  <div class="commonboxes_formbox fullwidthbox">
+                     <span id="serviceLogo" class="apikeyLogo"></span>  
+                     <div class="commonboxes_formbox_panels fullwidth" style="float:right; width:750px;">
+                            <ul>    
+                               <li class="commonboxes_formbox fullwidth" style="width:730px;" >
+                                    <label ><spring:message code="label.myprofile.apikey"/></label>
+                                    <div class="commonboxes_formbox_withouttextbox fullwidth" style="width:620px;" id="bssApiKey"></div>
+                               </li> 
+                               <li  class="commonboxes_formbox fullwidth" style="width:730px;" >
+                                    <label><spring:message code="label.myprofile.secretKey" /></label>
+                                    <div class="commonboxes_formbox_withouttextbox fullwidth" style="width:620px;" id="bssSecretKey"></div>
+                               </li>  
+                            </ul>
+                            <input type="button" tabindex="100" style="margin-top:10px;" class="commonbutton submitmsg" value="<spring:message code="label.myprofile.generate.apikey.secretkey" />" id="generateAPIKey">
+                      </div>
+                  </div>
+                 </div>
+               </div>
+         </div>
+         
+    
          <div id="apiCredentialsDiv" class="commonboxes_container" style="display: none;">
              <div id="titleDiv" class="commonboxes_titlebox">
                  <h2><spring:message code="page.level2.cloudstack"/> - <spring:message code="page.level2.apicredentials"/></h2>
@@ -631,56 +670,11 @@ if( typeof i18n.labels === 'undefined' ) {
   </div>
     
 </div>
-<!-- My Service tab will go here  -->
-<sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')"><!--This is now visible only for Service provider users as "My Services" pages have been merged for other users  -->
-<div id="myServicesDiv" class="maincontent" style="margin:0; display:none;" > 
-<jsp:include page="/WEB-INF/jsp/tiles/main/cs_instance_left_menu.jsp"></jsp:include>
-<div id="userSubscribedServiceList">
-    <c:forEach items="${serviceInstanceMap}" var="serviceInstanceEntry" varStatus="status">
-    <c:if test="${serviceInstanceEntry.value == true}">
-      <div class="servicelist mainbox" category="${serviceInstanceEntry.key.service.category}" serviceid="${serviceInstanceEntry.key.service.uuid}">
-        <div class="servicelist sections col6" style="width:470px">
-          <span class="logobox"><img src="/portal/portal/logo/connector/${serviceInstanceEntry.key.service.uuid}/logo"/></span>
-          <div class="servicelist sections col7">
-            <ul>
-              <li>
-                <h3>
-                  <c:out value="${serviceInstanceEntry.key.name}"/>
-                </h3>
-              </li>
-              <li><c:out value="${serviceInstanceEntry.key.description}"/></li>                           
-            </ul>
-          </div>
-        </div>
-        <div class="servicelist sections col3" style="width: 195px;">
-          <div class="button_wrapper">
-            <c:choose>
-             <c:when test="${currentUser.id == user.id}">
-               <a id="${serviceInstanceEntry.key.uuid}" class="add_button active" href="javascript:resolveViewForSettingFromServiceInstance('${serviceInstanceEntry.key.uuid}');"> <spring:message code="message.myprofile.mysettings"/> </a>
-             </c:when>
-             <c:otherwise>
-              <a id="${serviceInstanceEntry.key.uuid}" class="add_button active" href="javascript:resolveViewForSettingFromServiceInstance('${serviceInstanceEntry.key.uuid}');"> <spring:message code="message.myprofile.usersettings"/> </a>
-             </c:otherwise> 
-            </c:choose>
-          </div>
-        </div>
-      </div>
-      </c:if>
-    </c:forEach>
-</div>
-<div id="userSubscribedServiceDetails" style="margin:0; display:none;">
-	<span id="backToSubscribedServiceListing" class="title_listall_arrow biggerback" style="float:right;"><spring:message javaScriptEscape="true" code="label.backtolisting"/></span>
-	<div>
-		<br><br>
-		<iframe id="userOrAccountSettingsViewFrame" width="940px" height="700px" frameborder="0"></iframe>
-	</div>
-</div>
-</div>
-</sec:authorize>
+
 
 <input id="doNotShowVerifyUserDiv" type="hidden" name="doNotShowVerifyUserDiv" value="${doNotShowPasswordEditLink}"> 
 <div id="verifyUserDiv" title='<spring:message code="user.password.verification" />' style="min-height:150px; overflow: hidden; display:none">
-	<tiles:insertDefinition name="user.password_verification"/>
+  <tiles:insertDefinition name="user.password_verification"/>
 </div>
 
 <input id="previous_tab" type="hidden" name="previous_tab" value="profile"> 
@@ -689,3 +683,4 @@ if( typeof i18n.labels === 'undefined' ) {
 <div id="alert_message_dialog" style="display:none; height: auto; min-height: 65px; width: auto; margin: 25px 10px -20px;"
        title="<spring:message code="ui.label.message"/>">
 </div>
+

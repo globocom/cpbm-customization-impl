@@ -202,7 +202,7 @@
         <span > |</span>
          </p> 
        <p>
-       <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/productBundles/${productBundle.id}/ratecard/edit"/>"/>
+       <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/productBundles/${productBundle.id}/ratecard/edit"/>"/>
        <input tabindex="210" id="editratecard"  class="commonbutton submitmsg" rel="<spring:message code="ui.products.label.edit.saving"/>" type="submit" value="<spring:message code="ui.products.label.edit.save"/>"/> </p>
        <div class="main_addnew_formbox_errormsg" id="miscFormErrors" style="margin:5px 0 0 10px"></div>
     </div>

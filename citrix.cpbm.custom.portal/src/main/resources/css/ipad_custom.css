@@ -22,3 +22,12 @@
 .widget_grid_cell .select{
   background:#CCCCCC;
 }
+.fixed_header_table_inner{ 
+  max-height:234px;
+}
+.fixed_header_table_inner.entitlements_table_inner{
+  max-height:250px;
+}
+.catalogfilter_filterlist.templates{
+  height:130px;
+}

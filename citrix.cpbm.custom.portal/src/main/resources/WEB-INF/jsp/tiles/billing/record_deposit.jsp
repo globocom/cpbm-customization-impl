@@ -8,7 +8,7 @@
 <script type="text/javascript">
 $(document).ready(function() {
   $("#depositForm").inputAutoTitles();
-  $("#receiveOn").datepicker(
+  $("#receivedOn").datepicker(
       {
         duration: '',
         showOn: "button",
@@ -16,26 +16,29 @@ $(document).ready(function() {
         buttonImageOnly: true,
         buttonText: "",
         showTime: false,
+        maxDate: new Date(),
         beforeShow: function(dateText, inst){ 
-            
+
         },
         onSelect: function(dateText, inst) {
+          $(this).attr("value", dateText);
+          $("#receivedOn").each(function() {
             $(this).attr("value", dateText);
-            $("#receiveOn").each(function() {
-              $(this).attr("value", dateText);
-            });
-            
-      },
-      onClose: function(dateText, inst) {
-        
-      }});
-  $("#depositForm").validate( {
-    
-    //debug : true,
+          });
+
+        },
+        onClose: function(dateText, inst) {
+
+        }
+      });
+  $("#ui-datepicker-div").css("z-index", "9999" );
+  
+  $("#depositForm").validate({
+    debug : true,
     success : "valid",
     ignoreTitle : true,
     rules : {
-      "receiveOn" : {
+      "receivedOn" : {
         required: true,
         date: true
       },
@@ -44,43 +47,44 @@ $(document).ready(function() {
       }
     },
     messages : {
-      "receiveOn" : {
+      "receivedOn" : {
         required: "Enter date when deposit was received"
       },
       "amt" : {
         required: "Enter amount of deposit received"
       }
+    },
+    errorPlacement: function(error, element) {
+      var name = element.attr('id');
+      name = ReplaceAll(name, ".", "\\.");
+      if (error.html() != "") {
+        error.appendTo("#" + name + "Error");
+      }
     }
   });
-  $("#receiveOn").attr( 'readOnly' , 'true' );
+  $("#receivedOn").attr( 'readOnly' , 'true' );
 });
-$("#ui-datepicker-div").css("z-index", "9999" );
 </script>
 <div class="dialog_formcontent">
- <div id="changeAccountTypeDiv">
-  
-      <form:form commandName="depositRecordForm" id="depositForm" action="${record_deposit_path}" >
-      
-          <ul>
-            <li>
-              <label for="receivedOn"><spring:message code="label.initial.deposit.record.received.on"/></label>
-              <div class="mandatory_wrapper">                                            
-                <form:input autocomplete="off" tabindex="102" id="receiveOn" path="receivedOn" title="MM/dd/yyyy" cssClass="text" />
-              </div>
-              <div class="main_addnew_formbox_errormsg" id="receivedOnError">
-                <label for="receivedOn" generated="true" class="error" style="width:200px;padding-left:6px;"></label>
-              </div>
-            </li>                                                                                                     
-            <li>
-              <label for=""><spring:message code="label.initial.deposit.record.amount"/></label>
-              <div class="mandatory_wrapper">                                            
-                <form:input tabindex="102" id="amt" path="amount" readonly="true" cssClass="text"/>
-              </div>
-            </li>            
-          </ul>
-    
-              
-      </form:form>
-    
-</div>
+  <div id="changeAccountTypeDiv">
+    <form:form commandName="depositRecordForm" id="depositForm" action="${record_deposit_path}" cssClass="ajaxform">
+      <ul>
+        <li>
+          <label for="receivedOn"><spring:message code="label.initial.deposit.record.received.on" /></label>
+          <div class="mandatory_wrapper">
+            <form:input autocomplete="off" tabindex="102" id="receivedOn" path="receivedOn" title="MM/dd/yyyy" cssClass="text" />
+          </div>
+          <div id="receivedOnError">
+            <label for="receivedOn" generated="true" class="error" style="width: 200px; padding-left: 6px;"></label>
+          </div>
+        </li>
+        <li>
+          <label for=""><spring:message code="label.initial.deposit.record.amount" /></label>
+          <div class="mandatory_wrapper">
+            <form:input tabindex="102" id="amt" path="amount" readonly="true" cssClass="text" />
+          </div>
+        </li>
+      </ul>
+    </form:form>
+  </div>
 </div>

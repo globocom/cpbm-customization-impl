@@ -6,10 +6,6 @@
   margin-left: 3px;
 }
 
-.details_lightboxformbox label {
-  width: 170px;
-}
-
 .widget_titlebar.dropdownbutton {
   margin: 5px 5px 0 0;
   padding: 4px 3px 0 3px;
@@ -37,4 +33,18 @@
 
 .db_billing_calendarblock span.infotext {
   font-size: 10px;
+}
+span.required_product_units_header{
+  margin-top:0px !important;
+}
+
+.widget_searchcontentarea span.label {
+  font-size: 9px;
+}
+
+.maintitlebox h1 {
+  font-size: 15px;
+}
+.row_celltitles.status_gray{
+  width: 100%;
 }

@@ -1,18 +1,12 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright ¬© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -28,6 +22,7 @@ import javax.validation.Valid;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.LocaleUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -52,6 +47,7 @@ import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServ
 import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
 import com.citrix.cpbm.platform.spi.View;
+import com.citrix.cpbm.platform.spi.ViewResolver;
 import com.citrix.cpbm.platform.util.CssdkConstants;
 import com.vmops.internal.service.CustomFieldService;
 import com.vmops.internal.service.EmailService.EmailTemplate;
@@ -76,6 +72,7 @@ import com.vmops.model.Tenant.State;
 import com.vmops.model.User;
 import com.vmops.model.UserAlertPreferences;
 import com.vmops.model.UserAlertPreferences.AlertType;
+import com.vmops.model.UserHandle;
 import com.vmops.portal.config.Configuration;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ChannelService;
@@ -87,7 +84,6 @@ import com.vmops.service.UserService.Handle;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.utils.DateTimeUtils;
-import com.vmops.utils.URL;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.CustomAlertForm;
@@ -149,10 +145,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    */
   private static Logger logger = Logger.getLogger(AbstractUsersController.class);
 
-  private enum AuditAction {
-    Login
-  };
-
   /**
    * Find which all services are enable for given user
    * 
@@ -172,17 +164,25 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     }
 
     Map<ServiceInstance, Boolean> registrationStatus = userService.getTenantEnabledCloudServiceInstanceStatusMap(user);
-    Collection<Boolean> regStatus = registrationStatus.values();
     map.put("showEnableServiceLink", Boolean.FALSE);
 
-    for (Boolean status : regStatus) {
-      if (!status) {// if user is not enabled for any service we have to show the enable service link, so set a flag
-// here
-        map.put("showEnableServiceLink", Boolean.TRUE);
-        break;
+    Map<String, UserHandle> mapOfInstanceVsHandle = new HashMap<String, UserHandle>();
+    for (ServiceInstance si : registrationStatus.keySet()) {
+      UserHandle latestHandle = userService.getLatestUserHandle(user.getUuid(), si.getUuid());
+      if (latestHandle != null) {
+        mapOfInstanceVsHandle.put(si.getUuid(), latestHandle);
+      }
+
+      if (latestHandle == null
+          || !(latestHandle.getState().equals(com.vmops.model.UserHandle.State.ACTIVE) || latestHandle.getState()
+              .equals(com.vmops.model.UserHandle.State.PROVISIONING))) {
+        if (CollectionUtils.isNotEmpty(user.getAuthorities(si.getService()))) {
+          map.put("showEnableServiceLink", Boolean.TRUE);
+        }
       }
     }
 
+    map.put("mapOfInstanceVsHandle", mapOfInstanceVsHandle);
     map.put("serviceRegistrationStatus", registrationStatus);
     return "user.show";
   }
@@ -218,7 +218,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(getCurrentUser()));
     } else if (isAdmin() && (Boolean) request.getAttribute("isSurrogatedTenant")) {
       tenant = tenantService.get(tenantParam);
-      results = userService.list(0, 0, null, null, false, null, tenant.getId().toString(), null);
+      results = userService.list(page, perPage, null, null, false, null, tenant.getId().toString(), null);
       totalUsers = userService.count(null, null, tenant.getId().toString(), null);
       map.addAttribute("showUserProfile", true);
       map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(tenant.getOwner()));
@@ -275,7 +275,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
     map.addAttribute("enable_next", "False");
 
-    if (totalUsers - (page * perPage) > 0) {
+    if (totalUsers - page * perPage > 0) {
       map.addAttribute("enable_next", "True");
     } else {
       map.addAttribute("enable_next", "False");
@@ -331,12 +331,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     user.setValidProfiles(valideProfiles);
     logger.debug("Exiting user create: createStepOne ");
 
-    /*
-     * Currently no need to display channel while creating user. User currentUser = getCurrentUser(); boolean
-     * displayChannel = !isSurrogatedTenant(tenant, tenantParam) && userHasPrivilegeOf(currentUser,
-     * Authority.Type.ROLE_ACCOUNT_CRUD) && userHasPrivilegeOf(currentUser, Authority.Type.ROLE_USER_CRUD);
-     * map.addAttribute("displayChannel", displayChannel);
-     */
     map.addAttribute("displayChannel", false);
     map.addAttribute("channels", channelService.getChannels(null, null, null));
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
@@ -370,6 +364,43 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       return Boolean.TRUE;
     }
     return Boolean.FALSE;
+  }
+
+  /**
+   * This method used for validation of Username
+   * 
+   * @param username
+   * @return String
+   */
+  @RequestMapping(value = "/validate_username")
+  @ResponseBody
+  public String validateUsername(@RequestParam("user.username") final String username) {
+    logger.debug("In validateUsername() method start and username is : " + username);
+    // validate with portal users table
+    User loggedInUser = getCurrentUser();
+    final String loggedInTenantSuffix = loggedInUser.getTenant().getUsernameSuffix();
+
+    String exists = Boolean.FALSE.toString();
+    try {
+      privilegeService.runAsPortal(new PrivilegedAction<Void>() {
+
+        @Override
+        public Void run() {
+          if (config.getValue(Names.com_citrix_cpbm_username_duplicate_allowed).equals("true")) {
+            userService.getUserByParam("username", username + "@" + loggedInTenantSuffix, true);
+            logger.debug("In validateUsername() method end");
+          } else {
+            userService.getUserByParam("username", username, true);
+            logger.debug("In validateUsername() method end");
+          }
+          return null;
+        }
+      });
+    } catch (NoSuchUserException ex) {
+      logger.debug(username + ": not exits in users table");
+      return Boolean.TRUE.toString();
+    }
+    return exists;
   }
 
   /**
@@ -431,6 +462,8 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       }
       map.addAttribute("displayChannel", false);
       map.addAttribute("channels", channelService.getChannels(null, null, null));
+      map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+      map.addAttribute("defaultLocale", getDefaultLocale());
       return "users.new.step1";
 
     }
@@ -510,10 +543,10 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       defaultPerPage = defaultPageSize;
     }
     int newUserPage = (totalUsers + 1) / defaultPerPage;
-    if ((totalUsers) % defaultPerPage == 0) {
-      newUserPage = (totalUsers) / defaultPerPage;
+    if (totalUsers % defaultPerPage == 0) {
+      newUserPage = totalUsers / defaultPerPage;
     } else {
-      newUserPage = ((totalUsers) / defaultPerPage + 1);
+      newUserPage = totalUsers / defaultPerPage + 1;
     }
     session.setAttribute("newUsersPageCount", newUserPage);
   }
@@ -583,7 +616,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return View
    */
   @RequestMapping(value = {
-      "/{userParam}/myprofile"
+    "/{userParam}/myprofile"
   }, method = RequestMethod.GET)
   public String edit(@RequestParam(value = "activeTab", required = false) String currentTab,
       @PathVariable String userParam, HttpServletRequest request, ModelMap map) {
@@ -628,7 +661,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
     map.addAttribute("services", services);
     map.addAttribute("categories", connectorConfigurationManager.getAllCategories(CssdkConstants.CLOUD));
-    map.addAttribute("countPerCategory", connectorConfigurationManager.getServiceCountPerCategory(services));
 
     // Phone number is mandatory for the owner of the tenant.
     if (user.getTenant().getOwner().equals(user)) {
@@ -643,7 +675,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       logger.debug("Cloning of user failed", e);
     }
 
-    List<AuditLog> auditLogs = auditLogService.getAuditLogsByTypeId(user, 1, 1);
+    List<AuditLog> auditLogs = auditLogService.getLatestLoginAuditLog(user.getId());
     if (CollectionUtils.isNotEmpty(auditLogs)) {
       map.addAttribute("lastLogin", auditLogs.get(0).getCreationDate());
     }
@@ -661,7 +693,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     map.addAttribute("tenant", CustomProxy.newInstance(user.getTenant()));
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
     map.addAttribute("userLocale", this.getLocaleDisplayName(userProxy.getLocale()));
-    map.addAttribute("cloudstackEndPoint", getCloudStackEndPointUrl());
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     String doNotShowPasswordEditLink = "false";
     if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
@@ -669,6 +700,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       doNotShowPasswordEditLink = "true";
     }
     map.addAttribute("doNotShowPasswordEditLink", doNotShowPasswordEditLink);
+    map.addAttribute("doNotShowGravatarLink", Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only)));
 
     List<UserAlertPreferences> alertsPrefs = userAlertPreferencesService.listAllUserAlertPreferences(user);
     if (CollectionUtils.isNotEmpty(alertsPrefs)) {
@@ -685,6 +717,13 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     map.addAttribute("activeTab", currentTab);
     map.addAttribute("userAlertEmailForm", new UserAlertEmailForm(user, AlertType.USER_ALERT_EMAIL));
     prepareServiceViewForUser(map, user);
+    @SuppressWarnings("unchecked")
+    Map<ServiceInstance, Boolean> serviceInstanceMap = (Map<ServiceInstance, Boolean>) map.get("serviceInstanceMap");
+
+    List<ServiceInstance> serviceInstanceList = userService.getCloudServiceInstance(user, null);
+    serviceInstanceMap.keySet().retainAll(serviceInstanceList);
+    map.addAttribute("countPerCategory",
+        connectorConfigurationManager.getInstanceCountPerCategoryMap(serviceInstanceMap));
 
     setPage(map, Page.USER_PERSONAL_PROFILE);
     logger.debug("###Exiting edit(userId,map) method @GET");
@@ -744,55 +783,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   }
 
   /**
-   * This method is the helper for the gravatar url generation This method gets the user email, trims it for leading and
-   * trailing white spaces and generates an md5 hash of this email address, finally returning this newly generated
-   * gravatar url in the format http://www.gravatar.com/avatar/<md5 hash>
-   */
-  private String generateGravatarUrl(String emailAddress) {
-    String trimmedEmailAddress = emailAddress.toLowerCase().trim();
-    StringBuilder gravatarUrl = new StringBuilder("http://www.gravatar.com/avatar/");
-    String md5Hash = md5Hex(trimmedEmailAddress);
-    gravatarUrl.append(md5Hash);
-    // this part appends the default img
-    gravatarUrl.append("?d=http://www.gravatar.com/avatar/6a33002708e4e19578cbadaaae09507d.png");
-
-    return gravatarUrl.toString();
-  }
-
-  /**
-   * Hex representation of the incoming email address string
-   * 
-   * @param array -- email address byte array
-   * @return -- hex rep string
-   */
-  private String hex(byte[] array) {
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < array.length; ++i) {
-      sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
-    }
-    return sb.toString();
-  }
-
-  /**
-   * This method represents the MD5 Hash of the input message
-   * 
-   * @param message
-   * @return -- md5 encoded string
-   */
-  private String md5Hex(String message) {
-    try {
-      MessageDigest md = MessageDigest.getInstance("MD5");
-      return hex(md.digest(message.getBytes("CP1252")));
-    } catch (NoSuchAlgorithmException e) {
-    } catch (UnsupportedEncodingException e) {
-    }
-    return null;
-  }
-
-  /**
-   * This method returns back the gravatar url of a user, given his user id/email address The gravatar url is of the
-   * format: http://www.gravatar.com/avatar/<email hash>
-   * 
    * @param form
    * @param result
    * @param map
@@ -800,7 +790,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return
    */
   @RequestMapping(value = {
-      "/{userParam}/myprofile"
+    "/{userParam}/myprofile"
   }, method = RequestMethod.POST)
   public String edit(@PathVariable String userParam, @Valid @ModelAttribute("user") UserForm form,
       BindingResult result, HttpServletRequest request, ModelMap map, SessionStatus status) {
@@ -809,14 +799,12 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
     MyProfileValidator validator = new MyProfileValidator();
     validator.validate(form, result);
-    if (result.hasErrors()) {
-      if (result.getErrorCount() == 1 && result.getAllErrors().get(0).getCode().equals("Size")
-          && form.getUser().getUsername().equals("root")) {
-      } else {
-        displayErrors(result);
-        // TODO to return the edit page with errors
-        return "redirect:/portal/users/" + userParam + "/myprofile";
-      }
+    if (result.hasErrors()
+        && !(result.getErrorCount() == 1 && result.getAllErrors().get(0).getCode().equals("Size") && form.getUser()
+            .getUsername().equals("root"))) {
+      displayErrors(result);
+      // TODO to return the edit page with errors
+      return "redirect:/portal/users/" + userParam + "/myprofile";
     }
     User logedInUser = this.getCurrentUser();
     if (isEmailBlacklisted(user.getEmail().toLowerCase())) {
@@ -843,10 +831,9 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     // Suit.
     form.setPhone(form.getPhone().replaceAll(PHONE_NUMBER_REGEX, "")); // removing all characters from phone number
     String oldPhone = userClone.getPhoneWithoutIsdCode() != null ? userClone.getPhoneWithoutIsdCode() : "";
-    if (!(form.getPhone()).equals(oldPhone.replaceAll(PHONE_NUMBER_REGEX, ""))
-        || (!(form.getCountryCode().toString().equals(user.getCountryCode())))) {
-
-      boolean phoneVerificationEnabled = false;
+    boolean phoneVerificationEnabled = false;
+    if (!form.getPhone().equals(oldPhone.replaceAll(PHONE_NUMBER_REGEX, ""))
+        || !form.getCountryCode().toString().equals(user.getCountryCode())) {
 
       if (connectorManagementService.getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION) != null
           && ((TelephoneVerificationService) connectorManagementService
@@ -854,7 +841,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
         phoneVerificationEnabled = true;
       }
 
-      if (phoneVerificationEnabled && !(userService.hasAuthority(logedInUser, "ROLE_ACCOUNT_CRUD"))) {
+      if (phoneVerificationEnabled && !userService.hasAuthority(logedInUser, "ROLE_ACCOUNT_CRUD")) {
         String generatedPhoneVerificationPin = (String) request.getSession().getAttribute("phoneVerificationPin");
         String actualPhoneNumber = (String) request.getSession().getAttribute("phoneNumber");
         if (form.getUserEnteredPhoneVerificationPin() == null
@@ -870,7 +857,11 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     String phoneNo = form.getCountryCode().replaceAll(PHONE_NUMBER_REGEX, "") + COUNTRY_CODE_TO_PHONE_NUMBER_SEPERATOR
         + form.getPhone().replaceAll(PHONE_NUMBER_REGEX, "");
     // Set the phone number
-    user.setPhone(phoneNo);
+    if (!phoneVerificationEnabled && StringUtils.isEmpty(form.getPhone())) {
+      user.setPhone(null);
+    } else {
+      user.setPhone(phoneNo);
+    }
 
     if ((user.getObject().getTenant().getState() == State.ACTIVE
         || user.getObject().getTenant().getState() == State.LOCKED || user.getObject().getTenant().getState() == State.SUSPENDED)
@@ -880,7 +871,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       user.setEmail(userClone.getEmail());
       user.setEmailVerified(true);
     }
-    user = userService.save(user, result);
+    userService.update(user, result);
     form.setUser(user);
     map.addAttribute("user", form);
     setPage(map, Page.USER_PERSONAL_PROFILE);
@@ -910,7 +901,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       HttpServletRequest request, ModelMap map, SessionStatus status, @RequestParam("userParam") String userParam) {
     com.citrix.cpbm.access.User user = form.getUser();
     if (!config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)) {
-      if ((user.getObject().getOldPassword()).equals(userService.get(userParam).getPassword())) {
+      if (user.getObject().getOldPassword().equals(userService.get(userParam).getPassword())) {
         user.setPassword(form.getUser().getPassword());
         user = userService.save(user, result);
         return "success";
@@ -997,7 +988,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     } else {
       view = cloudConnector.getViewResolver().getConsoleView(user);
     }
-    returnVal = (view != null) ? view.getURL() : null;
+    returnVal = view != null ? view.getURL() : null;
     return returnVal;
   }
 
@@ -1068,8 +1059,11 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     Map<String, String> returnMap = new HashMap<String, String>();
     com.citrix.cpbm.access.User user = form.getUser();
     // audit logs processing
-    List<AuditLog> auditLogs = auditLogService.getAuditLogsByTypeId(user.getObject());
-    Date lastLogin = getLastLogin(auditLogs);
+    List<AuditLog> auditLogs = auditLogService.getLatestLoginAuditLog(user.getId());
+    Date lastLogin = null;
+    if (CollectionUtils.isNotEmpty(auditLogs)) {
+      lastLogin = auditLogs.get(0).getCreationDate();
+    }
     boolean localeChange = false;
     String oldLocale = user.getLocale() != null ? user.getLocale().toString() : null;
     try {
@@ -1078,14 +1072,14 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       } else {
         user.setTimeZone(config.getValue(Names.com_citrix_cpbm_portal_settings_default_timezone));
       }
-      if (locale != null && !(locale.equals("")) && !(locale.equals(oldLocale))) {
+      if (locale != null && !locale.equals("") && !locale.equals(oldLocale)) {
         user.setLocale(LocaleUtils.toLocale(locale));
         localeChange = true;
       }
       if (locale == null) {
         user.setLocale(null);
       }
-      user = userService.save(user, result);
+      userService.update(user, result);
       User savedUser = userService.getUserByParam("username", user.getUsername(), false);
       form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(savedUser));
       map.addAttribute("user", form);
@@ -1106,7 +1100,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     returnMap.put("locale", this.getLocaleDisplayName(user.getLocale()));
     if (timeZone != null) {
       returnMap.put("lastLogin", ""
-          + (lastLogin != null ? (lastLogin.getTime() + TimeZone.getTimeZone(timeZone).getOffset(lastLogin.getTime()))
+          + (lastLogin != null ? lastLogin.getTime() + TimeZone.getTimeZone(timeZone).getOffset(lastLogin.getTime())
               : ""));
     } else {
       returnMap.put("lastLogin", "" + (lastLogin != null ? lastLogin.getTime() : ""));
@@ -1130,6 +1124,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     Map<String, Object> mapresult = new HashMap<String, Object>();
     logger.debug("###Entering in verifyPassword(password,session) method @POST");
     User user = getCurrentUser();
+    boolean isSystemRoot = user.equals(userService.getSystemUser(Handle.ROOT));
     List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
     try {
       credentialList = connectorConfigurationManager.getApiCredentials(user, getTenant(), password,
@@ -1137,10 +1132,47 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     } catch (Exception e) {
       logger.error(e);
     }
+    HashMap<String, String> bssApiCreds = new HashMap<String, String>();
+    boolean authenticated = false;
+    if ("cas".compareToIgnoreCase(config.getAuthenticationService()) == 0) {
+      authenticated = user.authenticate(password);
+      if (!isSystemRoot && config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)
+          && !authenticated) {
+        authenticated = userService.authenticateUserInDirectoryService(user.getUsername(), password);
+      }
+    } else {
+      if (!isSystemRoot && config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)) {
+        authenticated = userService.authenticateUserInDirectoryService(user.getUsername(), password);
+      } else {
+        authenticated = user.authenticate(password);
+      }
+    }
+    if (authenticated) {
+      bssApiCreds.put("apiKey", user.getApiKey());
+      bssApiCreds.put("secretKey", user.getSecretKey());
+      mapresult.put("bssApiCredentials", bssApiCreds);
+    }
     mapresult.put("userCredentialList", credentialList);
-    mapresult.put("success", true);
+    mapresult.put("success", authenticated);
 
     logger.debug("###Exiting verifyPassword(password,map) method @POST returning  for " + user.getName());
+    return mapresult;
+  }
+
+  @RequestMapping(value = "/generate_api_key", method = RequestMethod.POST)
+  @ResponseBody
+  public Map<String, Object> generateApiKey(HttpServletRequest request) {
+    Map<String, Object> mapresult = new HashMap<String, Object>();
+    logger.debug("###Entering in generateApiKey() method @POST");
+    User user = getCurrentUser();
+    userService.generateApiKeyAndSecretKey(user);
+    logger.debug("###Exiting generateApiKey() method @POST returning  for " + user.getName());
+    user = userService.getUserByParam("id", user.getId(), false);
+    HashMap<String, String> bssApiCreds = new HashMap<String, String>();
+    bssApiCreds.put("apiKey", user.getApiKey());
+    bssApiCreds.put("secretKey", user.getSecretKey());
+    mapresult.put("bssApiCredentials", bssApiCreds);
+    mapresult.put("success", true);
     return mapresult;
   }
 
@@ -1155,8 +1187,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   public String createSpendAlertSubscription(@ModelAttribute("subscriptionForm") CustomAlertForm form, ModelMap map) {
     logger.debug("###Entering in createSubscription(form,result,map) method @POST");
     setPage(map, Page.HOME);
-    // map.addAttribute(Level3.Dashboard.getName(), "");
-    // map.addAttribute(Level3.Subscriptions.getName(), "on");
     User user = getCurrentUser();
     int subscriptionType = 1; // Spend Limit money value type
     SpendAlertSubscription subscription = new SpendAlertSubscription();
@@ -1181,8 +1211,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
   @RequestMapping(value = "/{subscriptionId}/subscribe/delete", method = RequestMethod.POST)
   public String removeSpendAlertSubscription(@PathVariable String subscriptionId, ModelMap map) {
     setPage(map, Page.HOME);
-    // map.addAttribute(Level3.Dashboard.getName(), "");
-    // map.addAttribute(Level3.Subscriptions.getName(), "on");
     SpendAlertSubscription subscription = notificationService.getSpendAlertSubscription(new Long(subscriptionId));
     // removes subscription
     notificationService.removeSubscription(subscription);
@@ -1222,7 +1250,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    */
   @RequestMapping(value = "/{userParam}/delete", method = RequestMethod.GET)
   @ResponseBody
-  public String delete(@PathVariable String userParam, ModelMap map) throws NoSuchUserException {
+  public String delete(@PathVariable String userParam, ModelMap map, HttpSession session) throws NoSuchUserException {
     User user = userService.get(userParam);
     Tenant tenant = user.getTenant();
     if (tenant.getState().equals(State.ACTIVE)) {
@@ -1233,6 +1261,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       String messageArgs = userNameWithoutId + "," + tenant.getName();
       eventService.createEvent(new Date(), tenant, message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
           Category.ACCOUNT, Severity.INFORMATION, true);
+      clearActiveSessionForUser(userNameWithoutId, session.getId());
     }
     return null;
   }
@@ -1353,18 +1382,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     return result.toString();
   }
 
-  // @RequestMapping(value = "/subscribeToCloudStorage", method = RequestMethod.GET)
-  // public String subscribeToCloudStorage(ModelMap map) throws Exception {
-  // logger.debug("###Entering in subscribeToCloudStorage(map) method @GET");
-  //
-  // User user = getCurrentUser();
-  // atmosService.createAtmosAccount(user);
-  // map.addAttribute("showSubscribedToAtmosPopUp", "Y");
-  //
-  // logger.debug("###Exiting subscribeToCloudStorage(map) method @GET");
-  // return "main.home";
-  // }
-
   private void parseResult(BindingResult result, ModelMap map) {
 
     if (result.getFieldErrors().size() > 0) {
@@ -1469,12 +1486,6 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     return false;
   }
 
-  private String getCloudStackEndPointUrl() {
-    URL baseURL = new URL(config.getPublicHost(), config.getPublicPort(), config.getContextPath(), "",
-        config.isSecure());
-    return baseURL.toString() + "/client/api";
-  }
-
   /**
    * @param userName
    * @return
@@ -1512,7 +1523,10 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
     if (connector != null) {
       logger.debug("Found Connector for " + instanceUuid);
       User user = getCurrentUser();
-      returnView = connector.getViewResolver().resolveUserSettingsView(user);
+      ViewResolver viewResolver = connector.getViewResolver();
+      if (viewResolver != null) {
+        returnView = viewResolver.resolveUserSettingsView(user);
+      }
     } else {
       logger.error("Error: not Connector found for " + instanceUuid);
     }
@@ -1540,35 +1554,39 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
 
   @ResponseBody
   @RequestMapping(value = "/enable_services", method = RequestMethod.POST)
-  public Map<String, Boolean> enableServices(@RequestParam(value = "tenantparam", required = true) String tenantParam,
-      @RequestParam(value = "userparam", required = true) String userParam) {
+  public Map<String, String> enableServices(@RequestParam(value = "tenantparam", required = true) String tenantParam,
+      @RequestParam(value = "userparam", required = true) String userParam,
+      @RequestParam(value = "instances", required = true) String instances) {
 
-    Tenant tenant = tenantService.get(tenantParam);
+    Map<String, String> responseMap = new HashMap<String, String>();
     User user = userService.get(userParam);
-    return userService.enableServices(tenant, user);
-  }
 
-  /**
-   * Returns Last Login
-   * 
-   * @param auditLogs
-   * @return Date
-   */
-  private Date getLastLogin(List<AuditLog> auditLogs) {
-    Date lastLogin = null;
-    if (auditLogs != null) {
-      List<Date> auditLoginDates = new ArrayList<Date>();
-      for (AuditLog log : auditLogs) {
-        if (log.getAction().equals(AuditAction.Login.toString())) {
-          auditLoginDates.add(log.getCreationDate());
-        }
-      }
-      if (auditLoginDates.size() > 0) {
-        Collections.sort(auditLoginDates);
-        Collections.reverse(auditLoginDates);
-        lastLogin = auditLoginDates.get(0);
+    for (ServiceInstance serviceInstance : tenantService.getEnabledCSInstances(user.getTenant())) {
+      if (StringUtils.contains(instances, serviceInstance.getUuid())) {
+        userService.enableServices(user, serviceInstance);
       }
     }
-    return lastLogin;
+    return responseMap;
   }
+
+  @ResponseBody
+  @RequestMapping(value = "/enabled_services", method = RequestMethod.POST)
+  public Map<String, String> getServiceProvisioningStatus(
+      @RequestParam(value = "tenantparam", required = true) String tenantParam,
+      @RequestParam(value = "userparam", required = true) String userParam,
+      @RequestParam(value = "instances", required = true) String instances) {
+
+    Map<String, String> responseMap = new HashMap<String, String>();
+    User user = userService.get(userParam);
+    for (ServiceInstance serviceInstance : tenantService.getEnabledCSInstances(user.getTenant())) {
+
+      if (StringUtils.contains(instances, serviceInstance.getUuid())) {
+        UserHandle handle = userService.getLatestUserHandle(user.getUuid(), serviceInstance.getUuid());
+        responseMap.put(serviceInstance.getUuid(), handle != null ? handle.getState().name()
+            : com.vmops.model.UserHandle.State.PROVISIONING.name());
+      }
+    }
+    return responseMap;
+  }
+
 }

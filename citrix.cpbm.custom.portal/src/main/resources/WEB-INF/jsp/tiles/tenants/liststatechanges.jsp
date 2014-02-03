@@ -49,7 +49,7 @@ $(document).ready(function(){
         <div class="<c:out value="grid_rows ${rowClass}"/>" >
         <spring:message code="dateonly.format" var="dateonly_format"/>  
           <div class="grid_row_cell transaction_row" style="padding:1px;width: 33%;" id="transaction_row${transaction.id}">
-            <div class="row_celltitles statechangecustom"><spring:message code="ui.task.transaction.type.${transaction.type}"/></div>
+            <div class="row_celltitles expand_link"><spring:message code="ui.task.transaction.type.${transaction.type}"/></div>
           </div>
           <div class="grid_row_cell" style="padding:1px;width: 12%;">
             <div class="row_celltitles statechangecustom"><spring:message code="businessTransaction.state.${transaction.state}"/></div>
@@ -74,13 +74,13 @@ $(document).ready(function(){
             <c:when test="${transaction.type == 'tenantStateChange' }">
               <ul>
                 <li class="subselection">
-                  <span class="label sublabel"><spring:message code="ui.task.tenant.intialState" /></span> 
+                  <span class="title"><spring:message code="ui.task.tenant.intialState" />:&nbsp;</span> 
                   <span class="description subdescription ellipsis" >
                     <spring:message code="tenant.state.${fn:toLowerCase(transaction.tenantInitialState)}" />
                   </span>
                 </li>
                 <li class="subselection">
-                  <span class="label sublabel"><spring:message code="ui.task.tenant.targetState" /></span> 
+                  <span class="title"><spring:message code="ui.task.tenant.targetState" />:&nbsp;</span> 
                   <span class="description subdescription ellipsis" >
                     <spring:message code="tenant.state.${fn:toLowerCase(transaction.tenantTargetState)}" />
                   </span>
@@ -90,20 +90,20 @@ $(document).ready(function(){
             <c:when test="${transaction.type == 'tenantAccountTypeConversion' }">
               <ul>
                 <li class="subselection">
-                  <span class="label sublabel"><spring:message code="ui.task.transaction.type.tenantAccountTypeConversion.initial.accounttype" /></span> 
+                  <span class="title"><spring:message code="ui.task.transaction.type.tenantAccountTypeConversion.initial.accounttype" />:&nbsp;</span> 
                   <span class="description subdescription ellipsis" >
                     <spring:message code="registration.accounttype.${transaction.accountTypeInitial.nameLower}"/>
                   </span>
                 </li>
                 <li class="subselection">
-                  <span class="label sublabel"><spring:message code="ui.task.transaction.type.tenantAccountTypeConversion.target.accounttype" /></span> 
+                  <span class="title"><spring:message code="ui.task.transaction.type.tenantAccountTypeConversion.target.accounttype" />:&nbsp;</span> 
                   <span class="description subdescription ellipsis" >
                     <spring:message code="registration.accounttype.${transaction.accountType.nameLower}"/>
                   </span>
                 </li>
                 <c:if test="${not empty transaction.paymentInfo}" >
                   <li class="subselection">
-                    <span class="label sublabel"><spring:message code="ui.task.transaction.type.paymentInfoChange.paymentInfo.label" /></span> 
+                    <span class="title"><spring:message code="ui.task.transaction.type.paymentInfoChange.paymentInfo.label" />:&nbsp;</span> 
                     <span class="description subdescription ellipsis" >
                       <c:out value="${transaction.paymentInfo}"/>
                     </span>
@@ -114,9 +114,25 @@ $(document).ready(function(){
             <c:when test="${transaction.type == 'paymentInfoChange' }">
               <ul>
                 <li class="subselection">
-                  <span class="label sublabel"><spring:message code="ui.task.transaction.type.paymentInfoChange.paymentInfo.label" /></span> 
+                  <span class="title"><spring:message code="ui.task.transaction.type.paymentInfoChange.paymentInfo.label" />:&nbsp;</span> 
                   <span class="description subdescription ellipsis" >
                     <c:out value="${transaction.paymentInfo}"/>
+                  </span>
+                </li>
+              </ul>
+            </c:when>
+            <c:when test="${transaction.type == 'cloudServiceActivation' }">
+              <ul>
+                <li class="subselection">
+                  <span class="title"><spring:message code="label.service.activation.initial.state" />:&nbsp;</span> 
+                  <span class="description subdescription ellipsis" >
+                    <spring:message code="tenantHandle.state.${fn:toLowerCase(transaction.initialState)}" />
+                  </span>
+                </li>
+                <li class="subselection">
+                  <span class="title"><spring:message code="label.service.activation.target.state" />:&nbsp;</span> 
+                  <span class="description subdescription ellipsis" >
+                    <spring:message code="tenantHandle.state.${fn:toLowerCase(transaction.targetState)}" />
                   </span>
                 </li>
               </ul>

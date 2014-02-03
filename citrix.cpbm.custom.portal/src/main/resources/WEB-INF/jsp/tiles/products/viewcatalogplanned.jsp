@@ -16,7 +16,6 @@
   </ul>
 </div>
 
-<input id="bundlesaddedtocatalog" type="hidden" name="bundlesaddedtocatalog" value="<c:out value="${bundlesaddedtocatalog}"/>"/>
 <input type="hidden" id="currentHistoryPlanned" value="planned" />
 
 <div id="catalog_productbundle_current">

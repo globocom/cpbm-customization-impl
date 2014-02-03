@@ -34,9 +34,9 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 		$('#accountControlsForm').submit();
 	}
 });
-</script>
+</script> 
 
-<div class="dialog_formcontent">
+<div class="dialog_formcontent" style="padding: 0 5px 0 0; width: 97%;">
 	<div class="details_lightboxtitlebox"></div>
 	<div class="details_lightboxformbox">
 		<form id="accountControlsForm">
@@ -45,9 +45,9 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 			<c:choose>
 				<c:when test="${account_control_edit_properties!=null}">
 					<input type="hidden" id="action" value="save" />
-					<ul>
+					<ul style="max-height: 500px;overflow: auto;">
 						<c:forEach var="account_control_property" items="${account_control_edit_properties}" varStatus="status">
-							<li style="height: 28px">
+							<li style="height: 28px; width: 95%">
 								<label style="width: 260px">
 									<spring:message code="${service.serviceName}.${account_control_property.name}.name" />
 								</label>
@@ -94,7 +94,7 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 								</div>
 							</li>
 						</c:forEach>
-						<li style="width: 530px">
+						</ul>
 							<div class="servicelist sections" style="height: 25px; float: right; min-height:25px;">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);"
 									onclick="closeAccountTypeControlsDialog()">
@@ -104,8 +104,6 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 									<spring:message code="label.save" />
 								</a>
 							</div>
-						</li>
-					</ul>
 				</c:when>
 			</c:choose>
 		</form>

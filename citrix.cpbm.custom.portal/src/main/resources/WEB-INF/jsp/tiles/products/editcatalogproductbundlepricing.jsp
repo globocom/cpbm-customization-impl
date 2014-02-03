@@ -8,7 +8,7 @@
 
 <c:set var="lightbox_height" value="96" />
 <c:if test="${productBundleRevision.productBundle.rateCard.chargeType.name == 'NONE'}">
-  <c:set var="lightbox_height" value="76" />
+  <c:set var="lightbox_height" value="90" />
 </c:if>
 <div class="dialog_formcontent wizard" style="height:auto;">
   <div class="details_lightboxtitlebox" >
@@ -43,16 +43,17 @@
 	     <c:forEach var="currency" items="${supportedCurrencies}">
 	       <div class="widget_grid_cell" style="width:108px;">
 	        <span class="celltext">
+          
 	           <c:if test="${fullBundlePricingMap[productBundleRevision][currency]['catalog-onetime'] != null}">
 	               <div class="mandatory_wrapper" style="margin:0px 0px 0px -5px;">
                      <input style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px;" id="currencyValsWeNeed<c:out value='${currency.currencyCode}${productBundleRevision.productBundle.id}'/>"
                             class="text priceRequired j_pricerequired"
-                            value='<c:out value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-onetime'].price}" />'
+                            value='<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${currencyFractionalDigitsLimit}" value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-onetime'].price}"/>'
                             previousvalue='<c:out value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-onetime'].price}" />'
                             currencyId='<c:out value="${currency.id}" />'
                             currencycode='<c:out value="${currency.currencyCode}" />'
                             isRecurring="0" />
-                     <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${fullBundlePricingMap[productBundleRevision][currency]['rpb-onetime'].price}"/>)</span>
+                     <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${currencyFractionalDigitsLimit}" value="${fullBundlePricingMap[productBundleRevision][currency]['rpb-onetime'].price}"/>)</span>
                  </div>
 	           </c:if>
 	        </span>
@@ -62,7 +63,7 @@
 
 	    <div class="widget_grid inline odd" style="width:830px;">
 	      <div class="widget_grid_cell" style="width: 150px;">
-	         <span class="celltext right"><spring:message code="label.recurring"/>: <spring:message code="charge.type.${productBundle.rateCard.chargeType.name}"/></span>
+	         <span class="celltext right"><spring:message code="label.recurring"/>: <spring:message code="charge.type.${productBundleRevision.productBundle.rateCard.chargeType.name}"/></span>
 	       </div>
 	       <c:forEach var="currency" items="${supportedCurrencies}">
 	         <div class="widget_grid_cell" style="width:108px;">
@@ -71,12 +72,12 @@
 	                   <div class="mandatory_wrapper" style="margin:0px 0px 0px -5px;">
 	                     <input style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px;" id="currencyValsWeNeed<c:out value='${currency.currencyCode}${productBundleRevision.productBundle.id} }'/>"
 	                            class="text priceRequired j_pricerequired"
-	                            value='<c:out value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-recurring'].price}" />'
+                              value='<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${currencyFractionalDigitsLimit}" value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-recurring'].price}"/>'
                               previousvalue='<c:out value="${fullBundlePricingMap[productBundleRevision][currency]['catalog-recurring'].price}" />'
 	                            currencyId='<c:out value="${currency.id}" />'
 	                            currencycode='<c:out value="${currency.currencyCode}" />'
 	                            isRecurring="1" />
-	                     <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${fullBundlePricingMap[productBundleRevision][currency]['rpb-recurring'].price}"/>)</span>
+	                     <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${currencyFractionalDigitsLimit}" value="${fullBundlePricingMap[productBundleRevision][currency]['rpb-recurring'].price}"/>)</span>
 	                   </div>
 	                </c:if>
 	           </span>

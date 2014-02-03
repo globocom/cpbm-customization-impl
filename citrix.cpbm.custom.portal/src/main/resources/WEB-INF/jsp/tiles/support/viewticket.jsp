@@ -103,8 +103,16 @@ $("#createTicketCommentForm").validate( {
     </div>
     <input type='hidden' id='case_number' value='<c:out value="${ticket.caseNumber}"/>'>
 </div>
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 <div class="widget_browser">
     <div class="widget_browsermaster">
         <div class="widget_browser_contentarea">
@@ -122,7 +130,7 @@ $("#createTicketCommentForm").validate( {
                         <span><spring:message code="ui.label.support.tickets.title"/></span>
                     </div>
                     <div class="widget_grid_description">
-                        <span id="ticket_title"><c:out value="${ticket.subject}" /></span>
+                        <span id="ticket_title" class="ellipsis" title="<c:out value="${ticket.subject}" />"><c:out value="${ticket.subject}" /></span>
                     </div>
                 </div>
                 <div class="widget_grid master even">
@@ -205,7 +213,7 @@ $("#createTicketCommentForm").validate( {
             <c:forEach var="comment" items="${ticketcomments}" varStatus="status">
                 <div class="othercommentsbox">
                     <div class="details_commentslist_description">
-                        <p>
+                        <p class="ellipsis" style="width:610px;" title="${comment.formattedComment[1]}">
                             <c:forEach items="${comment.formattedComment}" var="commentLine" varStatus="commentLineCount">
                                 <c:if test="${!commentLineCount.first}">
                                               <c:out value="${commentLine}" escapeXml="true"/><br>
@@ -258,7 +266,6 @@ $("#createTicketCommentForm").validate( {
                          <div class="db_gridbox_celltitles details">
                             <div class="red_compulsoryicon">*</div>
                             <form:select cssClass="select" path="ticket.status">
-                                <form:option value=""><spring:message code="label.choose"/></form:option>
                                 <c:forEach items="${statuses}" var="ts" >
                                  <c:if test="${ts.name != 'CLOSED'}">
                                           <form:option value="${ts}"><spring:message code="ui.label.support.tickets.status.${ts}"/></form:option>
@@ -298,7 +305,7 @@ $("#createTicketCommentForm").validate( {
                          <div class="db_gridbox_columns" style="width:75%;">
                          <div class="db_gridbox_celltitles details">
                             <div class="red_compulsoryicon">*</div>
-                            <form:input cssClass="text" cssStyle="width:470px" path="ticket.subject" tabindex="22"/>
+                            <form:input cssClass="text" cssStyle="width:470px" path="ticket.subject" tabindex="22" maxlength="255" />
                             <div class="main_addnew_formbox_errormsg" id="ticket.subjectError"></div>                  
                          </div>
                          </div>
@@ -316,7 +323,7 @@ $("#createTicketCommentForm").validate( {
                          </div>
                  </div>                            
              </div>
-        <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/support/tickets/edit"/>"/>
+        <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/support/tickets/edit"/>"/>
             <input type="hidden"  id="statusFilter" name="statusFilter" value="<c:out value="${statusFilter}"/>"/>
             <input type="hidden" id="tenant" name="tenant" value="<c:out value="${tenant.param}"/>"/>
             <input type="hidden"  id="sortType" name="sortType" value="<c:out value="${sortType}"/>"/>

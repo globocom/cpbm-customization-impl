@@ -6,6 +6,10 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/lib/HighCharts/highcharts.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/lib/HighCharts/modules/exporting.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/util/HighChartsUtil.js"></script>
+
 <script type="text/javascript">
 
 var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
@@ -30,8 +34,15 @@ var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
               <div class="widget_actionpopover_top"></div>
                 <div class="widget_actionpopover_mid">
                   <ul class="widget_actionpoplist">
+<c:choose>
+  <c:when test="${allowEdit}">
                     <li class="editalert_link" id="<c:out value="edit${subscription.id}"/>" title='<spring:message code="label.edit"/>'><spring:message code="label.edit"/></li>
                     <li class="removealert_link" id="<c:out value="remove${subscription.id}"/>" title='<spring:message code="label.remove"/>'><spring:message code="label.remove"/></li>
+  </c:when>
+  <c:otherwise>
+                    <li title='<spring:message code="label.no.actions.available"/>'><spring:message code="label.no.actions.available"/></li>
+  </c:otherwise>
+</c:choose>
                     </ul>
                 </div>
                 <div class="widget_actionpopover_bot"></div>
@@ -43,9 +54,16 @@ var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
 </div>
   
    
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-  
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>  
   <div class="widget_browser">
     <div id="spinning_wheel" style="display:none">
         <div class="widget_loadingpanel">

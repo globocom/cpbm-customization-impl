@@ -16,6 +16,7 @@ var dictionary = {
     makeprimaryconfirm:  '<spring:message javaScriptEscape="true" code="js.alert.preference.make.primary.confirm.message"/>',
     verifyconfirm:  '<spring:message javaScriptEscape="true" code="js.alert.preference.verify.confirm.message"/>'      
 };
+
 </script>
 <input type="hidden" id="effectiveUserParam" value="<c:out value="${user.param}"/>"/>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/notifications.js"></script>
@@ -48,28 +49,34 @@ var dictionary = {
               <div class="widget_grid <c:out value="${rowClass}"/>" id="div<c:out value="${preference.id}"/>">
                 <div class="widget_grid_cell" style="width:49%;"><span class="celltext" id="email-<c:out value="${preference.id}"/>"><c:out value="${preference.emailAddress}"/></span> </div>
                 
-                <div class="widget_grid_cell" style="width:26%;">
+                <div class="widget_grid_cell" id = "emailVerifiedIconDiv" style="width:26%;">
                   <c:choose>
                     <c:when test="${!preference.emailVerified}">
-                      <span class="unverifiedicon">
+                      <span class="unverifiedicon"  >
                       </span>
-                      <span class="celltext"><a href="javascript:void(0)" class="verifyAlertPref" name="<c:out value="${preference.id}"/>"><spring:message code="ui.notification.delivery.label.verify" /></a>
+                      <span class="celltext" ><a href="javascript:void(0)" class="verifyAlertPref" name="<c:out value="${preference.id}"/>"><spring:message code="ui.notification.delivery.label.verify" /></a>
                       </span> 
                     </c:when>
                     <c:otherwise>
-                      <span class="verifiedicon"></span>
-                      <span class="celltext "><spring:message code="ui.notification.delivery.isverified" /></span> 
-                    
+                      <span class="verifiedicon"  ></span>
+                      <span class="celltext" ><spring:message code="ui.notification.delivery.isverified" /></span> 
                     </c:otherwise>
                   </c:choose>
                 </div>
-            
+                    
+                <div class="widget_grid_cell" id = "emailVerifiedIconDivTemplate" style="width:26%; display:none">
+                   <span class="unverifiedicon" id = "unverifyIcon" style="display: none"></span>
+                   <span class="celltext" id = "unverifyText" style="display: none"><a href="javascript:void(0)" class="verifyAlertPref"><spring:message code="ui.notification.delivery.label.verify" /></a></span> 
+                   <span class="verifiedicon" id = "verifyIcon" style="display: none"></span>
+                   <span class="celltext" id = "verifyText" style="display: none"><spring:message code="ui.notification.delivery.isverified" /></span> 
+                </div> 
+                    
                 <div class="widget_grid_cell" style="width:auto;"> 
                     <span class="celltext">
                     <a href="javascript:void(0)" class="deleteAlertPref" name="<c:out value="${preference.id}"/>"><spring:message code="ui.notification.delivery.label.delete" /></a>
                     </span>
                   <c:if test="${preference.emailVerified}">
-                      <span class="celltext">
+                      <span class="celltext" id ="makePrimaryDiv">
                       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0)" class="makePrimary" name="<c:out value="${preference.id}"/>"><spring:message code="ui.notification.delivery.label.changePrimary" /></a>
                       </span>
                   </c:if>
@@ -84,8 +91,8 @@ var dictionary = {
          <div class="main_addnew_formbox_errormsg" style="margin:2px 0 0 1px" id="additional_emailError"></div>
            <div class="clearboth"></div>
           <div style="margin: 20px 0 0;">
-        <div id="emailErrorMessage" style="background: #F5A9A9;color: #190707;padding:5px 0 5px 20px;display:none;"></div>
-        <div id="emailSuccessMessage" style="background-color:#FFF8D6;padding:5px 0 5px 20px;display:none;"></div>
+        <div id="emailErrorMessage" style="background: #F5A9A9;color: #190707;padding:5px 0 5px 5px;display:none;"></div>
+        <div id="emailSuccessMessage" style="background-color:#FFF8D6;padding:5px 0 5px 5px;display:none;"></div>
         </div>
     <div class="" id="addEmailTextDiv"
            <c:if test="${alertsPrefsSize >= addAlertEmailLimit}">

@@ -31,7 +31,7 @@ $(document).ready(function() {
 $.createNewProductBundle = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.bundleBundleCreationFailed);
+    popUpDialogForAlerts("dialog_info", i18n.errors.bundleBundleCreationFailed);
   } else {
     $("#addnewproductBundleDiv").html("");
     var rowClass = "db_gridbox_rows even";
@@ -179,7 +179,7 @@ if (JS_LOADED != true) {
         //console.log(value);
         if (product.val() != "-1" && (value == "" || /^(?:\d*\.\d{1,2}|\d+)$/
           .test(value) == false)) {
-          alert(i18n.errors.max_twodecimal_price);
+          popUpDialogForAlerts("dialog_info", i18n.errors.max_twodecimal_price);
           return false;
         }
         return true;
@@ -246,7 +246,7 @@ $("#editproductBundlecancel").click(function() {
 $.editProductBundle = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.bundleBundleEditFailed);
+    popUpDialogForAlerts("dialog_info", i18n.errors.bundleBundleEditFailed);
   } else {
     $("#editproductBundleDiv").html("");
     var content = "";
@@ -348,9 +348,9 @@ function addNewProductBundle(event, form) {
       },
       error: function(XMLHttpRequest) {
         if (XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE) {
-          alert(i18n.errors.common.codeNotUnique);
+          popUpDialogForAlerts("dialog_info", i18n.errors.common.codeNotUnique);
         } else {
-          alert(i18n.errors.bundleBundleCreationFailed);
+          popUpDialogForAlerts("dialog_info", i18n.errors.bundleBundleCreationFailed);
         }
       }
     });
@@ -443,7 +443,7 @@ function removeProductBundle(current) {
         $(".countDiv").attr("id", "count" + size);
         resetGridRowStyle();
       } else {
-        alert(i18n.errors.bundleDeletebundleFailure);
+        popUpDialogForAlerts("dialog_info", i18n.errors.bundleDeletebundleFailure);
       }
 
     },

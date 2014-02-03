@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.lang.reflect.Method;
@@ -49,6 +48,8 @@ import com.vmops.service.UserAlertPreferencesService;
 import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.service.exceptions.UserAuthorizationInvalidException;
 import com.vmops.utils.CryptoUtils;
+import com.vmops.web.controllers.AbstractBaseController;
+import com.vmops.web.filters.CaptchaAuthenticationFilter;
 
 public class AuthenticationControllerTest extends WebTestsBase {
 
@@ -83,7 +84,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
   @Test
   public void testLandingRouting() throws Exception {
     logger.debug("Testing routing....");
-    DispatcherTestServlet servlet = this.getServletInstance();
+    DispatcherTestServlet servlet = getServletInstance();
     Method expected = locateMethod(controller.getClass(), "login", new Class[] {
         HttpServletRequest.class, ModelMap.class, HttpSession.class
     });
@@ -91,7 +92,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     Assert.assertEquals(expected, handler);
 
     expected = locateMethod(controller.getClass(), "loggedout", new Class[] {
-        java.lang.String.class, ModelMap.class, HttpSession.class, HttpServletResponse.class
+        java.lang.String.class, ModelMap.class, HttpSession.class, HttpServletResponse.class,HttpServletRequest.class
     });
     handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/userParam/loggedout"));
     Assert.assertEquals(expected, handler);
@@ -149,10 +150,16 @@ public class AuthenticationControllerTest extends WebTestsBase {
 
     request.removeAllParameters();
     expected = locateMethod(controller.getClass(), "verifyAdditionalEmail", new Class[] {
-        String.class, String.class, Long.TYPE, HttpServletRequest.class, ModelMap.class, HttpSession.class
+        String.class, String.class, String.class, HttpServletRequest.class, ModelMap.class, HttpSession.class
     });
     handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/verify_additional_email"));
     Assert.assertEquals(expected, handler);
+    
+    request.removeAllParameters();
+    expected = locateMethod(controller.getClass(), "getGoogleAnalytics", new Class[] {});
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/getGoogleAnalytics"));
+    Assert.assertEquals(expected, handler);
+    
   }
 
   @Test
@@ -225,7 +232,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     }
     String message = (String) map.get("error");
     Assert.assertNotNull(message);
-    Assert.assertThat(message, JUnitMatchers.containsString("locked"));
+    Assert.assertThat(message, JUnitMatchers.containsString("Username or password incorrect."));
   }
 
   @Test
@@ -289,7 +296,8 @@ public class AuthenticationControllerTest extends WebTestsBase {
     asRoot();
     User user = getSystemTenant().getOwner();
     MockHttpServletResponse response = new MockHttpServletResponse();
-    String view = controller.loggedout(user.getUuid(), map, session, response);
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    String view = controller.loggedout(user.getUuid(), map, session, response,request);
     Cookie cookie = response.getCookie("JforumSSO");
     Assert.assertEquals(cookie.getValue(), "");
     if (config.getAuthenticationService().compareToIgnoreCase("cas") == 0) {
@@ -297,7 +305,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
           "redirect:" + config.getCasLogoutUrl() + "?service=" + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8"),
           view);
     } else {
-      Assert.assertEquals("auth.loggedout", view);
+      Assert.assertEquals("redirect:/j_spring_security_logout", view);
     }
 
   }
@@ -349,7 +357,8 @@ public class AuthenticationControllerTest extends WebTestsBase {
 
     User user = getSystemTenant().getOwner();
     MockHttpServletResponse response = new MockHttpServletResponse();
-    String view = controller.loggedout(user.getUuid(), map, session, response);
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    String view = controller.loggedout(user.getUuid(), map, session, response,request);
     Cookie cookie = response.getCookie("JforumSSO");
     Assert.assertEquals(cookie.getValue(), "");
     if (config.getAuthenticationService().compareToIgnoreCase("cas") == 0) {
@@ -357,7 +366,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
           "redirect:" + config.getCasLogoutUrl() + "?service=" + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8"),
           view);
     } else {
-      Assert.assertEquals("auth.loggedout", view);
+      Assert.assertEquals("redirect:/j_spring_security_logout", view);
     }
 
     List<String> suffixList = (List<String>) map.get("suffixList");
@@ -414,8 +423,8 @@ public class AuthenticationControllerTest extends WebTestsBase {
     String auth = user.getAuthorization(genTime);
     String view = controller.reset(auth, genTime, user.getParam(), session, map);
     Assert.assertEquals("auth.reset", view);
-    Assert.assertNotNull(session.getAttribute(AuthenticationController.RESET_USER_KEY));
-    Assert.assertEquals(user.getUsername(), session.getAttribute(AuthenticationController.RESET_USER_KEY));
+    Assert.assertNotNull(session.getAttribute(AbstractBaseController.RESET_USER_KEY));
+    Assert.assertEquals(user.getUsername(), session.getAttribute(AbstractBaseController.RESET_USER_KEY));
   }
 
   @Test(expected = UserAuthorizationInvalidException.class)
@@ -426,15 +435,15 @@ public class AuthenticationControllerTest extends WebTestsBase {
     String auth = user.getAuthorization(genTime);
     String view = controller.reset(auth, genTime - 100, user.getParam(), session, map);
     Assert.assertEquals("auth.reset", view);
-    Assert.assertNotNull(session.getAttribute(AuthenticationController.RESET_USER_KEY));
-    Assert.assertEquals(user.getUsername(), session.getAttribute(AuthenticationController.RESET_USER_KEY));
+    Assert.assertNotNull(session.getAttribute(AbstractBaseController.RESET_USER_KEY));
+    Assert.assertEquals(user.getUsername(), session.getAttribute(AbstractBaseController.RESET_USER_KEY));
   }
 
   @Test
   public void testResetPassword() {
     MockHttpSession session = new MockHttpSession();
     User user = userDAO.find(3L);
-    session.setAttribute(AuthenticationController.RESET_USER_KEY, user.getUsername());
+    session.setAttribute(AbstractBaseController.RESET_USER_KEY, user.getUsername());
     String newpass = "newPassw0rd";
     String view = controller.reset(newpass, session);
     Assert.assertEquals("redirect:/portal/login", view);
@@ -549,6 +558,44 @@ public class AuthenticationControllerTest extends WebTestsBase {
     request.getSession().setAttribute("phoneVerificationPin", "PIN");
     actualResult = controller.verifyPhoneVerificationPINForUnlock("PIN", request);
     Assert.assertEquals("success", actualResult);
+  }
+
+  @Test
+  public void testLoginWithIntranetOnlyModeDisabled() throws Exception {
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("false");
+    MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
+    request.getSession().setAttribute(CaptchaAuthenticationFilter.CAPTCHA_REQUIRED, true);
+    controller.login(request, map, request.getSession());
+    Assert.assertTrue(map.containsKey("showCaptcha"));
+    Assert.assertTrue(Boolean.valueOf(map.get("showCaptcha").toString()));
+    Assert.assertTrue(map.containsKey("recaptchaPublicKey"));
+
+  }
+
+  @Test
+  public void testLoginWithIntranetOnlyModeEnabled() throws Exception {
+    configurationService.clearConfigurationCache(true, "");
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("true");
+    configurationService.update(isIntranetModeEnabled);
+    MockHttpServletRequest request = getRequestTemplate(HttpMethod.GET, "/login");
+    request.getSession().setAttribute(CaptchaAuthenticationFilter.CAPTCHA_REQUIRED, true);
+    controller.login(request, map, request.getSession());
+    Assert.assertFalse(map.containsKey("showCaptcha"));
+    Assert.assertFalse(map.containsKey("recaptchaPublicKey"));
+
+  }
+  
+  @Test
+  public void testGetGoogleAnalytics(){
+    Map<String,String> ga = controller.getGoogleAnalytics();
+    Assert.assertFalse(ga.isEmpty());
+    Assert.assertTrue(ga.containsKey("enabled"));
+    Assert.assertTrue(ga.containsKey("account"));
+    Assert.assertTrue(ga.containsKey("domain"));
   }
 
 }

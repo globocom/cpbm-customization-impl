@@ -16,6 +16,9 @@
 	     }
 	});
 </script>
+<script type="text/javascript">
+  var currPrecision="<c:out value="${currencyFractionalDigitsLimit}"/>";
+</script>               
 
 <div class="widget_browsergrid_wrapper details" id="currencies_add" style="width:auto;">
   <div id="currency_row_container" style="margin-left: 15px; margin-right: 20px; margin-top: 20px;">

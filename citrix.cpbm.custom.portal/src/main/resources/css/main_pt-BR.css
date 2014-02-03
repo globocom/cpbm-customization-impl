@@ -43,3 +43,19 @@
 .db_statsbox.launch.buttonarea a.launch_button {
   font-size: 11px;
 }
+span.required_product_units_header{
+  margin-top:0px !important;
+}
+.slider-button {
+  width: 45px;
+  font-size:7px;
+}
+.widget_searchcontentarea span.label {
+  font-size: 9px;
+}
+.maintitlebox h1 {
+  font-size: 15px;
+}
+.row_celltitles.status_gray{
+  width: 100%;
+}

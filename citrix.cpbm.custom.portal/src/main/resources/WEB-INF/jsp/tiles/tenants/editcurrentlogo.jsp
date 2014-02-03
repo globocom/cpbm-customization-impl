@@ -37,7 +37,7 @@ var dictionary = {
                    <span id="favicon_file_name" style="float:left; margin-left:172px; margin-top:5px;display:none;"></span>
                 </li>
               </ul>
-              
+              							
                <div class="login_formbox_submitpanel" style="width:400px;">
                 <div class="register_buttonscontainer">
                 <div style="margin: 5px 10px;float:left;">

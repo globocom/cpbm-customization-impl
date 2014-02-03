@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.File;
@@ -12,9 +11,11 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,9 @@ import java.util.TreeMap;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jettison.json.JSONArray;
@@ -41,9 +44,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
+import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
+import com.google.gson.JsonObject;
 import com.vmops.model.Catalog;
 import com.vmops.model.Channel;
 import com.vmops.model.Channel.ChannelType;
+import com.vmops.model.ChannelSettingServiceConfigMetadata;
 import com.vmops.model.CurrencyValue;
 import com.vmops.model.Product;
 import com.vmops.model.ProductBundle;
@@ -52,12 +59,17 @@ import com.vmops.model.ProductCharge;
 import com.vmops.model.ProductRevision;
 import com.vmops.model.RateCardCharge;
 import com.vmops.model.Revision;
+import com.vmops.model.Service;
+import com.vmops.model.ServiceInstance;
+import com.vmops.model.ServiceInstanceConfig;
 import com.vmops.model.SupportedCurrency;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ChannelService;
+import com.vmops.service.ConfigurationService;
 import com.vmops.service.CurrencyValueService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.ProductService;
+import com.vmops.service.exceptions.CurrencyPrecisionException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.service.exceptions.NoSuchChannelException;
 import com.vmops.service.exceptions.ServiceException;
@@ -66,6 +78,9 @@ import com.vmops.utils.JSONUtils;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ChannelLogoForm;
+import com.vmops.web.forms.ChannelServiceSetting;
+import com.vmops.web.forms.ChannelServiceSettingsForm;
+import com.vmops.web.forms.ServiceList;
 import com.vmops.web.validators.ChannelLogoFormValidator;
 
 public class AbstractChannelController extends AbstractAuthenticatedController {
@@ -82,15 +97,21 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
   @Autowired
   private ProductBundleService productBundleService;
 
-  private int BUNDLES_PER_PAGE = 5;
+  @Autowired
+  private ConfigurationService configurationService;
+
+  @Autowired
+  protected ConnectorConfigurationManager connectorConfigurationManager;
+
+  private final int BUNDLES_PER_PAGE = 5;
 
   class ProductSortOrderSort implements Comparator<Product> {
 
     @Override
     public int compare(Product prod1, Product prod2) {
-      if ((Long) prod1.getSortOrder() > (Long) prod2.getSortOrder()) {
+      if (prod1.getSortOrder() > prod2.getSortOrder()) {
         return 1;
-      } else if ((Long) prod1.getSortOrder() == (Long) prod2.getSortOrder()) {
+      } else if (prod1.getSortOrder() == prod2.getSortOrder()) {
         return Integer.valueOf(prod1.getId().toString()) - Integer.valueOf(prod2.getId().toString());
       } else {
         return -1;
@@ -104,9 +125,9 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     public int compare(CurrencyValue currVal1, CurrencyValue currVal2) {
       if (currVal1.getRank() == currVal2.getRank()) {
         return 0;
-      } else if (currVal1.getRank() < currVal2.getRank())
+      } else if (currVal1.getRank() < currVal2.getRank()) {
         return 1;
-      else {
+      } else {
         return -1;
       }
     }
@@ -154,7 +175,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
   }
 
   private Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> getProductChargeMap(Channel channel,
-      String timeline, Date date) {
+      String timeline, Date date, boolean forUpdate) {
 
     // Structure is of the form::
     //
@@ -194,6 +215,17 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
         if (currencyProductPriceMap.get(productCharge.getCurrencyValue()) == null) {
           currencyProductPriceMap.put(productCharge.getCurrencyValue(), new LinkedHashMap<String, ProductCharge>());
         }
+        if (forUpdate) {
+          try {
+            productCharge.setPrice(productCharge.getPrice().setScale(
+                Integer.parseInt(config.getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)),
+                BigDecimal.ROUND_UNNECESSARY));
+          } catch (ArithmeticException aex) {
+            logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+                + "the currency precision level was reduced " + aex);
+            throw new CurrencyPrecisionException(aex);
+          }
+        }
         currencyProductPriceMap.get(productCharge.getCurrencyValue()).put("catalog", productCharge);
         if (rpbProductRevision == null) {
           currencyProductPriceMap.get(productCharge.getCurrencyValue()).put("rpb", null);
@@ -202,6 +234,17 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       if (rpbProductRevision != null) {
         for (ProductCharge productCharge : rpbProductRevision.getProductCharges()) {
           if (currencyProductPriceMap.get(productCharge.getCurrencyValue()) != null) {
+            if (forUpdate) {
+              try {
+                productCharge.setPrice(productCharge.getPrice().setScale(
+                    Integer.parseInt(config.getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)),
+                    BigDecimal.ROUND_UNNECESSARY));
+              } catch (ArithmeticException aex) {
+                logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+                    + "the currency precision level was reduced " + aex);
+                throw new CurrencyPrecisionException(aex);
+              }
+            }
             currencyProductPriceMap.get(productCharge.getCurrencyValue()).put("rpb", productCharge);
           }
         }
@@ -213,7 +256,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
   }
 
   private Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> getBundlePricingMap(
-      Channel channel, String timeline, Date date) {
+      Channel channel, String timeline, Date date, boolean forUpdate) {
     // Structure is of the form::
     //
     // "ProductBundleRevision":{ "CurrencyVal(forUSD)":{ "catalog-onetime": RateCardCharge,
@@ -259,6 +302,19 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
         if (currencyProductBundlePriceMap.get(rcc.getCurrencyValue()) == null) {
           currencyProductBundlePriceMap.put(rcc.getCurrencyValue(), new LinkedHashMap<String, RateCardCharge>());
         }
+
+        if (forUpdate) {
+          try {
+            rcc.setPrice(rcc.getPrice().setScale(
+                Integer.parseInt(config.getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)),
+                BigDecimal.ROUND_UNNECESSARY));
+          } catch (ArithmeticException aex) {
+            logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+                + "the currency precision level was reduced " + aex);
+            throw new CurrencyPrecisionException(aex);
+
+          }
+        }
         if (rcc.getRateCardComponent().isRecurring()) {
           currencyProductBundlePriceMap.get(rcc.getCurrencyValue()).put("catalog-recurring", rcc);
         } else {
@@ -267,6 +323,17 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       }
       for (RateCardCharge rcc : rpbProductBundleRevision.getRateCardCharges()) {
         if (currencyProductBundlePriceMap.get(rcc.getCurrencyValue()) != null) {
+          if (forUpdate) {
+            try {
+              rcc.setPrice(rcc.getPrice().setScale(
+                  Integer.parseInt(config.getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)),
+                  BigDecimal.ROUND_UNNECESSARY));
+            } catch (ArithmeticException aex) {
+              logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+                  + "the currency precision level was reduced " + aex);
+              throw new CurrencyPrecisionException(aex);
+            }
+          }
           if (rcc.getRateCardComponent().isRecurring()) {
             currencyProductBundlePriceMap.get(rcc.getCurrencyValue()).put("rpb-recurring", rcc);
           } else {
@@ -371,6 +438,26 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     map.addAttribute("futureRevisionDate", channelService.getFutureRevision(channel).getStartDate());
     map.addAttribute("effectiveDate", channelService.getFutureRevision(channel).getStartDate());
     map.addAttribute("isChannelDeletionAllowed", channelService.isChannelDeletionAllowed(channel));
+    map.addAttribute("cloudService", getServiceAndServiceInstanceList().getServices());
+    List<Service> services = connectorConfigurationManager.getAllServicesByType(ConnectorType.CLOUD.toString());
+    if (CollectionUtils.isNotEmpty(services)) {
+      boolean foundInstance = false;
+      map.addAttribute("services", true);
+      for (Service service : services) {
+        if (CollectionUtils.isNotEmpty(service.getServiceInstances())) {
+          foundInstance = true;
+          break;
+        }
+      }
+      if (foundInstance) {
+        map.addAttribute("instances", true);
+      } else {
+        map.addAttribute("instances", false);
+      }
+    } else {
+      map.addAttribute("services", false);
+      map.addAttribute("instances", false);
+    }
 
     logger.debug("### viewchannel method end...(GET)");
     return "channels.view";
@@ -396,10 +483,28 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     logger.debug("### editChannel method starting...(POST)");
 
     Channel channel = channelService.getChannelById(ID);
+
+    String oldName = channel.getName();
+
     channel.setName(channelName);
     channel.setDescription(description);
     channel.setCode(code);
     channelService.updateChannel(channel);
+
+    // If the channel name is changed then update that in the
+    // com.citrix.cpbm.accountManagement.onboarding.default.channel config also
+    // TODO Following code should be moved to service layer update method. Not feasible now as only updated channel
+    // object is being passed in update.
+    // So no way to get the old name of channel for compare.
+
+    if (!oldName.equals(channelName)) {
+      com.vmops.model.Configuration defaultChannelConfiguration = configurationService
+          .locateConfigurationByName("com.citrix.cpbm.accountManagement.onboarding.default.channel");
+      if (defaultChannelConfiguration.getValue().equals(oldName)) {
+        defaultChannelConfiguration.setValue(channelName);
+        configurationService.update(defaultChannelConfiguration);
+      }
+    }
 
     logger.debug("### editChannel method ending...(POST)");
     return viewChannel(String.valueOf(channel.getId()), map);
@@ -458,8 +563,9 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       channelService.locateChannel(channelName);
     } catch (NoSuchChannelException ex) {
       logger.debug(channelName + ": doesn't exist in the db channel table");
-      if(config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled) && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")){
-        try{
+      if (config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)
+          && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
+        try {
           channelService.locateChannelInDirectoryService(channelName);
           return Boolean.FALSE.toString();
         } catch (NoSuchChannelException exc) {
@@ -559,8 +665,9 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     List<ProductBundleRevision> bundlesToBeSent = new ArrayList<ProductBundleRevision>();
     for (ProductBundleRevision productBundleRevision : globalProductBundleRevisions) {
       if (productBundleRevision.getProductBundle().getPublish()
-          && !productBundlesInChannel.contains(productBundleRevision.getProductBundle()))
+          && !productBundlesInChannel.contains(productBundleRevision.getProductBundle())) {
         bundlesToBeSent.add(productBundleRevision);
+      }
     }
 
     map.addAttribute("productBundles", bundlesToBeSent);
@@ -607,7 +714,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     Catalog catalog = channel.getCatalog();
 
     Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = getProductChargeMap(channel,
-        "planned", null);
+        "planned", null, true);
 
     map.addAttribute("planDate", channelService.getFutureRevision(channel).getStartDate());
     map.addAttribute("supportedCurrencies", catalog.getSupportedCurrencyValuesByOrder());
@@ -666,7 +773,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
 
     Revision futureRevision = channelService.getFutureRevision(channel);
     Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = getBundlePricingMap(
-        channel, "planned", futureRevision.getStartDate());
+        channel, "planned", futureRevision.getStartDate(), true);
 
     ProductBundle productBundle = productBundleService.locateProductBundleById(bundleId);
     ProductBundleRevision productBundleRevision = channelService.getFutureChannelRevision(channel, false)
@@ -733,10 +840,10 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
 
     Revision currentRevision = channelService.getCurrentRevision(channel);
     Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = getProductChargeMap(channel,
-        "current", currentRevision.getStartDate());
+        "current", currentRevision.getStartDate(), false);
 
     Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = getBundlePricingMap(
-        channel, "current", null);
+        channel, "current", null, false);
 
     List<ProductBundleRevision> productBundleRevisions = getProductBundles(new ArrayList<ProductBundleRevision>(
         fullBundlePricingMap.keySet()), currentPage, perPageCount);
@@ -770,10 +877,10 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
 
     Revision futureRevision = channelService.getFutureRevision(channel);
     Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = getProductChargeMap(channel,
-        "planned", futureRevision.getStartDate());
+        "planned", futureRevision.getStartDate(), false);
 
     Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = getBundlePricingMap(
-        channel, "planned", null);
+        channel, "planned", null, false);
 
     List<ProductBundleRevision> productBundleRevisions = getProductBundles(new ArrayList<ProductBundleRevision>(
         fullBundlePricingMap.keySet()), currentPage, perPageCount);
@@ -788,10 +895,8 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       }
     }
 
-    boolean bundlesaddedtocatalog = false;
     int sizeOfPublishedBundlesAddedToCatalog = 0;
     for (ProductBundleRevision productBundleRevision : fullBundlePricingMap.keySet()) {
-      bundlesaddedtocatalog = true;
       if (productBundleRevision.getProductBundle().getPublish()) {
         sizeOfPublishedBundlesAddedToCatalog += 1;
       }
@@ -815,7 +920,6 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     map.addAttribute("productBundleRevisions", productBundleRevisions);
     map.addAttribute("bundlestoadd", bundlestoadd);
     map.addAttribute("fullBundlePricingMap", fullBundlePricingMap);
-    map.addAttribute("bundlesaddedtocatalog", bundlesaddedtocatalog);
     map.addAttribute("toalloweditprices", true);
     map.addAttribute("effectiveDate", futureRevision.getStartDate());
     map.addAttribute("lastSyncDate", lastSyncDate);
@@ -846,7 +950,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       if (historyDate != null && !historyDate.isEmpty()) {
         DateFormat formatter = new SimpleDateFormat(dateFormat);
         try {
-          historyDateObj = (Date) formatter.parse(historyDate);
+          historyDateObj = formatter.parse(historyDate);
         } catch (ParseException e) {
           throw new InvalidAjaxRequestException(e.getMessage());
         }
@@ -855,10 +959,10 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       }
 
       Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = getProductChargeMap(channel,
-          "history", historyDateObj);
+          "history", historyDateObj, false);
 
       Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = getBundlePricingMap(
-          channel, "history", historyDateObj);
+          channel, "history", historyDateObj, false);
 
       map.addAttribute("noOfProducts", fullProductPricingMap.size());
       map.addAttribute("fullProductPricingMap", fullProductPricingMap);
@@ -953,15 +1057,26 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
   public String editChannelLogo(@ModelAttribute("channelLogoForm") ChannelLogoForm form, BindingResult result,
       HttpServletRequest request, ModelMap map) {
     logger.debug("### editChannelLogo method starting...(POST)");
-
+    String fileSize = checkFileUploadMaxSizeException(request);
+    if (fileSize != null) {
+      result.rejectValue("logo", "error.image.max.upload.size.exceeded");
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage", messageSource.getMessage(result.getFieldError("logo").getCode(), new Object[] {
+        fileSize
+      }, request.getLocale()));
+      return error.toString();
+    }
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
     if (rootImageDir != null && !rootImageDir.trim().equals("")) {
       Channel channel = channelService.getChannelById(form.getChannel().getId().toString());
       ChannelLogoFormValidator validator = new ChannelLogoFormValidator();
       validator.validate(form, result);
       if (result.hasErrors()) {
+        JsonObject error = new JsonObject();
         setPage(map, Page.CHANNELS);
-        return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
+        error.addProperty("errormessage",
+            messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+        return error.toString();
       } else {
         String channelsDir = "channels";
         File file = new File(FilenameUtils.concat(rootImageDir, channelsDir));
@@ -1001,8 +1116,11 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     } else {
       result.rejectValue("logo", "error.custom.image.upload.dir");
       setPage(map, Page.CHANNELS);
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage",
+          messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
       logger.debug("### editChannelLogo method ending (No Image Logo Dir Defined)...(POST)");
-      return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
+      return error.toString();
     }
   }
 
@@ -1041,10 +1159,10 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     int actiontoshow = 0;
     if (!nothingtosend) {
       if (which.equals("planned")) {
-        fullBundlePricingMap = getBundlePricingMap(channel, "planned", null);
+        fullBundlePricingMap = getBundlePricingMap(channel, "planned", null, false);
         actiontoshow = 1;
       } else if (which.equals("current")) {
-        fullBundlePricingMap = getBundlePricingMap(channel, "current", null);
+        fullBundlePricingMap = getBundlePricingMap(channel, "current", null, false);
       }
     }
 
@@ -1083,7 +1201,7 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     if (currentHistoryPlanned.equals("history")) {
       DateFormat formatter = new SimpleDateFormat(dateFormat);
       try {
-        historyDate = (Date) formatter.parse(date);
+        historyDate = formatter.parse(date);
       } catch (ParseException e) {
         throw new InvalidAjaxRequestException(e.getMessage());
       }
@@ -1093,13 +1211,13 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
       List<Product> productsList = new ArrayList<Product>();
       Map<Product, Map<CurrencyValue, Map<String, ProductCharge>>> fullProductPricingMap = null;
       if (currentHistoryPlanned.equals("current")) {
-        fullProductPricingMap = getProductChargeMap(channel, "current", null);
+        fullProductPricingMap = getProductChargeMap(channel, "current", null, false);
         productsList = productService.listProducts(null, null, channelService.getCurrentRevision(channel));
       } else if (currentHistoryPlanned.equals("planned")) {
-        fullProductPricingMap = getProductChargeMap(channel, "planned", null);
+        fullProductPricingMap = getProductChargeMap(channel, "planned", null, false);
         productsList = productService.listProducts(null, null, channelService.getFutureRevision(channel));
       } else if (currentHistoryPlanned.equals("history")) {
-        fullProductPricingMap = getProductChargeMap(channel, "history", historyDate);
+        fullProductPricingMap = getProductChargeMap(channel, "history", historyDate, false);
         productsList = productService.listProducts(null, null,
             channelService.getRevisionForTheDateGiven(historyDate, channel));
       }
@@ -1115,15 +1233,24 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     } else {
 
       ProductBundle bundle = productBundleService.getProductBundleById(Long.parseLong(bundleId));
+      ProductBundleRevision productBundleRevision = null;
       Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = null;
       if (currentHistoryPlanned.equals("current")) {
-        fullBundlePricingMap = getBundlePricingMap(channel, "current", null);
+        fullBundlePricingMap = getBundlePricingMap(channel, "current", null, false);
+        productBundleRevision = channelService.getCurrentChannelRevision(channel, false).getProductBundleRevisionsMap()
+            .get(bundle);
       } else if (currentHistoryPlanned.equals("planned")) {
-        fullBundlePricingMap = getBundlePricingMap(channel, "planned", null);
+        fullBundlePricingMap = getBundlePricingMap(channel, "planned", null, false);
+        productBundleRevision = channelService.getFutureChannelRevision(channel, false).getProductBundleRevisionsMap()
+            .get(bundle);
       } else if (currentHistoryPlanned.equals("history")) {
-        fullBundlePricingMap = getBundlePricingMap(channel, "current", historyDate);
+        fullBundlePricingMap = getBundlePricingMap(channel, "history", historyDate, false);
+        channelService.getChannelRevision(channel, historyDate, false);
+        productBundleRevision = channelService.getChannelRevision(channel, historyDate, false)
+            .getProductBundleRevisionsMap().get(bundle);
       }
 
+      map.addAttribute("productBundleRevision", productBundleRevision);
       map.addAttribute("fullBundlePricingMap", fullBundlePricingMap);
       map.addAttribute("productBundle", bundle);
       map.addAttribute("currencies", channel.getCatalog().getSupportedCurrencyValuesByOrder());
@@ -1150,5 +1277,184 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
 
     logger.debug("### syncChannel method end...(POST)");
     return status == true ? "success" : "failure";
+  }
+
+  @RequestMapping(value = ("/servicesettings"), method = RequestMethod.GET)
+  public String getChannelSettings(
+      @ModelAttribute("viewChannelServiceSettingsForm") ChannelServiceSettingsForm channelServiceSettingsForm,
+      @RequestParam(value = "channelId", required = true) String channelId,
+      @RequestParam(value = "instanceUUID", required = true) String instanceUUID, ModelMap map) {
+    logger.debug("### getChannelSettings method starting...(GET)");
+    ServiceInstance serviceInstance = connectorConfigurationManager.getInstanceByUUID(instanceUUID);
+    if (serviceInstance != null) {
+      Channel channel = channelService.getChannelById(channelId);
+      List<ServiceInstanceConfig> serviceInstanceConfigList = channelService.getChannelSettingsList(channel,
+          instanceUUID);
+
+      channelServiceSettingsForm.setChannelServiceSettings(getChannelSettings(serviceInstanceConfigList,
+          channelServiceSettingsForm, serviceInstance));
+      map.addAttribute("viewChannelServiceSettingsForm", channelServiceSettingsForm);
+      map.addAttribute("serviceSettingsChanelID", channelId);
+      map.addAttribute("serviceSettingsInstanceUUID", instanceUUID);
+      if (serviceInstance.getService().getChannelSettingServiceConfigMetadata().isEmpty()) {
+        map.addAttribute("serviceSettingsCount", 0);
+      } else {
+        map.addAttribute("serviceSettingsCount", 1);
+      }
+    }
+    logger.debug("### getChannelSettings method ending...(GET)");
+    return "channel.service.settings";
+  }
+
+  @RequestMapping(value = ("/editservicesettings"), method = RequestMethod.GET)
+  public String editChannelSettings(
+      @ModelAttribute("channelServiceSettingsForm") ChannelServiceSettingsForm channelServiceSettingsForm,
+      @RequestParam(value = "channelId", required = true) String channelId,
+      @RequestParam(value = "instanceUUID", required = true) String instanceUUID, ModelMap map) {
+    logger.debug("### editChannelSettings method starting...(GET)");
+    ServiceInstance serviceInstance = connectorConfigurationManager.getInstanceByUUID(instanceUUID);
+    Channel channel = channelService.getChannelById(channelId);
+    List<ServiceInstanceConfig> serviceInstanceConfigList = channelService
+        .getChannelSettingsList(channel, instanceUUID);
+    channelServiceSettingsForm.setChannelServiceSettings(getChannelSettings(serviceInstanceConfigList,
+        channelServiceSettingsForm, serviceInstance));
+    channelServiceSettingsForm.setChannelId(channelId);
+    channelServiceSettingsForm.setServiceInstanceUUID(instanceUUID);
+    map.addAttribute("channelServiceSettingsForm", channelServiceSettingsForm);
+    logger.debug("### editChannelSettings method ending...(GET)");
+    return "channel.service.edit.settings";
+  }
+
+  @RequestMapping(value = ("/editservicesettings"), method = RequestMethod.POST)
+  @ResponseBody
+  public String saveChannelSettings(
+      @ModelAttribute("channelServiceSettingsForm") ChannelServiceSettingsForm channelServiceSettingsForm, ModelMap map) {
+    logger.debug("### editChannelSettings method starting...(POST)");
+
+    ServiceInstance serviceInstance = connectorConfigurationManager.getInstanceByUUID(channelServiceSettingsForm
+        .getServiceInstanceUUID());
+    Channel channel = channelService.getChannelById(channelServiceSettingsForm.getChannelId());
+    boolean create = "create".equals(channelServiceSettingsForm.getMode());
+    for (ChannelServiceSetting channelServiceSetting : channelServiceSettingsForm.getChannelServiceSettings()) {
+      if (create) {
+        ServiceInstanceConfig serviceInstanceConfig = new ServiceInstanceConfig();
+        ChannelSettingServiceConfigMetadata channelSettingServiceConfigMetadata = getMatchingChannelServiceConfigMetadata(
+            channelServiceSetting.getServiceConfigMetaDataId(), serviceInstance.getService()
+                .getChannelSettingServiceConfigMetadata());
+        serviceInstanceConfig.setServiceConfigMetadata(channelSettingServiceConfigMetadata);
+        serviceInstanceConfig.setName(channelSettingServiceConfigMetadata.getName());
+        serviceInstanceConfig.setValue(channelServiceSetting.getValue());
+        serviceInstanceConfig.setServiceInstanceConfigurer(channel);
+        serviceInstanceConfig.setService(serviceInstance.getService());
+        serviceInstanceConfig.setServiceInstance(serviceInstance);
+        serviceInstance.getServiceInstanceConfig().add(serviceInstanceConfig);
+      } else {
+        for (ServiceInstanceConfig serviceInstanceConfig : serviceInstance.getServiceInstanceConfig()) {
+          if (serviceInstanceConfig.getServiceConfigMetadata().getId()
+              .equals(channelServiceSetting.getServiceConfigMetaDataId())
+              && serviceInstanceConfig.getServiceInstanceConfigurer().equals(channel)) {
+            serviceInstanceConfig.setValue(channelServiceSetting.getValue());
+          }
+        }
+      }
+    }
+    connectorConfigurationManager.updateServiceInstance(serviceInstance);
+    logger.debug("### editChannelSettings method ending...(GET)");
+    return "success";
+  }
+
+  private ServiceList getServiceAndServiceInstanceList() {
+    logger.debug("### editChannelSettings method starting...(POST)");
+    ServiceList serviceListObj = new ServiceList();
+    List<com.vmops.web.forms.Service> services = new ArrayList<com.vmops.web.forms.Service>();
+    List<Service> serviceList = this.getEnabledCloudServices();
+    if (CollectionUtils.isNotEmpty(serviceList)) {
+      for (Service service : serviceList) {
+        com.vmops.web.forms.Service serviceObj = new com.vmops.web.forms.Service();
+        List<com.vmops.web.forms.ServiceInstance> serviceInstances = new ArrayList<com.vmops.web.forms.ServiceInstance>();
+        serviceObj.setServicename(messageSource.getMessage(service.getServiceName() + ".service.name", null, null));
+        for (ServiceInstance serviceInstance : service.getServiceInstances()) {
+          com.vmops.web.forms.ServiceInstance serviceInsObj = new com.vmops.web.forms.ServiceInstance();
+          serviceInsObj.setInstancename(serviceInstance.getName());
+          serviceInsObj.setInstanceuuid(serviceInstance.getUuid());
+          serviceInstances.add(serviceInsObj);
+        }
+        serviceObj.setInstances(serviceInstances);
+        services.add(serviceObj);
+      }
+      serviceListObj.setServices(services);
+    }
+    logger.debug("### editChannelSettings method ending...(GET)");
+    return serviceListObj;
+  }
+
+  private ChannelSettingServiceConfigMetadata getMatchingChannelServiceConfigMetadata(Long id,
+      Set<ChannelSettingServiceConfigMetadata> channelSettingServiceConfigMetadatas) {
+    for (ChannelSettingServiceConfigMetadata channelSettingServiceConfigMetadata : channelSettingServiceConfigMetadatas) {
+      if (channelSettingServiceConfigMetadata.getId().equals(id)) {
+        return channelSettingServiceConfigMetadata;
+      }
+    }
+    return null;
+  }
+
+  private List<ChannelServiceSetting> getChannelSettings(List<ServiceInstanceConfig> serviceInstanceConfigList,
+      ChannelServiceSettingsForm channelServiceSettingsForm, ServiceInstance serviceInstance) {
+    ChannelServiceSetting channelSetting = null;
+    List<ChannelServiceSetting> channelServiceSettings = new ArrayList<ChannelServiceSetting>();
+    if (CollectionUtils.isEmpty(serviceInstanceConfigList)) {
+      channelServiceSettingsForm.setMode("create");
+      Set<ChannelSettingServiceConfigMetadata> serviceConfigMetadatas = serviceInstance.getService()
+          .getChannelSettingServiceConfigMetadata();
+      for (ChannelSettingServiceConfigMetadata channelSettingServiceConfigMetadata : serviceConfigMetadatas) {
+        String value = StringUtils.isNotBlank(channelSettingServiceConfigMetadata.getDefaultVal()) ? channelSettingServiceConfigMetadata
+            .getDefaultVal() : null;
+        channelSetting = new ChannelServiceSetting(channelSettingServiceConfigMetadata.getName(), value,
+            channelSettingServiceConfigMetadata.getId());
+        channelSetting.setValidationClass(channelSettingServiceConfigMetadata.getValidations().getClassValidations());
+        channelSetting.setServiceName(serviceInstance.getService().getServiceName());
+        channelSetting.setPropertyType(channelSettingServiceConfigMetadata.getType());
+        channelSetting.setPropertyOrder(channelSettingServiceConfigMetadata.getPropertyOrder());
+        channelSetting.setReconfigurable(channelSettingServiceConfigMetadata.getReconfigurable());
+        channelServiceSettings.add(channelSetting);
+      }
+    } else {
+      for (ServiceInstanceConfig serviceInstanceConfig : serviceInstanceConfigList) {
+        channelSetting = new ChannelServiceSetting(serviceInstanceConfig.getName(), serviceInstanceConfig.getValue(),
+            serviceInstanceConfig.getServiceConfigMetadata().getId());
+        channelSetting.setValidationClass(serviceInstanceConfig.getServiceConfigMetadata().getValidations()
+            .getClassValidations());
+        channelSetting.setServiceName(serviceInstance.getService().getServiceName());
+        channelSetting.setPropertyType(serviceInstanceConfig.getServiceConfigMetadata().getType());
+        channelSetting.setPropertyOrder(serviceInstanceConfig.getServiceConfigMetadata().getPropertyOrder());
+        channelSetting.setReconfigurable(((ChannelSettingServiceConfigMetadata) serviceInstanceConfig
+            .getServiceConfigMetadata()).getReconfigurable());
+        channelServiceSettings.add(channelSetting);
+      }
+    }
+    Collections.sort(channelServiceSettings, new ChannelServiceSettingComparator());
+    return channelServiceSettings;
+  }
+
+  public class ChannelServiceSettingComparator implements Comparator<ChannelServiceSetting> {
+
+    @Override
+    public int compare(ChannelServiceSetting o1, ChannelServiceSetting o2) {
+      return (o1.getPropertyOrder() < o2.getPropertyOrder() ? -1 : (o1.getPropertyOrder() == o2.getPropertyOrder() ? 0
+          : 1));
+    }
+  }
+
+  private List<Service> getEnabledCloudServices() {
+    List<ServiceInstance> cloudTypeServiceInstances = connectorManagementService.getCloudTypeServiceInstances();
+    Set<Service> services = new HashSet<Service>();
+    List<Service> cloudServices = new ArrayList<Service>();
+    for (ServiceInstance instance : cloudTypeServiceInstances) {
+      services.add(instance.getService());
+    }
+    if (cloudServices.addAll(services)) {
+      return cloudServices;
+    }
+    return null;
   }
 }

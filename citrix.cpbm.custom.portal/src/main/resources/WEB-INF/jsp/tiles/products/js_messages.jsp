@@ -51,7 +51,7 @@ var i18n = {
     products: {
     	failed_create_product: '<spring:message javaScriptEscape="true" code="js.errors.product.failed.create.product"/>',
     	enter_valid_value: '<spring:message javaScriptEscape="true" code="js.errors.priceRequired"/>',
-      max_four_decimal_value: '<spring:message javaScriptEscape="true" code="js.errors.maxFourDecimalPrice"/>',
+      max_four_decimal_value: '<spring:message javaScriptEscape="true" arguments="${currencyFractionalDigitsLimit}"  code="js.errors.maxFourDecimalPrice"/>',
     	name: '<spring:message javaScriptEscape="true" code="js.errors.product.name"/>',
         displayname: '<spring:message javaScriptEscape="true" code="js.errors.product.displayname"/>',
         code: '<spring:message javaScriptEscape="true" code="js.errors.product.code"/>',
@@ -74,8 +74,10 @@ var i18n = {
       editplanneddatesuccess: '<spring:message javaScriptEscape="true" code="js.edit.planned.date.success"/>',
       activationdategreaterorequaltotoday: '<spring:message javaScriptEscape="true" code="js.rpb.activation.error.date.greater.than.equal.to.today"/>',
       activationdategreaterthantoday: '<spring:message javaScriptEscape="true" code="js.rpb.activation.error.date.greater.than.today"/>',
-      noproductsadded: '<spring:message javaScriptEscape="true" code="js.rpb.activation.error.no.product.in.future.plan"/>'
-      },
+      noproductsadded: '<spring:message javaScriptEscape="true" code="js.rpb.activation.error.no.product.in.future.plan"/>',
+      errorChooseOption: '<spring:message javaScriptEscape="true" code="message.error.choose.option"/>'
+      
+    },
     channels: {
       failed_create_channel: '<spring:message javaScriptEscape="true" code="js.errors.channel.failed.create.channel"/>',
       failed_edit_channel: '<spring:message javaScriptEscape="true" code="js.errors.channel.failed.edit.channel"/>',
@@ -90,16 +92,16 @@ var i18n = {
       name_invalid:"<spring:message javaScriptEscape="true" code='js.errors.channel.name.invalid'/>",
       channel_currency_required:'<spring:message javaScriptEscape="true" code="js.errors.catalog.currency"/>',
       validPriceRequired: '<spring:message javaScriptEscape="true" code="js.errors.channel.price.error"/>',
-      max_four_decimal_value: '<spring:message javaScriptEscape="true" code="js.errors.maxFourDecimalPrice"/>',
+      max_four_decimal_value: '<spring:message javaScriptEscape="true" arguments="${currencyFractionalDigitsLimit}"  code="js.errors.maxFourDecimalPrice"/>',
       edit_image_path_invalid_message: '<spring:message javaScriptEscape="true" code="ui.image.error.invalid.path"/>',
       failed_upload_image: '<spring:message javaScriptEscape="true" code="ui.image.failed"/>',
-      no_bundle_added_to_catalog: '<spring:message javaScriptEscape="true" code="js.error.activate.catalog.no.bundles"/>',
       products_bundles_not_activated: '<spring:message javaScriptEscape="true" code="js.error.products.bundles.not.activated"/>',
       failed_create_channel_precondition: '<spring:message javaScriptEscape="true" code="js.errors.channel.failed.create.channel_precondition"/>',
       failed_to_sync_channel: '<spring:message javaScriptEscape="true" code="js.errors.channel.failed.sync"/>'
     },
     common:{
-      codeNotUnique: '<spring:message javaScriptEscape="true" code="js.errors.common.CodeNotUnique"/>'
+      codeNotUnique: '<spring:message javaScriptEscape="true" code="js.errors.common.CodeNotUnique"/>',
+      uncompatible_currency_precision: '<spring:message javaScriptEscape="true" code="js.error.uncompatible.currency.precision"/>'
      
     }
   },
@@ -152,6 +154,9 @@ var i18n = {
     	Remove: '<spring:message javaScriptEscape="true" code="ui.products.label.view.remove"/>',
     	Templates: '<spring:message javaScriptEscape="true" code="js.errors.product.templates"/>',
     	ISOs: '<spring:message javaScriptEscape="true" code="js.errors.product.isos"/>',
+    	discrete : '<spring:message javaScriptEscape="true" code="ui.products.label.discrete"/>',
+    	usagecombine:'<spring:message javaScriptEscape="true" code="ui.label.combine" />',
+    	usageexclude:'<spring:message javaScriptEscape="true" code="ui.label.exclude" />',
       type: {
         VOLUME: '<spring:message javaScriptEscape="true" code="product.type.VOLUME"/>',
         SECONDARY_STORAGE: '<spring:message javaScriptEscape="true" code="product.type.SECONDARY_STORAGE"/>',

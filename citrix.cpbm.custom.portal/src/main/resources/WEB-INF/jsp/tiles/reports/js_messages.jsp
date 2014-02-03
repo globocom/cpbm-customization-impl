@@ -14,7 +14,8 @@ var i18n = {
 	        generateFailure			: '<spring:message javaScriptEscape="true" code="js.report.errors.generateFailure"/>',
 	        sendemailFailed			: '<spring:message javaScriptEscape="true" code="js.report.errors.sendemailFailed"/>',
 	        emptyEmailField			: '<spring:message javaScriptEscape="true" code="js.report.errors.emptyEmailField"/>',
-	        invalidEmailIds			: '<spring:message javaScriptEscape="true" code="js.report.errors.invalidEmailIds"/>'
+	        invalidEmailIds			: '<spring:message javaScriptEscape="true" code="js.report.errors.invalidEmailIds"/>',
+	        reportEnterValidDateRange : '<spring:message javaScriptEscape="true" code="js.errors.campaigns.campaignEnterValidDateRange"/>',
 		},
 		text:{
 	        startDateButtonText  	: '<spring:message javaScriptEscape="true" code="js.report.text.startDateButtonText"/>', 

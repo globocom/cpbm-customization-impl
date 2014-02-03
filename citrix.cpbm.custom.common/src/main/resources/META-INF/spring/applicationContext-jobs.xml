@@ -119,6 +119,20 @@
     <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_RESCHEDULE_NEXT_WITH_EXISTING_COUNT"></property>
   </bean>
   
+  <bean name="subscriptionActivationJob" class="org.springframework.scheduling.quartz.JobDetailBean">
+    <property name="jobClass" value="com.vmops.admin.jobs.SubscriptionActivationJob"/>
+    <property name="requestsRecovery" value="false"/>
+    <property name="volatility" value="false" />
+  </bean>
+
+  <bean id="subscriptionActivationJobTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+    <property name="jobDetail" ref="subscriptionActivationJob" /> 
+    <property name="startDelay" value="10000" />
+    <property name="repeatInterval" value="300000" />
+    <property name="volatility" value="false" /> 
+    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_RESCHEDULE_NEXT_WITH_EXISTING_COUNT"></property>
+  </bean>
+  
    <bean name="billingExportJob" class="org.springframework.scheduling.quartz.JobDetailBean">
     <property name="jobClass" value="com.vmops.admin.jobs.BillingExportJob"/>
     <property name="requestsRecovery" value="false"/>

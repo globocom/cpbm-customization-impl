@@ -1,15 +1,13 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/ 
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */ 
 package fragment.web;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
@@ -35,17 +33,14 @@ import com.citrix.cpbm.platform.spi.SsoHandler;
 import com.citrix.cpbm.platform.spi.View;
 import com.citrix.cpbm.platform.spi.View.ViewMode;
 import com.citrix.cpbm.platform.spi.ViewResolver;
-import com.citrix.cpbm.platform.util.CssdkConstants;
 import com.citrix.cpbm.portal.fragment.controllers.AbstractManageResourceController;
 import com.citrix.cpbm.portal.fragment.controllers.ConnectorController;
-import com.vmops.model.Service;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
 import com.vmops.persistence.ServiceDAO;
 import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.persistence.TenantDAO;
-
 import common.MockCloudInstance;
 
 public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockConnectors {
@@ -163,10 +158,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         map, request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNotNull(cmdString);
     Assert.assertEquals(cmdString, tenant.getOwner().getName());
 
@@ -192,10 +187,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         instance.getUuid(), map, request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNotNull(cmdString);
     Assert.assertEquals(cmdString, systemTenant.getOwner().getName());
 
@@ -221,10 +216,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         map, request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNull(cmdString);
 
   }
@@ -251,10 +246,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         map, request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNotNull(cmdString);
 
     Cookie obtCookie = response.getCookie("Test");
@@ -284,17 +279,17 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         map, request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("fail", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNull("Tenant is New State", cmdString);
 
-    String error_message = (String) resultMap.get("error_message");
+    String error_message = resultMap.get("error_message");
     Assert.assertEquals(
         messageSource.getMessage("message.user.no.billing", null, controller.getSessionLocale(request)), error_message);
 
-    String url = (String) resultMap.get("url");
+    String url = resultMap.get("url");
     Assert.assertEquals("/portal/portal/home", url);
 
   }
@@ -321,13 +316,13 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("fail", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNull("Tenant is New State", cmdString);
 
-    String url = (String) resultMap.get("url");
+    String url = resultMap.get("url");
     Assert.assertEquals("/portal/portal/tenants/editcurrent", url);
 
   }
@@ -354,10 +349,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertNotNull(cmdString);
     Assert.assertEquals(cmdString, tenant.getOwner().getName());
 
@@ -386,10 +381,10 @@ public class AbstractManageResourceControllerTest extends WebTestsBaseWithMockCo
         request, response);
     Assert.assertNotNull(resultMap);
 
-    String status = (String) resultMap.get("status");
+    String status = resultMap.get("status");
     Assert.assertEquals("success", status);
 
-    String cmdString = (String) resultMap.get("cmdString");
+    String cmdString = resultMap.get("cmdString");
     Assert.assertEquals(cmdString, tenant.getOwner().getName());
 
   }

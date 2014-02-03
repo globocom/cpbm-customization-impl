@@ -11,8 +11,8 @@
 
 <div class="dialog_formcontent wizard">
  <div class="j_actionForm">
-  <div class="widgetwizard_contentarea sixstepswizard">
-    <div class="widgetwizard_boxes fullheight sixstepswizard">
+  <div class="widgetwizard_contentarea sixstepswizard" style="height:auto;">
+    <div class="widgetwizard_boxes fullheight sixstepswizard" style="height:auto;">
       <div class="widgetwizard_titleboxes">
         <h2><spring:message code="task.approval.dialog.review.title" /></h2>
         <span style="width:100%"><spring:message code="task.approval.dialog.review.description" /></span>
@@ -25,17 +25,29 @@
 			<c:out value="${taskDetails}" escapeXml="false"></c:out>
             <c:choose>
             <c:when test="${task.businessTransaction.type == 'tenantStateChange' }">
+            	<c:set var="initialState">
+            		<spring:message code="tenant.state.${fn:toLowerCase(task.businessTransaction.tenantInitialState)}"/>
+            	</c:set>
+            	<c:set var="targetState">
+            		<spring:message code="tenant.state.${fn:toLowerCase(task.businessTransaction.tenantTargetState)}"/>
+            	</c:set>
 	            <c:set var="transactionMessage">
 					<spring:message
 						code="ui.task.businesstransaction.${task.businessTransaction.type}"
-						arguments="${task.businessTransaction.tenantInitialState},${task.businessTransaction.tenantTargetState},${task.tenant.name}"></spring:message>
+						arguments="${initialState},${targetState},${task.tenant.name}"></spring:message>
 				</c:set>
             </c:when>
             <c:when test="${task.businessTransaction.type == 'tenantAccountTypeConversion' }">
+            	<c:set var="initialAT">
+            		<spring:message code="page.level2.${fn:toLowerCase(task.businessTransaction.accountTypeInitial.name)}"/>
+            	</c:set>
+            	<c:set var="targetAT">
+            		<spring:message code="page.level2.${fn:toLowerCase(task.businessTransaction.accountType.name)}"/>
+            	</c:set>
 				<c:set var="transactionMessage">
 					<spring:message
 						code="ui.task.businesstransaction.${task.businessTransaction.type}"
-						arguments="${task.businessTransaction.accountTypeInitial.name},${task.businessTransaction.accountType.name},${task.tenant.name}"></spring:message>
+						arguments="${initialAT},${targetAT},${task.tenant.name}"></spring:message>
 				</c:set>           
             </c:when>
             <c:when test="${task.businessTransaction.type == 'paymentInfoChange' }">
@@ -46,12 +58,29 @@
 				</c:set>
             </c:when>
             <c:when test="${task.businessTransaction.type == 'subscriptionActivation' }">
+            	<c:set var="subscriptionInitialState">
+            		<spring:message code="subscription.state.${fn:toLowerCase(task.businessTransaction.subscriptionInitialState)}"/>
+            	</c:set>
+            	<c:set var="subscriptionTargetState">
+            		<spring:message code="subscription.state.${fn:toLowerCase(task.businessTransaction.subscriptionTargetState)}"/>
+            	</c:set>
             	<c:set var="transactionMessage">
 					<spring:message code="ui.task.businesstransaction.${task.businessTransaction.type}"
-						arguments="${task.businessTransaction.subscriptionInitialState},${task.businessTransaction.subscriptionTargetState},${task.businessTransaction.subscription.user.lastName}"></spring:message>
+						arguments="${subscriptionInitialState},${subscriptionTargetState},${task.businessTransaction.subscription.user.lastName}"></spring:message>
 				</c:set>
             </c:when>
-            <c:otherwise></c:otherwise>
+            <c:when test="${task.businessTransaction.type == 'cloudServiceActivation' }">
+            	<c:set var="transactionMessage">
+					<spring:message code="ui.task.businesstransaction.${task.businessTransaction.type}"
+						arguments="null,null,${task.businessTransaction.serviceInstance.name}"></spring:message>
+				</c:set>
+            </c:when>
+            <c:otherwise>
+            	<c:set var="transactionMessage">
+					<spring:message code="ui.task.businesstransaction.${task.businessTransaction.type}"
+						arguments="null,null,null"></spring:message>
+				</c:set>
+            </c:otherwise>
             </c:choose> 
           </li>
           <li>
@@ -77,9 +106,7 @@
                   <input type="hidden" value="${task.uuid}" id="approval_task_uuid" />
                     <li class="subselection">
                       <span class="label sublabel"><spring:message code="ui.accounts.all.pending.changes.memo" /></span>
-                      <div class="mandatory_wrapper">
-                        <form:textarea path="memo" class="commonboxes_formbox_withouttextbox equalwidth"></form:textarea>
-                      </div>
+                      <form:textarea path="memo" class="commonboxes_formbox_withouttextbox equalwidth"  maxlength="4000"></form:textarea>
                       <div id="memo_errormsg" class="dialog_formcontent_errormsg"></div>
                     </li>
                 </form:form>

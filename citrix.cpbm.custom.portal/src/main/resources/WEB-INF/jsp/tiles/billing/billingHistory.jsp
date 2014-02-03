@@ -215,12 +215,6 @@ var dictionary={
           var showMakePaymentMessage = "<spring:message javaScriptEscape="true" code="message.tenant.delinquent.make.payment"/>";
           </script>
         </c:if>
-        <c:if test="${stateChangeCause != 'PAYMENT_FAILURE'}">
-          <script type="text/javascript">
-          var isDelinquent = true;
-          var showMakePaymentMessage = "<spring:message javaScriptEscape="true" code="message.tenant.delinquent.admin.contact.support"/>";
-          </script>
-        </c:if>
       </sec:authorize>
       <sec:authorize access="!hasAnyRole('ROLE_ACCOUNT_CRUD', 'ROLE_ACCOUNT_ADMIN')">
         <script type="text/javascript">

@@ -14,7 +14,7 @@
 				<input id="password" type="password" class="text" name="password" tabindex="1"/>
 			</li>
 			<li>
-				<div class="main_addnew_formbox_errormsg" id="wrongPasswordError" style="min-height: 15px;"></div>
+				<div class="main_addnew_formbox_errormsg" id="wrongPasswordError" style="min-height: 15px;margin-left:140px;"></div>
 			</li>
 		</ul>
 	</div>

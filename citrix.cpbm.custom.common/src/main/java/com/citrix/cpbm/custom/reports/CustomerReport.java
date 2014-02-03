@@ -97,6 +97,7 @@ public class CustomerReport extends AbstractReport {
     return connection.prepareStatement(query.toString());
   }
 
+  @Override
   protected ResultSet executeQuery(Statement statement) throws SQLException {
     PreparedStatement pstmt = (PreparedStatement) statement;
     return pstmt.executeQuery();

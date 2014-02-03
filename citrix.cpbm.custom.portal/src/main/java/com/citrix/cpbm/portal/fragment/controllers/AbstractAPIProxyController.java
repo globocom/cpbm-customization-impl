@@ -38,7 +38,7 @@ public class AbstractAPIProxyController extends AbstractAuthenticatedController 
   @Autowired
   private ConnectorManagementService connectorManagementService;
 
-  protected Logger logger = Logger.getLogger(AbstractAPIProxyController.class);
+  private Logger logger = Logger.getLogger(AbstractAPIProxyController.class);
 
   @RequestMapping(value = {
       "/{apiSuffix}", "/{apiSuffix}/", "/{apiSuffix}/**"
@@ -80,7 +80,7 @@ public class AbstractAPIProxyController extends AbstractAuthenticatedController 
       apiResponseObject = apiHandler.getErrorResponse(apiCall, cloudServiceApiException, 401);
     } catch (CloudServiceApiException csae) {
       apiResponseObject = apiHandler.getErrorResponse(apiCall, csae, 500);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       CloudServiceApiException cloudServiceApiException = new CloudServiceApiException("Internal Server Error", e);
       cloudServiceApiException.setErrorCode(500);
       apiResponseObject = apiHandler.getErrorResponse(apiCall, cloudServiceApiException, 500);

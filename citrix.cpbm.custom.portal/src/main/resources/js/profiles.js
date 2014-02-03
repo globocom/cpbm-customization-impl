@@ -141,17 +141,6 @@ function activateTab(id) {
   }
 }
 
-function onRoleDetailMouseover(profile_id, current) {
-
-  document.getElementById("info_bubble2_" + profile_id + "_" + current).style.display = '';
-  return false;
-}
-
-function onRoleDetailMouseout(profile_id, current) {
-  document.getElementById("info_bubble2_" + profile_id + "_" + current).style.display = 'none';
-  return false;
-}
-
 function actionCancel() {
   if (selectedTab != "") {
     window.location = "/portal/portal/profiles/show?selectedTab=" + selectedTab;
@@ -165,3 +154,7 @@ function actionCancel() {
     }
   }
 }
+
+$(function ()  
+  { $(".js_profiles_details_popover_link").popover({trigger:'hover'});  
+}); 

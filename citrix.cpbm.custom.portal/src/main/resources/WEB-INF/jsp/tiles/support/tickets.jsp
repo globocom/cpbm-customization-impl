@@ -100,7 +100,7 @@ var dictionary = {
                       <c:set var="status_icon" value="ticket_new"/>
                     </c:when>
                     </c:choose>
-                <span class="navicon ${status_icon}"></span>
+                <span class="navicon ${status_icon}" id = "status_icon"></span>
                   
                   
                     <div class="widget_navtitlebox">
@@ -206,7 +206,6 @@ var dictionary = {
 <input type="hidden" id="current_page"  value="<c:out value="${current_page}"/>"/>
 <input type="hidden" id="default_page_size"  value="<c:out value="${defaultPageSize}"/>"/>
     </div>
-   <c:if test="${(not empty tickets && tickets != null)}">
     <div class="widget_rightpanel" id="viewTicketDiv">    
     <div class="widget_actionbar">
       <div class="widget_actionarea" id="top_actions">
@@ -236,8 +235,16 @@ var dictionary = {
         </div>
       </div>  
     </div>
-    <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-      <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+    <div class="top_notifications">
+      <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+        <button type="button" class="close js_close_parent" >&times;</button>
+        <span id="status_icon"></span><p id="msg"></p>
+      </div>
+      <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+        <button type="button" class="close js_close_parent" >&times;</button>
+        <span id="status_icon"></span><p id="msg"></p>
+      </div>
+    </div>
       <div class="widget_browser">
         <div class="widget_browsermaster">
         <div class="widget_browser_contentarea">
@@ -328,9 +335,7 @@ var dictionary = {
         </div>
     </div>
 </div>
-      </c:if>
     </div>
-</div>
 <div id="addticketDiv" title='<spring:message code="ui.label.support.tickets.add.new.ticket"/>' style="display:none;">
 </div>
 

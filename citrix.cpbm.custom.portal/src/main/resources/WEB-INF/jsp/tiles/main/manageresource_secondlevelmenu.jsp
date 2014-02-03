@@ -6,8 +6,8 @@
 <%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles" %>
 <div class="secondlevel_withoutsubmenu">
   <div class="secondlevel_breadcrumb_panel">
-    <div class="secondlevel_breadcrumbbox">
-      <p><c:out value="${tenant.name}"/></p>
+    <div class="secondlevel_breadcrumbbox_tenant">
+      <p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
     </div>
     <div class="doc_help_link"></div>
   </div>
@@ -15,13 +15,14 @@
   <a href="javascript:void(0);" id="iframe_tab_all_services" class="secondlevel_menutabs js_iframe_tabs on"><span class="navicon loading js_loading"  style="display:none;"></span><spring:message code="page.level2.allservices"/></a>
   <c:if test="${userHasCloudServiceAccount}">
     <c:forEach items="${serviceInstanceMap}" var="serviceInstanceEntry" varStatus="status">
-      <c:if test="${(serviceInstanceEntry.value == true)}">
-        <a href="javascript:void(0);" id="iframe_tab_${serviceInstanceEntry.key.uuid}" class="secondlevel_menutabs js_iframe_tabs"><span class="navicon loading js_loading"  style="display:none;"></span><c:out value="${serviceInstanceEntry.key.name}"/></a>
+      <c:if test="${serviceInstanceEntry.value == true && serviceInstanceHandles[serviceInstanceEntry.key].state == 'ACTIVE'}">
+        <a href="javascript:void(0);" id="iframe_tab_${serviceInstanceEntry.key.uuid}" class="secondlevel_menutabs js_iframe_tabs ellipsis"><span class="navicon loading js_loading"  style="display:none;"></span><c:out value="${serviceInstanceEntry.key.name}"/></a>
       </c:if>
     </c:forEach>
   </c:if>
   </div>
   <div class="clearboth"></div>
+  <tiles:insertDefinition name="warnings"></tiles:insertDefinition>
 </div>
-<tiles:insertDefinition name="warnings"></tiles:insertDefinition>  
+  
   

@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright Â© 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -67,6 +67,9 @@ $(document).ready(
             $("#login_info_box").hide();
             $("#loginbg_bot_div_id").addClass('smaller_ver');
             $(".login_messages").addClass('smaller_ver');
+            $(".login_infobox_top").hide();
+            $(".login_infobox_mid").hide();
+            $(".login_infobox_bot").hide();
           }
           if (configs.showSuffix == "true") {
             $("#login_maintabsarea_div_id").hide();
@@ -132,7 +135,9 @@ $(document).ready(
       $("#login_main").show();
       $("#login_main_smaller_ver").show();
     }
+    
   });
+
 
 $("#language_selector").live('mouseover', function(event) {
   $("#language_selector_dropdown").show();
@@ -235,12 +240,15 @@ jQuery.fn.extend({
   }
 });
 
+
 jQuery.validator.addMethod("password", function(value, element) {
+  
   if (element.className == "text j_credit_card_cvv" || element.className == "text j_credit_card_cvv error" || element
-    .className == "text j_credit_card_cvv valid")
+    .className == "text j_credit_card_cvv valid" || element.className == "text js_login_page_pwd" || element.className == "text js_login_page_pwd error" ||
+    element.className == "text js_login_page_pwd valid") 
     return true;
-  return this.optional(element) || value.length >= 8 && /\d/.test(value) && /[A-Z]/.test(value);
-}, "8 characters, one number and one uppercase character required.");
+  return this.optional(element) || value.length == $.trim(value).length && value.length >= 8 && /\d/.test(value) && /[A-Z]/.test(value);
+}, "8 characters, one number and one uppercase character required with no leading or trailing spaces.");
 
 jQuery.validator.addMethod("notEqualTo", function(value, element, param) {
   return (value != $(param).val());
@@ -267,7 +275,7 @@ jQuery.validator.addMethod("countryCode", function(value, element) {
 }, "Invalid country code.");
 
 jQuery.validator.addMethod("flname", function(value, element) {
-  var myRegexp = /([[\.,\#@!$%\^&\*;:{}=_`?~(\\)\d]+)/;
+  var myRegexp = /([[,\#@!$%\^&\*;:{}=_`?~(\\)<>|/\d]+)/;
   var match = myRegexp.exec(value);
   return this.optional(element) || value.length > 0 && match == null;
 }, "Only characters and special symbols ' - are allowed.");
@@ -297,6 +305,7 @@ $.ajaxSetup({
     if (xhr.status == 503) {
       //CloudService Exception
       alert(xhr.responseText);
+      window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
     }
   }
 });
@@ -1534,13 +1543,13 @@ var ERROR_VMOPS_ACCOUNT_ERROR = 531;
 function handleError(XMLHttpResponse, handleErrorCallback) {
   // User Not authenticated
   if (XMLHttpResponse.status == ERROR_ACCESS_DENIED_DUE_TO_UNAUTHORIZED) {
-    alert("Your session has expired.");
+    popUpDialogForAlerts("dialog_info", "Your session has expired.");
     // $("#dialog_session_expired").dialog("open");
   } else if (XMLHttpResponse.status == ERROR_INTERNET_NAME_NOT_RESOLVED) {
-    alert("Your internet name cannot be resolved.");
+    popUpDialogForAlerts("dialog_info", "Your internet name cannot be resolved.");
     // $("#dialog_error_internet_not_resolved").dialog("open");
   } else if (XMLHttpResponse.status == ERROR_INTERNET_CANNOT_CONNECT) {
-    alert("The Management Server is unaccessible.  Please try again later.");
+    popUpDialogForAlerts("dialog_info", "The Management Server is unaccessible.  Please try again later.");
     // $("#dialog_error_management_server_not_accessible").dialog("open");
   } else if (XMLHttpResponse.status == ERROR_VMOPS_ACCOUNT_ERROR && handleErrorCallback != undefined) {
     handleErrorCallback();
@@ -1549,7 +1558,7 @@ function handleError(XMLHttpResponse, handleErrorCallback) {
   } else {
     var errorMsg = localizeCloudStackMsg(fromdb(parseXMLHttpResponse(XMLHttpResponse)));
     if (errorMsg != "") {
-      alert(errorMsg);
+      popUpDialogForAlerts("dialog_info", errorMsg);
     }
 
   }
@@ -1673,11 +1682,16 @@ var alphanumericRegexp = /^[a-zA-Z0-9_]*$/;
 
 // dialogs
 
-function initDialog(elementId, width1, addToActive) {
+function initDialog(elementId, width1, addToActive, is_resizable) {
+  var resizable = false;
+  if(is_resizable != null && is_resizable == "true"){
+    resizable = true;
+  }
   if (width1 == null) {
     activateDialog($("#" + elementId).dialog({
       autoOpen: false,
       modal: true,
+      resizable: resizable,
       zIndex: 2000,
       open: function(event) {
         $(".action_menu_container").find("#action_menu").hide();
@@ -1688,6 +1702,7 @@ function initDialog(elementId, width1, addToActive) {
       width: width1,
       autoOpen: false,
       modal: true,
+      resizable: resizable,
       zIndex: 2000,
       open: function(event) {
         $(".action_menu_container").find("#action_menu").hide();
@@ -1703,6 +1718,7 @@ function initDialogWithOK(elementId, width1, addToActive) {
       autoOpen: false,
       modal: true,
       zIndex: 2000,
+      resizable: false,
       buttons: {
         "OK": function() {
           $(this).dialog("close");
@@ -1715,6 +1731,7 @@ function initDialogWithOK(elementId, width1, addToActive) {
       autoOpen: false,
       modal: true,
       zIndex: 2000,
+      resizable: false,
       buttons: {
         "OK": function() {
           $(this).dialog("close");
@@ -2394,7 +2411,8 @@ function clickActionLink2(elementIdPrefix, actionLinkOnClickFn,
   activateDialog(dialog);
   dialogButtonsLocalizer(dialog, {
     'OK': g_dictionary.dialogOK,
-    'Cancel': g_dictionary.dialogCancel
+    'Cancel': g_dictionary.dialogCancel,
+    'Close': g_dictionary.dialogClose
   });
   dialog.dialog("open");
 
@@ -2777,12 +2795,12 @@ function viewUtilitRates(tenantParam, id, url, serviceInstanceUUID) {
       $thisDialog.dialog('option', 'minWidth', 750);
 
       $thisDialog.dialog('option', 'buttons', {
-        "OK": function() {
+        "Close": function() {
           $(this).dialog("close");
         }
       });
       dialogButtonsLocalizer($thisDialog, {
-        'Cancel': g_dictionary.dialogOK
+        'Close': g_dictionary.dialogClose
       });
       $("#full_page_spinning_wheel").hide();
       $thisDialog.html(html);
@@ -2809,13 +2827,16 @@ function dialogButtonsLocalizer(dialogPanel, localizedButtonLabels) {
   dialogPanel.dialog("option", "buttons", localizedButtons);
 }
 
-function popUpDialogForAlerts(dialog_div_id, message) {
+function popUpDialogForAlerts(dialog_div_id, message, callback) {
   initDialog(dialog_div_id, 390);
   $thisDialog = $("#" + dialog_div_id);
   $thisDialog.html(message);
   $thisDialog.dialog('option', 'buttons', {
     "OK": function() {
       $(this).dialog("close");
+      if(callback != undefined || callback !=null){
+    	  callback();
+      }
     }
   });
   dialogButtonsLocalizer($thisDialog, {
@@ -2987,7 +3008,7 @@ function checkDelinquent(isDelinquent, redirectToBilling, redirectToDashBoard, s
     if (redirectToBilling == true) {
       window.location = "/portal/portal/billing/history?tenant=" + tenantParam + "&action=launchvm"; //redirect them to payment page
     } else if (redirectToDashBoard == true) {
-      alert(showMakePaymentMessage);
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
       window.location = "/portal/portal/home?tenant=" + tenantParam + "&secondLevel=true"; //redirect them to user dashboard page
     }
     return false;
@@ -3024,7 +3045,7 @@ function singleSignOn(tenantParam, serviceInstanceUUID) {
     success: function(responseMap) {
       if (responseMap.status == 'fail') {
         if (responseMap.error_message != null) {
-          alert(responseMap.error_message);
+          popUpDialogForAlerts("dialog_info", responseMap.error_message);
         }
         ssoResponseMap = null;
         returnVal = responseMap.url;
@@ -3033,7 +3054,7 @@ function singleSignOn(tenantParam, serviceInstanceUUID) {
       }
     },
     error: function(XMLHttpResponse) {
-      alert(g_dictionary.error_single_sign_on);
+      popUpDialogForAlerts("dialog_info", g_dictionary.error_single_sign_on);
       ssoResponseMap = null;
       returnVal = false;
     }
@@ -3177,6 +3198,8 @@ $(".workflowDetailsPopup").live("click", function() {
   });
   workflowDetailsGet.done(function(html) {
     $workflowDetailsDialog.html(html);
+    //Following line enables the popover of task memo 
+    $workflowDetailsDialog.find(".js_workflow_status_error").popover();
     $workflowDetailsDialog.data('opener', $opener).dialog("open");
   });
 });
@@ -3249,40 +3272,47 @@ function getFormattedDisplayAttribtutesDescription(message, attributes) {
   return displayString;
 }
 
-function getFormattedDisplayAttribtutesString(attributes) {
+function getFormattedDisplayAttribtutesString(attributes, forInfo) {
+  
+  var separator = ", ";
+  if(forInfo != null && forInfo) {
+    separator = "<br/>";
+  }
+  
   var displayString = "";
   if (attributes != null) {
     for (var i = 0; i < attributes.length; i++) {
       da = attributes[i];
-      displayString += displayString == "" ? "" : ", ";
-      displayString += "<b>" + da.name + "</b> : " + da.value;
+      displayString += displayString == "" ? "" : separator;
+      displayString += "<b>" + da.name + "</b>: " + da.value;
     }
   }
   return displayString;
 }
 
-function getFormattedAttribtutesString(attributes) {
+function getFormattedAttribtutesString(attributes, forInfo) {
+  
+  var separator = ", ";
+  if(forInfo != null && forInfo) {
+    separator = "<br/>";
+  }
+    
   var displayString = "";
   if (attributes != null) {
     for (var component in attributes) {
-      displayString += displayString == "" ? "" : ", ";
-      displayString += "<b>" + component + "</b> : " + attributes[component];
+      displayString += displayString == "" ? "" : separator;
+      displayString += "<b>" + component + "</b>: " + attributes[component];
     }
   }
   return displayString;
 }
+
 var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
 
-  $("#maincontent_container").hide();
-  $("#main").css("width", "100%");
-  $("#header").css("margin", "auto");
-  $("#footer").css("width", "100%");
-  $("#mainmenu_panel").css({
-    "margin": "auto"
-  });
-  $("#manage_resources_container").show();
+  
   var $iframe_tab = $("#iframe_tab_" + serviceInstanceUUID);
   $iframe_tab.find(".js_loading").show();
+  
   $.ajax({
     url: "/portal/portal/manage_resource/get_resource_views",
     dataType: "json",
@@ -3296,11 +3326,21 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
     success: function(json) {
       singleSignOn(effectiveTenantParam, serviceInstanceUUID);
       $iframe_tab.find(".js_loading").hide();
-      $(".js_iframe_tabs").removeClass("on");
-      $iframe_tab.addClass("on");
+      
       if (json[0].mode == "WINDOW") {
-        window.location = json[0].url;
+        window.open(json[0].url,'_blank');
       } else if (json[0].mode == "IFRAME") {
+    	  $(".js_iframe_tabs").removeClass("on");
+          $iframe_tab.addClass("on");
+    	  $("#maincontent_container").hide();
+    	  $("#main").css("width", "100%");
+    	  $("#header").css("margin", "auto");
+    	  $("#footer").css("width", "100%");
+    	  $("#mainmenu_panel").css({
+    	    "margin": "auto"
+    	  });
+    	  $("#manage_resources_container").show();
+    	  $("#iframe_spinning_wheel").show();
         $("#manage_resources_iframe").attr("src", json[0].url);
       }
     },
@@ -3312,8 +3352,15 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
 }
 
 var showResourcesIFrame = function(event) {
-  var serviceInstanceUUID = $(this).attr("id");
-  showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
+  if(!isDelinquent){
+    var serviceInstanceUUID = $(this).attr("id");
+    showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
+  } else {
+    if (showMakePaymentMessage != "") {
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
+      return;
+    }
+  }
 }
 
 
@@ -3334,7 +3381,8 @@ $(".doc_help_link").unbind("click").bind("click", function(e) {
   window.open(help_link_path, '_blank');
 });
 
-function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID) {
+function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID, reload_current_page_to_url) {
+	
   if (serviceInstanceUUID != null) {
     $.ajax({
       url: "/portal/portal/manage_resource/get_resource_views",
@@ -3349,14 +3397,16 @@ function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID) {
       success: function(json) {
         if (json[0].mode == "WINDOW") {
           singleSignOn(effectiveTenantParam, serviceInstanceUUID);
-          window.location = json[0].url;
+          window.open(json[0].url,'_blank');
+          if(reload_current_page_to_url!=null){
+        	  window.location = reload_current_page_to_url;
+          }
         } else if (json[0].mode == "IFRAME") {
           window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam +
             "&showIframe=true&serviceInstanceUUID=" + serviceInstanceUUID;
         }
       },
       error: function(XMLHttpResponse) {
-
         handleError(XMLHttpResponse);
       }
     });
@@ -3364,4 +3414,26 @@ function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID) {
   } else {
     window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
   }
+}
+
+function swap_name_order_tab_index(first_name_css_class, last_name_css_class) {
+  if (first_name_css_class != null && last_name_css_class != null) {
+    var $first_name_input = $("." + first_name_css_class).find("input");
+    var $last_name_input = $("." + last_name_css_class).find("input");
+    var first_name_tabindex = $first_name_input.attr("tabindex");
+    var last_name_tabindex = $last_name_input.attr("tabindex");
+      
+    if (($("." + first_name_css_class).css("display") == "table-footer-group" && $("." + last_name_css_class).css("display") == "table-header-group") || ($("." + first_name_css_class).css("float") == "right" && $("." + last_name_css_class).css("float") == "left") ) {
+      $first_name_input.attr("tabindex", last_name_tabindex);
+      $last_name_input.attr("tabindex", first_name_tabindex);
+    }
+  }
+}
+
+$(".js_close_parent").live("click",function(e){
+	$(this).parent().hide();
+});
+
+function hide_iframe_loading(){
+  $("#iframe_spinning_wheel").hide();
 }

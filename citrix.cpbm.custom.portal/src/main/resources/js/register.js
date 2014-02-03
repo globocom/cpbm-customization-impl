@@ -198,6 +198,15 @@ $(document).ready(function() {
       return true;
 
     }, i18n.errors.register.validateState);
+
+  jQuery.validator.addMethod('validateConfirmEmail',
+      function(value, element, param) {
+    if (value.toLowerCase() == param.toLowerCase()){
+      return true;       
+    }
+    return false;
+  }, i18n.errors.register.user.confirmEmailEqualTo);
+
   jQuery.validator.addMethod('validateUsername',
     function(value, element) {
       return value.length > 0 && /^[a-zA-Z0-9_@\.-]+$/.test(value);
@@ -210,11 +219,13 @@ $(document).ready(function() {
     rules: {
       "user.firstName": {
         required: true,
-        flname: true
+        flname: true,
+        maxlength: 255
       },
       "user.lastName": {
         required: true,
-        flname: true
+        flname: true,
+        maxlength: 255
       },
       "user.email": {
         required: true,
@@ -223,7 +234,9 @@ $(document).ready(function() {
       "confirmEmail": {
         required: true,
         email: true,
-        equalTo: "#user\\.email"
+        validateConfirmEmail: function() {
+          return $('#user\\.email').val();
+        }
       },
       "user.username": {
         required: true,
@@ -448,13 +461,15 @@ $(document).ready(function() {
     }
   });
   $("#registrationSubmit").click(function() {
-    if (typeof(phoneVerificationEnabled) != "undefined" && phoneVerificationEnabled == true) {
-      var isPINVerified = verifyPIN();
-      if (typeof(isPINVerified) == "undefined" || isPINVerified == false) {
-        return false;
-      }
-    }
+
     if ($("#registrationForm").valid()) {
+      if (typeof(phoneVerificationEnabled) != "undefined" && phoneVerificationEnabled == true) {
+        var isPINVerified = verifyPIN();
+        if (typeof(isPINVerified) == "undefined" || isPINVerified == false) {
+          return false;
+        }
+      }
+
       $("#registrationForm").submit();
     }
   });
@@ -492,7 +507,7 @@ $(document).ready(function() {
   $("#phoneVerificationCallByUser").click(function() {
     var username = $("#username").val();
     if (username == "" || username == null) {
-      alert(i18n.errors.register.user.username);
+      popUpDialogForAlerts("dialog_info", i18n.errors.register.user.username);
       return;
     }
     $("#phoneVerificationCallByUser").html("<span class='call_icon'></span>" + i18n.labels.phoneVerificationCalling);
@@ -505,10 +520,10 @@ $(document).ready(function() {
       },
       dataType: "text/html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message );
       },
       error: function(html) {
-        alert(i18n.errors.register.callFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.register.callFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationCallByUser").html("<span class='call_icon'></span>" + i18n.labels.phoneVerificationCallMe);
@@ -519,7 +534,7 @@ $(document).ready(function() {
   $("#phoneVerificationSMSByUser").click(function() {
     var username = $("#username").val();
     if (username == "" || username == null) {
-      alert(i18n.errors.register.user.username);
+      popUpDialogForAlerts("dialog_info", i18n.errors.register.user.username );
       return;
     }
 
@@ -532,10 +547,10 @@ $(document).ready(function() {
       },
       dataType: "text/html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
       error: function(html) {
-        alert(i18n.errors.register.textMessageFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.register.textMessageFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationSMSByUser").html("<span class='text_icon'></span>" + i18n.labels.phoneVerificationTextMe);
@@ -547,7 +562,7 @@ $(document).ready(function() {
     var phoneNumber = $("#user\\.phone").val();
     var countryCode = $("#countryCode").text();
     if (phoneNumber == "" || phoneNumber == null) {
-      alert(i18n.errors.register.phoneDetails);
+      popUpDialogForAlerts("dialog_info", i18n.errors.register.phoneDetails);
       return;
     }
     $("#phoneVerificationCall").html("<span class='call_icon'></span>" + i18n.labels.phoneVerificationCalling);
@@ -563,10 +578,10 @@ $(document).ready(function() {
       },
       dataType: "html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
       error: function(html) {
-        alert(i18n.errors.register.callFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.register.callFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationCall").html("<span class='call_icon'></span>" + i18n.labels.phoneVerificationCallMe);
@@ -578,7 +593,7 @@ $(document).ready(function() {
     var phoneNumber = $("#user\\.phone").val();
     var countryCode = $("#countryCode").text();
     if (phoneNumber == "" || phoneNumber == null) {
-      alert(i18n.errors.register.phoneDetails);
+      popUpDialogForAlerts("dialog_info", i18n.errors.register.phoneDetails);
       return;
     }
     var cntryCode = getOnlyNosFromThePhoneNoString(countryCode);
@@ -594,10 +609,10 @@ $(document).ready(function() {
       },
       dataType: "html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
       error: function(html) {
-        alert(i18n.errors.register.textMessageFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.register.textMessageFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationSMS").html("<span class='text_icon'></span>" + i18n.labels.phoneVerificationTextMe);
@@ -624,6 +639,7 @@ $(document).ready(function() {
     var userEnteredPIN = $("#userEnteredPhoneVerificationPin").val();
     if (typeof(phoneNumber) == "undefined" || phoneNumber == "" || typeof(userEnteredPIN) == "undefined" ||
       userEnteredPIN == "") {
+      $("#verificationStatusFailed .unverified").text(dictionary.phoneVerificationPinMandatory);
       $("#verificationStatusFailed").show();
       return false;
     }
@@ -634,7 +650,7 @@ $(document).ready(function() {
     }
     var retVal = false;
     $.ajax({
-      type: "GET",
+      type: "POST",
       url: "/portal/portal/phoneverification/verify_pin",
       data: {
         "PIN": userEnteredPIN,
@@ -647,6 +663,7 @@ $(document).ready(function() {
           $("#verificationStatusSuccess").show();
           retVal = true;
         } else {
+          $("#verificationStatusFailed .unverified").text(dictionary.phoneVerificationFailed);
           $("#verificationStatusFailed").show();
           retVal = false;
         }

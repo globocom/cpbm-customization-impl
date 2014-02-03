@@ -17,6 +17,9 @@
 </div>
 
 <div class="widget_browsergrid_wrapper wsubaction" style="<c:if test="${currenciesToDisplay > 4 }">width: 772px; </c:if> overflow-x: hidden; overflow-y: auto;">
+<c:if test="${empty channelCurrencyMap}" >
+<div class="alert alert-info"><span><spring:message htmlEscape="false" code="ui.productbundle.nochannel" /></span></div>
+</c:if>
   <c:forEach items="${channelCurrencyMap}" var="item">
 
       <c:set var="title_width" value="20%" />

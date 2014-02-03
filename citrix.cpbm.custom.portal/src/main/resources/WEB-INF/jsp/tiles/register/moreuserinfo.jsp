@@ -219,7 +219,9 @@ $(function(){
                                 </li>
                                 <tiles:insertDefinition name="tenant.custom.fields"></tiles:insertDefinition>
                                 <li>
-                                    <%@include file="captcha.jsp" %>
+                                    <c:if test="${showCaptcha}">
+                                    	<tiles:insertDefinition name="captcha"/>
+                                    </c:if>
                                  </li>
                                  <li>
 			              			 <div class="clearboth"></div> 

@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.ArrayList;
@@ -35,6 +34,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
 import com.citrix.cpbm.platform.util.CssdkConstants;
+import com.citrix.cpbm.portal.forms.AjaxResponse;
+import com.citrix.cpbm.portal.forms.AjaxResponse.Status;
 import com.vmops.internal.service.EmailService;
 import com.vmops.internal.service.EventService;
 import com.vmops.model.AccountControlServiceConfigMetadata;
@@ -169,8 +170,11 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
         }
         copiedConfigList.add(copiedConfig);
       }
-      map.addAttribute("configurationList", copiedConfigList);
 
+      map.addAttribute("configurationList", copiedConfigList);
+      com.vmops.web.forms.ConfigurationForm configurationForm = new com.vmops.web.forms.ConfigurationForm(
+          copiedConfigList);
+      map.addAttribute("configurationForm", configurationForm);
       return "configuration.edit";
     }
 
@@ -192,23 +196,20 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
   @RequestMapping(value = {
     "/config/edit"
   }, method = RequestMethod.POST)
-  public @ResponseBody
-  String editConfiguration(@RequestParam("configProperties") final String configProperties, ModelMap map) {
+  @ResponseBody
+  public AjaxResponse editConfiguration(
+      @ModelAttribute("configurationForm") com.vmops.web.forms.ConfigurationForm configurationForm,
+      BindingResult result, ModelMap map, HttpServletResponse response, HttpServletRequest request) {
     logger.debug("### In editConfiguration()  start method...");
     setPage(map, Page.ADMIN);
-    try {
-      JSONArray jsonArray = new JSONArray(configProperties);
-      for (int index = 0; index < jsonArray.length(); index++) {
-        JSONObject jsonObj = jsonArray.getJSONObject(index);
-        String fieldId = jsonObj.get("name").toString();
-        String fieldValue = jsonObj.get("value").toString();
-        configurationService.update(fieldId, fieldValue);
-      }
-      return "success";
-    } catch (Exception e) {
-      logger.error("Failed to update configuration parameters.");
-      return "failure";
+    List<Configuration> configurations = configurationForm.getConfigurations();
+    configurationService.validateAndUpdateConfiguration(configurations, result);
+    if (result.hasErrors()) {
+      throw new AjaxFormValidationException(result);
     }
+
+    AjaxResponse ajaxResponse = new AjaxResponse(Status.SUCCESS, "");
+    return ajaxResponse;
   }
 
   /**
@@ -411,13 +412,35 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
 
     List<ServiceInstance> cloudTypeServiceInstances = connectorManagementService.getCloudTypeServiceInstances();
     Map<String, List<ServiceInstanceConfig>> mapOfControlsPerInstance = new LinkedHashMap<String, List<ServiceInstanceConfig>>();
+    Map<String, Integer> mapOfControlMetaDataPerInstance = new LinkedHashMap<String, Integer>();
+    Map<String, List<AccountControlServiceConfigMetadata>> initialMapOfControlsPerInstance = new HashMap<String, List<AccountControlServiceConfigMetadata>>();
+
     for (ServiceInstance serviceInstance : cloudTypeServiceInstances) {
       List<ServiceInstanceConfig> instanceConfigurationList = connectorConfigurationManager.getInstanceConfiguration(
           serviceInstance, accountType);
       Collections.sort(instanceConfigurationList);
+
+      // Initially instance would not have any service control to show. In that case just retrieve the name of controls
+      // from service, to keep UI proper
+      // For all instances service controls will be same. Hence no need to save name of service controls per instance
+      if (instanceConfigurationList.isEmpty()) {
+        Set<AccountControlServiceConfigMetadata> properties = serviceInstance.getService()
+            .getAccountControlServiceConfigMetadata();
+        List<AccountControlServiceConfigMetadata> sortedProperties = new ArrayList<AccountControlServiceConfigMetadata>(
+            properties);
+        Collections.sort(sortedProperties);
+        initialMapOfControlsPerInstance.put(serviceInstance.getUuid(), sortedProperties);
+      }
+
       mapOfControlsPerInstance.put(serviceInstance.getUuid(), instanceConfigurationList);
+      mapOfControlMetaDataPerInstance.put(serviceInstance.getUuid(), serviceInstance.getService()
+          .getAccountControlServiceConfigMetadata() != null ? serviceInstance.getService()
+          .getAccountControlServiceConfigMetadata().size() : 0);
     }
+
     map.addAttribute("mapOfControlsPerInstance", mapOfControlsPerInstance);
+    map.addAttribute("mapOfControlMetaDataPerInstance", mapOfControlMetaDataPerInstance);
+    map.addAttribute("initialMapForView", initialMapOfControlsPerInstance);
     map.addAttribute("instances", cloudTypeServiceInstances);
     map.addAttribute("services", this.getServices(cloudTypeServiceInstances));
 
@@ -434,7 +457,9 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
     map.addAttribute("accountTypeForm", accountTypeForm);
     List<String> spendBreachActions = new ArrayList<String>();
     for (SpendBreachAction sba : SpendBreachAction.values()) {
-      spendBreachActions.add(sba.toString());
+      if (!("8".equals(accountType.getPaymentModes().toString()) && sba.equals(SpendBreachAction.AUTO_PAY))) {
+        spendBreachActions.add(sba.toString());
+      }
     }
     map.addAttribute("creditBreachActions", spendBreachActions);
     map.addAttribute("mode", mode);
@@ -615,8 +640,9 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
         && accountTypeForm.getAccountType().getAccountTypeCreditExposureList().size() > 0) {
       for (AccountTypeCreditExposure creditExposure : accountTypeForm.getAccountType()
           .getAccountTypeCreditExposureList()) {
-        if (creditExposure.getInitialDeposit() == null || "".equals(creditExposure.getInitialDeposit()))
+        if (creditExposure.getInitialDeposit() == null || "".equals(creditExposure.getInitialDeposit())) {
           continue;
+        }
         AccountTypesValidator validator = new AccountTypesValidator();
         if (!validator.allowFloat(creditExposure.getInitialDeposit().toString())) {
           throw new AjaxFormValidationException(result);
@@ -669,8 +695,9 @@ public abstract class AbstractAdminController extends AbstractAuthenticatedContr
         && accountTypeForm.getAccountType().getAccountTypeCreditExposureList().size() > 0) {
       for (AccountTypeCreditExposure creditExposure : accountTypeForm.getAccountType()
           .getAccountTypeCreditExposureList()) {
-        if (creditExposure.getCreditExposureLimit() == null || "".equals(creditExposure.getCreditExposureLimit()))
+        if (creditExposure.getCreditExposureLimit() == null || "".equals(creditExposure.getCreditExposureLimit())) {
           continue;
+        }
         AccountTypesValidator validator = new AccountTypesValidator();
         if (!validator.allowFloat(creditExposure.getCreditExposureLimit().toString())
             || !validator.allowNegative(creditExposure.getCreditExposureLimit().toString())) {

@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -47,7 +47,7 @@ $(document).ready(function() {
     currentPage = currentPage + 1;
     $("#click_previous").unbind("click").bind("click", previousClick);
     $("#click_previous").removeClass("nonactive");
-    window.location = templatePageUrl + "?filterby=" + filterBy + "&currentpage=" + currentPage;
+    window.location = templatePageUrl + "?filterby=" + filterBy + "&currentpage=" + currentPage + "&userlang=" + $('#localelist').val();
   }
 
   function previousClick(event) {
@@ -56,7 +56,7 @@ $(document).ready(function() {
     currentPage = currentPage - 1;
     $("#click_next").removeClass("nonactive");
     $("#click_next").unbind("click").bind("click", nextClick);
-    window.location = templatePageUrl + "?filterby=" + filterBy + "&currentpage=" + currentPage;
+    window.location = templatePageUrl + "?filterby=" + filterBy + "&currentpage=" + currentPage + "&userlang=" + $('#localelist').val();
   }
   $("#localelist").bind("change", function(event) {
 
@@ -143,7 +143,7 @@ function showHideControls(category) {
 }
 
 function sendemailtemplate(name) {
-  locale = $("#selected_locale").val();
+  var locale = $("#selected_locale").val();
   initDialog("email_id", 700);
   var $thisPanel = $("#email_id");
   $thisPanel.dialog({
@@ -194,7 +194,7 @@ function sendemailtemplate(name) {
 }
 
 function editemailtemplate(name) {
-  locale = $("#selected_locale").val();
+  var locale = $("#selected_locale").val();
   var url = "/portal/portal/admin/email_template/edit";
   $("#edit_email_template").remove();
   $.ajax({
@@ -207,11 +207,11 @@ function editemailtemplate(name) {
     dataType: "html",
     success: function(html) {
       $("#editEmailTemplateDiv").html(html);
-      initDialog("edit_email_template", 700);
+      initDialog("edit_email_template", 780);
       var $thisPanel = $("#edit_email_template");
       $thisPanel.dialog({
         height: 100,
-        width: 700
+        width: 780
       });
       $thisPanel.dialog('option', 'buttons', {
         "OK": function() {

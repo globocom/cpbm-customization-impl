@@ -1,16 +1,19 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
+import org.apache.commons.io.FilenameUtils;
 import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,15 +22,21 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 
 import web.WebTestsBaseWithMockConnectors;
+import web.support.DispatcherTestServlet;
 
+import com.citrix.cpbm.core.workflow.model.CloudServiceActivationTransaction;
+import com.citrix.cpbm.core.workflow.service.BusinessTransactionService;
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.utils.ServiceInstanceConfiguration;
 import com.citrix.cpbm.platform.bootstrap.service.BootstrapActivator;
@@ -42,6 +51,7 @@ import com.vmops.model.ProfileAuthority;
 import com.vmops.model.Service;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.Tenant;
+import com.vmops.model.TenantHandle.State;
 import com.vmops.model.User;
 import com.vmops.persistence.ServiceDAO;
 import com.vmops.persistence.ServiceInstanceDao;
@@ -50,7 +60,6 @@ import com.vmops.service.ConfigurationService;
 import com.vmops.service.ProfileService;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ServiceInstanceLogoForm;
-
 import common.MockCloudInstance;
 
 public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnectors {
@@ -70,6 +79,9 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
 
   @Autowired
   ServiceInstanceDao serviceInstanceDao;
+  
+  @Resource(name = "businessTransactionService")
+  private BusinessTransactionService businessTransactionService;
 
   private String validServiceUuid = "";
 
@@ -91,6 +103,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
 
   @Before
   public void init() throws Exception {
+    map = new ModelMap();
     request = new MockHttpServletRequest();
     response = new MockHttpServletResponse();
   }
@@ -100,6 +113,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     MockCloudInstance mockCloudInstance = this.getMockCloudInstance();
     CloudConnector connector = mockCloudInstance.getCloudConnector();
     EasyMock.expect(connector.getStatus()).andReturn(Boolean.TRUE).anyTimes();
+    EasyMock.expect(connector.getServiceInstanceUUID()).andReturn("003fa8ee-fba3-467f-a517-fd806dae8a80").anyTimes();
     EasyMock.replay(connector);
 
     mockServiceRef = EasyMock.createMock(ServiceReference.class);
@@ -123,10 +137,28 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
           instanceFound = true;
           break;
         }
-        if (instanceFound)
+        if (instanceFound) {
           break;
+        }
       }
     }
+  }
+
+  /**
+   * This tests whether the correct url mapping is redirected to respecting controller
+   * 
+   * @throws Exception
+   */
+  @Test
+  public void testRouting() throws Exception {
+    logger.debug("Testing routing....");
+    DispatcherTestServlet servlet = this.getServletInstance();
+    Class<? extends AbstractConnectorController> controllerClass = controller.getClass();
+    Method expected = locateMethod(controllerClass, "getHandleState", new Class[] {
+        Tenant.class, String.class, String.class
+    });
+    Method handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/connector/getHandleState"));
+    Assert.assertEquals(expected, handler);
   }
 
   @Test
@@ -291,7 +323,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     EasyMock.reset(mcc);
     try {
       EasyMock.expect(bc.getServiceReferences(classType, filter)).andReturn(new ServiceReference[] {
-          mockServiceRef
+        mockServiceRef
       }).anyTimes();
     } catch (InvalidSyntaxException e) {
       e.printStackTrace();
@@ -310,9 +342,8 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
   @Test
   public void testGetDefaultServiceValues() {
     map = new ModelMap();
-
-    String result = controller.showCloudServices("fc3c6f30-a44a-4754-a8cc-9cea97e0a129", null, "add", map);
-
+    controller.showCloudServices("fc3c6f30-a44a-4754-a8cc-9cea97e0a129", null, "add", map);
+    @SuppressWarnings("unchecked")
     List<BaseServiceConfigurationMetadata> propertiesList = (List<BaseServiceConfigurationMetadata>) map
         .get("service_config_properties");
     for (BaseServiceConfigurationMetadata scm : propertiesList) {
@@ -346,7 +377,11 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
       asRoot();
       setValidServiceAndServiceInstance();
       request.setAttribute("isSurrogatedTenant", true);
-      String viewService = controller.showCloudServices(tenant.getUuid(),null, null, map, request);
+      String viewService = controller.showCloudServices(tenant.getUuid(), null, null, map, request);
+      Map<String, Boolean> provisioningmap = ((Map<String, Boolean>)map.get("serviceInstanceProvisioningMap"));
+      Assert.assertEquals(1, provisioningmap.size());
+      String uuid = (String)provisioningmap.keySet().toArray()[0];
+      Assert.assertEquals(true, (boolean)provisioningmap.get(uuid));
       Assert.assertEquals(tenant, map.get("tenant"));
       List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
       Assert.assertEquals(tenant.getOwner(), map.get("effectiveUser"));
@@ -373,7 +408,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
         asUser(user);
         setValidServiceAndServiceInstance();
         request.setAttribute("isSurrogatedTenant", true);
-        String viewService = controller.showCloudServices(tenant.getUuid(),null, null, map, request);
+        String viewService = controller.showCloudServices(tenant.getUuid(), null, null, map, request);
         Assert.assertEquals(tenant, map.get("tenant"));
         List<Service> services = connectorConfigurationManager.getAllServicesByType(CssdkConstants.CLOUD);
         Assert.assertEquals(tenant.getOwner(), map.get("effectiveUser"));
@@ -393,7 +428,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
       map = new ModelMap();
       Tenant tenant = tenantDAO.find(1L);
       setValidServiceAndServiceInstance();
-      String viewService = controller.showCloudServices(tenant.getUuid(),null, null, map, request);
+      String viewService = controller.showCloudServices(tenant.getUuid(), null, null, map, request);
       Assert.assertEquals("redirect:/portal/home", viewService);
     } catch (Exception e) {
       e.printStackTrace();
@@ -421,7 +456,8 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     Assert.assertNotNull(resultString);
     Assert.assertEquals("success", resultString);
     serviceInstance = serviceInstanceDao.find(1L);
-    Assert.assertEquals("serviceInstance\\1\\ServiceInstanceLogo.jpeg", serviceInstance.getImagePath());
+    Assert.assertEquals(FilenameUtils.separatorsToSystem("serviceInstance\\1\\ServiceInstanceLogo.jpeg"),
+        serviceInstance.getImagePath());
   }
 
   @Test
@@ -481,7 +517,7 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     int service_instances_count = serviceInstanceDao.count();
     int product_list_count = productDAO.count();
     String configProperties = "[{\"name\":\"instancename\",\"value\":\"anusha-CS\"},{\"name\":\"instancecode\",\"value\":\"anusha-CS\"},{\"name\":\"publicProtocol\",\"value\":\"http\"},{\"name\":\"publicHost\",\"value\":\"10.102.153.119\"},{\"name\":\"publicPort\",\"value\":\"8080\"},{\"name\":\"ssoKey\",\"value\":\"4bUudGCm3lAFf54EbgMRAE7b_LAdhs4MO4M8v-uvA1uEo9D1zD6eFauAtBJRrabCcLCg_uqXE-OjTMc1EeNcEA\"},{\"name\":\"apiKey\",\"value\":\"pmHmI9h5rEQdcl34Tgi7crx5DjTQs-5vR6vvwdO4F_Jsw0tKgMu2X0bALYKZYMjh9qoXG4Q0UAacNJR7vLvDcw\"},{\"name\":\"secretKey\",\"value\":\"0eAYlinSBnmBnM7RED1MRzfsC5Wnoa3199WVaF-3nVh9vFioHLXvwyDoGm3SLaVdRbOopM4CKxKBbFat44c9QA\"},{\"name\":\"parentDomainId\",\"value\":\"1\"},{\"name\":\"apiProxySuffix\",\"value\":\"ccpapi\"},{\"name\":\"cloud.jdbc.host\",\"value\":\"10.102.153.119\"},{\"name\":\"cloud.jdbc.username\",\"value\":\"cloud\"},{\"name\":\"cloud.jdbc.password\",\"value\":\"cloud\"},{\"name\":\"cloud.jdbc.database.schemaname\",\"value\":\"cloud\"},{\"name\":\"cloud.usage.jdbc.host\",\"value\":\"10.102.153.119\"},{\"name\":\"cloud.usage.jdbc.username\",\"value\":\"cloud\"},{\"name\":\"cloud.usage.jdbc.password\",\"value\":\"cloud_usage\"},{\"name\":\"cloud.usage.jdbc.database.schemaname\",\"value\":\"cloud_usage\"},{\"name\":\"adminServerList\",\"value\":\"10.102.153.119:8096\"},{\"name\":\"nonAdminServerList\",\"value\":\"10.102.153.119:8080\"},{\"name\":\"apiWhitelist\",\"value\":\"\"},{\"name\":\"apiBlacklist\",\"value\":\"\"},{\"name\":\"default.vm.locale\",\"value\":\"us\"},{\"name\":\"max.custom.disk.offering.size\",\"value\":\"1024\"},{\"name\":\"instancedescription\",\"value\":\"Instance Desc\"}]";
-    String quickProducts = "[{\"name\":\"RUNNING_VM\",\"code\":\"anusha-CSRUNNING_VM\",\"scale\":\"1.0000000000\",\"uom\":\"Compute-Hours\",\"category\":\"1\",\"usageTypeId\":\"1\",\"createdBy\":\"1\",\"price\":[{\"currencyCode\":\"USD\",\"currencyVal\":\"12\"}]},{\"name\":\"ALLOCATED_VM\",\"code\":\"anusha-CSALLOCATED_VM\",\"scale\":\"1.0000000000\",\"uom\":\"Compute-Hours\",\"category\":\"1\",\"usageTypeId\":\"2\",\"createdBy\":\"1\",\"price\":[{\"currencyCode\":\"USD\",\"currencyVal\":\"15\"}]}]";
+    String quickProducts = "[{\"name\":\"RUNNING_VM\",\"code\":\"anusha-CSRUNNING_VM\",\"scale\":\"1.0000000000\",\"uom\":\"Compute-Hours\",\"category\":\"1\",\"usageTypeId\":\"31\",\"createdBy\":\"1\",\"price\":[{\"currencyCode\":\"USD\",\"currencyVal\":\"12\"}]},{\"name\":\"ALLOCATED_VM\",\"code\":\"anusha-CSALLOCATED_VM\",\"scale\":\"1.0000000000\",\"uom\":\"Compute-Hours\",\"category\":\"1\",\"usageTypeId\":\"32\",\"createdBy\":\"1\",\"price\":[{\"currencyCode\":\"USD\",\"currencyVal\":\"15\"}]}]";
 
     controller.saveInstance(service.getUuid(), "add", configProperties, quickProducts, map, request);
     Assert.assertEquals(service_instances_count + 1, serviceInstanceDao.count());
@@ -547,7 +583,13 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     Configuration config = configurationService
         .locateConfigurationByName("com.citrix.cpbm.portal.settings.services.datapath");
     config.setValue("src\\test\\resources\\");
-    String result = controller.enableService(service.getUuid(), map);
+    MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+    mockRequest.setParameter("lang", "de");
+    String result = controller.enableService(service.getUuid(), map, mockRequest);
+    Assert.assertEquals("main.home_connector_enable", result);
+
+    mockRequest.setParameter("lang", "en");
+    result = controller.enableService(service.getUuid(), map, mockRequest);
     Assert.assertEquals("main.home_connector_enable", result);
   }
 
@@ -562,8 +604,8 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
   public void testfetchAccountConfigurationsParams() {
     map = new ModelMap();
     String result = controller.fetchAccountConfigurationsParams("003fa8ee-fba3-467f-a517-fd806dae8a80",
-        "51e89159-9257-4340-8396-944658ba2e4a", map);
-    Assert.assertEquals("service.account.config", result);
+        "51e89159-9257-4340-8396-944658ba2e4a", map, request);
+    Assert.assertEquals("enable.service", result);
   }
 
   @Test
@@ -586,4 +628,81 @@ public class AbstractConnectorControllerTest extends WebTestsBaseWithMockConnect
     controller.getServiceInstanceList(t, "51e89159-9257-4340-8396-944658ba2e4a", true, "IAAS", request);
   }
 
+  // Test Connector Tiles are getting shown in CPBM
+  @SuppressWarnings("rawtypes")
+  @Test
+  @DirtiesContext
+  public void testfetchAccountConfigurationsParamsForCustomAccountConfigEditor() {
+    map = new ModelMap();
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    ConnectorConfigurationManager configurationManager = EasyMock.createMock(ConnectorConfigurationManager.class);
+    ReflectionTestUtils.setField(controller, "connectorConfigurationManager", configurationManager);
+    EasyMock.expect(configurationManager.getInstance(serviceInstance.getUuid())).andReturn(serviceInstance).anyTimes();
+    EasyMock.expect(configurationManager.getJspPath(serviceInstance.getService())).andReturn("customTiles").anyTimes();
+    EasyMock.replay(configurationManager);
+    String result = controller.fetchAccountConfigurationsParams(serviceInstance.getUuid(),
+        "51e89159-9257-4340-8396-944658ba2e4a", map, request);
+    Assert.assertEquals("enable.service", result);
+    Assert.assertEquals("customTiles", map.get("accountConfigEditor"));
+    Assert.assertEquals("{\"id\":123456}", ((Map)map.get("accountConfigurationData")).toString());
+  }
+
+  // Test Connector Tiles are getting not shown in CPBM
+  @Test
+  @DirtiesContext
+  public void testfetchAccountConfigurationsParamsWithoutEditor() {
+    map = new ModelMap();
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    ConnectorConfigurationManager configurationManager = EasyMock.createMock(ConnectorConfigurationManager.class);
+    ReflectionTestUtils.setField(controller, "connectorConfigurationManager", configurationManager);
+    EasyMock.expect(configurationManager.getInstance(serviceInstance.getUuid())).andReturn(serviceInstance).anyTimes();
+    EasyMock.expect(configurationManager.getJspPath(serviceInstance.getService())).andReturn(null).anyTimes();
+    EasyMock.replay(configurationManager);
+    String result = controller.fetchAccountConfigurationsParams(serviceInstance.getUuid(),
+        "51e89159-9257-4340-8396-944658ba2e4a", map, request);
+    Assert.assertEquals("enable.service", result);
+    Assert.assertEquals(map.get("tnc"), "");
+    Assert.assertNull(map.get("accountConfigEditor"));
+  }
+  
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testShowCloudServicesWfDetails() throws Exception{
+    Tenant tenant = tenantService.get("CF319413-5DD7-4040-81FE-E2B1BBCF57F6");
+    ServiceInstance serviceInstance = connectorManagementService.getInstance("003fa8ee-fba3-467f-a517-fd806dae8a80");
+    businessTransactionService.save(new CloudServiceActivationTransaction(serviceInstance, tenant,"{}",true));
+    asUser(tenant.getOwner());
+    request.setAttribute("isSurrogatedTenant", false);
+    controller.showCloudServices(tenant.getUuid(),null, "003fa8ee-fba3-467f-a517-fd806dae8a80", map, request);
+    Assert.assertTrue(map.containsAttribute("serviceInstanceWfMap"));
+    Map<ServiceInstance, Map<String,String>>  serviceInstanceWfMap = (Map<ServiceInstance, Map<String,String>>) map.get("serviceInstanceWfMap"); 
+    Assert.assertTrue(serviceInstanceWfMap.containsKey(serviceInstance));
+    Map<String,String> wfDetails = serviceInstanceWfMap.get(serviceInstance);
+    Assert.assertTrue(wfDetails.containsKey("hasWfInRunning"));
+    Assert.assertEquals("true", wfDetails.get("hasWfInRunning"));
+  }
+  /**
+   * Tests the getHandleState controller to verify whether its returning appropriate states given the tenant and service
+   * instance
+   */
+  @Test
+  public void testGetHandleState() {
+    Tenant tenant = createTenantWithOwner();
+    ServiceInstance serviceInstance = serviceInstanceDao.find(1L);
+    String handleState = controller.getHandleState(tenant, tenant.getUuid(), serviceInstance.getUuid());
+
+    // The handle state must be null for a newly created tenant for any service instance
+    Assert.assertNull(handleState);
+
+    tenant = tenantService.getTenantByParam("id", "2", false);
+    handleState = controller.getHandleState(tenant, tenant.getUuid(), serviceInstance.getUuid());
+
+    // State should be same as the one mentioned in csv
+    Assert.assertEquals(State.ACTIVE.name(), handleState);
+
+    // State must be terminated once tenant is terminated
+    tenantService.delete(tenant.getUuid(), "test deleting", null);
+    handleState = controller.getHandleState(tenant, tenant.getUuid(), serviceInstance.getUuid());
+    Assert.assertEquals(State.TERMINATED.name(), handleState);
+  }
 }

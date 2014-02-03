@@ -29,8 +29,16 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
           </div>
       </div>
       
-      <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-      <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+      <div class="top_notifications">
+        <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+          <button type="button" class="close js_close_parent" >&times;</button>
+          <span id="status_icon"></span><p id="msg"></p>
+        </div>
+        <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+          <button type="button" class="close js_close_parent" >&times;</button>
+          <span id="status_icon"></span><p id="msg"></p>
+        </div>
+      </div>
       
       <div class="widget_browser">
         <div class="widget_browsermaster">
@@ -118,14 +126,14 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
 			                </span>
 			              </div>
 			              <div class="widget_grid_description">
-			                  <span>
+			                  <span style="width:520px">
 			                  <span class="status_date">
 			                  <spring:message code="ui.label.service.health.date"/> : 
 			                  <spring:message code="date.format" var="date_format"/>
 			                  <fmt:formatDate value="${item.recordedOn}" pattern="${date_format}" timeZone="${currentUser.timeZone}" />
 			                  </span><br/>
-			                  <span class="status_subject"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span>
-			                  <span class="status_description"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
+			                  <span class="status_subject" style="width:520px"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span>
+			                  <span class="status_description" style="width:520px"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
 			                  <sec:authorize access="hasRole('ROLE_OPS_COMMUNICATION')">
 			                  </sec:authorize>
 			                  </span>
@@ -163,8 +171,16 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
           </div>
       </div>
       
-      <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-      <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+      <div class="top_notifications">
+        <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+          <button type="button" class="close js_close_parent" >&times;</button>
+          <span id="status_icon"></span><p id="msg"></p>
+        </div>
+        <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+          <button type="button" class="close js_close_parent" >&times;</button>
+          <span id="status_icon"></span><p id="msg"></p>
+        </div>
+      </div>
       
       <div class="widget_browser">
         <div class="widget_browsermaster">
@@ -255,15 +271,15 @@ var healthUrl = "<%=request.getContextPath() %>/portal/health/";
                 </span>
               </div>
               <div class="widget_grid_description">
-                   <span>
+                   <span style="width:520px">
                    <span class="status_date">
                    <spring:message code="ui.label.service.health.date"/> : 
                    <spring:message code="date.format" var="date_format"/> 
                   <fmt:formatDate value="${item.recordedOn}" pattern="${date_format}" timeZone="${currentUser.timeZone}"/>
                   
                   </span><br />
-                  <span class="status_subject"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span><br>
-                  <span class="status_description"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
+                  <span class="status_subject" style="width:520px"><spring:message code="ui.label.service.health.subject"/> : <c:out value="${item.subject}"/></span><br>
+                  <span class="status_description" style="width:520px"><spring:message code="ui.label.service.health.description"/> : <c:out value="${item.description}"/></span>
                   
                   <sec:authorize access="hasRole('ROLE_OPS_COMMUNICATION')">
                     

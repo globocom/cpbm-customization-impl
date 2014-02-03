@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,6 +26,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.ReflectionUtils;
 
@@ -40,6 +42,7 @@ import com.citrix.cpbm.core.workflow.service.TaskService;
 import com.citrix.cpbm.portal.fragment.controllers.TasksController;
 import com.vmops.model.Tenant;
 import com.vmops.service.AuthorityService;
+import com.vmops.web.interceptors.UserContextInterceptor;
 
 /**
  * @author rajanik
@@ -77,7 +80,7 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
   @Test
   public void testRouting() throws Exception {
     logger.debug("Testing routing....");
-    DispatcherTestServlet servlet = this.getServletInstance();
+    DispatcherTestServlet servlet = getServletInstance();
     @SuppressWarnings("unchecked")
     Class<TasksController> controllerClass = (Class<TasksController>) tasksController.getClass();
     Method expected = locateMethod(controllerClass, "getTasks", new Class[] {
@@ -107,15 +110,13 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testGetTasks() {
-    String tenantParam = "4bdbbe90-f6a5-4e16-a140-d38b4db490c0";
-
+  public void testGetTasksAsRoot_All() throws Exception {
     request.setAttribute("isSurrogatedTenant", false);
-    String tilesDef = tasksController.getTasks(tenantService.get(tenantParam), tenantParam, "ALL", 1, map, request);
+    String tilesDef = tasksController.getTasks(getSystemTenant(), null, "ALL", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
     Assert.assertTrue(map.containsKey("tasksMap"));
     Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
-    Assert.assertEquals(5, tasksMap.size());
+    Assert.assertEquals(6, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
     List<String> filters = (List<String>) map.get("taskfilters");
     Assert.assertEquals(3, filters.size());
@@ -123,24 +124,70 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     String currentFilter = (String) map.get("currentFilter");
     Assert.assertEquals("ALL", currentFilter);
     Assert.assertTrue(map.containsKey("tenant"));
-    Tenant tenant = (Tenant) map.get("tenant");
-    Assert.assertEquals(tenantParam, tenant.getUuid());
     Assert.assertTrue(map.containsKey("showUserProfile"));
     Assert.assertEquals(false, map.get("showUserProfile"));
     Assert.assertTrue(map.containsKey("userHasCloudServiceAccount"));
-    Assert.assertEquals(false, map.get("userHasCloudServiceAccount"));
+  }
 
-    request.setAttribute("isSurrogatedTenant", true);
-    tilesDef = tasksController.getTasks(getSystemTenant(), tenantParam, "PENDING", 1, map, request);
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetTasksAsRoot_Pending() throws Exception {
+    request.setAttribute("isSurrogatedTenant", false);
+    String tilesDef = tasksController.getTasks(getSystemTenant(), null, "PENDING", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
     Assert.assertTrue(map.containsKey("tasksMap"));
-    tasksMap = (Map<Task, String>) map.get("tasksMap");
-    Assert.assertEquals(3, tasksMap.size());
+    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertEquals(4, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
-    filters = (List<String>) map.get("taskfilters");
+    List<String> filters = (List<String>) map.get("taskfilters");
     Assert.assertEquals(3, filters.size());
     Assert.assertTrue(map.containsKey("currentFilter"));
-    currentFilter = (String) map.get("currentFilter");
+    String currentFilter = (String) map.get("currentFilter");
+    Assert.assertEquals("PENDING", currentFilter);
+    Assert.assertTrue(map.containsKey("tenant"));
+    Assert.assertTrue(map.containsKey("showUserProfile"));
+    Assert.assertEquals(false, map.get("showUserProfile"));
+    Assert.assertTrue(map.containsKey("userHasCloudServiceAccount"));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetTasksAsRoot_Completed() throws Exception {
+    request.setAttribute("isSurrogatedTenant", false);
+    String tilesDef = tasksController.getTasks(getSystemTenant(), null, "COMPLETED", 1, map, request);
+    Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
+    Assert.assertTrue(map.containsKey("tasksMap"));
+    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertEquals(2, tasksMap.size());
+    Assert.assertTrue(map.containsKey("taskfilters"));
+    List<String> filters = (List<String>) map.get("taskfilters");
+    Assert.assertEquals(3, filters.size());
+    Assert.assertTrue(map.containsKey("currentFilter"));
+    String currentFilter = (String) map.get("currentFilter");
+    Assert.assertEquals("COMPLETED", currentFilter);
+    Assert.assertTrue(map.containsKey("tenant"));
+    Assert.assertTrue(map.containsKey("showUserProfile"));
+    Assert.assertEquals(false, map.get("showUserProfile"));
+    Assert.assertTrue(map.containsKey("userHasCloudServiceAccount"));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testGetTasksAsRootForTenant_Pending() throws Exception {
+    String tenantParam = "4bdbbe90-f6a5-4e16-a140-d38b4db490c0";
+    Tenant tenant = tenantService.get(tenantParam);
+    request.setAttribute("isSurrogatedTenant", true);
+    request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
+    String tilesDef = tasksController.getTasks(getSystemTenant(), tenantParam, "PENDING", 1, map, request);
+    Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
+    Assert.assertTrue(map.containsKey("tasksMap"));
+    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertEquals(1, tasksMap.size());
+    Assert.assertTrue(map.containsKey("taskfilters"));
+    List<String> filters = (List<String>) map.get("taskfilters");
+    Assert.assertEquals(3, filters.size());
+    Assert.assertTrue(map.containsKey("currentFilter"));
+    String currentFilter = (String) map.get("currentFilter");
     Assert.assertEquals("PENDING", currentFilter);
     Assert.assertTrue(map.containsKey("tenant"));
     tenant = (Tenant) map.get("tenant");
@@ -148,27 +195,6 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertTrue(map.containsKey("showUserProfile"));
     Assert.assertEquals(true, map.get("showUserProfile"));
     Assert.assertTrue(map.containsKey("userHasCloudServiceAccount"));
-    Assert.assertEquals(false, map.get("userHasCloudServiceAccount"));
-
-    request.setAttribute("isSurrogatedTenant", false);
-    tilesDef = tasksController.getTasks(tenantService.get(tenantParam), tenantParam, "COMPLETED", 1, map, request);
-    Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
-    Assert.assertTrue(map.containsKey("tasksMap"));
-    tasksMap = (Map<Task, String>) map.get("tasksMap");
-    Assert.assertEquals(2, tasksMap.size());
-    Assert.assertTrue(map.containsKey("taskfilters"));
-    filters = (List<String>) map.get("taskfilters");
-    Assert.assertEquals(3, filters.size());
-    Assert.assertTrue(map.containsKey("currentFilter"));
-    currentFilter = (String) map.get("currentFilter");
-    Assert.assertEquals("COMPLETED", currentFilter);
-    Assert.assertTrue(map.containsKey("tenant"));
-    tenant = (Tenant) map.get("tenant");
-    Assert.assertEquals(tenantParam, tenant.getUuid());
-    Assert.assertTrue(map.containsKey("showUserProfile"));
-    Assert.assertEquals(false, map.get("showUserProfile"));
-    Assert.assertTrue(map.containsKey("userHasCloudServiceAccount"));
-    Assert.assertEquals(false, map.get("userHasCloudServiceAccount"));
   }
 
   @Test
@@ -214,6 +240,7 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
 
     TenantStateChangeTransaction bt = new TenantStateChangeTransaction();
     bt.setTenant(tenant);
+    bt.setDiscriminatorTenant(tenant);
     bt.setTenantInitialState(tenant.getState());
     bt.setTenantTargetState(Tenant.State.ACTIVE);
     bt = (TenantStateChangeTransaction) businessTransactionService.save(bt);
@@ -315,5 +342,27 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
 
       Assert.assertEquals("Memo is required in case of Rejection", e.getMessage());
     }
+  }
+
+  @Test
+  public void testActOnPendingTask() throws Exception {
+    Task pendingTask = taskService.get("6866D6BB-46BB-41DA-B2FD-F721FE7B00D9");
+
+    TaskService mockTaskService = EasyMock.createMock(TaskService.class);
+    EasyMock.expect(mockTaskService.get(pendingTask.getUuid())).andReturn(pendingTask);
+
+    // expecting the exact call with actor set to the service
+    EasyMock.expect(mockTaskService.completeTask(pendingTask, Task.State.SUCCESS, getRootUser(), "memo")).andReturn(
+        pendingTask);
+    EasyMock.replay(mockTaskService);
+    ReflectionTestUtils.setField(tasksController, "taskService", mockTaskService);
+
+    String returnedMessage = tasksController.actOnApprovalTask(pendingTask.getUuid(), Task.State.SUCCESS.toString(),
+        "memo", request);
+    // asserting pending as the mock task service returns a pending task from complete method
+    Assert.assertEquals("ui.task.state.PENDING", returnedMessage);
+    EasyMock.verify(mockTaskService);
+    // resetting it to the actual taskservice from mock
+    ReflectionTestUtils.setField(tasksController, "taskService", taskService);
   }
 }

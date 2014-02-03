@@ -23,8 +23,9 @@ i18n.errors.connector = {
         minvalue	: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.minvalue"/>',
         digits		: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.digits"/>',
         password	: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.password"/>',
-        url			: '<spring:message javaScriptEscape="true" code="connector.please.enter.valid.url"/>',
-		required	: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.required"/>'
-      }
-};
+        url		: '<spring:message javaScriptEscape="true" code="connector.please.enter.valid.url"/>',
+        required	: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.required"/>',
+        regex   	: '<spring:message javaScriptEscape="true" code="js.errors.connector.field.regex"/>'
+    }
+  };
 </script>

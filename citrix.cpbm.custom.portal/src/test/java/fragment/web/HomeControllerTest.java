@@ -1,12 +1,12 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -35,18 +35,28 @@ import web.support.MockSessionStatus;
 
 import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
 import com.citrix.cpbm.portal.fragment.controllers.HomeController;
+import com.vmops.internal.service.EventService;
+import com.vmops.internal.service.SubscriptionService;
+import com.vmops.model.Event;
+import com.vmops.model.Event.Category;
+import com.vmops.model.Event.Scope;
+import com.vmops.model.Event.Severity;
+import com.vmops.model.Event.Source;
 import com.vmops.model.JobStatus;
 import com.vmops.model.Product;
 import com.vmops.model.ServiceInstance;
+import com.vmops.model.Subscription.State;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
 import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.persistence.TenantDAO;
+import com.vmops.portal.config.Configuration.Names;
+import com.vmops.service.ConfigurationService;
 import com.vmops.service.JobManagementService;
 import com.vmops.service.ProductService;
-import com.vmops.usage.model.UserDailyUsage;
 import com.vmops.usage.persistence.UserDailyUsageDAO;
 
+@SuppressWarnings("unchecked")
 public class HomeControllerTest extends WebTestsBase {
 
   ModelMap map;
@@ -79,6 +89,15 @@ public class HomeControllerTest extends WebTestsBase {
   @Autowired
   UserDailyUsageDAO userDailyUsageDAO;
 
+  @Autowired
+  SubscriptionService subscriptionService;
+
+  @Autowired
+  ConfigurationService configurationService;
+
+  @Autowired
+  EventService eventService;
+
   @Before
   public void init() {
     map = new ModelMap();
@@ -107,22 +126,33 @@ public class HomeControllerTest extends WebTestsBase {
   @Test
   public void testHome() throws Exception {
 
-    Tenant tenant = tenantService.getTenantByParam("id", "2", false);
-    User user = new User("test", "user", "test@test.com", VALID_USER + random.nextInt(), VALID_PASSWORD, VALID_PHONE,
-        VALID_TIMEZONE, null, userProfile, getRootUser());
-    userService.createUserInTenant(user, tenant);
+    User user = userDAO.find(1L);
     asUser(user);
+
+    eventService.createEvent(new Date(), user.getTenant(), "testSubject", "", Source.PORTAL, Scope.ACCOUNT,
+        Category.ACCOUNT, Severity.INFORMATION, false);
+    eventService.createEvent(new Date(), user.getTenant(), "testSubject", "", Source.PORTAL, Scope.ACCOUNT,
+        Category.ACCOUNT, Severity.INFORMATION, false);
+    eventService.createEvent(new Date(), user.getTenant(), "testSubject", "", Source.PORTAL, Scope.ACCOUNT,
+        Category.ACCOUNT, Severity.INFORMATION, false);
+    eventService.createEvent(new Date(), user.getTenant(), "testSubject", "", Source.PORTAL, Scope.ACCOUNT,
+        Category.ACCOUNT, Severity.INFORMATION, false);
+
     HttpServletRequest request = new MockHttpServletRequest();
     request.setAttribute("effectiveTenant", controller.getTenant());
-    Assert.assertEquals("main.home_with_second_level", controller.home(controller.getTenant(), controller.getTenant()
-        .getUuid(), false, map, new MockHttpSession(), request));
+    request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
+    ((MockHttpServletRequest) request).setParameter("lang", "en_US");
+    Assert.assertEquals("main.home_service_with_second_level", controller.home(controller.getTenant(), controller
+        .getTenant().getUuid(), false, map, new MockHttpSession(), request));
     Assert.assertTrue(map.containsAttribute("tenant"));
     Assert.assertTrue(map.containsAttribute("users"));
     Assert.assertTrue(map.containsAttribute("tickets"));
     Assert.assertTrue(map.containsAttribute("totalTickets"));
     Assert.assertTrue(map.containsAttribute("serviceCategoryList"));
-    Assert.assertTrue(map.containsAttribute("chartData"));
     Assert.assertTrue(map.containsAttribute("currencyValues"));
+    Assert.assertTrue(map.containsAttribute("alerts_for_today"));
+    List<Event> events = (ArrayList<Event>) map.get("alerts_for_today");
+    Assert.assertEquals(2, events.size());
 
     map.clear();
     asUser(userDAO.getUserByParam("username", "root", true));
@@ -140,7 +170,7 @@ public class HomeControllerTest extends WebTestsBase {
     Assert.assertTrue(map.containsAttribute("reportFusionCR"));
 
     map.clear();
-    tenant = tenantService.getTenantByParam("id", "2", false);
+    Tenant tenant = tenantService.getTenantByParam("id", "2", false);
     user = tenant.getOwner();
     user.setPassword(getSystemTenant().getUsers().get(0).getPassword());
     userDAO.save(user);
@@ -156,7 +186,6 @@ public class HomeControllerTest extends WebTestsBase {
     Assert.assertTrue(map.containsAttribute("users"));
     Assert.assertTrue(map.containsAttribute("tickets"));
     Assert.assertTrue(map.containsAttribute("currencyValues"));
-
   }
 
   @Test
@@ -219,6 +248,11 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
     ServiceInstance instance = serviceInstanceDao.find(1L);
 
+    List<com.vmops.model.Subscription> activeSubscriptionList = subscriptionService.findAllSubscriptionsByState(null,
+        null, instance, null, 1, 10000, State.ACTIVE);
+    int userCount = userService.count(true, instance.getUuid());
+    int tenantCount = tenantService.count("ACTIVE", instance.getUuid());
+
     String resultString = controller.getHomeItems(systemTenant, systemTenant.getParam(), instance.getUuid(), map,
         request);
     Assert.assertNotNull(resultString);
@@ -226,16 +260,15 @@ public class HomeControllerTest extends WebTestsBase {
 
     List<Map<String, Object>> dashboardItemsList = (List<Map<String, Object>>) map.get("dashboardItems");
     Assert.assertEquals(3, dashboardItemsList.size());
-    for (int i = 0; i < dashboardItemsList.size(); i++) {
-      Map<String, Object> dashboardItems = dashboardItemsList.get(i);
+    for (Map<String, Object> dashboardItems : dashboardItemsList) {
       if (dashboardItems.get("itemName").equals("label.active.customers")) {
-        Assert.assertEquals(9, dashboardItems.get("itemValue"));
+        Assert.assertEquals(tenantCount, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.users")) {
-        Assert.assertEquals(2, dashboardItems.get("itemValue"));
+        Assert.assertEquals(userCount, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.subscriptions")) {
-        Assert.assertEquals(46, dashboardItems.get("itemValue"));
+        Assert.assertEquals(activeSubscriptionList.size(), dashboardItems.get("itemValue"));
       }
     }
   }
@@ -262,9 +295,11 @@ public class HomeControllerTest extends WebTestsBase {
     int count = 0;
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
-      if (dashboardItems.containsKey("itemValueType"))
-        if (dashboardItems.get("itemValueType").equals("product"))
+      if (dashboardItems.containsKey("itemValueType")) {
+        if (dashboardItems.get("itemValueType").equals("product")) {
           count = count + 1;
+        }
+      }
     }
     Assert.assertEquals(productlist.size(), count);
   }
@@ -293,9 +328,11 @@ public class HomeControllerTest extends WebTestsBase {
     int count = 0;
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
-      if (dashboardItems.containsKey("itemValueType"))
-        if (dashboardItems.get("itemValueType").equals("product"))
+      if (dashboardItems.containsKey("itemValueType")) {
+        if (dashboardItems.get("itemValueType").equals("product")) {
           count = count + 1;
+        }
+      }
     }
     Assert.assertEquals(productlist.size(), count);
   }
@@ -324,9 +361,11 @@ public class HomeControllerTest extends WebTestsBase {
     int count = 0;
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
-      if (dashboardItems.containsKey("itemValueType"))
-        if (dashboardItems.get("itemValueType").equals("product"))
+      if (dashboardItems.containsKey("itemValueType")) {
+        if (dashboardItems.get("itemValueType").equals("product")) {
           count = count + 1;
+        }
+      }
     }
     Assert.assertEquals(productlist.size(), count);
   }
@@ -342,6 +381,11 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", systemTenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
 
+    List<com.vmops.model.Subscription> activeSubscriptionList = subscriptionService.findAllSubscriptionsByState(null,
+        null, null, null, 1, 10000, State.ACTIVE);
+    int userCount = userService.count(null, true, null, null);
+    int tenantCount = tenantService.count(null, "ACTIVE", null, null, null, null, null, null, null);
+
     String resultString = controller.getHomeItems(systemTenant, systemTenant.getParam(), null, map, request);
     Assert.assertNotNull(resultString);
     Assert.assertEquals("home.items.view", resultString);
@@ -351,13 +395,13 @@ public class HomeControllerTest extends WebTestsBase {
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
       if (dashboardItems.get("itemName").equals("label.active.customers")) {
-        Assert.assertEquals(11, dashboardItems.get("itemValue"));
+        Assert.assertEquals(tenantCount - 1, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.users")) {
-        Assert.assertEquals(15, dashboardItems.get("itemValue"));
+        Assert.assertEquals(userCount, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.subscriptions")) {
-        Assert.assertEquals(46, dashboardItems.get("itemValue"));
+        Assert.assertEquals(activeSubscriptionList.size(), dashboardItems.get("itemValue"));
       }
     }
   }
@@ -374,6 +418,10 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", tenant);
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
 
+    List<com.vmops.model.Subscription> activeSubscriptionList = subscriptionService.findAllSubscriptionsByState(tenant,
+        null, null, null, 1, 10000, State.ACTIVE);
+    int userCount = userService.count(null, true, tenant.getId().toString(), null);
+
     String resultString = controller.getHomeItems(systemTenant, tenant.getParam(), null, map, request);
     Assert.assertNotNull(resultString);
     Assert.assertEquals("home.items.view", resultString);
@@ -383,10 +431,10 @@ public class HomeControllerTest extends WebTestsBase {
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
       if (dashboardItems.get("itemName").equals("label.active.users")) {
-        Assert.assertEquals(1, dashboardItems.get("itemValue"));
+        Assert.assertEquals(userCount, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.subscriptions")) {
-        Assert.assertEquals(6, dashboardItems.get("itemValue"));
+        Assert.assertEquals(activeSubscriptionList.size(), dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.total.spend")) {
         Assert.assertEquals("0.0000", dashboardItems.get("itemValue").toString());
@@ -408,6 +456,10 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", tenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
 
+    List<com.vmops.model.Subscription> activeSubscriptionList = subscriptionService.findAllSubscriptionsByState(tenant,
+        null, null, null, 1, 10000, State.ACTIVE);
+    int userCount = userService.count(null, true, tenant.getId().toString(), null);
+
     String resultString = controller.getHomeItems(tenant, tenant.getParam(), null, map, request);
     Assert.assertNotNull(resultString);
     Assert.assertEquals("home.items.view", resultString);
@@ -416,10 +468,10 @@ public class HomeControllerTest extends WebTestsBase {
     for (int i = 0; i < dashboardItemsList.size(); i++) {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
       if (dashboardItems.get("itemName").equals("label.active.users")) {
-        Assert.assertEquals(1, dashboardItems.get("itemValue"));
+        Assert.assertEquals(userCount, dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.active.subscriptions")) {
-        Assert.assertEquals(6, dashboardItems.get("itemValue"));
+        Assert.assertEquals(activeSubscriptionList.size(), dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.total.spend")) {
         Assert.assertEquals("0.0000", dashboardItems.get("itemValue").toString());
@@ -440,6 +492,8 @@ public class HomeControllerTest extends WebTestsBase {
     Tenant tenant = tenantDAO.find(20L);
     request.setAttribute("effectiveTenant", tenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
+    List<com.vmops.model.Subscription> activeSubscriptionList = subscriptionService.findAllSubscriptionsByState(tenant,
+        user, null, null, 1, 10000, State.ACTIVE);
 
     String resultString = controller.getHomeItems(tenant, tenant.getParam(), null, map, request);
     Assert.assertNotNull(resultString);
@@ -453,7 +507,7 @@ public class HomeControllerTest extends WebTestsBase {
       Map<String, Object> dashboardItems = dashboardItemsList.get(i);
       Assert.assertFalse(dashboardItems.get("itemName").equals("label.active.users"));
       if (dashboardItems.get("itemName").equals("label.active.subscriptions")) {
-        Assert.assertEquals(0, dashboardItems.get("itemValue"));
+        Assert.assertEquals(activeSubscriptionList.size(), dashboardItems.get("itemValue"));
       }
       if (dashboardItems.get("itemName").equals("label.total.spend")) {
         Assert.assertEquals("250.0000", dashboardItems.get("itemValue").toString());
@@ -522,9 +576,9 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", systemTenant);
     request.setAttribute("isSurrogatedTenant", Boolean.TRUE);
 
-    String resultString = controller.getGravtars(systemTenant, tenant.getParam(), map, request);
+    String resultString = controller.getGravatars(systemTenant, tenant.getParam(), map, request);
     Assert.assertNotNull(resultString);
-    Assert.assertEquals("home.gravtars.show", resultString);
+    Assert.assertEquals("home.gravatars.show", resultString);
     User user = userDAO.find(1L);
     List<User> usersForGravatarList = (List<User>) map.get("usersForGravatar");
     Assert.assertEquals(2, usersForGravatarList.size());
@@ -546,7 +600,11 @@ public class HomeControllerTest extends WebTestsBase {
    * @description : Test to get Home Items for Tenant Normal User with Null Service Instance
    */
   @Test
-  public void testGetGravtarsForTenantAsTenant() {
+  public void testGetGravatarsWithIntranetModeDisabled() {
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("false");
+    configurationService.update(isIntranetModeEnabled);
 
     User user = userDAO.find(3L);
     asUser(user);
@@ -555,15 +613,55 @@ public class HomeControllerTest extends WebTestsBase {
     request.setAttribute("effectiveTenant", tenant);
     request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
 
-    String resultString = controller.getGravtars(tenant, tenant.getParam(), map, request);
+    String resultString = controller.getGravatars(tenant, tenant.getParam(), map, request);
     Assert.assertNotNull(resultString);
-    Assert.assertEquals("home.gravtars.show", resultString);
+    Assert.assertEquals("home.gravatars.show", resultString);
+
     List<User> usersForGravatarList = (List<User>) map.get("usersForGravatar");
     User obtainedUser = usersForGravatarList.get(0);
     Assert.assertEquals(user.getEmail(), obtainedUser.getEmail());
     Assert.assertEquals(user.getFirstName(), obtainedUser.getFirstName());
     Assert.assertEquals(user.getLastName(), obtainedUser.getLastName());
     Assert.assertEquals(user.getUsername(), obtainedUser.getUsername());
+
+    List<String> gravatarUrlsForUsers = (List<String>) map.get("gravatars");
+    Assert.assertTrue(gravatarUrlsForUsers.size() > 0);
+    for (String url : gravatarUrlsForUsers) {
+      Assert.assertTrue(url.contains("gravatar.com"));
+    }
+  }
+
+  @Test
+  public void testGetGravatarsWithIntranetModeEnabled() {
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("true");
+    configurationService.update(isIntranetModeEnabled);
+
+    User user = userDAO.find(3L);
+    asUser(user);
+
+    Tenant tenant = tenantDAO.find(2L);
+    request.setAttribute("effectiveTenant", tenant);
+    request.setAttribute("isSurrogatedTenant", Boolean.FALSE);
+
+    String resultString = controller.getGravatars(tenant, tenant.getParam(), map, request);
+    Assert.assertNotNull(resultString);
+    Assert.assertEquals("home.gravatars.show", resultString);
+
+    List<User> usersForGravatarList = (List<User>) map.get("usersForGravatar");
+    User obtainedUser = usersForGravatarList.get(0);
+    Assert.assertEquals(user.getEmail(), obtainedUser.getEmail());
+    Assert.assertEquals(user.getFirstName(), obtainedUser.getFirstName());
+    Assert.assertEquals(user.getLastName(), obtainedUser.getLastName());
+    Assert.assertEquals(user.getUsername(), obtainedUser.getUsername());
+
+    List<String> gravatarUrlsForUsers = (List<String>) map.get("gravatars");
+    Assert.assertTrue(gravatarUrlsForUsers.size() > 0);
+    for (String url : gravatarUrlsForUsers) {
+      Assert.assertTrue(!url.contains("gravatar.com"));
+      Assert.assertTrue(url.contains("portal/images"));
+    }
   }
 
 }

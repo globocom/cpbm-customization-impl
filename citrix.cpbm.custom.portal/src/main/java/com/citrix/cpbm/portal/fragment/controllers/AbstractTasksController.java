@@ -1,10 +1,6 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
-/**
- * 
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
  */
 package com.citrix.cpbm.portal.fragment.controllers;
 
@@ -28,9 +24,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.citrix.cpbm.core.workflow.model.Task;
 import com.citrix.cpbm.core.workflow.service.TaskService;
 import com.vmops.model.Tenant;
+import com.vmops.model.User;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
+import com.vmops.web.interceptors.UserContextInterceptor;
 
 /**
  * @author rajanik
@@ -47,21 +45,21 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
 
   @RequestMapping(value = "/", method = RequestMethod.GET)
   public String getTasks(@ModelAttribute("currentTenant") Tenant currentTenant,
-      @RequestParam(value = "tenant") final String tenantParam,
-      @RequestParam(value = "filter", defaultValue = "PENDING") String filter,
+      @RequestParam(value = "tenant", required = false) final String tenantParam,
+      @RequestParam(value = "filter", defaultValue = "ALL") String filter,
       @RequestParam(value = "page", defaultValue = "1") Integer page, ModelMap map, HttpServletRequest request) {
     logger.debug("###Entering in getTasks(filter) method @GET");
     setPage(map, Page.DASHBOARD_ALL_TASKS);
-    Tenant tenant = tenantService.get(tenantParam);
+    Tenant tenant = currentTenant;
+    User user = getCurrentUser();
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
+      tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
+      user = tenant.getOwner();
       map.addAttribute("showUserProfile", true);
-      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(tenant.getOwner()));
     } else {
       map.addAttribute("showUserProfile", false);
-      map.addAttribute("userHasCloudServiceAccount",
-          userService.isUserHasAnyActiveCloudService(currentTenant.getOwner()));
     }
-
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     Integer perPage = getDefaultPageSize();
 
     Task.State[] taskStates;
@@ -83,7 +81,7 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
       };
     }
 
-    Map<Task, String> tasksMap = taskService.getTasksMap(tenant, getCurrentUser(), taskStates, page, perPage);
+    Map<Task, String> tasksMap = taskService.getTasksMap(tenant, user, taskStates, page, perPage);
 
     map.addAttribute("tasksMap", tasksMap);
     map.addAttribute("tenant", tenant);
@@ -137,12 +135,12 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
     } else {
       if (StringUtils.isEmpty(memo)) {
         throw new InvalidAjaxRequestException(messageSource.getMessage("ui.accounts.all.pending.changes.memorequired",
-            null, request.getLocale()));
+            null,getCurrentUser().getLocale()));
       }
       stateChangeTo = Task.State.FAILURE;
     }
     Task currentTask = taskService.get(pendingActionId);
-    Task action = taskService.completeTask(currentTask, stateChangeTo, memo);
+    Task action = taskService.completeTask(currentTask, stateChangeTo, getCurrentUser(), memo);
     logger.debug("### In actOnPendingAction() method ending.");
     return messageSource.getMessage("ui.task.state." + action.getState(), null, request.getLocale());
   }

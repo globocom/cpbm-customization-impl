@@ -33,10 +33,10 @@
   </div>
 
 </div>
-<script src="https://www.google.com/recaptcha/api/challenge?k=<c:out value="${recaptchaPublicKey}"/>"></script>
+<script src="<c:out value="${captchaServer}"/>/challenge?k=<c:out value="${recaptchaPublicKey}"/>"></script>
 
 <noscript> 
-  <iframe src="https://www.google.com/recaptcha/api/noscript?k=<c:out value="${recaptchaPublicKey}"/>" height="300" width="500" frameborder="0"></iframe><br>
+  <iframe src="<c:out value="${captchaServer}"/>/noscript?k=<c:out value="${recaptchaPublicKey}"/>" height="300" width="500" frameborder="0"></iframe><br>
     <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
     <input type="hidden" name="recaptcha_response_field" value="manual_challenge" />
 </noscript> 

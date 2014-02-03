@@ -105,6 +105,7 @@ i18n.label={
     channel: '<spring:message javaScriptEscape="true" code="js.user.channel"/>',
     title: '<spring:message javaScriptEscape="true" code="js.user.title"/>',
   del : '<spring:message javaScriptEscape="true" code="js.user.del.confirm"/>',
+  generateAPIKey : '<spring:message javaScriptEscape="true" code="js.user.generate.api.key"/>',
   deact: '<spring:message javaScriptEscape="true" code="js.user.deact.confirm"/>',
   act: '<spring:message javaScriptEscape="true" code="js.user.act.confirm"/>',
   delproject : '<spring:message javaScriptEscape="true" code="js.user.del.confirmproject"/>',           

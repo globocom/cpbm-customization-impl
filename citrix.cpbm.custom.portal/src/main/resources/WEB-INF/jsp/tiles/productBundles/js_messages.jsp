@@ -36,7 +36,9 @@ commmonmessages = {
     SINGLETON: '<spring:message javaScriptEscape="true" code="label.bundle.business.constraint.SINGLETON"/>',
     ACCOUNT: '<spring:message javaScriptEscape="true" code="label.bundle.business.constraint.ACCOUNT"/>',
     PER_USER: '<spring:message javaScriptEscape="true" code="label.bundle.business.constraint.PER_USER"/>',
-    NONE: '<spring:message javaScriptEscape="true" code="label.bundle.business.constraint.NONE"/>'
+    NONE: '<spring:message javaScriptEscape="true" code="label.bundle.business.constraint.NONE"/>',
+    MORE: '<spring:message javaScriptEscape="true" code="label.more"/>',
+    LESS: '<spring:message javaScriptEscape="true" code="label.less"/>'
 };
 
 
@@ -45,7 +47,8 @@ if( typeof i18n === 'undefined' ) {
   }
 i18n = {
 	    errors: {
-        bundleSelectProduct  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.select.product"/>', 
+        bundleSelectProduct  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.select.product"/>',
+        edit_image_path_invalid_message:'<spring:message javaScriptEscape="true" code="ui.product.image.error.invalid.path"/>',
         bundleProvideIncludedUnits  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.provide.included.units"/>', 
         bundleDeletebundleConfirmation  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.deletebundle.confirmation"/>',
         bundleunpublishConfirmation  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.unpublish.confirmation"/>',
@@ -64,7 +67,8 @@ i18n = {
         bundleBundleFormAlreadyExists  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.bundle.form.already.exists"/>', 
         bundleBundleFormError  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.bundle.form.error"/>', 
         bundleRateCardStartDateRequired  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.rate.card.start.date.required"/>', 
-        bundleEnterValidIncludedUnits  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.enter.valid.included.units"/>', 
+        bundleEnterValidIncludedUnits  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.enter.valid.included.units"/>',
+        max_four_decimal_value: '<spring:message javaScriptEscape="true" arguments="${currencyFractionalDigitsLimit}"  code="js.errors.maxFourDecimalPrice"/>',
         bundleEnterValidValue  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.enter.valid.value"/>', 
         bundleEnterValidDateRange  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.enter.valid.date.range"/>', 
         bundleEnterValidStartDate  : '<spring:message javaScriptEscape="true" code="js.errors.bundle.enter.valid.start.date"/>', 
@@ -92,6 +96,7 @@ i18n = {
         bundlechargetyperequired: '<spring:message javaScriptEscape="true" code="js.error.bundle.charge.type.required"/>',
         provisioningConstraintRequired: '<spring:message javaScriptEscape="true" code="js.error.bundle.provisioning.constraint.required"/>',
         maxlength: '<spring:message javaScriptEscape="true" code="js.errors.length.upperLimit"/>',
+        uncompatible_currency_precision: '<spring:message javaScriptEscape="true" code="js.error.uncompatible.currency.precision"/>',
         pricesNotSetForAllProducts: '<spring:message javaScriptEscape="true" code="js.errors.prices.not.set.for.all.products"/>',
         ratecards: {
             planning_ratecard : '<spring:message javaScriptEscape="true" code="js.errors.ratecards.error.planning.ratecard"/>',
@@ -139,4 +144,8 @@ i18n = {
 
  
 };
+
+var i10associationTypes = new Array();
+i10associationTypes['INCLUDES']='<spring:message javaScriptEscape="true" code="ui.label.includes"/>';
+i10associationTypes['EXCLUDES']='<spring:message javaScriptEscape="true" code="ui.label.excludes"/>';
 </script>

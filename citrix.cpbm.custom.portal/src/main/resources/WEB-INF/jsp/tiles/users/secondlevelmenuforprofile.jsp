@@ -28,27 +28,22 @@
 
 <div class="secondlevel_withsubmenu">
     <div class="secondlevel_breadcrumb_panel">
-      <div class="secondlevel_breadcrumbbox">
-          <p><c:out value="${tenant.name}"/></p>
+      <div class="secondlevel_breadcrumbbox_tenant">
+          <p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
       </div>
       <div class="doc_help_link"></div>
     </div>        
      <div class="secondlevel_menupanel">
           <spring:url value="/portal/users/" var="users_path" htmlEscape="false"></spring:url>
-          <a id="profile" class="secondlevel_menutabs <c:out value="${Profile}"/>" href="<c:out value="${users_path}" escapeXml="false" /><c:out value="${user.user.param}" escapeXml="false" />/myprofile"><spring:message code="page.level2.profile"/></a>
+          <a id="profile" class="secondlevel_menutabs auto_width <c:out value="${Profile}"/>" href="<c:out value="${users_path}" escapeXml="false" /><c:out value="${user.user.param}" escapeXml="false" />/myprofile"><spring:message code="page.level2.profile"/></a>
           <sec:authorize  access="hasAnyRole('ROLE_USER')">
             <c:if test="${currentUser.param eq user.user.param}">
-              <a id="apiCredentials" class="secondlevel_menutabs <c:out value="${APICredentials}"/>" ><span class="loginicon"></span><spring:message code="page.level2.apicredentials"/></a>
+              <a id="apiCredentials" class="secondlevel_menutabs auto_width <c:out value="${APICredentials}"/>" ><span class="loginicon"></span><spring:message code="page.level2.apicredentials"/></a>
             </c:if>
           </sec:authorize>
-          <a id="notPref" class="secondlevel_menutabs <c:out value="${NotifictaionPrefrences}" />" ><spring:message code="page.level2.notificationpreferences"/></a>
-          <a id="emailAddresses" class="secondlevel_menutabs <c:out value="${EMailAddresses}" />" ><spring:message code="page.level2.emailaddresses"/></a>
-          <!-- TODO : Myservice actual variable value is yet to set  -->
-          <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')"><!--This is now visible only for Service provider users as "My Services" pages have been merged for other users  -->
-              <c:if test="${userHasCloudServiceAccount && currentUser.param eq user.user.param}">
-                <a id="myServices" class="secondlevel_menutabs <c:out value=""/>"><spring:message code="page.level2.myservices"/></a>
-              </c:if>
-          </sec:authorize>
+          <a id="notPref" class="secondlevel_menutabs auto_width <c:out value="${NotifictaionPrefrences}" />" ><spring:message code="page.level2.notificationpreferences"/></a>
+          <a id="emailAddresses" class="secondlevel_menutabs auto_width <c:out value="${EMailAddresses}" />" ><spring:message code="page.level2.emailaddresses"/></a>
+          
     </div>
     <div class="clearboth"></div>
     <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')">

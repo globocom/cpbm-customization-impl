@@ -130,7 +130,12 @@
 			<constraint annotation="org.hibernate.validator.constraints.Length">
 				<message>javax.validation.constraints.Size.message</message>
 				<element name="min">1</element>
-				<element name="max">255</element>
+				<element name="max">25</element>
+			</constraint>
+			<constraint annotation="javax.validation.constraints.Pattern">
+				<message>javax.validation.constraints.Pattern.message
+				</message>
+				<element name="regexp">^[a-zA-Z\d]+$</element>
 			</constraint>
 		</getter>
 		<getter name="country">

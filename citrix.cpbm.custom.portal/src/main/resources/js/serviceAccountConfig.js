@@ -15,6 +15,7 @@ $(document).ready(function() {
   }
 
   $("#serviceAccountConfigParamForm").validate({
+	  ignoreTitle: true,
       submitHandler : function() {
         var noOfErrors = $('label.error:visible').length;
         if (noOfErrors == 0) {
@@ -60,14 +61,17 @@ $(document).ready(function() {
   var propObject = new Object();
   if(enableServiceType == 0){
     $("input[id^=sacp_]").each(function(index) {
-             var eleName = $(this).attr("name");
-      var eleValue = $(this).attr('value');
+         var eleName = $(this).attr("name");
+         var eleValue = $(this).attr('value');
             propObject[eleName] = eleValue;
     });
+    $("input[id^=radio_sacp_]:checked").each(function(index) {
+        var eleName = $(this).attr("name");
+        var eleValue = $(this).attr('value');
+	       propObject[eleName] = eleValue;
+	});
   }else if(enableServiceType == 2){
-    //console.log('....serviceAccountConfigProperties Values...',serviceAccountConfigPropertiesArray);
     $.each( serviceAccountConfigPropertiesArray.split(','), function(index,value ) {
-      //console.log(index+":ssss:: " + value);
       if(value != null && value != ""){
         var elementId = "#"+value;
         var elementValue = $(elementId).attr('value');
@@ -77,9 +81,8 @@ $(document).ready(function() {
   }
 
    var propConfigs = JSON.stringify(propObject);
-    //console.log('..enableServiceType..',enableServiceType,'....',propObject,'.......',currentLoggedinTenant,'...',propConfigs,'....',jspProvidedByService,'...',currentServiceInstanceUUID);
-     $("#spinning_wheel").show();
-  var ajaxUrl = "/portal/portal/tenants/enable_service";
+    $("#spinning_wheel").show();
+    var ajaxUrl = "/portal/portal/tenants/enable_service";
     $.ajax({
       type : "POST",
       data : {
@@ -89,36 +92,25 @@ $(document).ready(function() {
       },
       url : ajaxUrl,
       success : function(status) {
-         $("#spinning_wheel").hide();
+        $("#spinning_wheel").hide();
         prepareSuccessResultView(status);
       },
-      error : function(XMLHttpResponse) {
+      error : function(error) {
          $("#spinning_wheel").hide();
          $("#resultForServiceConfigParams").show();
-         $("#ajax_result_text").text(service_config_message_dict.enableServiceError);
+         $("#ajax_result_text").text(service_config_message_dict.enableServiceError + "(" + error.responseText + ")");
          $("#ajax_result_display").addClass("error").show();
       }
     });
   }
 
   function prepareSuccessResultView(status){
-//console.log('status ...', status);
-  /*	var object = new Object();
-    var successArray = new Array();
-    successArray.push('tom');
-    successArray.push('mickey');
-    var failArray = new Array();
-    failArray.push('donald');
-    failArray.push('ravi');
-    object.failedUsers = failArray;
-    object.registeredUser = successArray;*/
     var current = 1;
     var liStyle ="";
     var final = "";
     if(status.registeredUser != undefined){
       $.each( status.registeredUser, function( key, value ) {
         var temp ="";
-        //console.log( key + ": " + value );
         if(current%2 ==0){
           liStyle = "even";
         }else{
@@ -127,14 +119,13 @@ $(document).ready(function() {
         current = current +1;
         temp = temp + '<li class="row '+ liStyle + '">';
         temp = temp + '<span class="label">' + value + '</span> ';
-        temp = temp + '<span class="description"> Configured </span> </li>';
+        temp = temp + '<span class="description">' + service_config_message_dict.label_Configured + '</span></li>';
         final = final + temp;
       });
     }
     if(status.failedUsers != undefined){
       $.each( status.failedUsers, function( key, value ) {
         var temp ="";
-        //console.log( key + ": " + value );
         if(current%2 ==0){
           liStyle = "even";
         }else{
@@ -147,10 +138,11 @@ $(document).ready(function() {
         final = final + temp;
       });
     }
-    //console.log(final);
     $("#resultForServiceConfigParams").show();
     $("#printResultsForConfigParams").append(final);
     $("#mainContentForServiceAccConfigParam").hide();
+    $("#ajax_result_text").text("");
+    $("#ajax_result_display").hide();
   }
 
 });

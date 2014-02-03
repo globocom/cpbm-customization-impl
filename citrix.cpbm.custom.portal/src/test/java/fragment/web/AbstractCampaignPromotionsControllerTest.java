@@ -1,15 +1,12 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 
@@ -31,13 +29,12 @@ import web.WebTestsBase;
 import com.citrix.cpbm.portal.fragment.controllers.CampaignPromotionsController;
 import com.vmops.model.CampaignPromotion;
 import com.vmops.model.CampaignPromotion.DiscountType;
+import com.vmops.model.CampaignPromotion.State;
 import com.vmops.model.CampaignPromotionDiscountAmount;
 import com.vmops.model.CampaignPromotionsInChannels;
 import com.vmops.model.Catalog;
 import com.vmops.model.Channel;
 import com.vmops.model.CurrencyValue;
-import com.vmops.model.PromotionSignup;
-import com.vmops.model.PromotionToken;
 import com.vmops.model.SupportedCurrency;
 import com.vmops.model.User;
 import com.vmops.persistence.CampaignPromotionDAO;
@@ -51,9 +48,10 @@ import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.utils.DateUtils;
 import com.vmops.web.forms.CampaignPromotionsForm;
-import com.vmops.web.forms.DepositRecordForm;
-import com.vmops.web.forms.TokenRequestForm;
 
+@ContextConfiguration(inheritLocations = true, locations = {
+    "classpath:/applicationContext-security.xml", "classpath:/applicationContext-global-security.xml"
+})
 public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
 
   @Autowired
@@ -199,9 +197,8 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
   }
 
   /*
-   * Test to create Campaign for Trial users as Master User //master user is able to create product bundle which is an
-   * error
-   * @Author: Vinayv
+   * Negative test to create Campaign for Trial users as Master User
+   * @Author: VinayV
    * @Reviewer: NageswaraP
    */
   @Test(expected = Exception.class)
@@ -237,23 +234,15 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
 
     CampaignPromotion cp = campaignPromotionDAO.find(1L);
     cp.setTitle("New_Title");
-    cp.setCode("New_PromoCode");
+    cp.setCode("New_Code");
     cp.setPromoCode("New_PromoCode");
     cp.setEndDate(DateUtils.minusOneDay(new Date()));
     campaignPromotionDAO.save(cp);
-
-    cp = campaignPromotionDAO.find(1L);
-    Assert.assertEquals("EXPIRED", cp.getState().getName());
+    Assert.assertEquals(State.EXPIRED, cp.getState());
     CampaignPromotionsForm form = new CampaignPromotionsForm(cp);
-    form.setPromoCode(cp.getCode());
+    form.setPromoCode(cp.getPromoCode());
     BindingResult result = validate(form);
-    CampaignPromotion obtainedCampaign = campaignController.edit(form, result, map);
-
-    Assert.assertNotNull(obtainedCampaign);
-    Assert.assertNotSame("New_Code", obtainedCampaign.getCode());
-    Assert.assertEquals("EXPIRED", obtainedCampaign.getState().toString());
-    Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
-    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getPromoCode());
+    campaignController.edit(form, result, map);
   }
 
   /*
@@ -277,15 +266,10 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
 
     cp = campaignPromotionDAO.find(1L);
     CampaignPromotionsForm form = new CampaignPromotionsForm(cp);
+    form.setPromoCode(cp.getPromoCode());
     BindingResult result = validate(form);
-    form.setPromoCode(cp.getCode());
-    CampaignPromotion obtainedCampaign = campaignController.edit(form, result, map);
 
-    Assert.assertNotNull(obtainedCampaign);
-    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getCode());
-    Assert.assertEquals("EXPIRED", obtainedCampaign.getState().toString());
-    Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
-    Assert.assertNotSame("New_PromoCode", obtainedCampaign.getPromoCode());
+    campaignController.edit(form, result, map);
   }
 
   /*
@@ -293,16 +277,15 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
    * @Author: Vinayv
    * @Reviewer: NageswaraP
    */
-  @Test(expected = InvalidAjaxRequestException.class)
+  @Test
   public void testEditActiveStateCampaignAsRoot() throws Exception {
 
-    CampaignPromotion campaignPromotion = generateCampaignPromotion(1, true, false, false);
+    CampaignPromotion campaignPromotion = generateCampaignPromotion(0, true, false, false);
     CampaignPromotionsForm form = new CampaignPromotionsForm(campaignPromotion);
     form.setPromoCode("PromoCode");
     form.setChannel(channelService.getChannelById("1"));
-    form.setUnlimited(true);
+    form.setUnlimited(false);
     BindingResult result = validate(form);
-
     CampaignPromotion cp = campaignController.createCampaigns(form, result, map, response);
 
     cp.setTitle("New_Title");
@@ -314,16 +297,17 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
 
     cp = campaignPromotionDAO.findByCode("New_Code");
     Assert.assertEquals(cp.getState().toString(), "ACTIVE");
-    cp.setCode("New_Code2");
     CampaignPromotionsForm cpform = new CampaignPromotionsForm(cp);
+    cpform.setPromoCode(cp.getPromoCode());
+    cpform.setUnlimited(false);
     BindingResult cpresult = validate(cpform);
-    cpform.setPromoCode(cp.getCode());
+
     CampaignPromotion obtainedCampaign = campaignController.edit(cpform, cpresult, map);
 
     Assert.assertNotNull(obtainedCampaign);
-    Assert.assertNotSame("New_Code1", obtainedCampaign.getCode());
+    Assert.assertNotSame("New_Code", obtainedCampaign.getCode());
     Assert.assertNotSame("New_Promocode", obtainedCampaign.getPromoCode());
-    Assert.assertNotSame(2, obtainedCampaign.getMaxAccounts());
+    Assert.assertEquals(2, obtainedCampaign.getMaxAccounts());
     Assert.assertEquals("ACTIVE", cp.getState().toString());
     Assert.assertEquals("New_Title", obtainedCampaign.getTitle());
   }
@@ -443,7 +427,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     Catalog catalog1 = bundleservice.getCatalog(1L);
     Catalog catalog2 = bundleservice.getCatalog(3L);
 
-    Set<SupportedCurrency> set = ((Set<SupportedCurrency>) map.get("supportedCurrenciesForChannel"));
+    Set<SupportedCurrency> set = (Set<SupportedCurrency>) map.get("supportedCurrenciesForChannel");
     Assert.assertTrue(set.contains(catalog1.getSupportedCurrencyValuesByOrder().get(0)));
     Assert.assertTrue(set.contains(catalog2.getSupportedCurrencyValuesByOrder().get(0)));
     Assert.assertTrue(set.contains(catalog2.getSupportedCurrencyValuesByOrder().get(0)));
@@ -458,7 +442,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     form.setDiscountAmountMap(discountAmountMap);
     form.setChannelIdLst(null);
     campaignController.getSupportedCurrencyForChannels(form, map);
-    Set<SupportedCurrency> set = ((Set<SupportedCurrency>) map.get("supportedCurrenciesForChannel"));
+    Set<SupportedCurrency> set = (Set<SupportedCurrency>) map.get("supportedCurrenciesForChannel");
     List<Catalog> lstCatalog = new ArrayList<Catalog>();
     List<Channel> channelLst = channelService.getChannels(null, null, null);
     Set<CurrencyValue> currValSet = new HashSet<CurrencyValue>();
@@ -466,8 +450,9 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       lstCatalog.add(channel.getCatalog());
     }
     for (Catalog catalog : lstCatalog) {
-      for (SupportedCurrency suppCurr : catalog.getSupportedCurrencies())
+      for (SupportedCurrency suppCurr : catalog.getSupportedCurrencies()) {
         currValSet.add(suppCurr.getCurrency());
+      }
     }
 
     Assert.assertEquals(set, currValSet);
@@ -476,9 +461,8 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
 
   @Test
   public void testlist() {
-
-    List<CampaignPromotion> campaignsList = promotionService.listCampaignPromotions(1, 2);
-    String promtionlist = campaignController.list("Test", 1, map);
+    List<CampaignPromotion> campaignsList = promotionService.listCampaignPromotions(0, 0);
+    String promtionlist = campaignController.list("Test", 0, map);
     Assert.assertNotNull(promtionlist);
     Assert.assertEquals(promtionlist, new String("promotions.list"));
     Assert.assertTrue(map.containsAttribute("pageSize"));
@@ -489,6 +473,15 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     Assert.assertEquals(map.get("campaignsListSize"), campaignsList.size());
     Assert.assertEquals(map.get("campaignsList"), campaignsList);
     Assert.assertEquals(map.get("idToBeSelected"), new String("Test"));
+
+    Assert.assertEquals(map.get("atleastOneChannelPresent"), true);
+
+// TODO : Need to figure out a way to make list controller to think their are no channels present
+// for (Channel channel : channelDAO.findAll(null)) {
+// channelDAO.delete(channel);
+// }
+// campaignController.list("Test", 0, map);
+// Assert.assertEquals(map.get("atleastOneChannelPresent"), false);
   }
 
   @Test
@@ -498,61 +491,12 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
   }
 
   @Test
-  public void testcreateTrialToken() {
-    List<CampaignPromotion> campaignPromotions = promotionService.listCampaignPromotions(0, 0);
-    String token = campaignController.createTrialToken(map);
-    Assert.assertNotNull(token);
-    Assert.assertEquals(token, new String("campaign.token.create"));
-    Assert.assertTrue(map.containsAttribute("tokenRequest"));
-    Assert.assertTrue(map.containsAttribute("campaignPromotions"));
-    Assert.assertEquals(map.get("campaignPromotions"), campaignPromotions);
-    Assert.assertNotNull(map.get("tokenRequest"));
-
-  }
-
-  // check problen in generatePromotionToken() in PromotionServiceImpl
-  @Test
-  public void testemailValidationFailed() throws Exception {
-    CampaignPromotion campaign = promotionService.locateCampaignById("1");
-
-    PromotionSignup promotionSignup = new PromotionSignup("test" + random.nextInt(), "Citrix", "abcTest@citrix.com");
-    promotionSignup.setCreateBy(getRootUser());
-    promotionSignup.setCurrency(Currency.getInstance("USD"));
-    promotionSignup.setPhone("9999999999");
-
-    PromotionToken promotionToken = new PromotionToken(campaign, "USD" + random.nextInt());
-    promotionToken.setCreateBy(getRootUser());
-    tokendao.save(promotionToken);
-
-    promotionSignup.setPromotionToken(promotionToken);
-    SignUpdao.save(promotionSignup);
-    List<CampaignPromotion> campaignPromotions = promotionService.listCampaignPromotions(0, 0);
-    TokenRequestForm form = new TokenRequestForm();
-    form.setCampaignCode("trial_camp");
-    form.setPromotionSignup(promotionSignup);
-    DepositRecordForm recordForm = new DepositRecordForm();
-    SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
-    recordForm.setReceivedOn(sdf.format(getDaysFromNow(-1)));
-    recordForm.setAmount("1000.00");
-    BindingResult result = validate(recordForm);
-    String token = campaignController.createTrialToken(form, result, map);
-    Assert.assertNotNull(token);
-    Assert.assertEquals(token, new String("campaign.token.create"));
-    Assert.assertTrue(map.containsAttribute("campaignPromotions"));
-    Assert.assertTrue(map.containsAttribute("emailValidationFailed"));
-    Assert.assertTrue(map.containsAttribute("tokenRequest"));
-    Assert.assertEquals(map.get("tokenRequest"), form);
-    Assert.assertEquals(map.get("campaignPromotions"), campaignPromotions);
-
-  }
-
-  @Test
   public void testGetCampaignPromotionFromForm() throws Exception {
     try {
       Channel channel = channelService.getChannelById("3");
       List<String> channelIdLst = new ArrayList<String>();
       channelIdLst.add("3");
-      CampaignPromotion campaignPromotion = promotionService.locateCampaignById("1");
+      CampaignPromotion campaignPromotion = generateCampaignPromotion(-2, false, false, true);
       CampaignPromotionsForm form = new CampaignPromotionsForm();
       form.setChannelIdLst(channelIdLst);
       form.setPromoCode("trial_camp");
@@ -562,11 +506,11 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       CampaignPromotion promotion = campaignController.createCampaigns(form, result, map, null);
       Assert.assertNotNull(promotion);
       Assert.assertEquals(promotion.getDiscountType(), DiscountType.PERCENTAGE);
-      Assert.assertEquals(promotion.getPercentOff(), new BigDecimal(100));
+      Assert.assertEquals(promotion.getPercentOff(), BigDecimal.TEN);
       Assert.assertEquals(promotion.getPromoCode(), "trial_camp");
       Iterator<CampaignPromotionsInChannels> itr = promotion.getCampaignPromotionsInChannels().iterator();
       CampaignPromotionsInChannels objCampPromo = null;
-      objCampPromo = (CampaignPromotionsInChannels) itr.next();
+      objCampPromo = itr.next();
       Assert.assertEquals(objCampPromo.getChannel(), channel);
     } catch (Exception e) {
       // TODO Auto-generated catch block
@@ -607,7 +551,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       Assert.assertNotNull(promotion.getCampaignPromotionDiscountAmount());
       Iterator<CampaignPromotionDiscountAmount> itr = promotion.getCampaignPromotionDiscountAmount().iterator();
       Assert.assertTrue(itr.hasNext());
-      CampaignPromotionDiscountAmount CPDA = (CampaignPromotionDiscountAmount) itr.next();
+      CampaignPromotionDiscountAmount CPDA = itr.next();
       Assert.assertEquals(CPDA.getDiscount(), new BigDecimal(100));
       Assert.assertEquals(CPDA.getCurrencyValue(), currency);
 
@@ -755,5 +699,43 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
       // TODO Auto-generated catch block
       Assert.fail();
     }
+  }
+
+  @Test(expected = Exception.class)
+  public void testEditScheduledStateCampaignWitNullPromocode() throws Exception {
+
+    CampaignPromotion campaignPromotion = generateCampaignPromotion(-2, true, false, false);
+    CampaignPromotionsForm form = new CampaignPromotionsForm(campaignPromotion);
+    form.setPromoCode("PromoCode");
+    form.setChannel(channelService.getChannelById("1"));
+    form.setUnlimited(true);
+    BindingResult result = validate(form);
+    CampaignPromotion cp = campaignController.createCampaigns(form, result, map, response);
+
+    cp.setTitle("New_Title");
+    cp.setCode("New_Code");
+    cp.setMaxAccounts(2);
+    campaignPromotionDAO.save(cp);
+    Assert.assertEquals(cp.getState().toString(), "SCHEDULED");
+
+    CampaignPromotionsForm cpform = new CampaignPromotionsForm(cp);
+    cpform.setPromoCode(null);
+    cpform.setChannel(channelService.getChannelById("1"));
+    cpform.setUnlimited(true);
+    BindingResult cpresult = validate(cpform);
+
+    campaignController.edit(cpform, cpresult, map);
+  }
+
+  @Test(expected = AjaxFormValidationException.class)
+  public void testCreateCampaignBeforeCurrent() throws Exception {
+    CampaignPromotion campaignPromotion = generateCampaignPromotion(0, true, false, false);
+    campaignPromotion.setStartDate(DateUtils.addDays(new Date(), -5));
+    CampaignPromotionsForm form = new CampaignPromotionsForm(campaignPromotion);
+    form.setPromoCode("PromoCode");
+    form.setChannel(channelService.getChannelById("1"));
+    form.setUnlimited(true);
+    BindingResult result = validate(form);
+    campaignController.createCampaigns(form, result, map, response);
   }
 }

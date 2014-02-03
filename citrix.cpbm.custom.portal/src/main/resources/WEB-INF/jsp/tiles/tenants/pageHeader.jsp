@@ -54,6 +54,7 @@ i18n.errors.tenants = {
       phoneValidationError : "<spring:message javaScriptEscape="true" code="js.errors.phone"/>",
       countryCode : '<spring:message javaScriptEscape="true" code="js.errors.tenants.user.countryCode"/>',
       countryCodeValidationError : '<spring:message javaScriptEscape="true" code="js.errors.countryCode"/>',
+      noServiceEnabledForApiCreds : '<spring:message htmlEscape="false" javaScriptEscape="true" code="error.no.cloud.service.account.for.api.credentials" arguments="${tenant.param}"/>',
       address : {
         street1 : '<spring:message javaScriptEscape="true" code="js.errors.tenants.user.address.street1"/>',
         city : '<spring:message javaScriptEscape="true" code="js.errors.tenants.user.address.city"/>',
@@ -191,7 +192,7 @@ i18n.errors.tenants = {
   			}
   		},
   		initialPayment : {
-  			error : '<spring:message javaScriptEscape="true" code="js.errors.tenants.initialPayment"/>'
+  			error : '<spring:message javaScriptEscape="true" code="errors.general"/>'
   		},
   		
   		billingAddress : {

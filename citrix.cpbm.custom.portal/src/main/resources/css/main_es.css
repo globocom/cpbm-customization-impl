@@ -40,3 +40,16 @@
 .configure_box.titlepanel {
   height: 60px;
 }
+span.required_product_units_header{
+  margin-top:0px !important;
+}
+.widget_searchcontentarea span.label {
+  font-size: 9px;
+}
+.thirdlevel_subtab.big {
+width: 222px;
+}
+
+.maintitlebox h1 {
+  font-size: 15px;
+}

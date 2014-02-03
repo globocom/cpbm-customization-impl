@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -20,7 +20,7 @@ $(document).ready(function() {
         if (dateText) {
           var endDate = $('#end').val();
           var date = new Date(Date.parse($(this).datepicker("getDate")));
-          date.setDate(date.getDate() + 1);
+          date.setDate(date.getDate());
           $('#end').datepicker("option", "minDate", date);
           $('#end').val(endDate);
         }
@@ -46,6 +46,26 @@ $(document).ready(function() {
       minDate: minDate
     });
   });
+  
+
+  
+  $.validator
+  .addMethod(
+    "dateRange",
+    function() {
+      if ($('#end').val() == "") {
+        return true;
+      }
+      return new Date(
+        $(
+          "#start")
+        .val()) <= new Date(
+        $(
+          "#end")
+        .val());
+    },
+    i18n.errors.reportEnterValidDateRange);
+  
   $("#newRegistrationForm").validate({
     //debug : true,
     success: "valid",
@@ -55,15 +75,17 @@ $(document).ready(function() {
         required: true
       },
       "endDate": {
-        required: true
+        required: true,
+        dateRange: true
       }
     },
     messages: {
       "startDate": {
-        required: i18n.errors.validationStartDate
+        required: i18n.errors.validationStartDate,
       },
       "endDate": {
-        required: i18n.errors.validationEndDate
+        required: i18n.errors.validationEndDate,
+        dateRange: i18n.errors.reportEnterValidDateRange
       }
     },
     errorPlacement: function(error, element) {
@@ -272,11 +294,11 @@ function generateCustReport(form, event) {
         $("#reportgenerate").val(i18n.text.generateButtonText);
         $("#reportgenerate").attr("disabled", false);
         if (result == 'none') {
-          alert(i18n.alerts.noData);
+          popUpDialogForAlerts("dialog_info", i18n.alerts.noData);
         } else if (result == 'failure') {
-          alert(i18n.errors.generateFailure);
+          popUpDialogForAlerts("dialog_info", i18n.errors.generateFailure);
         } else {
-          alert(i18n.alerts.generateSuccess);
+          popUpDialogForAlerts("dialog_info",i18n.alerts.generateSuccess );
           var url = $(form).attr("action");
           var downloadURL = url.substring(0, url.lastIndexOf("/")) + "/download_custom_report/" + result;
           var emailURL = url.substring(0, url.lastIndexOf("/")) + "/email_custom_report/" + result;
@@ -290,7 +312,7 @@ function generateCustReport(form, event) {
         }
       },
       error: function(result) {
-        alert(i18n.errors.generateFailure);
+        popUpDialogForAlerts("dialog_info", i18n.errors.generateFailure);
       }
     });
   }
@@ -315,14 +337,14 @@ function sendEmail() {
     success: function(result) {
       $("#reportemail").text(emailLinkText);
       if (result == 'failure') {
-        alert(i18n.errors.sendemailFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.sendemailFailed);
       } else {
-        alert(i18n.alerts.sendemailSuccess);
+        popUpDialogForAlerts("dialog_info", i18n.alerts.sendemailSuccess);
       }
     },
     error: function(result) {
       $("#reportemail").text(emailLinkText);
-      alert(i18n.errors.sendemailfailed);
+      popUpDialogForAlerts("dialog_info", i18n.errors.sendemailfailed);
     }
   });
 }

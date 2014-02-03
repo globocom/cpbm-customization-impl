@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -10,7 +10,7 @@ $(document).ready(function() {
   $.createNewAlert = function(jsonResponse) {
 
     if (jsonResponse == null) {
-      alert(i18n.alert.createNewAlert);
+      popUpDialogForAlerts("dialog_info", i18n.alert.createNewAlert);
     } else {
       $("#createnewalertDiv").html("");
 
@@ -149,12 +149,9 @@ $(document).ready(function() {
   });
 
   $("#createNewProjectAlert").click(function() {
-
     blockUI();
     var url = $(this).attr("name");
-
     $.ajax({
-
       type: "GET",
       url: url,
       data: {},
@@ -203,7 +200,6 @@ $(document).ready(function() {
     var newVal = $("#newValue" + sub_id).val();
     var url = $(this).attr("name");
     $.ajax({
-
       type: "POST",
       url: url,
       data: {
@@ -219,7 +215,6 @@ $(document).ready(function() {
         $("#editsubscription" + sub_id).show();
         $("#removesubscription" + sub_id).show();
         unBlockUI();
-
       },
       error: function(html) {
         unBlockUI();
@@ -236,7 +231,6 @@ $(document).ready(function() {
     $("#editSubSave" + sub_id).hide();
     $("#alertVal" + sub_id).show();
     $("#alertValEditable" + sub_id).hide();
-
   });
   $(".removeSub").one('click', function() {
 
@@ -413,7 +407,7 @@ function showAlertHighChart(spend_cap, criteria_percentage) {
   var series = [{
     data: [{
       name: 'budget',
-      color: "#C0DEF5",
+      
       y: parseFloat(extra_budget)
     }],
     showInLegend: false
@@ -422,7 +416,7 @@ function showAlertHighChart(spend_cap, criteria_percentage) {
     name: dictionary.alertHighchartSeriesName1,
     data: [{
       name: dictionary.alertHighchartCriteriaTooltip,
-      color: '#AA4643',
+      
       y: parseFloat(spend_cap)
     }],
     legendIndex: 1
@@ -462,11 +456,14 @@ function showAlertHighChart(spend_cap, criteria_percentage) {
     "toolTipStyle": {
       width: 300
     },
+    "toolTipPositioner": function(){
+      return { x: 20, y: 80 };
+    },
     "exportEnabled": false,
     "yAxisStackLabelFormatter": function() {
       return dictionary.alertHighchartYAxisStackLabel;
     },
-    "chartSpacingRight": 130,
+    "chartSpacingRight": 100,
     "chartSpacingLeft": 25,
     "rotateYAxisLabels": true
   };
@@ -557,7 +554,7 @@ function setAccountBudgetGet() {
       $("#createnewalertDiv").html("");
       $("#setaccountbudgetDiv").html(html);
       var $thisDialog = $("#setaccountbudgetDiv");
-
+      
       $thisDialog.dialog({
         height: 100,
         width: 420
@@ -579,7 +576,19 @@ function setAccountBudgetGet() {
                 $("#top_message_panel").show();
                 $("#top_message_panel").find("#msg").text(dictionary.settingAccountBudgetSuccess);
                 $("#top_message_panel").addClass("success").show();
-
+                var spendBudget =$("#tenantForm").find("#tenant\\.spendBudget");
+                $("#spendBudgetCurrencyDiv").text("(" +  $("#currency_sign").val() + spendBudget.val() + ")");
+                $("#grid_row_container").find("#spendBudgetOnHover").text(spendBudget.val());
+                if(spendBudget.val() > 0){
+                	$("#tenantBudgetNotSet").hide();
+                	$("#tenantBudgetSet").show();
+                	$("#tenantBudgetSet #budgetValue").html(spendBudget.val());
+                }else{
+                	$("#tenantBudgetSet").hide();
+                	$("#tenantBudgetNotSet").show();
+                }
+                $("#total_budget").val(spendBudget.val());
+                showAlertHighChart(null, null);
               },
               error: function(XMLHttpRequest) {
                 $("#spinning_wheel").hide();
@@ -699,9 +708,8 @@ function editAlertGet(current) {
       });
       $thisDialog.dialog('option', 'buttons', {
         "OK": function() {
-          if ($("#subscriptionForm").valid()) {
-            $thisDialog.dialog("close");
-            var newVal = $("#tenantPercentage").val();
+          if ($("#editSubscriptionForm").valid()) {
+            var newVal = $("#editSubscriptionForm").find("#tenantPercentage").val();
             $.ajax({
               type: "POST",
               url: "/portal/portal/tenants/alerts/edit?tenant=" + $('#tenantId').val() + "&Id=" + $('#alertId').val(),
@@ -710,6 +718,7 @@ function editAlertGet(current) {
               },
               dataType: "json",
               success: function(jsonResponse) {
+                $thisDialog.dialog("close");
                 $.editAlert(jsonResponse);
 
               },
@@ -721,7 +730,6 @@ function editAlertGet(current) {
             });
 
           }
-
         },
         "Cancel": function() {
           $(this).dialog("close");

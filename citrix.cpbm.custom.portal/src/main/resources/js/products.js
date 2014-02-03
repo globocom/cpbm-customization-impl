@@ -1,5 +1,6 @@
+
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -49,50 +50,26 @@ $(document).ready(function() {
     currentstep = "step2";
     $("#step2").show();
   });
-  $("#backtoproductdetails").bind("click", function(event) {
+  $("#backtoproductdetails").live("click", function(event) {
     $(".j_productspopup").hide();
     currentstep = "step1";
     $("#step1").show();
   });
 
-  $("#backtoaddcharges").bind("click", function(event) {
+  $("#backtoaddcharges").live("click", function(event) {
     $(".j_productspopup").hide();
     currentstep = "step4";
     $("#step5").show();
   });
 
-  $("#filter_dropdown").unbind("change").bind("change", function(event) {
-    listProductByFilter();
-    return false;
-  });
-
-
-  $("#sortproductslist").sortable({
-    axis: 'y',
-    start: function(event, ui) {
-      ui.item.addClass('active');
-    },
-    update: function(event, ui) {
-      var sortableArray = $(this).sortable('toArray');
-      for (var i = 0; i < sortableArray.length; i++) {
-        sortableArray[i] = sortableArray[i].substr(4);
-      }
-      $("#productOrderData").val(sortableArray.toString());
-      $.ajax({
-        type: "POST",
-        url: "/portal/portal/products/editproductsorder",
-        data: $("#productOrderData").serialize(),
-        dataType: "json",
-        success: function() {
-          // location.reload(true);
-          // Do Nothing
-        },
-        error: function() {
-          // location.reload(true);
-        }
-      });
-    }
-  });
+  /**
+   * Bind Catagory DropDown
+   */
+  bindCatagoryDropDown();
+  /**
+   * Bind products sort 
+   */
+  bindSortable();
   /**
    * Validate product form
    */
@@ -107,7 +84,7 @@ $(document).ready(function() {
 
   $.validator.addClassRules("priceRequired", {
     twoDecimal: true,
-    maxFourDecimal: true
+    maxcurrencyPrecision: true
   });
   $.validator.addClassRules("productTypeRequired", {
     productTypeRequired: true
@@ -134,7 +111,7 @@ $(document).ready(function() {
         $(element).rules("add", {
           number: true
         });
-        isPriceValid = value != "" && isNaN(value) == false && Number(value) >= 0 && Number(value) < 99999999.9999;
+        isPriceValid = value != "" && isNaN(value) == false && Number(value) >= 0 && Number(value) <= 99999999.9999;
 
         if (isPriceValid == false) {
           return false;
@@ -146,155 +123,38 @@ $(document).ready(function() {
 
   $.validator
     .addMethod(
-      "maxFourDecimal",
+      "maxcurrencyPrecision",
       function(value, element) {
-        $(element).rules("add", {
+      $(element).rules("add", {
           number: true
         });
-        if (!/^(?:\d*\.\d{1,4}|\d+)$/.test(value)) {
+   if (!/^(?:\d*\.\d*\|\d+)$/.test(value)) {
+      var sval=value;
+      var sdecimalDigit=sval.split(".");
+      if(sdecimalDigit.length==2){// have decimal
+         if(sdecimalDigit[1].length>currPrecision){
+            // more characters allowed precision
+           return false;
+         }
+         return true;
+         }else if(sdecimalDigit.length>2) {
+      //more then one decimals   
           return false;
-        }
-
-        return true;
-
-      },
+     } 
+         // without decimal
+          return true;     
+                
+    }else{//not a valid digit pattern
+       return false;
+      } 
+     },
       i18n.errors.products.max_four_decimal_value);
 
-
-  $("#productForm").validate({
-    // debug : true,
-    success: "valid",
-    ignoreTitle: true,
-    rules: {
-      "service": {
-        required: function(element) {
-          return requiredField(element);
-        }
-      },
-      "serviceInstance": {
-        required: function(element) {
-          return requiredField(element);
-        }
-      },
-      "product.name": {
-        required: function(element) {
-          return requiredField(element);
-        }
-      },
-      "product.productType": {
-        required: true
-      },
-      "product.code": {
-        required: function(element) {
-          return requiredField(element);
-        },
-        noSpacesAllowed: true,
-        xRemote: {
-          condition: function() {
-            return $("#product_code").parents(".j_productspopup").is(':visible') && $("#product_code").val() != $(
-              "#product\\.code").val();
-          },
-          url: '/portal/portal/products/validateCode',
-          async: false
-        }
-      },
-      "product.componentId": {
-        required: function(element) {
-          var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
-          if (baseType == SO_BASED) {
-            $('#referenceId').val($('#product\\.componentId').val());
-            return requiredField(element);
-          }
-          return false;
-        }
-      },
-      "referenceId": {
-        required: function(element) {
-          var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
-          if (baseType == ID_BASED || baseType == ID_TAG_BASED) {
-            return requiredField(element);
-          }
-          return false;
-        }
-      },
-      "referenceTag": {
-        required: function(element) {
-          var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
-          if (baseType == ID_TAG_BASED || baseType == TAG_BASED) {
-            return requiredField(element);
-          }
-          return false;
-        }
-      },
-      "productItems": {
-        required: function(element) {
-          var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
-          if ((baseType == TEMPLATE_BASED || baseType == ISO_BASED) && !$(".j_includeUserUploadedTemplateGroup").is(
-            ':checked')) {
-            return requiredField(element);
-          }
-          return false;
-        }
-      }
-    },
-    messages: {
-      "service": {
-        required: "Select a service"
-      },
-      "serviceInstance": {
-        required: "Select an Instance"
-      },
-      "product.name": {
-        required: i18n.errors.products.name
-      },
-      "product.productType": {
-        required: i18n.errors.products.product_type
-      },
-      "product.code": {
-        required: i18n.errors.products.code,
-        noSpacesAllowed: i18n.errors.products.productCodeValid,
-        xRemote: i18n.errors.common.codeNotUnique,
-        remote: i18n.errors.common.codeNotUnique
-      },
-      "product.componentId": {
-        required: i18n.errors.products.componentIdso
-      },
-      "referenceId": {
-        required: i18n.errors.products.componentId
-      },
-      "referenceTag": {
-        required: i18n.errors.products.componentTag
-      },
-      "productItems": {
-        required: i18n.errors.products.templateIso
-      }
-    },
-    errorPlacement: function(error, element) {
-
-
-      var name = element.attr('id');
-      var nameAttr = element.attr('name');
-      if (nameAttr == 'productItems') {
-        name = nameAttr;
-      }
-      if (nameAttr == 'product.productType') {
-        name = nameAttr;
-      }
-      if (element.hasClass('j_pricerequired')) {
-        if ($("#priceRequiredError").html().trim() == "") {
-          error.appendTo("#priceRequiredError");
-          $(".common_messagebox").show();
-        }
-      } else {
-        name = ReplaceAll(name, ".", "\\.");
-        if (name != "") {
-          error.appendTo("#" + name + "Error");
-        }
-      }
-
-    }
-  });
-
+  jQuery.validator.addMethod('productCode', function(value, element) {
+    return value.length > 0 && /^[a-zA-Z0-9_.-]+$/.test(value);
+  }, i18n.errors.products.productCodeValid);
+  
+ 
 
 
 
@@ -339,6 +199,142 @@ $(document).ready(function() {
   });
 
 
+});
+
+$("#productForm").validate({
+  // debug : true,
+  success: "valid",
+  ignoreTitle: true,
+  rules: {
+    "service": {
+      required: function(element) {
+        return requiredField(element);
+      }
+    },
+    "serviceInstance": {
+      required: function(element) {
+        return requiredField(element);
+      }
+    },
+    "product.name": {
+      required: function(element) {
+        return requiredField(element);
+      },
+      maxlength: 255
+    },
+    "product.productType": {
+      required: true
+    },
+    "product.code": {
+      required: function(element) {
+        return requiredField(element);
+      },
+      maxlength: 64,
+      productCode: true,
+      xRemote: {
+        condition: function() {
+          return $("#product_code").parents(".j_productspopup").is(':visible') && $("#product_code").val() != $(
+            "#product\\.code").val() && ($("#product\\.name").val() != "");
+        },
+        url: '/portal/portal/products/validateCode',
+        async: false
+      }
+    },
+    "product.componentId": {
+      required: function(element) {
+        var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
+        if (baseType == SO_BASED) {
+          $('#referenceId').val($('#product\\.componentId').val());
+          return requiredField(element);
+        }
+        return false;
+      }
+    },
+    "referenceId": {
+      required: function(element) {
+        var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
+        if (baseType == ID_BASED || baseType == ID_TAG_BASED) {
+          return requiredField(element);
+        }
+        return false;
+      }
+    },
+    "referenceTag": {
+      required: function(element) {
+        var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
+        if (baseType == ID_TAG_BASED || baseType == TAG_BASED) {
+          return requiredField(element);
+        }
+        return false;
+      }
+    },
+    "productItems": {
+      required: function(element) {
+        var baseType = productBaseTypeMap[$("input:radio[name=product\\.productType]:checked").val()];
+        if ((baseType == TEMPLATE_BASED || baseType == ISO_BASED) && !$(".j_includeUserUploadedTemplateGroup").is(
+          ':checked')) {
+          return requiredField(element);
+        }
+        return false;
+      }
+    }
+  },
+  messages: {
+    "service": {
+      required: "Select a service"
+    },
+    "serviceInstance": {
+      required: "Select an Instance"
+    },
+    "product.name": {
+      required: i18n.errors.products.name
+    },
+    "product.productType": {
+      required: i18n.errors.products.product_type
+    },
+    "product.code": {
+      required: i18n.errors.products.code,
+      noSpacesAllowed: i18n.errors.products.productCodeValid,
+      xRemote: i18n.errors.common.codeNotUnique,
+      remote: i18n.errors.common.codeNotUnique
+    },
+    "product.componentId": {
+      required: i18n.errors.products.componentIdso
+    },
+    "referenceId": {
+      required: i18n.errors.products.componentId
+    },
+    "referenceTag": {
+      required: i18n.errors.products.componentTag
+    },
+    "productItems": {
+      required: i18n.errors.products.templateIso
+    }
+  },
+  errorPlacement: function(error, element) {
+
+
+    var name = element.attr('id');
+    var nameAttr = element.attr('name');
+    if (nameAttr == 'productItems') {
+      name = nameAttr;
+    }
+    if (nameAttr == 'product.productType') {
+      name = nameAttr;
+    }
+    if (element.hasClass('j_pricerequired')) {
+      if ($("#priceRequiredError").html().trim() == "") {
+        error.appendTo("#priceRequiredError");
+        $(".common_messagebox").show();
+      }
+    } else {
+      name = ReplaceAll(name, ".", "\\.");
+      if (name != "") {
+        error.appendTo("#" + name + "Error");
+      }
+    }
+
+  }
 });
 
 function openDiscriminatorsDialog(current) {
@@ -503,6 +499,7 @@ function nextClick(event) {
   $("#click_previous").removeClass("nonactive");
 
   listProductByFilter(null, null, currentPage, searchPattern);
+  bindSortable();
 }
 
 function previousClick(event) {
@@ -514,7 +511,8 @@ function previousClick(event) {
 
   $("#click_next").removeClass("nonactive");
   $("#click_next").unbind("click").bind("click", nextClick);
-  listProductByFilter(null, null, currentPage, searchPattern)
+  listProductByFilter(null, null, currentPage, searchPattern);
+  bindSortable();
 }
 
 function fetchProductList(currentPage, searchPattern) {
@@ -541,6 +539,7 @@ function fetchProductList(currentPage, searchPattern) {
       handleError(XMLHttpResponse);
     }
   });
+  bindCatagoryDropDown();
 }
 
 
@@ -826,6 +825,12 @@ function requiredField(element) {
   }
   return false;
 }
+function fun(currPrecision){
+
+    if (!'/^(?:\d*\.\d{1,'+currPrecision+'}|\d+)$/'.test(value)) {
+          return false;
+        }
+}
 
 /**
  * After creating new product add details in the starting of list grid,
@@ -978,7 +983,6 @@ function addProductNext(current) {
   var $currentstep = $("#" + currentstep);
   var nextstep = $currentstep.find("#nextstep").val();
   var productForm = $(current).closest("form");
-
   if (currentstep == "step1") {
     if (product_action == "create") {
       if ($("#serviceInstanceId option:selected").index() == 0) {
@@ -1029,8 +1033,29 @@ function addProductNext(current) {
       $("#step3AlreadyReached").val("true");
     }
   }
-
   if (currentstep == "step3" && product_action == "create") {
+	  var selectedDiscriminatorHasValues = true;
+	  var serviceUsageTypeIdForDiscriminator = null;
+	  $("#mediationRuleDiscriminators").find("div[id^='addedDiscriminatorValues_']").each(function(){
+	    	$selectedDiscriminator = $(this).find("#discvalue_selectbox");
+	    	if($selectedDiscriminator.val()== ""){
+	    		$selectedDiscriminator.addClass("error");
+	    		selectedDiscriminatorHasValues=false;
+	    		serviceUsageTypeIdForDiscriminator = $(this).parent().attr("id").split("_")[1];
+	    		$(this).find(".js_error").text(i18n.errors.products.errorChooseOption).show();
+	    	} else{
+	    		$selectedDiscriminator.removeClass("error");
+	    		$(this).find(".js_error").text("").hide();
+	    	}
+	    	
+	    });
+	  if(!selectedDiscriminatorHasValues){
+		  $("#usageTypeLeftPanel_"+serviceUsageTypeIdForDiscriminator).addClass("active");
+		  showUsageTypeDiscriminators(serviceUsageTypeIdForDiscriminator);
+		  var top = $("#addedDiscriminator_"+serviceUsageTypeIdForDiscriminator).find(".select_desc_name_class.error").offset().top - $("#addedDiscriminator_"+serviceUsageTypeIdForDiscriminator).offset().top - 81;
+		  $("#discriminatorsContainer").animate({scrollTop: top},'slow');
+		  return;
+	  }
     if ($("#showingScalesFor").val() != "" && $("#showingScalesFor").val() != undefined && $("#showingScalesFor").val() !=
       null) {
       if ($("#showingScalesFor").val() != $("#selectedUsageType").val()) {
@@ -1045,6 +1070,16 @@ function addProductNext(current) {
       $("#conversionFactorValuesError").text('');
       $("#usageTypeChanged").val('false');
     }
+    
+    if ($("#isProductDiscrete").val() == "true") {
+      //Conversion factor for discrete product is set to 1 as there scales in discrete usage types are not allowed.
+      //Remove setting of conversion factor to 1 whenever we enable scale for dicrete usage types/UOM.
+      $("#conversionFactor").val(1);
+      $("#product\\.uom").val($('div[id^="addedusage_"]').first().find('#uom').val());
+      $("#step5").find("#prevstep").val('step3');
+      nextstep="step5";
+    }
+   
   }
   if (currentstep == "step3" && product_action == "edit") {
     var jsonMediationRuleMap = JSON.parse($("#jsonMediationRuleMap").val());
@@ -1052,6 +1087,10 @@ function addProductNext(current) {
       $("#conversionFactor").find("#step4_uom").text(jsonMediationRuleMap[key]["uom"]);
       $("#conversionFactor").find("#step4_scale").text(jsonMediationRuleMap[key]["productUom"]);
       $("#conversionFactor").find("#step4_conversionfactor").text(jsonMediationRuleMap[key]["conversionFactor"]);
+      if(jsonMediationRuleMap[key]["discrete"]){
+        $("#step5").find("#prevstep").val('step3');
+        nextstep="step5";
+      }
       break;
     }
   }
@@ -1071,6 +1110,12 @@ function addProductNext(current) {
       if (customConversionFactor == null || customConversionFactor == "") {
         $("#conversionFactorValuesError").text(g_dictionary.dialogInvalidFactor); //raghav
         return false;
+      } else if (!$.isNumeric($('#step4_conversionFactor').val())) {
+        $("#conversionFactorValuesError").text(g_dictionary.dialogInvalidFactorValue);
+        return false;
+      } else if ($('#step4_conversionFactor').val() <= 0) {
+          $("#conversionFactorValuesError").text(g_dictionary.dialogNumberLessThanZero);
+          return false;
       } else {
         $("#conversionFactorValuesError").text('');
       }
@@ -1143,9 +1188,9 @@ function addProductNext(current) {
               "productForm",
               "main_addnew_formbox_errormsg");
           } else if (XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE) {
-            alert(i18n.errors.common.codeNotUnique);
+            popUpDialogForAlerts("dialog_info", i18n.errors.common.codeNotUnique);
           } else {
-            alert(i18n.errors.products.failed_create_product);
+            popUpDialogForAlerts("dialog_info", i18n.errors.products.failed_create_product);
           }
         }
       });
@@ -1271,11 +1316,10 @@ function editProductImageGet(current, ID) {
                 return true;
               },
               complete: function() {
-                updateproductlogodetails($("#productLogoForm-iframe-post-form"));
+                updateproductlogodetails($("#productLogoForm-iframe-post-form"), $thisDialog );
               }
             });
             $('#productLogoForm').submit();
-            $thisDialog.dialog('close');
           }
         },
         "Cancel": function() {
@@ -1332,24 +1376,31 @@ function sortorder() {
     },
     error: function() {}
   });
-
+  bindSortable();
 }
 
-function updateproductlogodetails(current) {
+function updateproductlogodetails(current, dialog) {
   response = $(current).contents().find('body');
   if (response == null || response == "null" || response == "") {
-    alert(i18n.errors.products.failed_upload_image);
+    popUpDialogForAlerts("dialog_info", i18n.errors.products.failed_upload_image);
     return;
   }
+
   try {
     var pre = response.children('pre');
     if (pre.length) response = pre.eq(0);
     returnReponse = $.parseJSON(response.html());
+    if(returnReponse.errormessage!=null){
+      $("#logoError").text(returnReponse.errormessage);
+    }else{
+      $("#logoError").text("");
+      dialog.dialog("close");
+    }
     var date = new Date();
     $("#productimage" + returnReponse.id).attr('src', "/portal/portal/logo/product/" + returnReponse.id + "?t=" + date.getMilliseconds());
 
   } catch (e) {
-    alert(response.html());
+    popUpDialogForAlerts("dialog_info", response.html());
   }
 
 }
@@ -1594,7 +1645,11 @@ function editplannedCharges(current) {
       });
       $thisDialog.dialog("open");
     },
-    error: function() {}
+    error: function(XMLHttpResponse) {
+     if (XMLHttpResponse.status === PRECONDITION_FAILED) {
+        popUpDialogForAlerts("alert_dialog", i18n.errors.common.uncompatible_currency_precision);
+      }
+    }
   });
 }
 
@@ -1689,7 +1744,8 @@ function pouplateUsageTypeDropDown(usageType, usageTypeId) {
   if (usageType == "") {
     for (var i = 0; i < serviceUsageTypes.length; i++) {
       serviceUsageTypeOptions.push('<option value="', serviceUsageTypes[i].id, '"uom="', serviceUsageTypes[i].serviceUsageTypeUom
-        .name, '"serviceUsageTypeId="', serviceUsageTypes[i].id, '">',
+        .name, '"serviceUsageTypeId="', serviceUsageTypes[i].id,
+        ' "isServiceUsageTypeDiscrete="', serviceUsageTypes[i].discrete, '">',
         l10discAndUsageTypeNames[serviceUsageTypes[i].usageTypeName + "-name"], '</option>');
     }
   } else {
@@ -1713,7 +1769,7 @@ function pouplateUsageTypeDropDown(usageType, usageTypeId) {
       if (usageType.trim().toLowerCase() == availableServiceUsageTypes[i].serviceUsageTypeUom.name.trim().toLowerCase()) {
         serviceUsageTypeOptions.push('<option value="', availableServiceUsageTypes[i].id, '"uom="',
           availableServiceUsageTypes[i].serviceUsageTypeUom.name, '"serviceUsageTypeId="', availableServiceUsageTypes[i]
-          .id, '">',
+          .id,' "isServiceUsageTypeDiscrete="', availableServiceUsageTypes[i].discrete, '">',
           l10discAndUsageTypeNames[availableServiceUsageTypes[i].usageTypeName + "-name"], '</option>');
       }
     }
@@ -1800,6 +1856,7 @@ function addDiscriminatorRow(current) {
     }
     newDiscriminatorRow.find("#discvalue_selectbox").html(selectHtml);
   } else {
+    newDiscriminatorRow.find("#grid_cell_discvalue_selectbox").remove();
     newDiscriminatorRow.find("#grid_cell_discvalue_inputbox").attr("selectOrInput", "opt_input");
     newDiscriminatorRow.find("#grid_cell_discvalue_inputbox").show();
   }
@@ -1889,7 +1946,7 @@ function addUsageType(current) {
     usageId = parseInt($("div[id^='addedusage']:last").attr("id").replace("addedusage_", "")) + 1;
   }
   var usageTypeId = "addedusage_" + usageId;
-
+  $("#productMedRuleSelectError").text("");
   newUsageType.attr("id", usageTypeId);
   var selectedUsageTypeOptionIndex = $("#mediationRules").find("#usageTypeAdd").find("#usagetype option:selected").index();
   if (selectedUsageTypeOptionIndex == 0) {
@@ -1905,9 +1962,15 @@ function addUsageType(current) {
   newUsageType.find("#conversionfactor").text(usageTypeTemplate.find("#conversionfactor").val());
   newUsageType.find("#conversionfactor").attr("value", usageTypeTemplate.find("#conversionfactor").val());
 
-  newUsageType.find("#uom").text(usageTypeTemplate.find("#uom").text());
-  newUsageType.find("#uom").attr("value", usageTypeTemplate.find("#uom").text());
+  newUsageType.find("#uomtext").text(usageTypeTemplate.find("#uomtext").text());
+  newUsageType.find("#uomtext").attr("value", usageTypeTemplate.find("#uomtext").text());
 
+  
+  newUsageType.find("#uom").val(usageTypeTemplate.find("#uom").val());
+  newUsageType.find("#uom").attr("value", usageTypeTemplate.find("#uom").val());
+
+  $("#isProductDiscrete").val(usageTypeTemplate.find("#usagetype option:selected").attr("isServiceUsageTypeDiscrete"));
+  
   var usageTypeUom = $("#mediationRules").find("#usageTypeAdd").find("#usagetype option:selected").attr("uom");
   var serviceUsageTypeId = usageTypeTemplate.find("#usagetype option:selected").attr("serviceusagetypeid");
   pouplateUsageTypeDropDown(usageTypeUom, serviceUsageTypeId);
@@ -1918,7 +1981,8 @@ function addUsageType(current) {
 
   // Reset the template html
   usageTypeTemplate.find("#conversionfactor").val("1.00");
-  usageTypeTemplate.find("#uom").html("");
+  usageTypeTemplate.find("#uom").val("");
+  usageTypeTemplate.find("#uomtext").html("");
   usageTypeTemplate.find("#usagetype option:eq(0)").attr('selected', 'selected');
   usageTypeTemplate.find("#operator option:eq(0)").attr("selected", "selected");
 
@@ -1936,7 +2000,7 @@ function addUsageType(current) {
     '" class="widget_navigationlist"  onclick="javascript:showUsageTypeDiscriminators(' + "'" + serviceUsageTypeId +
     "'" + ');">' +
     '<span class="navicon RUNNING_VM" style="margin-top:4px;"></span><span class="title" serviceUsageTypeId="' +
-    serviceUsageTypeId + '">' + newUsageType.find("#usagetype").text() + '</span></li>';
+    serviceUsageTypeId + '" title="' + newUsageType.find("#usagetype").text() + '">' + newUsageType.find("#usagetype").text() + '</span></li>';
   $("#usageTypeDisp").append(usageTypeHtml);
 
   var discNamesOptionName = [];
@@ -1970,7 +2034,13 @@ function addUsageType(current) {
 
 function changeUom(sel) {
   var uom = $(sel).find(':selected').attr('uom');
-  $(sel).parent().parent().find("#uom").html(uom);
+  $(sel).parent().parent().find("#uom").val(uom);
+  var message = i18n.label.products.discrete;
+  if ($(sel).find(':selected').attr('isServiceUsageTypeDiscrete')== "true") {
+      $(sel).parent().parent().find("#uomtext").html(uom +' ('+ message+')');
+  }else{
+     $(sel).parent().parent().find("#uomtext").html(uom);
+ }
 }
 
 function removeUsageType(usageId, serviceUsageTypeId) {
@@ -1987,7 +2057,8 @@ function removeUsageType(usageId, serviceUsageTypeId) {
 
     var usageTypeTemplate = $("#mediationRules").find("#usageTypeAdd");
     usageTypeTemplate.find("#conversionfactor").val("1.00");
-    usageTypeTemplate.find("#uom").html("");
+    usageTypeTemplate.find("#uomtext").html("");
+    usageTypeTemplate.find("#uom").val("");
     usageTypeTemplate.find("#usagetype option:eq(0)").attr('selected', 'selected');
     usageTypeTemplate.find("#operator option:eq(0)").attr("selected", "selected");
   } else {
@@ -2007,14 +2078,18 @@ function removeUsageType(usageId, serviceUsageTypeId) {
 function populateEntriesInStep2OfProductEdit() {
   var jsonMediationRuleMap = JSON.parse($("#jsonMediationRuleMap").val());
   var jsonUsageTypeDiscriminatorMap = JSON.parse($("#jsonUsageTypeDiscriminatorMap").val());
-
   for (key in jsonMediationRuleMap) {
     var newUsageType = $("#mediationRules").find("#usageTypeAdd").clone();
     var usageTypeName = jsonMediationRuleMap[key]["usageType"];
-    newUsageType.find("#usagetype").text(l10discAndUsageTypeNames[usageTypeName + "-name"]);
+    newUsageType.find("#usagetype").html(l10discAndUsageTypeNames[usageTypeName + "-name"]);
     newUsageType.find("#conversionfactor").text(jsonMediationRuleMap[key]["conversionFactor"]);
-    newUsageType.find("#operator").text(jsonMediationRuleMap[key]["operator"].toLowerCase());
+    newUsageType.find("#operator").html(i18n.label.products['usage'+jsonMediationRuleMap[key]["operator"].toLowerCase()]);
+    if(jsonMediationRuleMap[key]["discrete"]){
+     var discreteMsg = i18n.label.products.discrete;
+     newUsageType.find("#uom").text(jsonMediationRuleMap[key]["uom"] +' '+ discreteMsg);
+    }else{
     newUsageType.find("#uom").text(jsonMediationRuleMap[key]["uom"]);
+  }
     var serviceUsageTypeId = jsonMediationRuleMap[key]["usageTypeId"];
     newUsageType.attr("id", serviceUsageTypeId);
     $("#mediationRules").append(newUsageType);
@@ -2043,7 +2118,7 @@ function populateStep3EntriesOfProductEdit(discsAlreadyAddedDict, discDict, serv
   usageTypeHtml = '<li id="usageTypeLeftPanel_' + medRuleId + '" medRuleId="' + medRuleId +
     '" class="widget_navigationlist"  onclick="javascript:showUsageTypeDiscriminatorsInEdit(' + "'" + medRuleId + "'" +
     ');">' + '<span class="navicon RUNNING_VM" style="margin-top:4px;"></span><span class="title" serviceUsageTypeId="' +
-    serviceUsageTypeId + '">' + l10discAndUsageTypeNames[usageTypeName + "-name"] + '</span></li>';
+    serviceUsageTypeId + '" title="' + l10discAndUsageTypeNames[usageTypeName + "-name"] + '">' + l10discAndUsageTypeNames[usageTypeName + "-name"] + '</span></li>';
   $("#usageTypeDisp").append(usageTypeHtml);
 
   var isDiscAlreadyAdded = false;
@@ -2138,6 +2213,7 @@ function viewReferencePriceBookHistory(isProductOn) {
       handleError(XMLHttpResponse);
     }
   });
+  bindCatagoryDropDown();
 }
 
 function fillInstancesList(current) {
@@ -2177,6 +2253,18 @@ function getProductOrBundleListing(current) {
   $(current).attr("style", "color: #000;");
   $(current).removeClass("instance_not_selected");
   $(current).addClass("instance_selected");
+  
+  var $productTab = $("#prod_bundles_container").find("#product_tab");
+  
+  if($(current).attr("serviceHasUsageType") == "true"){
+    $productTab.show();
+    $productTab.removeClass("off");
+    $productTab.addClass("on");
+  } else {
+    $productTab.hide();
+    $productTab.removeClass("on");
+    $productTab.addClass("off");
+  }
 
   if ($("#prod_bundles_container").find(".on:first").attr("id") == "product_tab") {
     listProducts($("#product_tab"));
@@ -2192,7 +2280,7 @@ function listProducts(current) {
   });
   $(current).removeClass("off");
   $(current).addClass("on");
-
+  $("#full_page_spinning_wheel").show();
   $("#all_product").show();
   $("#all_product_separater").show();
   $("#active_product").show();
@@ -2220,6 +2308,8 @@ function listProducts(current) {
   $("#retire_product").css({
     'color': '#2C8BBC'
   });
+  
+  currentFilterBy = "all"
 
   var data = {};
   if ($("#whichPlan").val() == "history") {
@@ -2240,22 +2330,29 @@ function listProducts(current) {
       $("#productBundleListingDiv").empty();
       $("#productBundleListingDiv").html(html);
       $("#productBundleListingDiv").find("#productgridcontent").find(".j_viewproduct:first").click();
+      $("#full_page_spinning_wheel").hide();
     },
     error: function(XMLHttpResponse) {
+      $("#full_page_spinning_wheel").hide();
       handleError(XMLHttpResponse);
     }
   });
-
+  /**
+   * Again Bind Sorable on products
+   */
+  bindSortable();
+  bindCatagoryDropDown();
 }
 
 function listBundles(current) {
+  productBundlefilterby = "all";
 
   $(current).parents("#prod_bundles_container").find("li").each(function() {
     $(this).removeClass("on");
   });
   $(current).removeClass("off");
   $(current).addClass("on");
-
+  $("#full_page_spinning_wheel").show();
   $("#all_product").hide();
   $("#all_product_separater").hide();
   $("#active_product").hide();
@@ -2302,11 +2399,14 @@ function listBundles(current) {
       $("#productBundleListingDiv").empty();
       $("#productBundleListingDiv").html(html);
       $("#productBundleListingDiv").find("#productBundlegridcontent").find(".j_viewbundle:first").click();
+      $("#full_page_spinning_wheel").hide();
     },
     error: function(XMLHttpResponse) {
+      $("#full_page_spinning_wheel").hide();
       handleError(XMLHttpResponse);
     }
   });
+  
 }
 
 var currentFilterBy;
@@ -2419,6 +2519,7 @@ function listProductByFilter(current, filter, currentPage, searchPattern) {
       handleError(XMLHttpResponse);
     }
   });
+  bindCatagoryDropDown();
 }
 
 var productBundlefilterby;
@@ -2500,4 +2601,37 @@ function listProductBundlesByFilter(current, filter) {
 function changeDiscriminatorOperator(current) {
   var className = $(current).attr("id").split("-")[1];
   $("." + className).val($(current).val());
+}
+function bindSortable(){
+	$("#sortproductslist").sortable({
+		    axis: 'y',
+		    start: function(event, ui) {
+		      ui.item.addClass('active');
+		    },
+		    update: function(event, ui) {
+		      var sortableArray = $(this).sortable('toArray');
+		      for (var i = 0; i < sortableArray.length; i++) {
+		        sortableArray[i] = sortableArray[i].substr(4);
+		      }
+		      $("#productOrderData").val(sortableArray.toString());
+		      $.ajax({
+		        type: "POST",
+		        url: "/portal/portal/products/editproductsorder",
+		        data: $("#productOrderData").serialize(),
+		        dataType: "json",
+		        success: function() {
+		          // location.reload(true);
+		          // Do Nothing
+		        },
+		        error: function() {
+		          // location.reload(true);
+		        }
+		      });
+		    }
+		  });
+}
+function bindCatagoryDropDown(){
+	$("#filter_dropdown").unbind("change").bind("change", function(event) {
+		listProductByFilter();
+	});	
 }

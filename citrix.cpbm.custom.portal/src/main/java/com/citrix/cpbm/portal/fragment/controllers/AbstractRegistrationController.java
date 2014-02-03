@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.BufferedReader;
@@ -22,7 +21,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
@@ -119,9 +117,6 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
   @Autowired
   protected UserService userService;
 
-  @Resource(name = "reCaptcha")
-  protected ReCaptcha captchaService;
-
   @Autowired
   protected RegistrationService registrationService;
 
@@ -211,7 +206,6 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       logger.error("Tokens not available");
       return "trial.invalid";
     }
-    // model.addAttribute("trialCode", token.getCode());
     UserRegistration registration = createDefaultRegistration();
     registration.setDisposition(null);
     registration.getTenant().setAccountType(null);
@@ -299,16 +293,32 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
    * @throws IPtoCountryException
    */
   @RequestMapping(value = "/signup", method = RequestMethod.GET)
-  public String signup(@Valid @ModelAttribute("registration") final UserRegistration registration,
-      BindingResult result, final ModelMap map, @ModelAttribute("channelParam") String channelParam,
-      @RequestParam(value = "promocode", required = false) final String promoCode,
-      @RequestParam(value = "channelcode", required = false) final String channelCode, SessionStatus sessionStatus,
+  public String signup(final ModelMap map, @RequestParam(value = "promocode", required = false) final String promoCode,
+      @RequestParam(value = "channelcode", required = false) final String channelCode,
+      @RequestParam(value = "accountTypeId", required = true) String accountTypeId, SessionStatus sessionStatus,
       HttpServletRequest request) throws IPtoCountryException {
     logger.debug("###Entering in signup(model) method @GET");
-    registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    AccountType accountType = registrationService.getAccountTypeById(registration.getAccountTypeId());
 
-    return showSignup(registration, map, channelParam, request, accountType, promoCode, channelCode);
+    AccountType accountType = registrationService.getAccountTypeById(accountTypeId);
+
+    List<AccountType> accountTypes = registrationService.getSelfRegistrationAccountTypes();
+    if (accountTypes == null || accountTypes.size() == 0 || !(accountTypes.contains(accountType))) {
+      map.addAttribute("signupwarningmessage",
+          messageSource.getMessage("ui.signup.warning.message", null, request.getLocale()));
+    }
+
+    UserRegistration registration = createDefaultRegistration();
+    Channel channel = channelService.getDefaultServiceProviderChannel();
+    registration.getTenant().setSourceChannel(channel);
+    registration.setAccountTypeId(accountTypeId);
+    TelephoneVerificationService telephoneVerificationService = (TelephoneVerificationService) connectorManagementService
+        .getOssServiceInstancebycategory(ConnectorType.PHONE_VERIFICATION);
+    boolean isEnabled = telephoneVerificationService != null && telephoneVerificationService.isEnabled();
+    registration.setPhoneVerificationEnabled(isEnabled);
+
+    registration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+
+    return showSignup(registration, map, channel.getParam(), request, accountType, promoCode, channelCode);
   }
 
   /**
@@ -327,16 +337,6 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       HttpServletRequest request, AccountType accountType, String promoCode, String channelCode) {
     map.addAttribute("page", Page.HOME);
     map.addAttribute(Page.HOME.getLevel1().name(), "on");
-    Locale currentLocale = (Locale) WebUtils.getSessionAttribute(request,
-        SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
-    map.addAttribute("currentLocale", currentLocale);
-    registration.getTenant().setAccountType(accountType);
-    registration.setCurrencyValueList(channelService.listCurrencies(channelParam));
-    map.addAttribute("registration", registration);
-    map.addAttribute("tenant", registration.getTenant());
-    map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
-    map.addAttribute("defaultLocale", getDefaultLocale());
-    addFraudProfilingHostToSession(map);
 
     // compatibility for channel and promotion would happen at register.post
     // if promotion code is passed, we select a appropriate channel to pass
@@ -347,11 +347,24 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
     } else if (StringUtils.isNotBlank(promoCode)) {
       channel = promotionService.findAptChannel(promoCode);
+    } else if (StringUtils.isNotBlank(channelCode) && !accountType.isTrial()) {
+      channel = channelService.locateByChannelCode(channelCode);
     }
 
     if (channel != null) {
       channelParam = channel.getParam();
     }
+
+    Locale currentLocale = (Locale) WebUtils.getSessionAttribute(request,
+        SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
+    map.addAttribute("currentLocale", currentLocale);
+    registration.getTenant().setAccountType(accountType);
+    registration.setCurrencyValueList(channelService.listCurrencies(channelParam));
+    map.addAttribute("registration", registration);
+    map.addAttribute("tenant", registration.getTenant());
+    map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
+    map.addAttribute("defaultLocale", getDefaultLocale());
+    addFraudProfilingHostToSession(map);
 
     map.addAttribute("channelParam", channelParam);
     map.addAttribute("promoCode", promoCode);
@@ -424,7 +437,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       HttpSession session) {
     {
       logger
-          .debug("setPassword (@RequestParam(value = password, required = true) final String password, HttpSession session,HttpServletRequest request) ");
+          .debug("###Entering setPassword (@RequestParam(value = password, required = true) final String password, HttpSession session,HttpServletRequest request) ");
       StringBuffer redirect = new StringBuffer();
       redirect.append("redirect:/portal/verify_email");
       final String userParam = (String) session.getAttribute("regParam");
@@ -434,7 +447,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
         @Override
         public User run() {
           User user = userService.get(userParam);
-          if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
+          if (!config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)) {
             user.setClearPassword(password);
           } else if (config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
             user.setClearLdapPassword(password);
@@ -525,7 +538,12 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     }
 
     map.addAttribute("tnc", getTermsAndConditions());
-    map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
+    if (!Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only))) {
+      map.addAttribute("showCaptcha", true);
+      map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
+    } else {
+      logger.debug("Not displaying captcha because intranet only mode is enabled");
+    }
     List<Country> filteredCountryList = getFilteredCountryList(registration.getCountryList());
     map.addAttribute("filteredCountryList", filteredCountryList);
     map.addAttribute("ipToCountryCode", iPtoCountry.getCountryCode());
@@ -549,28 +567,33 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
    */
   @RequestMapping(value = "/phone_verification", method = RequestMethod.POST)
   public String phoneverification(@Valid @ModelAttribute("registration") final UserRegistration registration,
-      BindingResult result, @RequestParam("recaptcha_challenge_field") String captchaChallenge,
-      @RequestParam("recaptcha_response_field") String captchaResponse, final ModelMap map,
+      BindingResult result,
+      @RequestParam(value = "recaptcha_challenge_field", required = false) String captchaChallenge,
+      @RequestParam(value = "recaptcha_response_field", required = false) String captchaResponse, final ModelMap map,
       @ModelAttribute("channelParam") final String channelParam, SessionStatus sessionStatus, HttpServletRequest request) {
 
-    try {
-      verifyCaptcha(captchaChallenge, captchaResponse, getRemoteUserIp(request), captchaService);
-    } catch (CaptchaFailureException ex) {
-      IPtoCountry iPtoCountry = super.getGeoIpToCountry(request);
-      List<Country> filteredCountryList = getFilteredCountryList(registration.getCountryList());
-      map.addAttribute("filteredCountryList", filteredCountryList);
-      if (registration.getUser().getAddress().getCountry().length() > 0) {
-        map.addAttribute("ipToCountryCode", registration.getUser().getAddress().getCountry());
-      } else {
-        map.addAttribute("ipToCountryCode", iPtoCountry.getCountryCode());
+    if (!Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only))) {
+      try {
+        verifyCaptcha(captchaChallenge, captchaResponse, getRemoteUserIp(request), captchaService);
+      } catch (CaptchaFailureException ex) {
+        IPtoCountry iPtoCountry = super.getGeoIpToCountry(request);
+        List<Country> filteredCountryList = getFilteredCountryList(registration.getCountryList());
+        map.addAttribute("filteredCountryList", filteredCountryList);
+        if (registration.getUser().getAddress().getCountry().length() > 0) {
+          map.addAttribute("ipToCountryCode", registration.getUser().getAddress().getCountry());
+        } else {
+          map.addAttribute("ipToCountryCode", iPtoCountry.getCountryCode());
+        }
+        map.addAttribute("registrationError", "captcha.error");
+        map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
+        map.addAttribute("allowSecondaryCheckBox", registration.getTenant().getAccountType().isEnableSecondaryAddress());
+        result.reject("errors.registration.captcha", null, null);
+        map.addAttribute("showCaptcha", true);
+        return "register.moreuserinfo";
       }
-      map.addAttribute("registrationError", "captcha.error");
-      map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
-      map.addAttribute("allowSecondaryCheckBox", registration.getTenant().getAccountType().isEnableSecondaryAddress());
-      result.reject("errors.registration.captcha", null, null);
-      return "register.moreuserinfo";
+    } else {
+      logger.debug("No captcha verification required because intranet only mode is enabled");
     }
-
     Country country = countryService.locateCountryByCode(registration.getUser().getAddress().getCountry());
     registration.setCountryName(country.getName());
     registration.setCountryCode(country.getIsdCode());
@@ -680,7 +703,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       Boolean isServiceBundle, String category, String currencyCode) {
     List<ProductBundleRevision> retBundles = new ArrayList<ProductBundleRevision>();
     for (ProductBundleRevision productBundle : productBundles) {
-      if ((ResourceConstraint.ACCOUNT).equals(productBundle.getProductBundle().getBusinessConstraint())
+      if (ResourceConstraint.ACCOUNT.equals(productBundle.getProductBundle().getBusinessConstraint())
           || productBundle.getProductBundle().getRemoved() != null
           || productBundle.getProductBundle().getPublish() == false) {
         continue;
@@ -712,8 +735,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
       @Override
       public int compare(ProductBundleRevision o1, ProductBundleRevision o2) {
-        return (new Long(o1.getProductBundle().getSortOrder()))
-            .compareTo(new Long(o2.getProductBundle().getSortOrder()));
+        return new Long(o1.getProductBundle().getSortOrder()).compareTo(new Long(o2.getProductBundle().getSortOrder()));
       }
     });
     logger.debug("### listProductBundles method ending...");
@@ -782,12 +804,14 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     }
     map.addAttribute(Page.HOME.getLevel1().name(), "on");
     map.addAttribute("allowSecondaryCheckBox", registration.getTenant().getAccountType().isEnableSecondaryAddress());
-    if (!registration.getPhoneVerificationEnabled()) {
+    if (!registration.getPhoneVerificationEnabled()
+        && !Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only))) {
       try {
         verifyCaptcha(captchaChallenge, captchaResponse, getRemoteUserIp(request), captchaService);
       } catch (CaptchaFailureException ex) {
         map.addAttribute("registrationError", "captcha.error");
         map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
+        map.addAttribute("showCaptcha", true);
         result.reject("errors.registration.captcha", null, null);
         map.addAttribute("allowSecondaryCheckBox", registration.getTenant().getAccountType().isEnableSecondaryAddress());
         return "register.moreuserinfo";
@@ -875,6 +899,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       String channelCode = channelService.getChannel(channelParam).getCode();
 
       if (!promotionService.isValidPromotion(promoCode, channelCode)) {
+        logger.debug("Invalid promo code " + promoCode + " for channel code " + channelCode);
         return "register.fail";
       }
 
@@ -883,6 +908,8 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       AccountType requestedAccountType = registrationService.getAccountTypeById(registration.getAccountTypeId());
 
       if (requestedAccountType.equals(registrationService.getTrialAccountType()) && !cp.isTrial()) {
+        logger.debug("Invalid promo code " + promoCode + " for account type " + requestedAccountType);
+
         return "register.fail";
       }
     }
@@ -990,9 +1017,6 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
     if (result.hasErrors()) {
       displayErrors(result);
       parseResult(result, map);
-      /*
-       * for (ObjectError objectError : result.getAllErrors()) { errorMsgList.add(objectError.getCode()); }
-       */
       registration.reset();
       registration.setCurrency(config.getValue(Names.com_citrix_cpbm_portal_settings_default_currency));
       if (errorMsgList.size() > 0) {
@@ -1001,8 +1025,11 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       }
       logger.debug("###Exiting register(registration,result,captchaChallenge,,captchaResponse,"
           + "map,sessionStatus,request) method @POST");
-      map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
       map.addAttribute("allowSecondaryCheckBox", registration.getTenant().getAccountType().isEnableSecondaryAddress());
+      if (!Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only))) {
+        map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
+        map.addAttribute("showCaptcha", true);
+      }
       return "register.moreuserinfo";
     } else {
       sessionStatus.setComplete(); // clean up parameters in session.
@@ -1029,7 +1056,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
 
         @Override
         public Void run() {
-          userService.getUserByParam("username", username, false);
+          userService.getUserByParam("username", username, true);
           return null;
         }
       });
@@ -1101,7 +1128,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
         }
       }
     });
-    
+
     if (!config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)) {
       if (user.getPassword() == null) {
         logger.debug("AbstractRegistrationCont userpassword is null returning to register.setpassword");
@@ -1318,7 +1345,7 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
    * @param request
    * @return String
    */
-  @RequestMapping(value = "/phoneverification/verify_pin", method = RequestMethod.GET)
+  @RequestMapping(value = "/phoneverification/verify_pin", method = RequestMethod.POST)
   @ResponseBody
   public String verifyPhoneVerificationPIN(@RequestParam(value = "PIN", required = true) String PIN,
       @RequestParam(value = "phoneNumber", required = true) String phoneNumber, HttpServletRequest request) {

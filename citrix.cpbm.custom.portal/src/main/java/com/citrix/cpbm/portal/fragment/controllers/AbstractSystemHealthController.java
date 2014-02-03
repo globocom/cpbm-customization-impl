@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.text.ParseException;
@@ -204,12 +203,12 @@ public abstract class AbstractSystemHealthController extends AbstractAuthenticat
       Map<String, String> currentInstanceValues = new HashMap<String, String>();
       Health health = healthService.getSystemHealthStatus(new Date(), serviceInstance);
       ServiceNotification latestNotification = healthService.getLatestNotification(serviceInstance);
-      String message = messageSource.getMessage(health.getDescription(), null, getSessionLocale(request));
-
-      currentInstanceValues.put("message", message);
+      // String message = messageSource.getMessage(health.getDescription(), null, getSessionLocale(request));
+      // currentInstanceValues.put("message", health.getDescription());
       currentInstanceValues.put("name", serviceInstance.getName());
       currentInstanceValues.put("id", serviceInstance.getUuid());
       currentInstanceValues.put("status", health.toString());
+      currentInstanceValues.put("tooltip", "system.health." + health.toString());
       if (latestNotification != null) {
         currentInstanceValues.put("latestNotification", latestNotification.getDescription());
       }

@@ -223,8 +223,7 @@ $(document).ready(function() {
       $('#percentOffDivEdit').show();
       $('.durationInPeriods').show();
       $('.durationInDays').hide();
-      document.getElementById("campaignPromotion.discountType1").checked = true;
-      document.getElementById("campaignPromotion.discountTypeEdit1").checked = true;
+      $('#campaignPromotion\\.discountType1').attr("checked", true);
     }
     return;
   });
@@ -332,7 +331,7 @@ $(document).ready(function() {
         showTime: false,
         minDate: new Date(),
         onClose: function(dateText, inst) {
-          $("#campaignPromotionsForm").valid();
+          //$("#campaignPromotionsForm").valid();
         }
       });
     }
@@ -348,7 +347,7 @@ $(document).ready(function() {
       showTime: false,
       minDate: new Date(),
       onClose: function(dateText, inst) {
-        $("#campaignPromotionsForm").valid();
+        //$("#campaignPromotionsForm").valid();
       }
     });
   };
@@ -579,7 +578,7 @@ function getCurrencyForSelectedChannel() {
       $("#supportedCurrencyEditDiv").html(html);
     },
     error: function(jsonObj) {
-      alert(jsonObj.responseText);
+      popUpDialogForAlerts("dialog_info", jsonObj.responseText);
     }
   });
 }
@@ -607,6 +606,15 @@ function addCampaignDetailsToListView(json) {
   campaignListTemplate.find("#endDate").text(dateFormat(json.endDate, g_dictionary.dateonlyFormat, false));
   campaignListTemplate.find("#title").text(json.title);
   campaignListTemplate.find("#enable").text(i18nBooleanString(json.enabled));
+  
+  var channelSubtitleText = "";
+  if (json.campaignPromotionsInChannels != null) {
+    for (var c = 0; c < json.campaignPromotionsInChannels.length; c++) {
+      channelSubtitleText += (json.campaignPromotionsInChannels[c].channel.code + ", ");
+    }
+    channelSubtitleText = channelSubtitleText.substring(0, channelSubtitleText.length - 2);
+  }  
+  campaignListTemplate.find("#channelSubtitle").text(channelSubtitleText);
   campaignListTemplate.show();
   $(".widget_navigationlist:first").prepend(campaignListTemplate);
   var perPageValue = 14;
@@ -716,9 +724,9 @@ function addNewCampaign(event, form) {
         if (XMLHttpRequest.status === AJAX_FORM_VALIDATION_FAILED_CODE) {
           displayAjaxFormError(XMLHttpRequest, "campaignPromotionsForm", "main_addnew_formbox_errormsg");
         } else if (XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE) {
-          alert(i18n.errors.common.codeNotUnique);
+          popUpDialogForAlerts("dialog_info", i18n.errors.common.codeNotUnique);
         } else {
-          alert(i18n.campaigns.failed_create_campaign);
+          popUpDialogForAlerts("dialog_info", i18n.campaigns.failed_create_campaign);
         }
       }
     });

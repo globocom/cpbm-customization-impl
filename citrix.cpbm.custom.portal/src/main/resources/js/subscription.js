@@ -4,9 +4,80 @@
 *  Citrix Systems, Inc.
 */
 $(document).ready(function() {
-
+  
   activateThirdMenuItem("l3_subscriptions_tab");
 
+  // Decide how to show 'List All' link and bind unbind accordingly
+  var selectedDetails = $("#selected_subs_for_details").val();
+  var filtersApplied = $("#filtersApplied").val();
+  if ((filtersApplied != null && filtersApplied > 0) || (selectedDetails != null && selectedDetails != '')) {
+    $("#list_all").addClass("title_listall_arrow");
+    $("#list_titlebar").unbind("click").bind("click", function() {
+      if ("true" == $("#usage_billing_my_usage").val()) {
+        window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val() + "&state=All";
+      } else {
+        window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + "&state=All";
+      }
+    });
+    if( selectedDetails != null && selectedDetails != ''){
+      $("#search_panel").hide();
+    }    
+  } else {
+    $("#list_all").removeClass("title_listall_arrow");
+    $("#list_titlebar").unbind("click");
+  }
+  
+  
+  
+  $("#advancesearchButton").click(function() {
+    $("#advanceSearchDropdownDiv").toggle();
+  });
+
+  $("#advSrchCancel").click(function() {
+    $("#advanceSearchDropdownDiv").hide(); 
+  });
+  
+  $("#selected_filters").text();
+  $("#dropdownfilter_instances").change(function() {
+    var selected_instance = $("#dropdownfilter_instances option:selected").attr('id');
+    $("#dropdownfilter_bundles").empty();
+    $("#dropdownfilter_bundles").append($("#hidden_bundles option").first().clone());
+    $("#dropdownfilter_bundles").append($("#hidden_bundles option[instance="+ selected_instance +"]").clone());
+    if($("#selectedBundleID").val() != null && $("#selectedBundleID").val() !=""){
+      $("#dropdownfilter_bundles option[id="+ $("#selectedBundleID").val() +"]").attr('selected','selected');
+    }
+  });
+  
+  $("#dropdownfilter_instances").change();
+  
+  $("#advSrchSubmit").click(function() {
+    
+    var useruuid = $("#dropdownfilter_users option:selected").val();
+    var state = $("#dropdownfilter_states option:selected").val();
+    var instanceParam = $("#dropdownfilter_instances option:selected").val();
+    var bundleId = $("#dropdownfilter_bundles option:selected").val();
+    
+    var $currentPage = 1;
+    
+    if ("true" == $("#usage_billing_my_usage").val()) {
+      filterurl = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val()  + "&state=" + state;
+    } else {
+      filterurl = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + "&state=" + state;
+    }
+    
+    if (useruuid != null && useruuid != 'ALL') {
+      filterurl = filterurl + "&useruuid=" + useruuid;
+    }
+    if (bundleId != null && bundleId != 'ALL') {
+      filterurl = filterurl + "&productBundleID=" + bundleId;
+    }
+    if (instanceParam != null && instanceParam != 'ALL') {
+      filterurl = filterurl + "&instanceuuid=" + instanceParam;
+    }
+    
+    window.location = filterurl + "&page=" + (parseInt($currentPage));
+  });  
+  
   function refreshGridRow(jsonObj, $template) {
     if (jsonObj.state == "EXPIRED")
       $template.find(".widget_statusicon").removeClass().addClass("widget_statusicon stopped");
@@ -56,8 +127,6 @@ $(document).ready(function() {
     buttonCallBacks[dictionary.lightboxbuttonconfirm] = function() {
       $(this).dialog("close");
 
-
-
       var apiCommand;
       if (command == "terminatesubscription") {
         var subscriptionParam = $('#current_subscription_param').val();
@@ -67,7 +136,6 @@ $(document).ready(function() {
       if (command == "cancelsubscription") {
         var subscriptionParam = $('#current_subscription_param').val();
         apiCommand = billingPath + "subscriptions/cancel/" + subscriptionParam;
-
       }
 
       doActionButton(actionMapItem, apiCommand);
@@ -84,13 +152,13 @@ $(document).ready(function() {
   $(".terminatesubscription_link").live("click", function(event) {
     $("#dialog_confirmation").text(dictionary.lightboxterminatesubscription).dialog('option', 'buttons',
       getConfirmationDialogButtons("terminatesubscription")).dialog("open");
+      viewSubscription($("li[id^='sub'].selected.subscriptions"));
   });
   $(".cancelsubscription_link").live("click", function(event) {
     $("#dialog_confirmation").text(dictionary.lightboxcancelsubscription).dialog('option', 'buttons',
       getConfirmationDialogButtons("cancelsubscription")).dialog("open");
   });
-  viewSubscription($("li[id^='sub'].selected.subscriptions"));
-
+  timerFunction($("li[id^='sub'].selected.subscriptions"));
 });
 
 /**
@@ -99,7 +167,7 @@ $(document).ready(function() {
 $.editSubscription = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.subscription.editSubscription);
+    popUpDialogForAlerts("dialog_info", i18n.errors.subscription.editSubscription);
   } else {
     $("#viewDetailsDiv").html("");
     var content = "";
@@ -119,41 +187,76 @@ $.editSubscription = function(jsonResponse) {
     content = content + "</div>";
     content = content + "</div>";
     $("#row" + jsonResponse.param).html(content);
-    viewSubscription($("#row" + jsonResponse.id));
+    timerFunction($("#row" + jsonResponse.id));
   }
 };
 
+function refreshRow(subState, $template) {
+  if (subState == "EXPIRED")
+    $template.find(".widget_statusicon").removeClass().addClass("widget_statusicon stopped");
+  else if (subState == "ACTIVE")
+    $template.find(".widget_statusicon").removeClass().addClass("widget_statusicon running");
+  else
+    $template.find(".widget_statusicon").removeClass().addClass("widget_statusicon nostate");
+}
+
+function timerFunction(current) {
+  hideInfoBubble(current);
+  $("#spinning_wheel2").show();
+  var timerKey = "timerKey";
+  $("body").stopTime(timerKey);
+  var promise = viewSubscription(current);
+  
+  if(promise == null) {
+    $("#spinning_wheel2").hide();
+    return;
+  }
+  
+  promise.done(function(){
+    $("#spinning_wheel2").hide();
+    var subscriptionState = $("#viewDetailsDiv").find("#subscription_state").val();
+    var handleState = $("#viewDetailsDiv").find("#subscription_handle_state").val();
+    if(handleState == "PROVISIONING") {
+      $("body").everyTime(5000, timerKey, function() {
+        var promise = viewSubscription(current);
+        if(promise == null) {
+          $("body").stopTime(timerKey);
+          return;
+        }
+        promise.done(function(){
+          var subscriptionState = $("#viewDetailsDiv").find("#subscription_state").val();
+          refreshRow(subscriptionState, current);
+          var handleState = $("#viewDetailsDiv").find("#subscription_handle_state").val();
+          if(handleState != "PROVISIONING") {
+            $("body").stopTime(timerKey);
+          }
+        });
+      }, 0);
+    }
+  });
+}
+  
 /**
  * View Subscription details
+ * 
  * @param current
  * @return
  */
 
 function viewSubscription(current) {
+  var deferred = $.Deferred();
   var divId = $(current).attr('id');
-  if (divId == null) return;
+  if (divId == null) {
+    return null;
+  }
   var id = divId.substr(3);
   resetGridRowStyle();
   $(current).addClass("selected active");
-  var selectedDetails = $("#selected_subs_for_details").val();
-  if (selectedDetails != null && selectedDetails != '') {
-    $("#list_all").addClass("title_listall_arrow");
-    $("#list_titlebar").unbind("click").bind("click", function() {
-      if ("true" == $("#usage_billing_my_usage").val()) {
-        window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val();
-      } else {
-        window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val();
-      }
-    });
-    $("#search_panel").empty();
-  } else {
-    $("#list_all").removeClass("title_listall_arrow");
-    $("#list_titlebar").unbind("click");
-  }
   var url = billingPath + "subscriptions/showDetails?tenant=" + $("#tenantParam").val();
   $.ajax({
     type: "GET",
     url: url,
+    async: false,
     data: {
       id: id
     },
@@ -161,8 +264,36 @@ function viewSubscription(current) {
     success: function(html) {
       $("#viewDetailsDiv").html("");
       $("#viewDetailsDiv").html(html);
+      
+      $("#viewDetailsDiv").find("#js_resource_error").popover();
+      
       bindActionMenuContainers();
-
+      
+      var subscriptionState = $("#viewDetailsDiv").find("#subscriptionState").text();
+      subscriptionState = jQuery.trim(subscriptionState);
+      var $divId = $("#sub" + id); 
+      var oldSubscriptionState = jQuery.trim($divId.find("#subscriptionStateDivId").text());
+      var endDate = $("#viewDetailsDiv").find("#endDate").val();
+      if (subscriptionState != oldSubscriptionState && endDate != null){
+        $divId.find("#subscriptionStateDivId").text(subscriptionState);
+        if(subscriptionState == "EXPIRED"){
+        
+          var endDateDiv = ""+
+          "<div class=\"raw_content_row\">" + 
+          "<div class=\"raw_contents_title\">" + 
+            dictionary.subscriptionEndDate + ":"+ 
+          "</div>" +
+          "<div class=\"raw_contents_value\">" + 
+            "<span>"+
+              endDate + 
+            "</span>" + 
+          "</div>" +
+        "</div>";
+          
+          $divId.find(".raw_contents").append (endDateDiv);
+        }
+      }
+      
       $("#details_tab").bind("click", function(event) {
 
         $('#configurations_tab').removeClass('active').addClass("nonactive");
@@ -208,17 +339,16 @@ function viewSubscription(current) {
         $('#configurations').hide();
         $('#resource_details').show();
       });
-
+      deferred.resolve();
     },
-    error: function() {
-      //need to handle TO-DO
+    error: function(xhr) {
+      $("#spinning_wheel2").hide();
+    },
+    complete: function(xhr, status) {
+      // Just added to prevent it from going to generic handler
     }
   });
-
-
-
-
-
+  return deferred.promise();
 }
 
 
@@ -246,30 +376,57 @@ function hideInfoBubble(current) {
 
 function nextClick() {
   var $currentPage = $('#current_page').val();
+  var useruuid = $("#dropdownfilter_users option:selected").val();
+  var state = $("#dropdownfilter_states option:selected").val();
+  var instanceParam = $("#dropdownfilter_instances option:selected").val();
+  var bundleId = $("#dropdownfilter_bundles option:selected").val();
 
-  if ("true" == $("#usage_billing_my_usage").val()) {
-
-    window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val() + "&page=" + (parseInt(
-      $currentPage) + 1);
-  } else {
-    window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + "&page=" + (parseInt(
-      $currentPage) + 1);
+  var filterurl = "";
+  if (useruuid != null && useruuid != 'ALL') {
+    filterurl = filterurl + "&useruuid=" + useruuid;
   }
-
-
+  if (bundleId != null && bundleId != 'ALL') {
+    filterurl = filterurl + "&productBundleID=" + bundleId;
+  }
+  if (instanceParam != null && instanceParam != 'ALL') {
+    filterurl = filterurl + "&instanceuuid=" + instanceParam;
+  }
+  
+  filterurl = filterurl + "&state=" + state + "&page=" + (parseInt($currentPage) + 1);
+  
+  if ("true" == $("#usage_billing_my_usage").val()) {
+    window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val() + filterurl;
+  } else {
+    window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + filterurl;
+  }
 }
 
 function previousClick() {
   var $currentPage = $('#current_page').val();
+  var useruuid = $("#dropdownfilter_users option:selected").val();
+  var state = $("#dropdownfilter_states option:selected").val();
+  var instanceParam = $("#dropdownfilter_instances option:selected").val();
+  var bundleId = $("#dropdownfilter_bundles option:selected").val();
+
+  var filterurl = "";
+  if (useruuid != null && useruuid != 'ALL') {
+    filterurl = filterurl + "&useruuid=" + useruuid;
+  }
+  if (bundleId != null && bundleId != 'ALL') {
+    filterurl = filterurl + "&productBundleID=" + bundleId;
+  }
+  if (instanceParam != null && instanceParam != 'ALL') {
+    filterurl = filterurl + "&instanceuuid=" + instanceParam;
+  }
+  filterurl = filterurl + "&state=" + state + "&page=" + (parseInt($currentPage) - 1);
+  
   if ("true" == $("#usage_billing_my_usage").val()) {
-    window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val() + "&page=" + (parseInt(
-      $currentPage) - 1);
+    window.location = "/portal/portal/usage/subscriptions?tenant=" + $("#tenantParam").val() + filterurl;
   } else {
-    window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + "&page=" + (parseInt(
-      $currentPage) - 1);
+    window.location = "/portal/portal/billing/subscriptions?tenant=" + $("#tenantParam").val() + filterurl;
   }
 }
-
+/*
 function filter_subscriptions(current) {
   var useruuid = $("#userfilterdropdownforinvoices option:selected").val();
   var state = $("#filter_dropdown option:selected").val();
@@ -282,37 +439,31 @@ function filter_subscriptions(current) {
   filterurl = filterurl + "&state=" + state;
   window.location = filterurl;
 }
-
+*/
 
 function provisionSubscription(subscriptionId) {
   window.location = "/portal/portal/subscription/createsubscription?tenant=" + $("#tenantParam").val() +
     "&subscriptionId=" + subscriptionId;
 }
 
-//function terminateSubscriptionCancle(current){
-//  $("#terminateSubscription_panel").hide();
-//}
+$(function (){
+  $(".js_filter_details_popover").popover({trigger:"hover",html : true, content: function() {
 
-/*
-function terminateSubscription(current){
-	var actionId = $(current).attr('id');
-	var subscriptionParam=actionId.substr(21);
-	var actionurl = billingPath + "subscriptions/terminate/"+subscriptionParam;	
-	$.ajax( {
-			type : "POST",
-			url : actionurl,
-			dataType :"json",
-			success : function(jsonResponse) {	
-	      $("#term_subscription"+subscriptionParam).remove();
-				$("#terminateSubscription_panel").hide();
-	      $("#sub" + jsonResponse.id + " .subscriptionState").html(jsonResponse.state);
-	      $("#sub" + jsonResponse.id).click();
-	      
-		 	},error:function(){	
-		 		$("#miscFormErrors").text(i18n.errors.subscription.termSubscription);
-		 		$("#miscFormErrors").show();
-		 		
-			}
-	 });
-}
-*/
+    var filterUser = $("#dropdownfilter_users option:selected").text();
+    var filterState = $("#dropdownfilter_states option:selected").text();
+    var filterInstance = $("#dropdownfilter_instances  option:selected").text();
+    var filterBundle = $("#dropdownfilter_bundles  option:selected").text();
+
+    $('#js_filter_details_popover').find("#_filter_state").text(filterState);
+    $('#js_filter_details_popover').find("#_filter_instance").text(filterInstance);
+    $('#js_filter_details_popover').find("#_filter_bundle").text(filterBundle);
+    
+    if (filterUser !="" && filterUser.length > 0) {
+      $('#js_filter_details_popover').find("#_filter_user").text(filterUser);
+    }else{
+      $('#js_filter_details_popover .popover_rows:first').hide();
+    }
+
+    return $('#js_filter_details_popover').html();
+  }});
+});

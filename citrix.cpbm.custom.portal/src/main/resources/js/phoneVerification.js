@@ -56,11 +56,11 @@ $(document).ready(function() {
       dataType: "html",
 
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
 
       error: function(html) {
-        alert(i18n.errors.auth.callFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.auth.callFailed);
       },
 
       complete: function(xhr, status) {
@@ -82,11 +82,11 @@ $(document).ready(function() {
       dataType: "html",
 
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
 
       error: function(html) {
-        alert(i18n.errors.auth.textMessageFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.auth.textMessageFailed);
       },
 
       complete: function(xhr, status) {

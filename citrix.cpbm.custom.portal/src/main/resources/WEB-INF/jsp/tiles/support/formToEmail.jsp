@@ -42,7 +42,7 @@
           <ol>
             <li class="long">
               <form:label path="ticket.subject" ><spring:message code="ui.label.support.tickets.title"/></form:label><div class="red_compulsoryicon">*</div>
-              <form:input cssClass="text" cssStyle="width:750px" path="ticket.subject"  tabindex="1"/>
+              <form:input cssClass="text" cssStyle="width:750px" path="ticket.subject"  tabindex="1" maxlength="255"/>
               <div class="main_addnew_formbox_errormsg" id="ticket.subjectError"></div>
             </li>
             <div class="clearboth"></div>

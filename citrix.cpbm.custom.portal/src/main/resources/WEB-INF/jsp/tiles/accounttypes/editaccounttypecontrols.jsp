@@ -43,7 +43,7 @@
       </div>
     </div>
 
-<div class="dialog_formcontent">
+<div class="dialog_formcontent" style="padding: 0 5px 0 0;">
 	<div class="details_lightboxtitlebox"></div>
 	<div class="details_lightboxformbox">
 		<form id="accountControlsForm">
@@ -52,7 +52,7 @@
 			<c:choose>
 				<c:when test="${account_control_add_properties!=null}">
 					<input type="hidden" id="action" value="save"/>
-					<ul>
+					<ul style="max-height: 500px;overflow: auto;">
 						<c:forEach var="account_control_property" items="${account_control_add_properties}" varStatus="status">
 							<li style="height: 28px">
 								<label style="width: 260px">
@@ -84,7 +84,7 @@
 								</c:choose>
 							</li>
 						</c:forEach>
-						<li style="width:530px">
+						</ul>
 							<div class="servicelist sections" style="height: 25px;float:right;min-height:0px">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);" onclick="closeAccountTypeControlsDialog()">
 									<spring:message code="label.cancel" />
@@ -93,12 +93,11 @@
 									<spring:message code="label.add" />
 								</a>
 							</div>
-						</li>
-					</ul>
+					
 				</c:when>
 				<c:otherwise>
 					<input type="hidden" id="action" value="update"/>
-					<ul>
+					<ul style="max-height: 500px;overflow: auto;">
 						<c:forEach var="account_control_property" items="${account_control_edit_properties}" varStatus="status">
 							<li style="height: 28px">
 								<label style="width: 260px"><spring:message  code="${service.serviceName}.${account_control_property.serviceConfigMetadata.name}.name"/></label>
@@ -148,7 +147,7 @@
 								</c:choose>
 							</li>
 						</c:forEach>
-						<li style="width:530px">
+						</ul>
 							<div class="servicelist sections" style="height: 25px;float:right;min-height:0px">
 								<a class="active add_button" id="closedialog" href="javascript:void(0);" onclick="closeAccountTypeControlsDialog()">
 									<spring:message code="label.cancel" />
@@ -157,8 +156,7 @@
 									<spring:message code="label.save" />
 								</a>
 							</div>
-						</li>
-					</ul>
+					
 				</c:otherwise>
 			</c:choose>
 		</form>

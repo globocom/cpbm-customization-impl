@@ -1,14 +1,15 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.beans.PropertyDescriptor;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -71,9 +73,11 @@ import com.vmops.model.Service;
 import com.vmops.model.ServiceConfigurationMetadata;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceInstanceConfig;
+import com.vmops.model.ServiceInstanceTenantConfiguration;
 import com.vmops.model.ServiceUsageType;
 import com.vmops.model.ServiceUsageTypeUomScale;
 import com.vmops.model.Tenant;
+import com.vmops.model.TenantHandle;
 import com.vmops.model.User;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.CurrencyValueService;
@@ -99,6 +103,26 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   @Autowired
   protected CurrencyValueService currencyValueService;
 
+  private static String tncString = "";
+
+  @PostConstruct
+  public void getTermsAndConditions() {
+    try {
+      File file = new File(config.getTncFileLocation());
+      BufferedReader br = new BufferedReader(new FileReader(file));
+      StringBuilder sb = new StringBuilder();
+      String line = br.readLine();
+      while (line != null) {
+        sb.append(line);
+        line = br.readLine();
+      }
+      br.close();
+      tncString = sb.toString();
+    } catch (Exception e) {
+      logger.debug("Failed to read Terms and conditions file" + e.getMessage());
+    }
+  }
+
   @RequestMapping(value = "/cs", method = RequestMethod.GET)
   public String showCloudServices(@RequestParam(value = "id", required = false) String serviceUuid,
       @RequestParam(value = "instanceId", required = false) String instanceUuId,
@@ -118,7 +142,6 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     map.addAttribute("tenant", tenant);
     String uiView = null;
     User user = getCurrentUser();
-    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
       setPage(map, Page.CRM_SERVICES);
       map.addAttribute("showUserProfile", true);
@@ -129,12 +152,16 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       map.addAttribute("showUserProfile", false);
       uiView = "company_setup.connector_cs";
     }
+    map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     boolean iframe_view = false;
     if (showIframe != null && showIframe.equals("true") && serviceInstanceUUID != null
         && !serviceInstanceUUID.equals("")
         && connectorConfigurationManager.getInstanceByUUID(serviceInstanceUUID) != null) {
       iframe_view = true;
       map.addAttribute("serviceInstanceUUID", serviceInstanceUUID);
+      Map<ServiceInstance, Map<String, String>> serviceInstanceWfMap = new HashMap<ServiceInstance, Map<String, String>>();
+      addWorkflowDetails(serviceInstanceWfMap, tenant, serviceInstanceUUID);
+      map.addAttribute("serviceInstanceWfMap", serviceInstanceWfMap);
     } else {
       map.addAttribute("categories", connectorConfigurationManager.getAllCategories(CssdkConstants.CLOUD));
     }
@@ -147,13 +174,32 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     map.addAttribute("effectiveUser", user);
     @SuppressWarnings("unchecked")
     Map<ServiceInstance, Boolean> serviceInstanceMap = (Map<ServiceInstance, Boolean>) map.get("serviceInstanceMap");
-    if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
+    if ((Boolean) request.getAttribute("isSurrogatedTenant") || (!userService.hasAnyAuthority(user, "ROLE_ACCOUNT_CRUD", "ROLE_ACCOUNT_USER_CRUD"))) {
       filterServiceInstances(serviceInstanceMap, getCurrentUser());
     }
     map.addAttribute("countPerCategory",
         connectorConfigurationManager.getInstanceCountPerCategoryMap(serviceInstanceMap));
     map.addAttribute("serviceInstanceViewMap", getViewMap(tenant, serviceInstanceMap));
 
+    Map<String, Boolean> serviceInstanceProvisioningMap = new HashMap<String, Boolean>();
+    for (Map.Entry<ServiceInstance, Boolean> entry : serviceInstanceMap.entrySet()) {
+      ServiceInstanceTenantConfiguration sitc = tenantService.getServiceInstanceTenantConfiguration(user.getTenant(),
+          entry.getKey().getUuid());
+      if (sitc != null) {
+        serviceInstanceProvisioningMap.put(entry.getKey().getUuid(), sitc.getAutoProvision());
+      }
+    }
+    map.addAttribute("serviceInstanceProvisioningMap", serviceInstanceProvisioningMap);
+    
+    Map<String, Boolean> enableServiceSupportedMap = new HashMap<String, Boolean>();
+    if (services != null) {
+      for (Service service : services) {
+        boolean enableServiceForUserIsSupported = connectorManagementService.hasTenantScopedRole(service);
+        enableServiceSupportedMap.put(service.getUuid(), enableServiceForUserIsSupported);
+      }
+      map.addAttribute("enableServiceSupportedMap", enableServiceSupportedMap);
+    }
+    
     boolean payAsYouGoMode = config.getBooleanValue(Names.com_citrix_cpbm_catalog_payAsYouGoMode);
     map.addAttribute("payAsYouGoMode", payAsYouGoMode);
 
@@ -254,10 +300,11 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
 
       List<HashMap<String, Object>> quickProductList = getQuickProductList(quickProducts, instance);
 
-      if (update)
+      if (update) {
         connectorManagementService.updateInstance(instance, response, quickProductList);
-      else
+      } else {
         connectorManagementService.addInstance(instance, response, quickProductList);
+      }
 
       if (response.getStatus().equals(Status.SUCCESS)) {
         map.addAttribute("instanceid", instance.getUuid());
@@ -299,10 +346,10 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   @RequestMapping(value = {
     "/enable_service"
   }, method = RequestMethod.GET)
-  public String enableService(@RequestParam("id") final String id, ModelMap map) {
+  public String enableService(@RequestParam("id") final String id, ModelMap map, HttpServletRequest request) {
     Service service = connectorConfigurationManager.getService(id);
     map.addAttribute("uuid", id);
-    map.addAttribute("tnc", connectorConfigurationManager.getTermsAndConditions(service));
+    map.addAttribute("tnc", connectorConfigurationManager.getTermsAndConditions(service, getSessionLocale(request)));
 
     if (service.getType().equals(ConnectorType.CLOUD.toString())) {
       // TODO this may work now but this needs to be rewritten so that
@@ -426,7 +473,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
 
     logger.debug("###Entering in getServiceInstanceList GET");
     User user = getCurrentUser();
-    if (user == null || (viewCatalog && user.getTenant().equals(tenantService.getSystemTenant()))) {
+    if (user == null || viewCatalog && user.getTenant().equals(tenantService.getSystemTenant())) {
       user = userService.getSystemUser(Handle.PORTAL);
     }
     List<ServiceInstance> serviceProviderCloudTypeServiceInstances = new ArrayList<ServiceInstance>();
@@ -453,31 +500,60 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
   @RequestMapping(value = "/account_config_params", method = RequestMethod.GET)
   public String fetchAccountConfigurationsParams(
       @RequestParam(value = "serviceInstanceUUID", required = false) String serviceInstanceUUID,
-      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
+      @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map, HttpServletRequest request) {
 
     map.addAttribute("serviceInstanceUUID", serviceInstanceUUID);
 
     ServiceInstance serviceinstance = connectorConfigurationManager.getInstance(serviceInstanceUUID);
-    if (serviceinstance != null) {
-      Service service = serviceinstance.getService();
+    map.addAttribute("uuid", serviceinstance.getService().getUuid());
+    map.addAttribute("tnc", tncString);
 
-      StringBuilder propString = new StringBuilder();
-      Set<AccountConfigurationServiceConfigMetadata> accountConfigurationServiceConfigMetadataList = service
-          .getAccountConfigServiceConfigMetadata();
-      for (AccountConfigurationServiceConfigMetadata accountConfigurationServiceConfigMetadata : accountConfigurationServiceConfigMetadataList) {
+    Service service = serviceinstance.getService();
+
+    StringBuilder propString = new StringBuilder();
+    Set<AccountConfigurationServiceConfigMetadata> accountConfigurationServiceConfigMetadataList = service
+        .getAccountConfigServiceConfigMetadata();
+    for (AccountConfigurationServiceConfigMetadata accountConfigurationServiceConfigMetadata : accountConfigurationServiceConfigMetadataList) {
+      if (!"EDITOR".equals(accountConfigurationServiceConfigMetadata.getName())) {
         propString.append(accountConfigurationServiceConfigMetadata.getName()).append(",");
       }
-
-      String jspProvidedByService = connectorConfigurationManager.getJspPath(service);
-      if (StringUtils.isNotBlank(jspProvidedByService)) {
-        map.addAttribute("jspProvidedByService", jspProvidedByService);
-      }
-
-      map.addAttribute("service_account_config_properties", accountConfigurationServiceConfigMetadataList);
-      map.addAttribute("service_account_config_properties_list", propString.toString());
-      map.addAttribute("service", service);
     }
-    return "service.account.config";
+    String tilesEditor = connectorConfigurationManager.getJspPath(service);
+    if (!StringUtils.isNotBlank(tilesEditor)) {
+      map.addAttribute("accountConfigEditor", null);
+    } else {
+      map.addAttribute("accountConfigEditor", tilesEditor);
+    }
+    boolean isEnableServiceForUserIsSupported = connectorManagementService.hasTenantScopedRole(serviceinstance
+        .getService());
+    // Add Service Instance handle
+    TenantHandle latestTenantHandle = tenantService.getLatestTenantHandle(tenantParam, serviceInstanceUUID);
+    map.addAttribute("latestTenantHandle", latestTenantHandle);
+    Tenant tenant = tenantService.get(tenantParam);
+    ServiceInstanceTenantConfiguration serviceInstanceTenantConfiguration = tenantService
+        .getServiceInstanceTenantConfiguration(tenant, serviceinstance.getUuid());
+    if (serviceInstanceTenantConfiguration != null) {
+      map.addAttribute("accountConfigurationData", serviceInstanceTenantConfiguration.getData());
+    }
+    map.addAttribute("enableServiceForAllUsers", isEnableServiceForUserIsSupported);
+    map.addAttribute("service_account_config_properties", accountConfigurationServiceConfigMetadataList);
+    map.addAttribute("service_account_config_properties_list", propString.toString());
+    map.addAttribute("service", service);
+    map.addAttribute("serviceName", service.getServiceName());
+    map.addAttribute("tenant", tenant);
+    List<String> steps = new ArrayList<String>();
+    steps.add(messageSource.getMessage("enable.service.dialog.tnc.title", null, getSessionLocale(request)));
+    if (CollectionUtils.isNotEmpty(accountConfigurationServiceConfigMetadataList)) {
+      steps.add(messageSource.getMessage("enable.service.dialog.configure.account.title", null,
+          getSessionLocale(request)));
+    }
+    if (isEnableServiceForUserIsSupported) {
+      steps.add(messageSource.getMessage("label.service.users.enable", null, getSessionLocale(request)));
+    }
+    steps.add(messageSource.getMessage("label.enable.service.review", null, getSessionLocale(request)));
+    steps.add(messageSource.getMessage("label.enable.service.finish", null, getSessionLocale(request)));
+    map.addAttribute("steps", steps);
+    return "enable.service";
   }
 
   @RequestMapping(value = "/has_service_configuration", method = RequestMethod.GET)
@@ -512,7 +588,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     }
   }
 
-  @RequestMapping(value = ("/upload_logo"), method = RequestMethod.GET)
+  @RequestMapping(value = "/upload_logo", method = RequestMethod.GET)
   public String uploadServiceInstanceLogo(@RequestParam(value = "Id", required = true) String Id, ModelMap map) {
     logger.debug("### upload service instance logo method starting...(GET)");
 
@@ -524,12 +600,21 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
     return "service.instance.editlogo";
   }
 
-  @RequestMapping(value = ("/upload_logo"), method = RequestMethod.POST)
+  @RequestMapping(value = "/upload_logo", method = RequestMethod.POST)
   @ResponseBody
   public String uploadServiceInstanceLogo(@ModelAttribute("serviceInstanceLogoForm") ServiceInstanceLogoForm form,
       BindingResult result, HttpServletRequest request, ModelMap map) {
 
     logger.debug("### upload service instance logo method starting...(POST)");
+    String fileSize = checkFileUploadMaxSizeException(request);
+    if (fileSize != null) {
+      result.rejectValue("logo", "error.image.max.upload.size.exceeded");
+
+      return messageSource.getMessage(result.getFieldError("logo").getCode(), new Object[] {
+        fileSize
+      }, request.getLocale());
+
+    }
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
     if (StringUtils.isNotBlank(rootImageDir)) {
       ServiceInstance serviceInstance = form.getServiceInstance();
@@ -545,6 +630,18 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       result.rejectValue("logo", "error.custom.image.upload.dir");
       return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
     }
+  }
+
+  @RequestMapping(value = "/getHandleState", method = RequestMethod.GET)
+  @ResponseBody
+  public String getHandleState(@ModelAttribute("currentTenant") Tenant currentTenant,
+      @RequestParam(value = "tenant", required = true) String tenantParam,
+      @RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID) {
+    TenantHandle tenantHandle = tenantService.getLatestTenantHandle(tenantParam, serviceInstanceUUID);
+    if (tenantHandle != null) {
+      return tenantHandle.getState().name();
+    }
+    return null;
   }
 
   private void setImagePath(String rootImageDir, ServiceInstance serviceInstance, MultipartFile logoFile) {
@@ -646,8 +743,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
         for (int priceIndex = 0; priceIndex < priceList.length(); priceIndex++) {
           JSONObject price = priceList.getJSONObject(priceIndex);
           ProductCharge productCharge = new ProductCharge();
-          productCharge
-              .setPrice((new BigDecimal(price.getString("currencyVal"))).setScale(4, BigDecimal.ROUND_HALF_UP));
+          productCharge.setPrice(new BigDecimal(price.getString("currencyVal")).setScale(4, BigDecimal.ROUND_HALF_UP));
           CurrencyValue cv = currencyValueService.locateBYCurrencyCode(price.getString("currencyCode"));
           productCharge.setCurrencyValue(cv);
           productCharge.setRevision(productRevision);
@@ -811,7 +907,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
         String propertyname = propertyDescriptor.getName();
         if (!"class".equals(propertyname)) {
           Object propertyvalue = PropertyUtils.getProperty(jsonObject, propertyname);
-          if ((propertyvalue instanceof Boolean && (Boolean) propertyvalue) || !(propertyvalue instanceof Boolean)) {
+          if (propertyvalue instanceof Boolean && (Boolean) propertyvalue || !(propertyvalue instanceof Boolean)) {
             String validationResult = jsonObject.validate(fieldName, fieldValue, messageSource);
             if (!validationResult.equals(CssdkConstants.SUCCESS)) {
               return validationResult;

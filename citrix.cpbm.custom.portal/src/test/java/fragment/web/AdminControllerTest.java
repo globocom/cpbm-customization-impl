@@ -6,6 +6,8 @@
 package fragment.web;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -17,6 +19,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.annotation.ExpectedException;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
@@ -24,6 +27,7 @@ import org.springframework.validation.BindingResult;
 import web.WebTestsBase;
 
 import com.citrix.cpbm.platform.util.CssdkConstants;
+import com.citrix.cpbm.portal.forms.AjaxResponse;
 import com.citrix.cpbm.portal.fragment.controllers.AdminController;
 import com.vmops.internal.service.EmailService.EmailTemplate;
 import com.vmops.model.AccountType;
@@ -43,6 +47,7 @@ import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.service.AccountTypeService;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.EmailTemplateService;
+import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.web.controllers.menu.Level3;
 import com.vmops.web.controllers.menu.Page;
@@ -121,6 +126,17 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertNotNull(form.getAccountType());
     Assert.assertEquals(expected, form.getAccountType());
     Assert.assertEquals("accounttype.edit", view);
+    
+    List<String> expectedList = new ArrayList<String>();
+    expectedList = Arrays.asList(new String[] { "NO_ACTION", "ALERT_INTERNAL", "ALERT", "SUSPEND", "RESTRICT"});
+    expected = accountTypeService.locateAccountTypeName("Corporate");
+    view = controller.editAccountType(expected.getId().toString(), "1", map);
+    form = (AccountTypeForm) map.get("accountTypeForm");
+    Assert.assertNotNull(form);
+    Assert.assertNotNull(form.getAccountType());
+    Assert.assertNotNull(map.get("creditBreachActions"));
+    Assert.assertEquals(expectedList, map.get("creditBreachActions"));
+    
   }
 
   @Test
@@ -310,22 +326,6 @@ public class AdminControllerTest extends WebTestsBase {
 
   }
 
-  @Test
-  public void testeditConfiguration() {
-    String configProperties = "[{\"name\":\"2\",\"value\":\"www.JunitTest.com\"}]";
-    String editConfiguration = controller.editConfiguration(configProperties, map);
-    Configuration configuration = configurationService.locateConfigurationById("2");
-    Assert.assertEquals(editConfiguration, new String("success"));
-    Assert.assertEquals(configuration.getValue(), new String("www.JunitTest.com"));
-    configuration.setIsEncryptionRequired(true);
-    configurationDAO.save(configuration);
-    configProperties = "[{\"name\":\"2\",\"value\":\"5253412537238738981C9747D0E09BE9\"}]";
-    controller.editConfiguration(configProperties, map);
-    configuration = configurationService.locateConfigurationById("2");
-    Assert.assertTrue(configuration.getIsCurrentlyEncrypted());
-    Assert.assertEquals(configuration.getValue(), new String(
-        "A7E4C44C1E2468B950DEADE1E9D219673096633E7B681EE1817BC30371FA61EA451E503715DDF7D2D7BC46EE428ED2FC"));
-  }
 
   @Test
   public void testeditInitialDeposit() {
@@ -441,7 +441,7 @@ public class AdminControllerTest extends WebTestsBase {
     Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "update",
         configProperties);
     Assert.assertNotNull(resultMap);
-    String status = (String) resultMap.get("result");
+    String status = resultMap.get("result");
     Assert.assertEquals(CssdkConstants.SUCCESS, status);
   }
 
@@ -453,7 +453,7 @@ public class AdminControllerTest extends WebTestsBase {
     Map<String, String> resultMap = controller.persistAccountTypeControls(serviceInstance.getUuid(), "3", "add",
         configProperties);
     Assert.assertNotNull(resultMap);
-    String status = (String) resultMap.get("result");
+    String status = resultMap.get("result");
     Assert.assertEquals(CssdkConstants.SUCCESS, status);
   }
 
@@ -481,6 +481,43 @@ public class AdminControllerTest extends WebTestsBase {
     Assert.assertEquals("success", resultString);
     int after = eventDAO.count();
     Assert.assertEquals(before + 1, after);
+  }
+
+  @Test
+  @ExpectedException(AjaxFormValidationException.class)
+  public void testEditConfigurationNegative() {
+
+    Configuration configuration = configurationDAO.find("2");
+    configuration.setJavaType("java.lang.Boolean");
+    configurationService.update(configuration);
+    List<Configuration> configurations = new ArrayList<Configuration>();
+    configurations.add(configuration);
+    Configuration conf = new Configuration(configuration.getName(), "anyvalue");
+    List<Configuration> confs = new ArrayList<Configuration>();
+    confs.add(conf);
+    com.vmops.web.forms.ConfigurationForm configurationForm = new com.vmops.web.forms.ConfigurationForm();
+    configurationForm.setConfigurations(confs);
+    BindingResult result = new BeanPropertyBindingResult(configurationForm, "validation");
+    controller.editConfiguration(configurationForm, result, map, response, request);
+    Assert.fail();
+  }
+  
+  @Test
+  public void testEditConfigurationPositive() {
+
+    Configuration configuration = configurationDAO.find("2");
+    configuration.setJavaType("java.lang.Boolean");
+    configurationService.update(configuration);
+    List<Configuration> configurations = new ArrayList<Configuration>();
+    configurations.add(configuration);
+    Configuration conf = new Configuration(configuration.getName(), "false");
+    List<Configuration> confs = new ArrayList<Configuration>();
+    confs.add(conf);
+    com.vmops.web.forms.ConfigurationForm configurationForm = new com.vmops.web.forms.ConfigurationForm();
+    configurationForm.setConfigurations(confs);
+    BindingResult result = new BeanPropertyBindingResult(configurationForm, "validation");
+    AjaxResponse ajaxRes= controller.editConfiguration(configurationForm, result, map, response, request);
+    Assert.assertEquals("SUCCESS", ajaxRes.getStatus().toString() );
   }
 
 }

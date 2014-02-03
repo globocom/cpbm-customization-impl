@@ -14,6 +14,7 @@
 $(document).ready(function() {
   $("#channelgridcontent").find(".channels:first").click();
   $("#channelSearchPanel").attr('value', '');
+  initDialog("editServiceChannelSettingsDiv", 600);
 });
 </script>
 
@@ -119,3 +120,9 @@ $(document).ready(function() {
      </div>
     </div>
   </li>
+  
+  
+
+<div id="editServiceChannelSettingsDiv" style="overflow:hidden">
+</div>
+  

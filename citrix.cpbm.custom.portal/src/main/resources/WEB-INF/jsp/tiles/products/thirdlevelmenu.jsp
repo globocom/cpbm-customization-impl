@@ -41,9 +41,14 @@
     <c:if test="${status.index == 0}">
       <c:set var="selected" value="instance_selected"/>
     </c:if>
+    
+    <c:set var="serviceHasUsageType" value="false" />
+    <c:if test="${fn:length(serviceInstance.service.serviceUsageTypes) gt 0}">
+    	<c:set var="serviceHasUsageType" value="true" />
+    </c:if>
 
     <li class='widget_detail_navpanel <c:out value="${last}"/>'>
-      <a id='<c:out value="${serviceInstance.uuid}"/>' onclick="getProductOrBundleListing(this);" href="javascript:void(0);" style='<c:out value="${first}"/>' class='<c:out value="${selected}"/>'>
+      <a id='<c:out value="${serviceInstance.uuid}"/>' onclick="getProductOrBundleListing(this);" href="javascript:void(0);" style='<c:out value="${first}"/>' class='<c:out value="${selected}"/>' serviceHasUsageType='<c:out value="${serviceHasUsageType}"/>'>
          <c:out value="${serviceInstance.name}"/>
       </a>
     </li>
@@ -55,7 +60,7 @@
   <div class="thirdlevel_subsubmenu mid">
     <div id="prod_bundles_container"> 
       <ul>
-       <li id="product_tab" class="thirdlevel_subtab big on" onclick="listProducts(this);">
+       <li id="product_tab" class="thirdlevel_subtab big on" onclick="listProducts(this);" style="display:none">
           <div class="thirdlevel_menuicons products"></div>
           <p>
             <spring:message code="page.level2.products"/>

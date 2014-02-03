@@ -94,7 +94,7 @@ function getTicketsCount(element) {
     error: function(xhr, ajaxOptions, thrownError) {
       $("#spinnerDiv").removeClass("topgrid_loader");
       if (!ajaxAborted) {
-        $("#top_message_panel").removeClass("success").addClass("error").html(g_dictionary.jsGetTicketError);
+        $("#top_message_panel").removeClass("alert-success").addClass("alert-error").html(g_dictionary.jsGetTicketError).show();
       }
 
     }
@@ -129,7 +129,7 @@ function viewUsersGravtars() {
   });
   $.ajax({
     type: "GET",
-    url: "/portal/portal/home/getgravtars?tenant=" + effectiveTenantParam,
+    url: "/portal/portal/home/getgravatars?tenant=" + effectiveTenantParam,
     async: true,
     dataType: "html",
     cache: false,

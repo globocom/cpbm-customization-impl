@@ -1,12 +1,12 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
 
 
 $(document).ready(function() {
-  $('#resourceType').change(function() {
+  $('#resourceType').live("change",function() {
     step2ResourceTypeChanged();
   });
 
@@ -57,13 +57,13 @@ $(document).ready(function() {
     });
   }
 
-  $("#backtobundledetails").bind("click", function(event) {
+  $("#backtobundledetails").live("click", function(event) {
     $(".j_bundlespopup").hide();
     currentstep = "step1";
     $("#step1").show();
   });
 
-  $("#backtocharges").bind("click", function(event) {
+  $("#backtocharges").live("click", function(event) {
     $(".j_bundlespopup").hide();
     currentstep = "step4";
     $("#step4").show();
@@ -143,10 +143,6 @@ $(document).ready(function() {
     startDate: true
   });
 
-  $.validator.addClassRules("priceRequired", {
-    twoDecimal: true,
-    maxFourDecimal: true
-  });
 
   $.validator
     .addMethod(
@@ -281,6 +277,30 @@ $(document).ready(function() {
     $(this).hide();
     $(this).prevAll(".morelink").show();
   });
+  
+  $("#bundleLogoForm").validate({
+	    // debug : true,
+	    success: "valid",
+	    ignoreTitle: true,
+	    rules: {
+	      "logo": {
+	        required: true
+	      }
+	    },
+	    messages: {
+	      "logo": {
+	        required: i18n.errors.edit_image_path_invalid_message
+	      }
+	    },
+	    errorPlacement: function(error, element) {
+	    	
+	      var name = element.attr('id');
+	      name = ReplaceAll(name, ".", "\\.");
+	      if (name != "") {
+	        error.appendTo("#" + name + "Error");
+	      }
+	    }
+	  });
 });
 
 /**
@@ -324,6 +344,8 @@ function addBundlePrevious(current) {
   var prevStep = $(current).parents(".j_bundlespopup").find('#prevstep').val();
   if (prevStep == "step3" && $("#skipStep3").val() == "true") {
     prevStep = "step2";
+    $("#step2SelectionChanged").val("true");
+    $("#step3EntriesFetched").val("false");
   }
 
   if (prevStep == "step2") {
@@ -544,7 +566,7 @@ function addBundleNext(current) {
                           ' value="' +
                           associations[k] +
                           '" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">' +
-                          '<label>' + associations[k] + '</label></div>';
+                          '<label>' + i10associationTypes[associations[k]] + '</label></div>';
                       }
                       compValBlock.find("#compAsscoiation").html(compAssocHtml);
 
@@ -585,8 +607,8 @@ function addBundleNext(current) {
                           '<div> ' +
                           '<span class="descp ellipsis subtxt">' + extras + '</span>' +
                           '<a class="morelink" href="javascript:void(0);" style="display:' + displayMoreLink +
-                          ';">more..</a>' +
-                          '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' +
+                          ';">'+commmonmessages.MORE+'</a>' +
+                          '<a style="display: none" class="lesslink" href="javascript:void(0);">'+commmonmessages.LESS+'</a>' +
                           '</div>' +
                           '</div>' +
                           '</div>';
@@ -618,7 +640,7 @@ function addBundleNext(current) {
                           ' value="' +
                           associations[k] +
                           '" class="discountTypeRadio" onclick="javascript:onAssociationRadioButtonClick(this);"></div><div style="float:left; width:120px">' +
-                          '<label>' + associations[k] + '</label></div>';
+                          '<label>' + i10associationTypes[associations[k]] + '</label></div>';
                       }
                       compValBlock.find("#compAsscoiation").html(compAssocHtml);
 
@@ -673,8 +695,8 @@ function addBundleNext(current) {
                             '<div> ' +
                             '<span class="descp ellipsis subtxt">' + extras + '</span>' +
                             '<a class="morelink" href="javascript:void(0);" style="display:' + displayMoreLink +
-                            ';">more..</a>' +
-                            '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' +
+                            ';">'+commmonmessages.MORE+'</a>' +
+                            '<a style="display: none" class="lesslink" href="javascript:void(0);">'+commmonmessages.LESS+'</a>' +
                             '</div>' +
                             '</div>' +
                             '</div>';
@@ -701,8 +723,8 @@ function addBundleNext(current) {
                             '</span>' +
                             '<div> ' +
                             '<span class="descp ellipsis subtxt">' + extras + '</span>' +
-                            '<a class="morelink" href="javascript:void(0);">more..</a>' +
-                            '<a style="display: none" class="lesslink" href="javascript:void(0);">less..</a>' +
+                            '<a class="morelink" href="javascript:void(0);">'+commmonmessages.MORE+'</a>' +
+                            '<a style="display: none" class="lesslink" href="javascript:void(0);">'+commmonmessages.LESS+'</a>' +
                             '</div>' +
                             '</div>' +
                             '</div>';
@@ -720,7 +742,7 @@ function addBundleNext(current) {
                   },
                   error: function(XMLHttpRequest) {
                     //TODO: fix this
-                    alert(XMLHttpRequest.responseText);
+                    popUpDialogForAlerts("dialog_info", XMLHttpRequest.responseText);
                   }
                 });
               }
@@ -730,7 +752,7 @@ function addBundleNext(current) {
           },
           error: function(XMLHttpRequest) {
             //TODO: fix this
-            alert(XMLHttpRequest.responseText);
+            popUpDialogForAlerts("dialog_info", XMLHttpRequest.responseText);
           }
         });
         $("#spinning_wheel_cpb").hide();
@@ -778,7 +800,7 @@ function addBundleNext(current) {
       }
 
       var prodBundleName = $("#productBundle\\.name").val();
-      var prodBundleNameToDisplay = "<br>";
+      var prodBundleNameToDisplay = "";
       var size = prodBundleName.length;
       var maxsize = 50;
       var count = 0;
@@ -1089,13 +1111,13 @@ function removeProductBundle(current) {
               $("#product_bundle_tab").click();
             }
           } else {
-            alert(i18n.errors.bundleDeletebundleFailure);
+            popUpDialogForAlerts("dialog_info", i18n.errors.bundleDeletebundleFailure);
             $commonDialog.dialog('close');
           }
 
         },
         error: function() {
-          alert(i18n.errors.bundleDeletebundleFailure);
+          popUpDialogForAlerts("dialog_info", i18n.errors.bundleDeletebundleFailure);
           $commonDialog.dialog('close');
         }
       });
@@ -1152,13 +1174,13 @@ function publishBundle(current, publish, bundleId, bundleCode) {
             $("#top_message_panel").removeClass("error").addClass("success")
               .show();
           } else if (html == "norcc") {
-            alert(i18n.errors.bundleNotPublishNoCurrentCharges);
+            popUpDialogForAlerts("dialog_info", i18n.errors.bundleNotPublishNoCurrentCharges);
           } else {
-            alert(i18n.errors.bundleNotPublishedError);
+            popUpDialogForAlerts("dialog_info", i18n.errors.bundleNotPublishedError);
           }
         },
         error: function() {
-          alert(i18n.errors.bundleNotPublishedError);
+          popUpDialogForAlerts("dialog_info", i18n.errors.bundleNotPublishedError);
         }
       });
       $commonDialog.dialog('close');
@@ -1244,7 +1266,7 @@ function getConfirmationDialogButtonsForEntitlement(current) {
         }
       },
       error: function() {
-        alert(i18n.errors.bundleDeleteentitlementFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.bundleDeleteentitlementFailed);
       }
     });
 
@@ -1403,10 +1425,11 @@ $("#productBundleForm").validate({
     "productBundle.code": {
       required: true,
       noSpacesAllowed: true,
+      maxlength: 64,
       xRemote: {
         condition: function() {
           return $("#productBundle_code").val() != $(
-            "#productBundle\\.code").val();
+            "#productBundle\\.code").val() && ($("#productBundle\\.name").val() != "");
         },
         url: '/portal/portal/products/validateCode',
         async: false
@@ -1415,16 +1438,9 @@ $("#productBundleForm").validate({
     "productBundle.name": {
       required: true,
       maxlength: 255,
-      xRemote: {
-        condition: function() {
-          return $("#productBundle_name").val() != $("#productBundle\\.name").val();
-        },
-        url: '/portal/portal/productBundles/validate_bundle',
-        async: false
-      }
     },
     "productBundle.description": {
-      maxlength: 255
+      maxlength: 4000
     },
     "resourceType": {
       required: true
@@ -1440,8 +1456,6 @@ $("#productBundleForm").validate({
     "productBundle.name": {
       required: i18n.errors.bundleBundleFormProvideName,
       maxlength: i18n.errors.maxlength,
-      xRemote: i18n.errors.bundleBundleFormAlreadyExists,
-      remote: i18n.errors.bundleBundleFormAlreadyExists
     },
     "productBundle.description": {
       maxlength: i18n.errors.maxlength
@@ -1492,8 +1506,35 @@ $.validator.addClassRules("numberRequired", {
 $.validator.addClassRules("priceRequired", {
   number: true,
   twoDecimal: true,
-  maxFourDecimal: true
+  maxcurrencyPrecision: true
 });
+
+$.validator.addMethod("maxcurrencyPrecision", function(value, element) {
+  $(element).rules("add", {
+      number: true
+    });
+if (!/^(?:\d*\.\d*\|\d+)$/.test(value)) {
+  var sval=value;
+  var sdecimalDigit=sval.split(".");
+  if(sdecimalDigit.length==2){// have decimal
+     if(sdecimalDigit[1].replace(/0+$/, "").length>currPrecision){//truncate trailing zeros from decimal part
+        // more characters allowed precision
+       return false;
+     }
+     return true;
+     }else if(sdecimalDigit.length>2) {
+  //more than one decimals   
+      return false;
+ } 
+     // without decimal
+      return true;     
+            
+}else{//not a valid digit pattern
+   return false;
+  } 
+ },
+ i18n.errors.max_four_decimal_value);
+
 $.validator
   .addMethod(
     "includedunits",
@@ -1524,38 +1565,13 @@ $.validator
   .addMethod(
     "twoDecimal",
     function(value, element) {
-      if (Number(value) < 0 || Number(value) > 99999999.9999)
-        return false;
-
-      chargeType = $(element).parent()
-        .prevAll()
-        .find(".chargeTypeSelect");
-      isPriceValid = chargeType.val() == "" || (value != "" && isNaN(value) == false);
-      if (chargeType.val() == "PERCENTAGE" && (value < 0 || value > 100)) {
-        isPriceValid = false;
-      }
+      isPriceValid = value != "" && isNaN(value) == false && Number(value) >= 0 && Number(value) <= 99999999.9999;
       if (isPriceValid == false) {
         return false;
       }
       return true;
     },
     i18n.errors.decimal_range);
-
-$.validator
-  .addMethod(
-    "maxFourDecimal",
-    function(value, element) {
-      $(element).rules("add", {
-        number: true
-      });
-      if (!/^(?:\d*\.\d{1,4}|\d+)$/.test(value)) {
-        return false;
-      }
-
-      return true;
-
-    },
-    i18n.errors.products.max_four_decimal_value);
 
 // a custom method for validating the date range
 $.validator
@@ -1705,7 +1721,7 @@ function addNewEntitlement(event, form) {
       },
       error: function(html) {
         if (html.status == 300) {
-          alert(i18n.errors.entitilement.alreadyadded);
+          popUpDialogForAlerts("dialog_info", i18n.errors.entitilement.alreadyadded);
         }
         returnStatus = false;
         $("#entitlement_spinning_wheel").hide();
@@ -1783,7 +1799,7 @@ function addNewEntitlementGet(event, current) {
 $.createNewProductBundle = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.bundleBundleCreationFailed);
+    popUpDialogForAlerts("dialog_info", i18n.errors.bundleBundleCreationFailed);
   } else {
     var rowClass = "db_gridbox_rows even";
     var count = $(".countDiv").attr("id");
@@ -1871,6 +1887,7 @@ function previousClick(event) {
   var searchPattern = $("#productBundleSearchPanel").val();
   fetchBundleList(currentPage, searchPattern);
 }
+
 /**
  * Edit bundle image.
  * @param current
@@ -1904,11 +1921,10 @@ function editBundleImageGet(current, ID) {
                 return true;
               },
               complete: function() {
-                updatebundlelogodetails($("#bundleLogoForm-iframe-post-form"));
+                updatebundlelogodetails($("#bundleLogoForm-iframe-post-form"), $thisDialog);
               }
             });
             $('#bundleLogoForm').submit();
-            $thisDialog.dialog('close');
           }
         },
         "Cancel": function() {
@@ -1926,22 +1942,28 @@ function editBundleImageGet(current, ID) {
   });
 }
 
-function updatebundlelogodetails(current) {
+function updatebundlelogodetails(current, dialog) {
   response = $(current).contents().find('body');
   if (response == null || response == "null" || response == "") {
-    alert(i18n.errors.failed_upload_image);
+    popUpDialogForAlerts("dialog_info", i18n.errors.failed_upload_image);
     return;
   }
   try {
     var pre = response.children('pre');
     if (pre.length) response = pre.eq(0);
     returnReponse = $.parseJSON(response.html());
+    if(returnReponse.errormessage!=null){
+        $("#logoError").text(returnReponse.errormessage);
+      }else{
+        $("#logoError").text("");
+        dialog.dialog("close");
+      }
     var date = new Date();
     $("#bundleimage" + returnReponse.id).attr('src', "/portal/portal/logo/productBundles/" + returnReponse.id + "?t=" +
       date.getMilliseconds());
 
   } catch (e) {
-    alert(response.html());
+    popUpDialogForAlerts("dialog_info", response.html());
   }
 
 }
@@ -2174,13 +2196,15 @@ function editplannedCharges(current) {
       $thisDialog.html(html);
       $thisDialog.dialog('option', 'buttons', {
         "OK": function() {
+          $thisDialog.find("#priceRequiredError").empty();
           var rateCardForm = $thisDialog.find("form");
           var isFormValid = $(rateCardForm).valid();
           var hasError = $(rateCardForm).find(".priceRequired").hasClass('error');
           if (hasError == false) {
             $(".common_messagebox").hide();
-          } else {
-            $(".common_messagebox").show();
+          } else{
+        	  var top = $thisDialog.find("input.error").offset().top - $thisDialog.offset().top - 81;
+        	  $thisDialog.find('.plangrid_lightbox').animate({scrollTop: top},'slow');
           }
           if (isFormValid) {
             $.ajax({
@@ -2198,7 +2222,7 @@ function editplannedCharges(current) {
               },
               error: function(XMLHttpRequest) {
                 $thisDialog.dialog("close");
-                alert(i18n.errors.planchargesfailed);
+                popUpDialogForAlerts("dialog_info", i18n.errors.planchargesfailed);
               }
             });
           }
@@ -2218,7 +2242,11 @@ function editplannedCharges(current) {
       });
       $thisDialog.dialog("open");
     },
-    error: function() {}
+    error: function(XMLHttpResponse) {
+      if (XMLHttpResponse.status === PRECONDITION_FAILED) {
+        popUpDialogForAlerts("alert_dialog", i18n.errors.uncompatible_currency_precision);
+      }
+    }
   });
 }
 
@@ -2553,10 +2581,12 @@ function fetchBundleList(currentPage, searchPattern) {
 
 function hideUnlimitedEntitlementCheckBoxIfNecessary(sel) {
   var unlimitedallow = $("#productId").find(':selected').attr('unlimitedallow');
-  if (unlimitedallow == "false") {
-    $("#unlimitedEntitlementCheckBox").hide();
-  } else {
+  if (unlimitedallow == "true") {
     $("#unlimitedEntitlementCheckBox").show();
+  } else {
+    $("#unlimitedEntitlementCheckBox").hide();
+    $("#entitlement\\.includedUnits").removeAttr("disabled");
+    $('#unlimitedUsage').removeAttr('checked');
   }
 
 }

@@ -9,7 +9,7 @@
   <div class="thirdlevel_subsubmenu left"></div>
   <div class="thirdlevel_subsubmenu mid">
     <c:forEach items="${filtersMap}" var="filter">
-      <div class="thirdlevel_subtab off" id="l3_account_<c:out value="${filter.key}" />_tab">
+      <div class="thirdlevel_subtab small off" id="l3_account_<c:out value="${filter.key}" />_tab">
         <div class="thirdlevel_menuicons
           <c:if test="${filter.key == 'All'}">
             all_accounts</c:if>

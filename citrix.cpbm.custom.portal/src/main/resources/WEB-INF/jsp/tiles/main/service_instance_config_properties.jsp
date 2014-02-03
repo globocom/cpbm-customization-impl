@@ -46,21 +46,23 @@
                             <ul>
                               <li style="padding:0;margin:10px 0 0 10px;">
                                 <input type="password"  id="configproperty<c:out value="${service_config_property.id}"/>" name="${service_config_property.name}"  
-                                title="<spring:message  code="${service.serviceName}.${service_config_property.name}.tooltip"/>" style="margin:0;"
-                                class="text ${service_config_property.validations.classValidations}" ${service_config_property.validations.validations} onkeyup="showHideUnmaskedLink(this)"
+                                data-toggle="tooltip" data-placement="right" data-original-title="<spring:message  code="${service.serviceName}.${service_config_property.name}.tooltip"/>" style="margin:0;"
+                                class="text js_input_help ${service_config_property.validations.classValidations}" ${service_config_property.validations.validations} onkeyup="showHideUnmaskedLink(this)"
                                 value="${service_config_property.defaultVal}"/>
                               </li>
+                              <!--[if !(IE 8)]><!-->
                               <li style="padding:0;margin:0 0 0 10px;">
                                 <a <c:if test="${not empty service_config_property.defaultVal}">style="cursor: pointer; visibility: 'visible'; opacity: 1.0;" </c:if>
                                   <c:if test="${empty service_config_property.defaultVal}">disabled=true style="cursor: pointer; visibility: 'visible'; opacity: 0.5;" </c:if>
                                   id="configproperty<c:out value="${service_config_property.id}"/>_show_unmasked" onclick="showHideUnmaskedField(this)"><spring:message  code="label.show"/></a>
                               </li>
+                              <!--<![endif]-->
                             </ul>
                           </c:when>
                           <c:otherwise>
                             <input type="text"  id="configproperty<c:out value="${service_config_property.id}"/>" name="${service_config_property.name}" 
-                            title="<spring:message  code="${service.serviceName}.${service_config_property.name}.tooltip"/>"
-                            class="text ${service_config_property.validations.classValidations}" ${service_config_property.validations.validations} 
+                            data-toggle="tooltip" data-placement="right" data-original-title="<spring:message  code="${service.serviceName}.${service_config_property.name}.tooltip"/>"
+                            class="text js_input_help ${service_config_property.validations.classValidations}" ${service_config_property.validations.validations} 
                             value="${service_config_property.defaultVal}"/>
                           </c:otherwise>
                         </c:choose>
@@ -72,4 +74,17 @@
                 </c:if>
               </c:forEach>
               <input type="hidden" id="isOptionalFieldAvailable" name="isOptionalFieldAvailable" value="${optional_field_available}" />
+        
+<style>
+  .tooltip {
+    word-wrap: break-word;
+  }
+</style>
+<script type="text/javascript">
+  $(function () {
+    $(".js_input_help").tooltip({
+      trigger: 'focus'
+    });
+  });
+</script>
               

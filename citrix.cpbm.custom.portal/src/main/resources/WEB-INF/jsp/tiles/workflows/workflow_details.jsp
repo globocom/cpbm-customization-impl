@@ -3,6 +3,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec"	uri="http://www.springframework.org/security/tags"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <div class="dialog_formcontent ">
 <spring:message code="date.format" var="date_format"/>
@@ -94,7 +95,7 @@
 						<div class="workflow_timleine"></div>
 						<c:forEach var="activity" items="${bucketMap.value}">
 							<div class="workflow_activitycomponents">
-								<c:choose>
+								<c:choose> 
 									<c:when test="${activity.status == 'NEW'}">
 										<div class="workflow_statusicon new"></div>
 									</c:when>
@@ -103,7 +104,7 @@
 									</c:when>
 									<c:when
 										test="${activity.status == 'ERROR' || activity.status == 'FAILURE' ||  activity.status == 'TERMINATED'}">
-										<div class="workflow_statusicon error"></div>
+										<div class="workflow_statusicon error" ></div>										
 									</c:when>
 									<c:otherwise>
 											<div class="workflow_statusicon waiting"></div>
@@ -122,41 +123,24 @@
 												</h4>
 											</c:if>
 										</div>
-										<div class="statusearea">
-											<c:choose>
-												<c:when test="${activity.status == 'NEW'}">
-													<span class="status"> <spring:message
-															code="label.workflow.activity.state.new" /></span>
-												</c:when>
-												<c:when test="${activity.status == 'SUCCESS'}">
-													<span class="status"> <spring:message
-															code="label.workflow.activity.state.complete" /></span>
-												</c:when>
-												<c:when
-													test="${activity.status == 'ERROR' || activity.status == 'FAILURE' || activity.status == 'TERMINATED'}">
-													<span class="status">
-														<c:choose>
-															<c:when test="${not empty workflow.memo}">
-																<a href="javascript:void(0)" title="<spring:message code='label.view.details' />">
-																	<spring:message code="label.workflow.activity.state.error" />
-																</a>
-															</c:when>
-															<c:otherwise>
-																<spring:message code="label.workflow.activity.state.error" />
-															</c:otherwise>
-														</c:choose>
-													</span>
-												</c:when>
-												<c:otherwise>
-													<span class="status"><spring:message
-															code="label.workflow.activity.state.waiting" /></span>
-												</c:otherwise>
-											</c:choose>
+										<div class="statusearea"  >
+											<span class="status js_workflow_status_error" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-container="body" data-content="${activity.activityRecord.task.memo}">
+												<c:choose>
+													<c:when test="${not empty workflow.memo}">
+														<a href="javascript:void(0)" title="<spring:message code='label.view.details' />">
+															<spring:message code="label.workflow.activity.state.${fn:toLowerCase(activity.status)}" />
+														</a>
+													</c:when>
+													<c:otherwise>
+														<spring:message code="label.workflow.activity.state.${fn:toLowerCase(activity.status)}" />
+													</c:otherwise>
+												</c:choose>
+											</span>
 										</div>
 									</div>
 									<c:if test="${not empty workflow.memo  and (activity.status == 'ERROR' or activity.status == 'FAILURE' or activity.status == 'TERMINATED')}">
-										<div class="error" style="display:none;">
-											${workflow.memo}
+										<div class="error"  style="display:none;">
+											<c:out value="${workflow.memo}" />
 										</div>
 									</c:if>
 								</div>

@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright Â© 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -57,14 +57,13 @@ $(document).ready(function() {
   });
 
   // Delete channel dialog
-  initDialog("dialog_delete_channel", 390);
-
+  
   function deleteChannel(event, current) {
+	initDialog("dialog_delete_channel", 390);
     var divId = $(current).attr('id');
     var id = divId.substr(7);
-    initDialog("dialog_delete_channel", 390);
     var $thisDialog = $("#dialog_delete_channel");
-    $thisDialog.data("height.dialog", 100);
+    
     $thisDialog.dialog('option', 'buttons', {
       "OK": function() {
         var url = "/portal/portal/channels/deletechannel";
@@ -206,7 +205,6 @@ $(document).ready(function() {
   });
 
   scrollUrlHitMap = {};
-
 });
 
 // Reset the styling of all the items
@@ -312,11 +310,11 @@ function validate_channelcode(event, input) {
     return;
   }
   var err_msg = "";
-  if (channelCode.length >= 64) {
+  if (channelCode.length > 64) {
     err_msg = i18n.errors.channels.max_length_exceeded + " 64";
   }
 
-  if (channelCode.length > 0 && !/^[a-zA-Z0-9_:\[\]-]+$/.test(channelCode)) {
+  if (channelCode.length > 0 && !/^[a-zA-Z0-9_.-]+$/.test(channelCode)) {
     err_msg = i18n.errors.channels.code_invalid;
   }
   if (channelCode.trim().length == 0) {
@@ -381,8 +379,29 @@ function isValidNonNegativeNo(value) {
   return value != "" && isNaN(value) == false && Number(value) >= 0 && Number(value) <= 99999999.9999;
 }
 
-function isMorethanFourDecimalDigits(value) {
-  return !/^(?:\d*\.\d{1,4}|\d+)$/.test(value);
+function isValidCurrencyPrecision(value) {
+ 
+  if (!/^(?:\d*\.\d*\|\d+)$/.test(value)) {
+    var sval=value;
+    var sdecimalDigit=sval.split(".");
+    if(sdecimalDigit.length==2){// have decimal
+       if(sdecimalDigit[1].length>currPrecision){
+          // more characters allowed precision
+         return false;
+       }
+       return true;
+       }else if(sdecimalDigit.length>2) {
+    //more then one decimals   
+        return false;
+   } 
+       // without decimal
+        return true;     
+              
+  }else{//not a valid digit pattern
+     return false;
+    } 
+  return true;
+  
 }
 
 // Edit the bundle charges, as in over-riding bundle charges at the catalog level
@@ -421,7 +440,7 @@ function editBundleCharges(event, current) {
               inError = true;
               return;
             }
-            if (isMorethanFourDecimalDigits($(this).attr("value").trim())) {
+            if (!isValidCurrencyPrecision($(this).attr("value").trim())) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.max_four_decimal_value);
               $(this).addClass("error");
@@ -480,9 +499,11 @@ function editBundleCharges(event, current) {
       });
       $thisDialog.dialog("open");
     },
-    error: function() {
-      // need to handle TO-DO
-    }
+    error: function(XMLHttpResponse) {
+      if (XMLHttpResponse.status === PRECONDITION_FAILED) {
+         popUpDialogForAlerts("alert_dialog", i18n.errors.common.uncompatible_currency_precision);
+       }
+     }
   });
 }
 
@@ -653,6 +674,8 @@ function viewCatalogPlanned() {
       $("#second_line_under_planned").show();
       if ($("#currentEffectiveDate").val() != "") {
         $("#second_line_under_planned").find("#effective_date").text($("#currentEffectiveDate").val());
+      } else{
+    	  $("#second_line_under_planned").find("#effective_date").text(notYetSet);
       }
     },
     error: function() {
@@ -752,7 +775,7 @@ function editCatalogProductCharges() {
               inError = true;
               return;
             }
-            if (isMorethanFourDecimalDigits($(this).attr("value").trim())) {
+            if (!isValidCurrencyPrecision($(this).attr("value").trim())) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.max_four_decimal_value);
               $(this).addClass("error");
@@ -810,7 +833,11 @@ function editCatalogProductCharges() {
       });
       $thisDialog.dialog("open");
     },
-    error: function() {}
+    error: function(XMLHttpResponse) {
+      if (XMLHttpResponse.status === PRECONDITION_FAILED) {
+         popUpDialogForAlerts("alert_dialog", i18n.errors.common.uncompatible_currency_precision);
+       }
+     }
   });
 }
 
@@ -976,7 +1003,6 @@ function viewEntitlements(event, current) {
 
   initDialog("entitlements_dialog_" + bundleId, 400);
   var $thisDialog = $("#entitlements_dialog_" + bundleId);
-  $thisDialog.data("height.dialog", 400);
   $thisDialog.show();
   $thisDialog.bind('dialogclose', function(event) {
     $("#entitlements_dialog_" + bundleId).hide();
@@ -994,7 +1020,7 @@ function viewEntitlements(event, current) {
 
 // Handler to update the logo details of a channel when an image is successfully set for the same
 
-function updatechannellogodetails(current) {
+function updatechannellogodetails(current, dialog) {
   response = $(current).contents().find('body');
   if (response == null || response == "null" || response == "") {
     popUpDialogForAlerts("alert_dialog", i18n.errors.channels.failed_upload_image);
@@ -1004,6 +1030,12 @@ function updatechannellogodetails(current) {
     var pre = response.children('pre');
     if (pre.length) response = pre.eq(0);
     returnReponse = $.parseJSON(response.html());
+    if(returnReponse.errormessage!=null){
+        $("#logoError").text(returnReponse.errormessage);
+      }else{
+        $("#logoError").text("");
+        dialog.dialog("close");
+      }
     var date = new Date();
     $("#channelimage" + returnReponse.id).attr('src', "/portal/portal/logo/channel/" + returnReponse.id + "?t=" + date.getMilliseconds());
   } catch (e) {
@@ -1039,11 +1071,10 @@ function editChannelImage(current, channelId) {
                 return true;
               },
               complete: function() {
-                updatechannellogodetails($("#channelLogoForm-iframe-post-form"));
+                updatechannellogodetails($("#channelLogoForm-iframe-post-form"), $thisDialog);
               }
             });
             $('#channelLogoForm').submit();
-            $thisDialog.dialog('close');
           }
         },
         "Cancel": function() {
@@ -1499,11 +1530,11 @@ $("#bundles_detail_area").scroll(function() {
   }
 });
 
-function getFullListingOfCharges(bundleId) {
+function getFullListingOfCharges(event, bundleId) {
   var data = {};
   data["currentHistoryPlanned"] = $("#currentHistoryPlanned").attr("value");
   data["channelId"] = $("li[id^='channel'].selected.channels").attr('id').substr(7);
-  if (bundleId !== undefined) {
+  if (bundleId != undefined) {
     data["bundleId"] = bundleId;
   }
   if ($("#currentHistoryPlanned").attr("value") == "history") {
@@ -1517,7 +1548,7 @@ function getFullListingOfCharges(bundleId) {
     dataType: "html",
     async: false,
     success: function(html) {
-      if (bundleId !== undefined) {
+      if (bundleId != undefined) {
         initDialog("dialog_bundle_pricing", 782);
         var $thisDialog = $("#dialog_bundle_pricing");
       } else {
@@ -1588,4 +1619,99 @@ function syncChannel(event, current) {
     'Cancel': g_dictionary.dialogCancel
   });
   $thisDialog.dialog("open");
+}
+
+function changeChannelServiceInstances(){
+	
+}
+
+function showChannelServiceSettings(){
+	
+}
+
+function refreshChannelServiceSettings(){
+	var selectedServiceInstance = $("#selectedInstance option:selected").val()
+	var channelId = $("li[id^='channel'].selected.channels").attr('id').substr(7);		
+	var actionurl = "/portal/portal/channels/servicesettings";
+	if(selectedServiceInstance != undefined && selectedServiceInstance != null){
+		$("#spinning_wheel").show();
+		$.ajax({
+			type: "GET",
+			url: actionurl,
+			data: {
+				channelId: channelId,
+				instanceUUID: selectedServiceInstance
+			},
+			dataType: "html",
+			success: function(html) {
+				$("#channelServiceSettingsDiv").html("");
+				$("#channelServiceSettingsDiv").html(html);
+				$("#spinning_wheel").hide();
+			},
+			error: function() {
+				$("#spinning_wheel").hide();
+			}
+		});
+	}else{
+		$("#channelServiceSettingsDiv").html("");
+	}
+}
+
+function editChannelServiceSettings(current){
+	 var serviceSettingsChanelID = $('#serviceSettingsChanelID').val();
+	 var serviceSettingsInstanceUUID = $('#serviceSettingsInstanceUUID').val();
+	 console.log(serviceSettingsChanelID,'....',serviceSettingsInstanceUUID);
+	  var actionurl = "/portal/portal/channels/editservicesettings";
+      var $thisPanel = $("#editServiceChannelSettingsDiv");
+	 $("#spinning_wheel").show();
+	 $.ajax({
+	    type: "GET",
+	    url: actionurl,
+	    data: {
+	    	channelId: serviceSettingsChanelID,
+	    	instanceUUID: serviceSettingsInstanceUUID
+	    },
+	    dataType: "html",
+	    success: function(html) {
+	      $("#editServiceChannelSettingsDiv").html("");
+	      $("#editServiceChannelSettingsDiv").html(html);
+	      $("#spinning_wheel").hide();
+	      //$thisPanel.dialog({ height: 100, width : 600 });
+	      $thisPanel.dialog("option", "title", channelServiceSettingDialogTitle);
+	      $thisPanel.dialog('option', 'buttons', {
+    	  "OK": function() {
+    			$('#channelServiceSettingsForm').submit();
+    		  	//saveChannelServiceSettings($(this));
+    	      },
+    	      "Cancel": function() {
+    	        $(this).dialog("close");
+    	      }
+	      }).dialog("open");
+	    },
+	    error: function() {
+	      $("#spinning_wheel").hide();
+	    }
+	  });
+	  dialogButtonsLocalizer($thisPanel, {
+	      'OK': g_dictionary.dialogOK,
+	      'Cancel': g_dictionary.dialogCancel
+	  });
+}
+
+function saveChannelServiceSettings(){
+	var actionurl = "/portal/portal/channels/editservicesettings";
+	$.ajax({
+		    type: "POST",
+		    url: actionurl,
+		    data:$('#channelServiceSettingsForm').serialize(),
+		    success: function(data) {
+		    	console.log('..success');
+		    	var $thisDialog = $("#editServiceChannelSettingsDiv");
+		    	$thisDialog.dialog("close");
+ 	        	refreshChannelServiceSettings();
+		    },
+		    error: function(jqXHR,textStatus,errorThrown) {
+		    	console.log(textStatus,'..fail',errorThrown);
+		    }
+	});
 }

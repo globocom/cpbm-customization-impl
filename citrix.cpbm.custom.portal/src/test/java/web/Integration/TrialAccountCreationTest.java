@@ -20,10 +20,10 @@ import web.WebTestsBase;
 import web.support.MockSessionStatus;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.core.workflow.model.TenantStateChangeTransaction;
 import com.citrix.cpbm.portal.forms.TenantForm;
 import com.citrix.cpbm.portal.fragment.controllers.AbstractTenantController;
 import com.vmops.event.PortalEvent;
-import com.vmops.event.TenantActivation;
 import com.vmops.model.Address;
 import com.vmops.model.CampaignPromotion;
 import com.vmops.model.CurrencyValue;
@@ -113,7 +113,7 @@ public class TrialAccountCreationTest extends WebTestsBase {
     try {
       // Creates a new Trial Tenant
       TenantForm form = new TenantForm((com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(new Tenant()));
-      form = setTrialTenantForm("trial_camp");
+      form = setTrialTenantForm("expired_code");
       BindingResult result = valid(form);
       controller.create(form, result, map, status, new MockHttpServletRequest());
       Tenant found = tenantDAO.findByAccountId(form.getTenant().getAccountId());
@@ -139,11 +139,10 @@ public class TrialAccountCreationTest extends WebTestsBase {
       Assert.assertEquals(found.getAccountType().getId(), new Long("5"));
       Assert.assertEquals(found.getOwner().getUsername(), form.getUser().getUsername());
       Assert.assertTrue(status.isComplete());
-      Assert.assertEquals(1, eventListener.getEvents().size());
-      PortalEvent event = eventListener.getEvents().get(0);
-      Assert.assertTrue(event.getPayload() instanceof TenantActivation);
-      Assert.assertEquals(form.getTenant().getAccountId(), ((TenantActivation) event.getPayload()).getAccountId());
-      Assert.assertEquals(form.getTenant(), event.getSource());
+      Assert.assertEquals(2, eventListener.getEvents().size());
+      PortalEvent event = eventListener.getEvents().get(1);
+      Assert.assertTrue(event.getSource() instanceof TenantStateChangeTransaction);
+      Assert.assertEquals(form.getTenant(), ((TenantStateChangeTransaction) event.getSource()).getTenant());
     } catch (TrialCodeInvalidException e) {
       e.printStackTrace();
       e.getMessage();
@@ -167,8 +166,9 @@ public class TrialAccountCreationTest extends WebTestsBase {
       Tenant found = tenantDAO.findByAccountId(form.getTenant().getAccountId());
       Assert.assertNull(found);
     } catch (TrialCodeInvalidException e) {
-      if (!e.getMessage().contains("Promote code " + invalidPromocode + " doesn't exist"))
+      if (!e.getMessage().contains("Promote code " + invalidPromocode + " doesn't exist")) {
         Assert.fail();
+      }
     } catch (Exception e) {
       e.printStackTrace();
       Assert.fail();

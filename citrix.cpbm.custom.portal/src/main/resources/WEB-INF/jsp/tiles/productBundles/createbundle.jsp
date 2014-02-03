@@ -13,6 +13,7 @@
   var $currentDialog="";
   var bundle_action="";
   var productBundlesUrl = "<%=request.getContextPath() %>/portal/productBundles/";
+  var currPrecision="<c:out value="${currencyFractionalDigitsLimit}"/>";
 
   function onClickOfWidgetCheckbox(current){
     if($(current).find("span").attr("class") == "unchecked") {
@@ -60,7 +61,6 @@
       l10resourceTypeAndComponentNames['${resourceComponent}-name']='<spring:message javaScriptEscape="true" code="${serviceName}.ResourceType.${serviceResourceType.key}.${resourceComponent}.name"/>';
     </c:forEach>
   </c:forEach>
-
 </script>
 
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/commonBundles.js"></script>
@@ -152,7 +152,7 @@
                 <div class="widgetwizard_stepscenterbar sixstepswizard">
                  <ul>
                         <li class="widgetwizard_stepscenterbar first"><span class="steps completedsteps"><span class="stepsnumbers">1</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step1.title" /></span></li>
-                        <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step2.title" /></span></li>
+                        <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">2</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.bundle.step2.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step3.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.charges.step.title" /></span></li>
                         <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step4.title" /></span></li>
@@ -218,14 +218,14 @@
                          <li id="trialEligibility">
                             <span class="label"><spring:message code="label.bundle.create.eligible.trial"/></span>
                             <div class="nonmandatory_wrapper" >
-                             <form:checkbox cssClass="text"  cssStyle="width:auto;" tabindex="8" path="productBundle.trialEligibility" />  
+                             <form:checkbox cssStyle="width:auto;float:left;margin:16px 0 0 10px;" tabindex="8" path="productBundle.trialEligibility" />  
                              <span style="width: 450px; margin: 15px 0pt 0pt 10px;" class="helptext">(<spring:message code="ui.bundle.trail.eligibility.text"/>)</span>
                               </div>
                         </li>
                         <li id="notificationEnabled">
                             <span class="label"><spring:message code="label.bundle.create.enable.notification"/></span>
                             <div class="nonmandatory_wrapper" >
-                             <form:checkbox cssClass="text"  cssStyle="width:auto;" tabindex="8" path="productBundle.notificationEnabled" />  
+                             <form:checkbox cssStyle="width:auto;float:left;margin:16px 0 0 10px;" tabindex="8" path="productBundle.notificationEnabled" />  
                              <span style="width: 450px; margin: 15px 0pt 0pt 10px;" class="helptext">(<spring:message code="ui.bundle.enable.notification.text"/>)</span>
                               </div>
                         </li>
@@ -253,7 +253,7 @@
                <ul>
                       <li class="widgetwizard_stepscenterbar first"><span class="steps completedsteps"><span class="stepsnumbers ">1</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step1.title" /></span></li>
                       <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step2.title" /></span></li>
-                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step3.title" /></span></li>
+                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">3</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.bundle.step3.title" /></span></li>
                       <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.charges.step.title" /></span></li>
                       <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step4.title" /></span></li>
                       <li class="widgetwizard_stepscenterbar fivestepswizard last"><span class="steps last"><span class="stepsnumbers last">6</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.bundle.step5.title" /></span></li>
@@ -325,7 +325,7 @@
                         <li class="widgetwizard_stepscenterbar  first"><span class="steps completedsteps"><span class="stepsnumbers">1</span></span><span class="stepstitle "><spring:message htmlEscape="false" code="ui.bundle.step1.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step2.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step3.title" /></span></li>
-                     <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.charges.step.title" /></span></li>
+                     <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">4</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.bundle.charges.step.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps"><span class="stepsnumbers">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step4.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard last"><span class="steps last"><span class="stepsnumbers last">6</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.bundle.step5.title" /></span></li>
                 </div>
@@ -366,7 +366,7 @@
                         </c:forEach>
                       </div>
 
-                      <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid" style="overflow-x: hidden; overflow-y: auto;">
+                      <div class="widgetgrid_wrapper plangrid_lightbox product_plan_charges_grid edit_rate_card_grid" style="overflow-x: hidden; overflow-y: auto;">
 
                         <div class="widget_grid inline odd product_plan_charges_innergrid" >
                            <div class="widget_grid_cell product_displayname_cell">
@@ -382,6 +382,7 @@
                                        name="bundleOneTimeCharges[<c:out value='${priceStatus.index}' />].price"
                                        class="text priceRequired j_pricerequired">
                               </div>
+                              <div id="bundleOneTimeCharges.<c:out value='${priceStatus.index}' />Error"></div>
                             </div>
                           </c:forEach>
                         </div>
@@ -400,6 +401,7 @@
                                        name="bundleRecurringCharges[<c:out value='${priceStatus.index}' />].price"
                                        class="text priceRequired j_pricerequired">
                               </div>
+                              <div id="bundleRecurringCharges.<c:out value='${priceStatus.index}' />Error"></div>
                             </div>
                           </c:forEach>
                         </div>
@@ -432,7 +434,7 @@
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">2</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step2.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">3</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step3.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps completedsteps"><span class="stepsnumbers">4</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.charges.step.title" /></span></li>
-                     <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">5</span></span><span class="stepstitle"><spring:message htmlEscape="false" code="ui.bundle.step4.title" /></span></li>
+                     <li class="widgetwizard_stepscenterbar fivestepswizard"><span class="steps active"><span class="stepsnumbers active">5</span></span><span class="stepstitle active"><spring:message htmlEscape="false" code="ui.bundle.step4.title" /></span></li>
                      <li class="widgetwizard_stepscenterbar fivestepswizard last"><span class="steps last"><span class="stepsnumbers last">6</span></span><span class="stepstitle last"><spring:message htmlEscape="false" code="ui.bundle.step5.title" /></span></li>
                    </ul>
                 </div>
@@ -523,11 +525,11 @@
                 <div class="widgetwizard_successbox">
                   <div class="widgetwizard_successbox">
                       <div class="widget_resulticon success"></div>
-                        <p id="successmessage"><spring:message htmlEscape="false" code="ui.bundle.successfully.completed.text"/>&nbsp;</p>
+                        <p id="successmessage" class="width:550px;"><spring:message htmlEscape="false" code="ui.bundle.successfully.completed.text"/>&nbsp;</p>
                         <a href="#" class="close_product_wizard" id="viewbundledetails_configure"><spring:message htmlEscape="false" code="ui.product.view.details.configure.text"/></a>
                     </div>
                 </div>
-                <div class="infomessage" style="margin-left: 200px;">
+                <div class="infomessage" style="float: none;text-align: center;">
                    <c:choose>
                       <c:when test="${date != null}">
                           <spring:message code="dateonly.short.format" var="dateonly_format"/>

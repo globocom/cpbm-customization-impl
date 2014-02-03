@@ -45,8 +45,16 @@ var campaignsUrl = "<%=request.getContextPath() %>/portal/promotions/";
         </div>
       </div>
     </div>
-    <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon" style="display:none"></span> <p id="msg"></p></div>
-    <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+    <div class="top_notifications">
+      <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+        <button type="button" class="close js_close_parent" >&times;</button>
+        <span id="status_icon"></span><p id="msg"></p>
+      </div>
+      <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+        <button type="button" class="close js_close_parent" >&times;</button>
+        <span id="status_icon"></span><p id="msg"></p>
+      </div>
+    </div>
     <div class="widget_browser">
       <div id="spinning_wheel" style="display:none">
         <div class="widget_loadingpanel">

@@ -100,9 +100,21 @@
                                     ${currentTaskMap.key.tenant.name}
                                   </span>
                                 </div>
+                               </div>
+                               <div class="raw_content_row">
+                                <div class="raw_contents_title">
+                                  <span>
+                                    <spring:message code="ui.task.state" />
+                                  </span>
+                                </div>
+                                <div class="raw_contents_value">
+                                  <span>
+                                    <spring:message code="ui.task.state.${currentTaskMap.key.state}" />
+                                  </span>
+                                </div>
+                                 </div>
                               </div>
                             </div>
-                          </div>
                           </div>
                         </div>
                         <!--Info popover ends here-->

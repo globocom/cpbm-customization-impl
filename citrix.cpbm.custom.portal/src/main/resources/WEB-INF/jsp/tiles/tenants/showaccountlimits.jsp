@@ -5,6 +5,7 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
 <script type="text/javascript" src="<%=request.getContextPath()%>/js/tenants.js"></script>
 
 <div class="widget_details_actionbox">
@@ -19,7 +20,7 @@
 		</spring:url>
 
 		<sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD')">
-			<c:if test="${tenantid != 1}">
+			<c:if test="${tenantid != 1 && fn:length(resourceLimitsMap) > 0}">
 				<li>
 					<a href="javascript:void(0);" onclick="editAccountLimits(this);" class="editAccountLimits"
 						tenantuuid="${tenantuuid}" instanceparam="${instance.uuid}">
@@ -31,32 +32,20 @@
 	</ul>
 </div>
 <div class="widget_browsergrid_wrapper details" id="instanceparam_${instance.uuid}">
-	<c:forEach var="entry" items="${resourceLimitsMap}" varStatus="status">
+	<c:forEach var="account_control_property" items="${account_control_edit_properties}" varStatus="status">
 		<div class="widget_grid details even">
 			<div class="widget_grid_labels" style="width:200px">
 				<span style="width:auto">
-					<spring:message code="${instance.service.serviceName}.${entry.key}.name" />
+					<spring:message code="${instance.service.serviceName}.${account_control_property.name}.name" />
 				</span>
 			</div>
 			<div class="widget_grid_description">
-				<span id="${entry.key}">
-					<c:out value="${entry.value}"></c:out>
+				 <span id="${account_control_property.name}"> 
+					<c:out value="${resourceLimitsMap[account_control_property.name]}"></c:out>
 				</span>
 			</div>
 		</div>
 	</c:forEach>
-	<%-- <div class="widget_grid details even">
-		<div class="widget_grid_labels" style="width: 350px">
-			<span>
-				<spring:message code="label.accountcontrol.maxuser.limit" />
-			</span>
-		</div>
-		<div class="widget_grid_description">
-			<span>
-				<c:out value="${userLimit}"></c:out>
-			</span>
-		</div>
-	</div> --%>
 </div>
 
 <!-- Title -->

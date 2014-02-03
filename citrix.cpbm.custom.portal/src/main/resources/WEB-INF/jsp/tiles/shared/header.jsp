@@ -12,7 +12,7 @@ var accountPath = "<%=request.getContextPath() %>/portal/tenants/";
 var userPath = "<%=request.getContextPath() %>/portal/users/account_userpopup";
 var productsPath = "<%=request.getContextPath() %>/portal/products";
 var help_link_path = "<c:out value="${helpUrl}"/>";
-var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/notifications?tenant=<c:out value='${tenant.param}'/>&filterBy=Today";
+var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/notifications?tenant=<c:out value='${currentUser.tenant.param}'/>&filterBy=Today";
 </script>
 
 <c:if test="${currentTenant.id != 1}">
@@ -27,6 +27,10 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
   var health_link_path = "<%=request.getContextPath() %>/portal/health";
   var health_maintenance_link_path = "<%=request.getContextPath() %>/portal/health/health_maintainance";
 </script>
+<script type="text/javascript">
+  var currPrecision="<c:out value="${currencyFractionalDigitsLimit}"/>";
+</script>               
+
 
 <script type="text/javascript">
   var billingPath = "<%=request.getContextPath() %>/portal/billing/";
@@ -134,15 +138,33 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
         </spring:url>   
       </c:when>
       <c:otherwise>
-        <spring:url value="/portal/support/tickets" var="healthURL" htmlEscape="false">
-        </spring:url>   
+          <c:if test = "${ticketCapabilities == 'C'}">
+            <spring:url value="/portal/support/tickets" var="healthURL" htmlEscape="false">
+            </spring:url>
+          </c:if>
+
+          <c:if test="${ticketCapabilities == 'CRUD'}">
+              <sec:authorize access="hasRole('ROLE_TICKET_MANAGEMENT')"> 
+                  <spring:url value="/portal/support/tickets" var="healthURL" htmlEscape="false">
+                  </spring:url>
+              </sec:authorize>
+              <sec:authorize access = "hasAnyRole('ROLE_USER_TICKET_MANAGEMENT', 'ROLE_SPL_USER_TICKET_MANAGEMENT', 'ROLE_TENANT_TICKET_MANAGEMENT')">
+                  <c:if test="${ticketServiceInstance == true}">
+                      <spring:url value="/portal/support/tickets" var="healthURL" htmlEscape="false">
+                      </spring:url>   
+                  </c:if>
+              </sec:authorize>
+         </c:if>
+         
       </c:otherwise>
     </c:choose>
+    <c:if test="${!empty healthURL}">
      <div class="mainmenu_button <c:out value="${Support}"/>" id="supporttab">
        <div class="mainmenu_button_linkbox">
          <a  href="<c:out value="${healthURL}"/>"><spring:message code="page.level1.support"/></a>
        </div>
      </div>
+    </c:if>
     <sec:authorize access="hasAnyRole('ROLE_REPORTING_ADMIN')">
       <div class="mainmenu_button <c:out value="${Reports}"/>" id="reportstab" >
         <div class="mainmenu_button_linkbox">
@@ -216,7 +238,7 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
                 <div class="widget_actionpopover_mid OSdropdown">
                 	<ul class="widget_actionpoplist servicehealthdropdown" id="servicehealthdropdown">
                     <c:forEach items="${top_nav_cs_instances}" var="healthMap">
-                      <li id="cloudService_<c:out value="${healthMap.id}" />" onclick="view_service_health(this)"> <span class="icon servicehealth <c:out value="${healthMap.health_status}" />"></span><span class="servicename"><c:out value="${healthMap.name}" /></span></li>
+                      <li id="cloudService_<c:out value="${healthMap.id}" />" onclick="view_service_health(this)"> <span class="icon servicehealth <c:out value="${healthMap.health_status}" />"></span><span class="servicename ellipsis"><c:out value="${healthMap.name}" /></span></li>
                     </c:forEach>
                     </ul>
                 </div>
@@ -233,7 +255,9 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
      <li class="mainmenu_infolinks last">
          
     <div id="userprofile_button">
-      <div class="userprofile_buttonlink ellipsis"><c:out value="${currentUser.firstName}"/>&nbsp;&nbsp;<c:out value="${currentUser.lastName}"/></div>
+      <div class="userprofile_buttonlink ellipsis">
+       <spring:message code="user.firstname.lastname.display.order" arguments="${currentUser.firstName}, ${currentUser.lastName}"/>
+      </div>
       <div class="userprofile_arrows"><span class="caret"></span></div>
       <!--dropdown starts here-->
       <div class="userprofile_dropdownbox" style="display:none;" id="userprofile_dropdownbox">
@@ -250,17 +274,12 @@ var notifications_link_path = "<%=request.getContextPath() %>/portal/tenants/not
                  <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
                    <li><a href="<%=request.getContextPath() %>/portal/users/listusersforaccount"><spring:message code="page.level1.admin"/></a></li>
                  </sec:authorize>
-                 <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD') and !hasRole('ROLE_USER_CRUD') and !hasRole('ROLE_CONFIGURATION_CRUD')">
-                   <li><a href="<%=request.getContextPath() %>/portal/admin/batch/status"><spring:message code="page.level1.admin"/></a></li>
-                 </sec:authorize>
               </sec:authorize>
-              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_BILLING_ADMIN')">
+              <sec:authorize access="hasAnyRole('ROLE_CONFIGURATION_CRUD', 'ROLE_ACCOUNT_ADMIN', 'ROLE_ACCOUNT_BILLING_ADMIN')">
                 <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrent"><spring:message code="ui.header.page.title.companysetup"/></a></li>
               </sec:authorize>
-              <sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD')">
-                <c:if test="${isAdmin}">
+              <sec:authorize access="hasAnyRole('ROLE_CONFIGURATION_CRUD')">
                   <li><a href="<%=request.getContextPath() %>/portal/tenants/editcurrentlogo"><spring:message code="ui.header.page.title.customizecompany"/></a></li>
-                </c:if>
               </sec:authorize>
               <li><a href="<%= request.getContextPath() %>/portal/<c:out value="${currentUser.param}"/>/loggedout"><spring:message code="ui.header.page.title.logout"/></a></li>
             </ul>

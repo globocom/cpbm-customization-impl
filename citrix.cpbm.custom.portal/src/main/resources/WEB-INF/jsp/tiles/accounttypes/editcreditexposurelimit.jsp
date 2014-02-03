@@ -16,8 +16,13 @@
       <c:forEach items="${accountTypeForm.accountType.accountTypeCreditExposureList}" varStatus="cestatus"  var="accountTypeCreditExposure">
          <li> 
             <label><spring:message code="currency.longname.${accountTypeCreditExposure.currencyValue.currencyCode}"></spring:message></label>
-            <div class="nonmandatory_wrapper">
-              <input id="accountType.accountTypeCreditExposureList<c:out value='${cestatus.index}' />.creditExposureLimit" value='<c:out value="${accountTypeCreditExposure.creditExposureLimit}"/>' name="accountType.accountTypeCreditExposureList[<c:out value='${cestatus.index}' />].creditExposureLimit" class="text creditexposureclass"/>                  
+            <div class="mandatory_wrapper">
+              <c:if test="${accountTypeCreditExposure.creditExposureLimit != null }">
+              	<input id="accountType.accountTypeCreditExposureList<c:out value='${cestatus.index}' />.creditExposureLimit" value='<c:out value="${accountTypeCreditExposure.creditExposureLimit}"/>' name="accountType.accountTypeCreditExposureList[<c:out value='${cestatus.index}' />].creditExposureLimit" class="text creditexposureclass required"/>
+              </c:if> 
+              <c:if test="${accountTypeCreditExposure.creditExposureLimit == null }">
+              	<input id="accountType.accountTypeCreditExposureList<c:out value='${cestatus.index}' />.creditExposureLimit" value='<c:out value="0.0"/>' name="accountType.accountTypeCreditExposureList[<c:out value='${cestatus.index}' />].creditExposureLimit" class="text creditexposureclass required"/>
+              </c:if>                  
             </div>
              <div class="main_addnew_formbox_errormsg edit_error_msg" id="accountType.accountTypeCreditExposureList<c:out value='${cestatus.index}' />.creditExposureLimitError" ></div>
          </li>

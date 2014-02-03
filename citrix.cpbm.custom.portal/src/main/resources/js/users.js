@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright Â© 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -15,6 +15,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#emailAddressesDiv").hide();
       $("#myServicesDiv").hide();
       $("#notPrefDiv").show();
@@ -26,6 +27,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#notPrefDiv").hide();
       $("#emailAddressesDiv").show();
       $("#myServicesDiv").hide();
@@ -37,6 +39,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#notPrefDiv").hide();
       $("#emailAddressesDiv").hide();
       $("#myServicesDiv").hide();
@@ -52,6 +55,7 @@ $(document).ready(function() {
     $("#loginDiv").hide();
     $("#sideLeftPanel").hide();
     $("#apiCredentialsDiv").hide();
+    $("#bssApiCredentialsDiv").hide();
     $("#notPrefDiv").hide();
     $("#emailAddressesDiv").show();
     $("#myServicesDiv").hide();
@@ -68,66 +72,7 @@ $(document).ready(function() {
     if ($(this).attr('id') == "apiCredentials") {
       var previousTab = $("#previous_tab").val();
       if (previousTab != "apicredentials") {
-        if ($("#doNotShowVerifyUserDiv").val() == "true") {
-          var password = "dummy";
-          $.ajax({
-            type: 'POST',
-            url: "/portal/portal/users/verify_password;",
-            data: {
-              'password': password
-            },
-            dataType: "json",
-            success: function(data) {
-              if (data.success == true) {
-                $("#profileDetailsDiv").hide();
-                $("#loginDiv").hide();
-                $("#sideLeftPanel").hide();
-                $("#notPrefDiv").hide();
-                $("#emailAddressesDiv").hide();
-                $("#myServicesDiv").hide();
-                cleanCredentialsDiv();
-                for (var i = 0; i < data.userCredentialList.length; i++) {
-                  var instance = data.userCredentialList[i];
-                  var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
-                  var userCredentialLiCloned = null;
-                  $.each(instance, function(key, value) {
-                    if ((key == "ServiceName" || key == "ServiceUuid" || key == "InstanceName")) {} else {
-                      userCredentialLiCloned = apiCredentialsDivCloned.find("#userCredentialLi").clone();
-                      userCredentialLiCloned.find('#userCredentialLable').text(key);
-                      userCredentialLiCloned.find("#userCredentialLable").attr("for", 'userCredentialLable_' +
-                        key);
-                      userCredentialLiCloned.find("#userCredentialLable").attr("id", 'userCredentialLable_' +
-                        key);
-                      userCredentialLiCloned.find('#liCredentialValue').text(value);
-                      apiCredentialsDivCloned.find('#serviceLogo').html(
-                        '<img class="apikeyLogo" src=/portal/portal/logo/connector/' + instance.ServiceUuid +
-                        '/logo>');
-                      apiCredentialsDivCloned.find("#userCredentialUl").append(userCredentialLiCloned);
-                      userCredentialLiCloned.attr('id', 'userCredentialLi_' + key);
-                    }
-                  });
-                  //var cls=apiCredentialsDivCloned.find('#titleDiv').attr('class');
-                  apiCredentialsDivCloned.find('#titleDiv').html('<h2>' + instance.ServiceName + '-' + instance.InstanceName +
-                    '</h2>');
-                  apiCredentialsDivCloned.find('#titleDiv').attr('style', 'margin-top:10px;');
-                  apiCredentialsDivCloned.find('#userCredentialLi').hide();
-                  apiCredentialsDivCloned.attr('id', 'apiCredentialsDiv_' + instance.ServiceUuid);
-                  apiCredentialsDivCloned.show();
-                  $("#userCredentialDiv").append(apiCredentialsDivCloned);
-                }
-                $(".secondlevel_menutabs").removeClass("on");
-                $("#apiCredentials").addClass("on");
-                $("#previous_tab").val("apicredentials");
-                var $thisPanel = $("#verifyUserDiv");
-                $thisPanel.dialog("close");
-
-              }
-            }
-          });
-
-        } else {
-          showPasswordVerificationBox(null);
-        }
+        showPasswordVerificationBox(null);
       }
     } else { //clean the cloned divs
       cleanCredentialsDiv();
@@ -138,6 +83,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#emailAddressesDiv").hide();
       $("#myServicesDiv").hide();
       $("#notPrefDiv").show();
@@ -148,6 +94,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#notPrefDiv").hide();
       $("#emailAddressesDiv").show();
       $("#myServicesDiv").hide();
@@ -158,6 +105,7 @@ $(document).ready(function() {
       $("#loginDiv").hide();
       $("#sideLeftPanel").hide();
       $("#apiCredentialsDiv").hide();
+      $("#bssApiCredentialsDiv").hide();
       $("#notPrefDiv").hide();
       $("#emailAddressesDiv").hide();
       $("#myServicesDiv").show();
@@ -215,7 +163,26 @@ $(document).ready(function() {
     $(".addnewuser").unbind('click');
   });
 
-
+  $("#generateAPIKey").click(function(){
+    var r = confirm(i18n.user.generateAPIKey);
+    if (!r) {
+      return 
+    }
+    var actionurl = '/portal/portal/users/generate_api_key';
+    $.ajax({
+      type: "POST",
+      url: actionurl,
+      dataType: "json",
+      success: function(data) {
+        if (data.success == true) {
+          $("#bssApiKey").text(data.bssApiCredentials.apiKey);
+          $("#bssSecretKey").text(data.bssApiCredentials.secretKey);
+        }
+      },
+      error: function() {
+      }
+    });
+  });
 
   $("#addnewusercancel").click(function() {
     $("#addexistinguserDiv").html("");
@@ -327,7 +294,6 @@ $(document).ready(function() {
     }
   });
 
-
   if ($("#user\\.trial1").is(":checked")) {
     $("#trial").show();
   }
@@ -375,13 +341,13 @@ $(document).ready(function() {
       "user.firstName": {
         required: true,
         minlength: 1,
-        maxlength: 50,
+        maxlength: 255,
         flname: true
       },
       "user.lastName": {
         required: true,
         minlength: 1,
-        maxlength: 50,
+        maxlength: 255,
         flname: true
       },
       "user.email": {
@@ -398,7 +364,7 @@ $(document).ready(function() {
         minlength: 5,
         validateUsername: true,
         remote: {
-          url: '/portal/portal/validate_username'
+          url: '/portal/portal/users/validate_username'
         }
       },
       "user.clearPassword": {
@@ -557,9 +523,6 @@ $(document).ready(function() {
       }
     }
   });
-
-
-
 
   $("#editTimeZone").click(function() {
     $("#timeZone").val($("#showTimezone").text().trim());
@@ -773,31 +736,6 @@ function refreshDivs(id) {
   });
 }
 
-function importAdUser() {
-  if (!$("#add_user_form_step1").validate().element("#user\\.username")) {
-    return;
-  }
-  var usernameforad = $("#user\\.username").val();
-  actionurl = '/portal/portal/users/importfromad.json?username=' + usernameforad;
-  $.ajax({
-    type: "GET",
-    url: actionurl,
-    dataType: "json",
-    success: function(userdetails) {
-      $("#submitButtonFinish").removeAttr('disabled');
-      $("#ButtonEmail").removeAttr('disabled');
-      $("#user\\.username").attr('readonly', 'true');
-      $("#user\\.firstName").val(userdetails.firstName);
-      $("#user\\.lastName").val(userdetails.lastName);
-      $("#user\\.email").val(userdetails.email);
-    },
-    error: function(e) {
-      alert(e.responseText);
-    }
-  });
-}
-
-
 /**
  * View User details
  * @param current
@@ -826,6 +764,10 @@ function viewUser(current) {
     success: function(html) {
       $("#editUserDiv").html("");
       $("#viewUserDiv").html(html);
+      
+      $("#viewUserDiv").find(".js_user_enable_service_error").popover();
+      
+      $("#enableServiceButton").hide();
       bindActionMenuContainers();
     },
     error: function() {
@@ -932,6 +874,10 @@ function resetGridRowStyle() {
  */
 
 function removeUser(userId) {
+  var r = confirm(i18n.user.del);
+  if (r != true) {
+    return ;
+  }
   var actionurl = usersUrl + userId + "/delete";
   $.ajax({
     type: "GET",
@@ -964,7 +910,7 @@ function deActivateUser(current) {
       location.reload();
     },
     error: function(jsonResponse) {
-      alert(i18n.user.deactfail + jsonResponse.responseText);
+      popUpDialogForAlerts("dialog_info", i18n.user.deactfail + jsonResponse.responseText);
     }
   });
 }
@@ -991,7 +937,7 @@ function activateUser(current) {
       location.reload();
     },
     error: function(jsonResponse) {
-      alert(i18n.user.actfail + jsonResponse.responseText);
+      popUpDialogForAlerts("dialog_info", i18n.user.actfail + jsonResponse.responseText);
     }
   });
 }
@@ -1019,7 +965,7 @@ function resendVerificationEmail(current) {
       $("#top_message_panel").addClass("success").show();
     },
     error: function(jsonResponse) {
-      alert(i18n.user.verfail + jsonResponse.responseText);
+      popUpDialogForAlerts("dialog_info", i18n.user.verfail + jsonResponse.responseText);
     }
   });
 }
@@ -1057,11 +1003,8 @@ function addNewUserButton() {
     }
   });
 
-
-
   return true;
 }
-
 
 
 function closeUserCreationWizard() {
@@ -1083,6 +1026,7 @@ function addNewUserButtonStep1Finish() {
   if ($("#add_user_form_step1").valid()) {
     var actionurl = step1FinishUrl;
     submit_finish = false;
+    $("#inprogress_spinning_wheel_1").show();
     $.ajax({
       type: "post",
       url: actionurl,
@@ -1095,10 +1039,12 @@ function addNewUserButtonStep1Finish() {
         $dialogFormContent.html(html);
         $currentDialog = $thisDialog;
         submit_finish = true; //$currentDialog.dialog('open');
+        $("#inprogress_spinning_wheel_1").hide();
       },
       error: function() {
         $(".addnewuser").unbind('click');
         submit_finish = true;
+        $("#inprogress_spinning_wheel_1").hide();
       }
     });
   }
@@ -1107,6 +1053,29 @@ function addNewUserButtonStep1Finish() {
 
   return true;
 }
+
+
+function importAdUser(current) {
+  var usernameforad = $("#user\\.username").val();
+  actionurl = '/portal/portal/users/importfromad.json?username=' + usernameforad;
+  $.ajax({
+    type: "GET",
+    url: actionurl,
+    dataType: "json",
+    success: function(userdetails) {
+      $("#submitButtonFinish").removeAttr('disabled');
+      $("#ButtonEmail").removeAttr('disabled');
+      $("#user\\.username").attr('readonly', 'true');
+      $("#user\\.firstName").val(userdetails.firstName);
+      $("#user\\.lastName").val(userdetails.lastName);
+      $("#user\\.email").val(userdetails.email);
+    },
+    error: function(e) {
+      popUpDialogForAlerts("dialog_info", e.responseText);
+    }
+  });
+}
+
 
 function addNewUserButtonStep1CustomEmail() {
   if ($("#add_user_form_step1").valid()) {
@@ -1135,6 +1104,7 @@ function addNewUserButtonStep1CustomEmail() {
 
 function addNewUserCustomEmailFinish() {
   var actionurl = customEmailFinishURL;
+  $("#inprogress_spinning_wheel_2").show();
   $.ajax({
     type: "POST",
     url: actionurl,
@@ -1145,9 +1115,11 @@ function addNewUserCustomEmailFinish() {
       var $dialogFormContent = $thisDialog.find(".dialog_formcontent");
       $dialogFormContent.html("");
       $dialogFormContent.html(html);
+      $("#inprogress_spinning_wheel_2").hide();
     },
     error: function(XMLHttpRequest) {
       $(".addnewuser").unbind('click');
+      $("#inprogress_spinning_wheel_2").hide();
     }
   });
 }
@@ -1284,7 +1256,7 @@ $(document).ready(function() {
     var phoneNumber = $("#phone").val();
     var countryCode = $("#countryCode").text().trim();
     if (phoneNumber == "" || phoneNumber == null || countryCode == "" || countryCode == null) {
-      alert(i18n.errors.phoneDetails);
+      popUpDialogForAlerts("dialog_info", i18n.errors.phoneDetails);
       return;
     }
 
@@ -1301,10 +1273,10 @@ $(document).ready(function() {
       },
       dataType: "html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
       error: function(html) {
-        alert(i18n.errors.callFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.callFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationCall").html("<span class='call_icon'></span>" + i18n.labels.phoneVerificationCallMe);
@@ -1316,7 +1288,7 @@ $(document).ready(function() {
     var phoneNumber = $("#phone").val();
     var countryCode = $("#countryCode").text().trim();
     if (phoneNumber == "" || phoneNumber == null || countryCode == "" || countryCode == null) {
-      alert(i18n.errors.phoneDetails);
+      popUpDialogForAlerts("dialog_info", i18n.errors.phoneDetails);
       return;
     }
 
@@ -1334,10 +1306,10 @@ $(document).ready(function() {
       },
       dataType: "html",
       success: function(response) {
-        alert(jQuery.parseJSON(response).message);
+        popUpDialogForAlerts("dialog_info", jQuery.parseJSON(response).message);
       },
       error: function(html) {
-        alert(i18n.errors.textMessageFailed);
+        popUpDialogForAlerts("dialog_info", i18n.errors.textMessageFailed);
       },
       complete: function(xhr, status) {
         $("#phoneVerificationSMS").html("<span class='text_icon'></span>" + i18n.labels.phoneVerificationTextMe);
@@ -1359,7 +1331,7 @@ $(document).ready(function() {
 
     var phoneVerified = false;
     $.ajax({
-      type: "GET",
+      type: "POST",
       url: "/portal/portal/phoneverification/verify_pin",
       data: {
         "PIN": userEnteredPIN,
@@ -1401,7 +1373,7 @@ $(document).ready(function() {
         $("#countryCodeFormValue").val(result);
       },
       error: function(html) {
-        alert(i18n.user.errors.isdCodeFetchFailed);
+        popUpDialogForAlerts("dialog_info", i18n.user.errors.isdCodeFetchFailed);
       },
       complete: function() {
         if (typeof(phoneVerificationEnabled) != "undefined" && phoneVerificationEnabled == "true") {
@@ -1441,6 +1413,11 @@ $(document).ready(function() {
           $("#emailAddressesDiv").hide();
           $("#myServicesDiv").hide();
           cleanCredentialsDiv();
+          if(data.bssApiCredentials !== null && typeof data.bssApiCredentials!="undefined"){
+            $("#bssApiKey").text(data.bssApiCredentials.apiKey);
+            $("#bssSecretKey").text(data.bssApiCredentials.secretKey);
+            $("#bssApiCredentialsDiv").show();
+          }
           for (var i = 0; i < data.userCredentialList.length; i++) {
             var instance = data.userCredentialList[i];
             var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
@@ -1604,21 +1581,14 @@ function changePassword(event, form) {
 
 
 function showUserService() {
-
   $("#details_content").hide();
   $('#details_tab').removeClass('active').addClass("nonactive");
   $("#viewServiceSubscriptionStatus_tab").removeClass('nonactive').addClass("active");
-  var servicesToSbscribe = $('input:checkbox:not(:checked)');
-  var showEnablebutton = $("#userstatus").val();
-  if (showEnablebutton == 'true' && servicesToSbscribe.length > 0) {
-    $("#enableServiceButton").show();
-  } else {
-    $("#enableServiceButton").hide();
-  }
-
   $("#service_content").show();
-
-
+  var instances = $("#service_content").find("input[type='checkbox']").not(":disabled");
+  if(instances.length > 0){
+    $("#enableServiceButton").show();
+  }
 }
 
 function showUserDetails() {
@@ -1631,56 +1601,89 @@ function showUserDetails() {
 }
 
 function enableAllServiceForUser(userParam, currentTenantParam) {
+
+  if ($("#userEnabled").val() == "false") {
+    popUpDialogForAlerts("dialog_info", dictionary.userdisabled);
+    return;
+  }
+
   var instanceProperty = '{}';
+  var instances = $("#service_content").find("input[type='checkbox']:checked")
+      .not(":disabled");
+
+  var instanceList = "";
+  for (i = 0; i < instances.length; i++) {
+    var id = instances[i].id;
+    $("#service_content").find("input[id=" + id + "]").attr("disabled", true);
+    $("#service_provisioning_" + id).show();
+    $("#service_state_" + id).text(dictionary.provisioning);
+    instanceList += id + ";";
+  }
+
+  if (instanceList.length == 0) {
+    popUpDialogForAlerts("dialog_info", dictionary.selectservice);
+    return;
+  } else {
+    var instances = $("#service_content").find("input[type='checkbox']").not(":disabled");
+    if(instances.length = 0){
+      $("#enableServiceButton").hide();
+    }
+  }
+
   var ajaxUrl = "/portal/portal/users/enable_services";
+  $.ajax({
+    type : "POST",
+    data : {
+      "tenantparam" : currentTenantParam,
+      "userparam" : userParam,
+      "instances" : instanceList
+    },
+    dataType : "json",
+    url : ajaxUrl,
+    success : function(serviceRegistrationStatus) {
+      pollEnableStatus(userParam, currentTenantParam, instanceList);
+    },
+    error : function(status) {
+      $("#enableServiceButton").show();
+      popUpDialogForAlerts("dialog_info", dictionary.enableserviceerror);
+    }
+  });
+}
+
+function pollEnableStatus (userParam, currentTenantParam, instances)
+{
+  var ajaxUrl = "/portal/portal/users/enabled_services";
   $.ajax({
     type: "POST",
     data: {
       "tenantparam": currentTenantParam,
-      "userparam": userParam
+      "userparam": userParam,
+      "instances" : instances
     },
     dataType: "json",
     url: ajaxUrl,
     success: function(serviceRegistrationStatus) {
-      $("#details_content").hide();
-      var i = 1;
-      var rowtype = '';
-      var doClean = 1;
+      var atleastOneServiceNotProvisioned = false;
       $.each(serviceRegistrationStatus, function(key, value) {
-        if (doClean == 1) {
-          $("#service_content").empty();
-          $("#showEnabledButton").val('false');
-          $("#enableServiceButton").hide();
-          doClean = 0;
-        }
-        var html = '';
-        if (i % 2 == 0) {
-          rowtype = 'even';
+        if (value == "PROVISIONING") {
+          atleastOneServiceNotProvisioned = true;
         } else {
-          rowtype = 'odd';
-
+          $("#service_provisioning_" + key).hide();
+          if(value != "ACTIVE"){
+            $("#service_content").find("input[id="+key+"]").attr("disabled", false);
+            $("#service_state_" + key).text(dictionary.provisioningerror);
+            $("#enableServiceButton").show();
+          }else{
+            $("#service_state_" + key).text(dictionary.active);
+          }
         }
-        if (value) {
-          html = "<div id=\"service_contentInner\"><div id=\"serviceRow\" class=\"widget_grid details " + rowtype +
-            "\"><div id=\"serviceRowContent\" class=\"widget_grid_description\"><span><input type=\"checkbox\"  disabled=\"true\" checked=\"checked\" style=\"margin-right:5px\"/>&nbsp;" +
-            key + '</span></div>';
-        } else {
-          html = "<div id=\"service_contentInner\"><div id=\"serviceRow\" class=\"widget_grid details " + rowtype +
-            "\"><div id=\"serviceRowContent\" class=\"widget_grid_description\"><span><input type=\"checkbox\"  disabled=\"true\" style=\"margin-right:5px\"/>&nbsp;" +
-            key + '</span></div>';
-          $("#showEnabledButton").val('true');
-          $("#enableServiceButton").show();
-        }
-        $("#service_content").append(html);
-        $("#service_content").show();
-        i++;
       });
-      $('#details_tab').removeClass('active').addClass("nonactive");
-      $("#viewServiceSubscriptionStatus_tab").removeClass('nonactive').addClass("active");
-
+      if(atleastOneServiceNotProvisioned){
+        setTimeout ("pollEnableStatus(\'" + userParam +"\',\'" + currentTenantParam + "\',\'" + instances +"\')", 2000);
+      }
     },
     error: function(status) {
-      alert('Error Enabling services for user');
+      
     }
   });
 }
@@ -1719,20 +1722,14 @@ function resolveViewForSettingFromServiceInstance(instanceUuid) {
 }
 $(document).ready(function() {
   $("a#profile_deactivateuser,a#profile_activateuser").bind("click", function(event) {
-    if (event.preventDefault) {
-      event.preventDefault();
-    } else {
-      event.returnValue = false;
-    }
-
     var $this = $(this);
-    var actionurl = $this.attr('href');
+    var actionurl = $this.attr('callbackurl');
     var $postRequest = $.ajax({
       type: "POST",
       url: actionurl,
       dataType: "json",
       success: function() {
-        location.reload();
+        window.location = window.location;
       },
       error: function(XMLHttprequest) {
         initDialogWithOK("dialog_info", 350, false);

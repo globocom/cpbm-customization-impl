@@ -57,7 +57,7 @@ var newSchedule = "<c:out value="${newSchedule}"/>";
               <form:label path="serviceNotification.plannedStart" ><spring:message code="ui.label.serviceNotification.plannedStart"/></form:label>
               <div class="mandatory_wrapper">
               
-              <input id="startDateField" class="text j_startDate" name="serviceNotification.plannedStart"
+              <input id="startDateField" class="text j_startDate" name="serviceNotification.plannedStart" readonly="readonly"
                 value='<fmt:formatDate value="${serviceNotificationForm.serviceNotification.plannedStart}"
                  pattern="${health_date_format}" timeZone="${currentUser.timeZone}"/>' 
                  tabindex="3" style="margin:0px 0px 0px 10px;"
@@ -69,7 +69,7 @@ var newSchedule = "<c:out value="${newSchedule}"/>";
             <li>
               <form:label path="serviceNotification.plannedEnd" ><spring:message code="ui.label.serviceNotification.plannedEnd"/></form:label>
               <div class="mandatory_wrapper">
-              <input id="endDateField" class="text j_startDate" name="serviceNotification.plannedEnd"
+              <input id="endDateField" class="text j_startDate" name="serviceNotification.plannedEnd" readonly="readonly"
                 value='<fmt:formatDate value="${serviceNotificationForm.serviceNotification.plannedEnd}"
                  pattern="${health_date_format}" timeZone="${currentUser.timeZone}"/>' 
                  tabindex="4" style="margin:0px 0px 0px 10px;"

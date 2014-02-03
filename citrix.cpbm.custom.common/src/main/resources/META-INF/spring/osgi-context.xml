@@ -40,6 +40,7 @@
 	 <osgi:reference id="sessionFactory" interface="org.hibernate.SessionFactory"/>
    	 <osgi:reference interface="org.synyx.messagesource.InitializableMessageSource" id="messageSource"/>
 	 <osgi:reference interface="com.vmops.service.PromotionService" id="promotionService"/>
+	 <osgi:reference interface="com.citrix.cpbm.core.workflow.service.BusinessTransactionService" id="businessTransactionService"/>
    
 	 <osgi:service interface="com.citrix.cpbm.workflow.pendingaction.resolver.ActionUrlResolver" ref="defaultActionUrlResolver"/>
 	 
@@ -52,6 +53,7 @@
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="subscriptionPreAuthActivity" />
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="tenantOwnerApprovalActivity" />
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="verifyCreditCardInfoActivity" />
+	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="serviceActivationApprovalActivity" />
 	 <!--  <osgi:service interface="com.citrix.cpbm.subscriber.TopicSubscriber" ref="customTopicSubscriber"/> -->
 	 <osgi:service interface="com.citrix.cpbm.workflow.activity.Activity" ref="dummyActivity" />
 	 <osgi:service interface="com.citrix.cpbm.custom.service.TestModelService" ref="testModelService" />

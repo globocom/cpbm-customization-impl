@@ -17,7 +17,7 @@
               <label><spring:message code="label.details"/></label>
               <br/>
               <div class="nonmandatory_wrapper">
-                <textarea id="email_template_text" style="overflow: auto" cols="100" rows="20"><c:out value="${emailText}" escapeXml="true" /></textarea>
+                <textarea id="email_template_text" style="overflow: auto" cols="135" rows="20"><c:out value="${emailText}" escapeXml="true" /></textarea>
               </div>
           </li>
         </ul>

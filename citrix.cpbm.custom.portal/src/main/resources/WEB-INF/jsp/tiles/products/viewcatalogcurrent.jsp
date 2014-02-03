@@ -65,7 +65,7 @@
 </div>
 
 <div id="catalog_products_current" class="dialog_formcontent" style="display:None; margin: 0 0 0 0;">
-    <div class="widget_browsergrid_wrapper wsubaction"  style="overflow-x: hidden;overflow-y: auto; height: 412px;">
+    <div class="widget_browsergrid_wrapper wsubaction"  style="overflow-x: hidden;overflow-y: auto; height: 391px;">
       <div id="product_row_template" class="widget_details_inlinegrid j_product_row_template" style="margin-left: 2px;">
         <div class="widget_details_inlinegrid" id= "utility_rate_card_details" style="border-width: 0px 0px 1px; margin-top: 0px; margin-left: 0px; width:608px;">
           <c:set var="fullProductPricingMap" value="${fullProductPricingMap}" scope="request"></c:set>

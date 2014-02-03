@@ -26,7 +26,7 @@
       <span ><fmt:formatDate  value="${rateCardForm.startDate}" pattern="${dateonly_format}" /></span>
         </li> 
      </ul> 
-     <div class="widget_details_inlinegrid" style="width:auto;" >
+     <div class="widget_details_inlinegrid edit_rate_card_grid" style="width:auto;" >
       <div class="widget_grid inline subheader" >
               <div class="widget_grid_cell  plan_bundle_charges_row_bundle_cell">
                   <span class="subheader"><spring:message code="label.bundle.name"/></span>
@@ -62,7 +62,8 @@
                  <span class='navicon <c:out value="${bundleTypeClass}"/>'
                 id="nav_icon" style="height: 19px;"></span> <span class="celltext ellipsis" style="font-weight:bold;width:80px; color:#0A79AC; margin:15px 0 0 5px;"><c:out value="${rateCardChargesForm.bundle.name}"/></span>
                 </div>
-                <div class="plan_bundle_charges_row" style="height:30px;float:left;">
+                <div style="margin-left:122px;">
+                <div class="plan_bundle_charges_row" style="height:auto;float:left;">
                 <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.one.time"></spring:message> </strong></span>
                 </div>
@@ -85,7 +86,7 @@
                 
                   <c:choose>
                   <c:when test="${rateCardChargesForm.bundle.rateCard.chargeType.frequencyInMonths != 0 }">
-                     <div class="plan_bundle_charges_row" style="height:30px;float:left;">
+                     <div class="plan_bundle_charges_row" style="height:auto;float:left;">
                  <div class="widget_grid_cell" style="width:155px;">
                   <span class="celltext"><strong><spring:message code="label.recurring"></spring:message>&nbsp;:&nbsp;<spring:message code="charge.type.${rateCardChargesForm.bundle.rateCard.chargeType.name}"/></strong></span>
                   </div> 
@@ -108,7 +109,7 @@
                 </div>
                   </c:when>
                   <c:otherwise>
-                      <div class="plan_bundle_charges_row" style="height:30px;float:left;">
+                      <div class="plan_bundle_charges_row" style="height:auto;float:left;">
                  <div class="widget_grid_cell" style="width:130px;">
                   <span class="celltext"><strong><spring:message code="label.recurring"></spring:message>&nbsp;:&nbsp;N/A</strong></span>
                   </div> 
@@ -118,16 +119,20 @@
                 </div>
                   </c:otherwise>
                 </c:choose>
+                </div>
             </div>
           </c:forEach>
           </div>
     </div>
 </form:form>
- <div class="common_messagebox error plangrid_lightbox"  style="min-width:882px;margin:0 0 0 10px; padding:0 0 5px 0; border:1px solid #CCCCCC; display:block;display:none;">
+ <div class="common_messagebox error plangrid_lightbox"  style="min-width:882px;margin:0 0 0 10px;width:98%; padding:0 0 5px 0; border:1px solid #CCCCCC; display:block;display:none;">
         <span class="erroricon"></span>
         <p id="priceRequiredError" style="margin-top:7px;"></p>
     </div> 
 </div>  
 
 </div>
+<script type="text/javascript">
+  var currPrecision="<c:out value="${currencyFractionalDigitsLimit}"/>";
+</script> 
               

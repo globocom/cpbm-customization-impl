@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -7,7 +7,7 @@ $(document).ready(function() {
 
   // If the request is coming from Dashboard Submit Ticket link then new
   // ticket popup should come up
-  if (showNewTicket == "true") {
+  if (typeof showNewTicket !="undefined" && showNewTicket == "true") {
     showNewTicketDiv();
   }
 
@@ -21,10 +21,12 @@ $(document).ready(function() {
 
     rules: {
       "ticket.description": {
-        required: true
+        required: true,
+        maxlength: 32000
       },
       "ticket.subject": {
-        required: true
+        required: true,
+        maxlength: 255
       },
       "ticket.status": {
         required: true
@@ -84,13 +86,13 @@ $(document).ready(function() {
                 viewTicket($("li[id^='ticket'].selected.tickets"), null, "comment");
               } else {
                 $("#top_actions").find("#spinning_wheel").hide();
-                alert(i18n.alerts.postCommentFailure + " " + $("#ticketDetailsCaseNumber").html().trim());
+                popUpDialogForAlerts("dialog_info", i18n.alerts.postCommentFailure + " " + $("#ticketDetailsCaseNumber").html().trim());
               }
 
             },
             error: function(html) {
               $("#top_actions").find("#spinning_wheel").hide();
-              alert(i18n.alerts.postCommentFailure + " " + $("#ticketId").val());
+              popUpDialogForAlerts("dialog_info", i18n.alerts.postCommentFailure + " " + $("#ticketId").val());
             }
           });
           $(this).dialog("destroy");
@@ -100,15 +102,11 @@ $(document).ready(function() {
       "Cancel": function() {
         $(this).dialog("close");
         $(this).dialog("destroy");
-        $thisPanel.remove();
       }
     });
     dialogButtonsLocalizer($thisPanel, {
       'Submit': g_dictionary.dialogSubmit,
       'Cancel': g_dictionary.dialogCancel
-    });
-    $thisPanel.bind("dialogbeforeclose", function(event, ui) {
-      $thisPanel.remove();
     });
     $thisPanel.dialog("open");
 
@@ -137,7 +135,7 @@ $(document).ready(function() {
             },
             error: function(html) {
               $("#top_actions").find("#spinning_wheel").hide();
-              alert(i18n.alerts.editFailure);
+              popUpDialogForAlerts("dialog_info", i18n.alerts.editFailure);
             }
           });
           $(this).dialog("destroy");
@@ -371,7 +369,7 @@ function postNewTicket(event, form) {
         }
       },
       error: function(html) {
-        alert(i18n.alerts.createFailure);
+        popUpDialogForAlerts("dialog_info", i18n.alerts.createFailure);
       }
     });
   }
@@ -416,6 +414,15 @@ function viewTicket(current, ticketOwner, action_type) {
       $("#viewTicketDiv").html('');
       $("#editTicketDiv").remove();
       $("#viewTicketDiv").html(html);
+     
+      $("#ticket" + tktNumber).find("#info_status").text($("#viewTicketDiv").find("#ticket_status").text());
+      $("#ticket" + tktNumber).find("#info_ticket_updated_at").text($("#viewTicketDiv").find("#ticket_updated_at").text());
+      $("#ticket" + tktNumber).find("#displaytext_nav").text($("#viewTicketDiv").find("#ticket_title").text());
+      
+      var ticketStatus = $("#viewTicketDiv").find("#ticket_status").text();
+      var statusIcon = "ticket_" + ticketStatus.toLowerCase();
+      $("#ticket" + tktNumber).find("#status_icon").removeClass().addClass("navicon " + statusIcon);
+      
       bindActionMenuContainers();
       $("#top_actions").find("#spinning_wheel").hide();
       $("#tab_comments").bind("click", function(event) {
@@ -438,7 +445,7 @@ function viewTicket(current, ticketOwner, action_type) {
     },
     error: function(html) {
       $("#top_actions").find("#spinning_wheel").hide();
-      alert(i18n.alerts.fetchFailure + " " + tktNumber);
+      popUpDialogForAlerts("dialog_info", i18n.alerts.fetchFailure + " " + tktNumber);
     }
   });
 }
@@ -468,7 +475,7 @@ function editTicket(event, form) {
         $("#viewTicketDiv").html(html);
       },
       error: function(html) {
-        alert(i18n.alerts.editFailure);
+        popUpDialogForAlerts("dialog_info", i18n.alerts.editFailure);
       }
     });
 
@@ -494,11 +501,11 @@ function closeTicket(caseId) {
           $("#createTicketCommentForm").hide();
           $("#gbt_status" + caseNumber).html("Closed");
         } else {
-          alert(i18n.alerts.closeFailure + " " + caseNumber);
+          popUpDialogForAlerts("dialog_info", i18n.alerts.closeFailure + " " + caseNumber);
         }
       },
       error: function(html) {
-        alert(i18n.alerts.closeFailure + " " + caseNumber);
+        popUpDialogForAlerts("dialog_info", i18n.alerts.closeFailure + " " + caseNumber);
       }
     });
   }
@@ -546,7 +553,7 @@ function getMoreTickets() {
       $("#ticketgridcontent").append(result);
     },
     error: function(html) {
-      alert(i18n.alerts.showMoreFailure);
+      popUpDialogForAlerts("dialog_info", i18n.alerts.showMoreFailure);
     },
     complete: function() {
       $("#showMoreLoading").hide();
@@ -558,6 +565,7 @@ function getMoreTickets() {
 function showInfoBubble(current) {
   if ($(current).hasClass('active')) return
   $(current).find("#info_bubble").show();
+//  alert($(current).find("#info_status").text());
   return false;
 };
 

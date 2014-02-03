@@ -13,21 +13,15 @@
             </span>
           </li>
           <c:forEach var="category" items="${categories}" varStatus="status">
-            <li>
-              <span class="filters">
-                <a href="javascript:void(0);" class="filters" id="${category}"><spring:message  code="${category}.category.text"/> 
-                <c:choose>
-                    <c:when test="${!empty countPerCategory[category]}">
-                        (${countPerCategory[category]})
-                    </c:when>
-                    <c:otherwise>
-                        (0)
-                    </c:otherwise>
-                </c:choose>
-                
-                </a>
-              </span>
-            </li>
+            <c:if test="${!empty countPerCategory[category]}">
+	            <li>
+	              <span class="filters">
+	                <a href="javascript:void(0);" class="filters" id="${category}"><spring:message  code="${category}.category.text"/> 
+	                	(${countPerCategory[category]})
+	                </a>
+	              </span>
+	            </li>
+            </c:if>
           </c:forEach>
         </ul>
       </div>

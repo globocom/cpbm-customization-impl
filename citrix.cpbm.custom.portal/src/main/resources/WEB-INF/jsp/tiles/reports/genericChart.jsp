@@ -55,7 +55,8 @@ $(document).ready(function(){
       downloadPNG:g_dictionary.highChartDownloadPNG,
       downloadJPEG:g_dictionary.highChartDownloadJPEG,
       downloadPDF:g_dictionary.highChartDownloadPDF,
-      downloadSVG:g_dictionary.highChartDownloadSVG
+      downloadSVG:g_dictionary.highChartDownloadSVG,
+      noData: g_dictionary.noDataToDisplay
     }
   };
   HighChartsUtil.renderChart(containerId, chartDataJSON.series, chartDataJSON.categories, options);

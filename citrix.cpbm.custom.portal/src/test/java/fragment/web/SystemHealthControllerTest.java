@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 /**
  * 
  */
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.Notification;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.time.DateUtils;
@@ -34,13 +32,11 @@ import com.citrix.cpbm.portal.fragment.controllers.SystemHealthController;
 import com.vmops.model.Health;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceNotification;
+import com.vmops.model.ServiceNotification.Type;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
-import com.vmops.model.ServiceNotification.Type;
 import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.persistence.ServiceNotificationDAO;
-import com.vmops.utils.DateTimeUtils;
-import com.vmops.utils.GetHostName;
 import com.vmops.web.controllers.AbstractBaseController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ServiceNotificationForm;
@@ -141,7 +137,6 @@ public class SystemHealthControllerTest extends WebTestsBase {
   @SuppressWarnings("unchecked")
   @Test
   public void testHealth() throws Exception {
-    Date now = calendar.getTime();
     calendar.add(Calendar.HOUR_OF_DAY, -1);
     Date start = calendar.getTime();
     calendar.add(Calendar.HOUR_OF_DAY, 5);
@@ -485,7 +480,7 @@ public class SystemHealthControllerTest extends WebTestsBase {
     String healthMaintainance = controller.maintenanceView(defaultServiceInstance.getUuid(), "1", map);
     Assert.assertNotNull(healthMaintainance);
     Assert.assertEquals(new String("system.health.maintenanceView"), healthMaintainance);
-    Assert.assertEquals(Page.SUPPORT_HEALTH, (Page) map.get("page"));
+    Assert.assertEquals(Page.SUPPORT_HEALTH, map.get("page"));
     List<ServiceNotification> list = (List<ServiceNotification>) map.get("notifications");
     Assert.assertEquals(13, list.size());
     ServiceNotification obtainedNotification = (ServiceNotification) map.get("item");
@@ -499,7 +494,7 @@ public class SystemHealthControllerTest extends WebTestsBase {
     String healthMaintainance = controller.maintenanceView(null, "1", map);
     Assert.assertNotNull(healthMaintainance);
     Assert.assertEquals(new String("system.health.maintenanceView"), healthMaintainance);
-    Assert.assertEquals(Page.SUPPORT_HEALTH, (Page) map.get("page"));
+    Assert.assertEquals(Page.SUPPORT_HEALTH, map.get("page"));
     List<ServiceNotification> list = (List<ServiceNotification>) map.get("notifications");
     Assert.assertEquals(serviceNotificationDAO.count(), list.size());
     ServiceNotification obtainedNotification = (ServiceNotification) map.get("item");

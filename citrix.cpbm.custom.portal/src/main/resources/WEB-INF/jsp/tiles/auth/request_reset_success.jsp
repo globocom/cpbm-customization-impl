@@ -14,7 +14,7 @@
       <h1><spring:message code="label.reset.password.request.successful"/></h1>
     </div> 
     <div class="login_errorbox" style="word-wrap:break-word">                
-      <p <c:if test="${useSmallCss}">style="width: 475px;"</c:if>><spring:message code="message.reset.password.success"/></p>
+      <p <c:if test="${useSmallCss}">style="width: 475px;"</c:if>><spring:message code="message.reset.password.success"  arguments="${globalConfiguration['serviceProviderSupportEmailAddress']}"/></p>
       <div class="clearboth"></div>
       <br/>
       <a href="<%= request.getContextPath() %>/portal/"><spring:message code="message.reset.password.login"/></a>

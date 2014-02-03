@@ -365,6 +365,7 @@ public class UserRegistration {
       setBillingAddress(tenant.getAddress());
       user = (com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone());
       user.setAddress(tenant.getAddress());
+      user.setPhone(user.getPhoneWithoutIsdCode());
       if (creditCard != null) {
         creditCard.setCreditCardCVV(null);
         creditCard.setCreditCardNumber(null);

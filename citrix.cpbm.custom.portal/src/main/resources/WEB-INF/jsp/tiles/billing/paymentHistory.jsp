@@ -133,7 +133,7 @@
 										<spring:message code="dateonly.format" var="dateonly_format" /> 
 										<fmt:formatDate value="${salesLedgerRecord.createdAt}" pattern="${dateonly_format}" timeZone="${currentUser.timeZone}" />
 										<c:set var="uuid" value="${salesLedgerRecord.uuid}"/>
-									 	&nbsp;(<c:out value="${fn:substring(uuid, 0, 8)}" />)
+									 	&nbsp;(<c:out value="${fn:substring(uuid, 0, 8)}" />...)
 									</span> 
 									<span class="subtitle"> 
 										<%-- <c:if test="${salesLedgerRecord.type eq 'AUTO' || salesLedgerRecord.type eq 'NOTIONAL' || salesLedgerRecord.type eq 'MANUAL' || salesLedgerRecord.type eq 'RECORD'}"> --%> 

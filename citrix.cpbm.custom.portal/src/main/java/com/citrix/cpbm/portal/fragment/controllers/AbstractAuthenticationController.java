@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this
+ * file except pursuant to a valid license agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.IOException;
@@ -32,6 +31,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.WebAttributes;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,6 +54,7 @@ import com.vmops.model.UserAlertPreferences;
 import com.vmops.model.UserAlertPreferences.AlertType;
 import com.vmops.portal.config.Configuration;
 import com.vmops.portal.config.Configuration.Names;
+import com.vmops.service.ChannelService;
 import com.vmops.service.SupportService;
 import com.vmops.service.TenantService;
 import com.vmops.service.UserAlertPreferencesService;
@@ -64,6 +65,7 @@ import com.vmops.utils.CryptoUtils;
 import com.vmops.web.controllers.AbstractBaseController;
 import com.vmops.web.filters.CaptchaAuthenticationFilter;
 import com.vmops.web.filters.exceptions.CaptchaValidationException;
+import com.vmops.web.filters.exceptions.IpRangeValidationException;
 
 public abstract class AbstractAuthenticationController extends AbstractBaseController {
 
@@ -80,21 +82,12 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
   private static final String CAS = "cas";
 
-  /**
-   * The user service.
-   */
   @Autowired
   private TenantService tenantService;
 
-  /**
-   * The user service.
-   */
   @Autowired
   private UserService userService;
 
-  /**
-   * PrivilegeService
-   */
   @Autowired
   private PrivilegeService privilegeService;
 
@@ -110,6 +103,9 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
   @Autowired
   private SupportService supportService;
 
+  @Autowired
+  private ChannelService channelService;
+
   /**
    * Logger.
    */
@@ -120,9 +116,17 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
   })
   public String login(HttpServletRequest request, ModelMap map, HttpSession session) {
     logger.debug("###Entering in login(req,map,session) method");
-    if (request.getUserPrincipal() != null) {
+
+    boolean loginFailed = request.getParameter(LOGIN_FAILED_PARAM) != null;
+
+    if (!loginFailed && request.getUserPrincipal() != null) {
       map.clear();
       return "redirect:/portal/home";
+    }
+
+    if (session.getAttribute("email_verified") != null) {
+      map.addAttribute("email_verified", session.getAttribute("email_verified"));
+      session.removeAttribute("email_verified");
     }
     String showSuffixControl = "false";
     String suffixControlType = "textbox";
@@ -141,13 +145,14 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
         && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
       map.addAttribute("directoryServiceAuthenticationEnabled", "true");
     }
-    if (config.getValue(Names.com_citrix_cpbm_public_catalog_display).equals("true"))
+    if (config.getValue(Names.com_citrix_cpbm_public_catalog_display).equals("true")
+        && channelService.getDefaultServiceProviderChannel() != null) {
       map.addAttribute("showAnonymousCatalogBrowsing", "true");
+    }
     map.addAttribute("showLanguageSelection", "true");
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
     map.addAttribute("selected_language", request.getParameter("lang"));
     String redirect = null;
-    boolean loginFailed = request.getParameter(LOGIN_FAILED_PARAM) != null;
     boolean loggedOut = request.getParameter(LOGOUT_PARAM) != null;
     final Throwable ex = (Throwable) session.getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
 
@@ -155,7 +160,8 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     Boolean captchaRequiredSessionObj = (Boolean) session.getAttribute(CaptchaAuthenticationFilter.CAPTCHA_REQUIRED);
 
     // Get last user
-    String username = (String) session.getAttribute(CaptchaAuthenticationFilter.SPRING_SECURITY_LAST_USERNAME_KEY);
+    String username = (String) session
+        .getAttribute(UsernamePasswordAuthenticationFilter.SPRING_SECURITY_LAST_USERNAME_KEY);
 
     // this as spring does a text-escape when it saves this attribute
     final String uUsername = HtmlUtils.htmlUnescape(username);
@@ -166,18 +172,22 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
       try {
         User user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+          @Override
           public User run() {
             User user = userService.getUserByParam("username", uUsername, false);
 
             // All user writes here.
             // Every time there is a login failure but not invalid CAPTCHA,
             // we update failed login attempts for the user
-            if (!(ex instanceof CaptchaValidationException) && !(ex instanceof LockedException))
+            if (!(ex instanceof CaptchaValidationException) && !(ex instanceof LockedException)
+                && !(ex instanceof IpRangeValidationException)) {
               user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+            }
 
             int attempts = user.getFailedLoginAttempts();
 
-            // Also locking the root user and quite easily too. Clearly this needs an eye!
+            // Also locking the root user and quite easily too. Clearly this
+// needs an eye!
             if (attempts >= config.getIntValue(Names.com_citrix_cpbm_accountManagement_security_logins_lockThreshold)) {
               user.setEnabled(false);
             }
@@ -211,12 +221,15 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
         error = " " + messageSource.getMessage("error.auth.username.password.invalid", null, request.getLocale());
       } else if (ex instanceof CaptchaValidationException) {
         error = " " + messageSource.getMessage("error.auth.captcha.invalid", null, request.getLocale());
+      } else if (ex instanceof IpRangeValidationException) {
+        error = " " + messageSource.getMessage("error.auth.username.password.invalid", null, request.getLocale());
       } else if (ex instanceof LockedException) {
-        error = " " + messageSource.getMessage("error.auth.account.locked", null, request.getLocale());
+        error = " " + messageSource.getMessage("error.auth.username.password.invalid", null, request.getLocale());
       } else if (ex instanceof BadCredentialsException) {
-        if (ex.getMessage() != null && ex.getMessage().length() > 0)
+        if (ex.getMessage() != null && ex.getMessage().length() > 0) {
           // error = " " + ex.getMessage();
           error = " " + messageSource.getMessage("error.auth.username.password.invalid", null, request.getLocale());
+        }
       } else if (ex instanceof AuthenticationException) {
         error = " " + messageSource.getMessage("error.auth.username.password.invalid", null, request.getLocale());
       } else {
@@ -238,7 +251,8 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     }
 
     // This could come from session or from user
-    if (captchaRequiredSessionObj != null && captchaRequiredSessionObj.booleanValue()) {
+    if (captchaRequiredSessionObj != null && captchaRequiredSessionObj.booleanValue()
+        && !Boolean.valueOf(config.getValue(Names.com_citrix_cpbm_use_intranet_only))) {
       map.addAttribute("showCaptcha", true);
       map.addAttribute("recaptchaPublicKey", config.getRecaptchaPublicKey());
     }
@@ -249,8 +263,8 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
     if (config.getAuthenticationService().compareToIgnoreCase(CAS) == 0) {
       try {
-        redirect = StringUtils.isEmpty(config.getCasLoginUrl()) ? null
-            : (config.getCasLoginUrl() + "?service=" + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8"));
+        redirect = StringUtils.isEmpty(config.getCasLoginUrl()) ? null : config.getCasLoginUrl() + "?service="
+            + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8");
       } catch (UnsupportedEncodingException e) {
         logger.error("Exception encoding: " + redirect, e);
       }
@@ -265,7 +279,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
       "/{userParam}/loggedout", "{userParam}/j_spring_security_logout"
   })
   public String loggedout(@PathVariable String userParam, ModelMap map, HttpSession session,
-      HttpServletResponse response) {
+      HttpServletResponse response, HttpServletRequest request) {
     logger.debug("###Entering in loggedout(response) method");
     String showSuffixControl = "false";
     String suffixControlType = "textbox";
@@ -284,8 +298,10 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
         && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
       map.addAttribute("directoryServiceAuthenticationEnabled", "true");
     }
-    if (config.getValue(Names.com_citrix_cpbm_public_catalog_display).equals("true"))
+    if (config.getValue(Names.com_citrix_cpbm_public_catalog_display).equals("true")
+        && channelService.getDefaultServiceProviderChannel() != null) {
       map.addAttribute("showAnonymousCatalogBrowsing", "true");
+    }
     map.addAttribute("showLanguageSelection", "true");
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
     map.addAttribute("logout", true);
@@ -299,16 +315,18 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     cookie.setMaxAge(0);
     cookie.setPath("/");
     response.addCookie(cookie);
-    // create logout notification begins
-    User user = userService.get(userParam);
-    String message = "logged.out";
-    String messageArgs = user.getUsername();
-    eventService.createEvent(new Date(), user, message, messageArgs, Source.PORTAL, Scope.USER, Category.ACCOUNT,
-        Severity.INFORMATION, true);
+    if (request.getRequestedSessionId() != null && request.isRequestedSessionIdValid()) {
+      // create logout notification begins
+      User user = userService.get(userParam);
+      String message = "logged.out";
+      String messageArgs = user.getUsername();
+      eventService.createEvent(new Date(), user, message, messageArgs, Source.PORTAL, Scope.USER, Category.ACCOUNT,
+          Severity.INFORMATION, true);
+    }
     if (config.getAuthenticationService().compareToIgnoreCase(CAS) == 0) {
       try {
-        redirect = StringUtils.isEmpty(config.getCasLogoutUrl()) ? null
-            : (config.getCasLogoutUrl() + "?service=" + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8"));
+        redirect = StringUtils.isEmpty(config.getCasLogoutUrl()) ? null : config.getCasLogoutUrl() + "?service="
+            + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8");
       } catch (UnsupportedEncodingException e) {
         logger.error("Exception encoding: " + redirect, e);
       }
@@ -320,7 +338,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     SecurityContextHolder.getContext().setAuthentication(null);
     // ends
     logger.debug("###Exiting loggedout(response) method");
-    return redirect == null ? "auth.loggedout" : "redirect:" + redirect;
+    return redirect == null ? "redirect:/j_spring_security_logout" : "redirect:" + redirect;
   }
 
   @RequestMapping(value = "/reset_password", method = RequestMethod.GET)
@@ -368,6 +386,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     try {
       user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+        @Override
         public User run() {
           User user = userService.getUserByParam("username", userNameLoc, false);
           return user;
@@ -439,6 +458,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     try {
       user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+        @Override
         public User run() {
           User user = userService.getUserByParam("username", userNameLoc, false);
           return user;
@@ -448,7 +468,8 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     }
 
     if (user == null) {
-      returnResponse.put("result", "success"); // Returning success for security reason.
+      returnResponse.put("result", "success"); // Returning success for security
+// reason.
       returnResponse.put("message",
           messageSource.getMessage("js.errors.register.textMessageRequested", null, request.getLocale()));
       return returnResponse;
@@ -483,8 +504,9 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
     String generatedPhoneVerificationPin = (String) request.getSession().getAttribute("phoneVerificationPin");
 
-    if (PIN != null && PIN.equals(generatedPhoneVerificationPin))
+    if (PIN != null && PIN.equals(generatedPhoneVerificationPin)) {
       return "success";
+    }
     return "failed";
   }
 
@@ -501,6 +523,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     try {
       User user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+        @Override
         public User run() {
           return userService.getUserByParam("username", username, false);
         }
@@ -528,6 +551,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
     User user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+      @Override
       public User run() {
         User user = userService.get(userParam);
         userService.verifyAuthorization(user, auth, ts);
@@ -558,9 +582,10 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
 
     User user = privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+      @Override
       public User run() {
         User user = userService.getUserByParam("username", username, false);
-        if (!(config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled))) {
+        if (!config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)) {
           user.setClearPassword(password);
         } else if (config.getValue(Names.com_citrix_cpbm_directory_mode).equals("push")) {
           userService.updateUserPassword(password, user.getUuid());
@@ -591,6 +616,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     logger.debug("###Entering in verifyAlertEmail(map) method @GET");
     privilegeService.runAsPortal(new PrivilegedAction<User>() {
 
+      @Override
       public User run() {
         User user = userService.get(userParam);
         userService.verifyAuthorization(user, auth, 0);
@@ -601,7 +627,6 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
         if (userAlertPreferences.getAlertType() == AlertType.USER_EMAIL) {
           user.setEmail(userAlertPreferences.getEmailAddress());
           userService.save(user);
-          userAlertPreferencesService.deleteUserAlertPreference(userAlertPreferences);
         } else {
           userAlertPreferences.setEmailVerified(true);
           userAlertPreferencesService.save(userAlertPreferences);
@@ -611,8 +636,18 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
     });
 
     map.clear(); // No need for map to propagate
-
-    logger.debug("###Exiting verifyAlertEmail(map) method @GET");
+    session.setAttribute("email_verified", "Y");
+    logger.debug("##Exiting verifyAlertEmail(map) method @GET");
     return "redirect:/portal/home";
+  }
+
+  @RequestMapping(value = "getGoogleAnalytics", method = RequestMethod.GET)
+  @ResponseBody
+  public Map<String, String> getGoogleAnalytics() {
+    Map<String, String> map = new HashMap<String, String>();
+    map.put("enabled", config.getValue(Names.com_citrix_cpbm_portal_integrations_analytics));
+    map.put("account", config.getValue(Names.integration_analytics_google_analytics_account));
+    map.put("domain", config.getValue(Names.integration_analytics_google_analytics_domain));
+    return map;
   }
 }

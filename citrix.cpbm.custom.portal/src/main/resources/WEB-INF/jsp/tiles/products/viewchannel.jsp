@@ -6,12 +6,14 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/channels.js"></script>
-
+<jsp:include page="/WEB-INF/jsp/tiles/shared/js_messages.jsp"></jsp:include>
 <script type="text/javascript">
     var planned_word = '<spring:message javaScriptEscape="true" code="label.next.planned.version"/>';
     var invalid_date_msg = '<spring:message javaScriptEscape="true" code="ui.datepicker.date.value.invalid"/>';
     var date_before_or_today_msg = '<spring:message javaScriptEscape="true" code="ui.datepicker.date.value.before.or.today"/>';
     var dialogProceed = '<spring:message javaScriptEscape="true" code="label.proceed"/>';
+    var notYetSet= '<spring:message javaScriptEscape="true" code="ui.label.plan.date.not.yet.set"/>';
+    var channelServiceSettingDialogTitle= '<spring:message javaScriptEscape="true" code="ui.label.channel.service.settings.dialog.title"/>';
 
    // Unbind the previous bindings with element clicks before binding the same. The problem is like ::
    // JQuery evals the script code and puts that in an Eval Array (in firebug it's
@@ -22,7 +24,7 @@
       $('#details_tab').removeClass('nonactive').addClass("active");
       $('#currencies_tab').removeClass('active').addClass("nonactive");
       $('#catalog_tab').removeClass('active').addClass("nonactive");
-  
+          
       $('#details_content').show();
   
       $('#currencies_content').hide();
@@ -31,6 +33,9 @@
       $("#second_line_under_planned").hide();
       $('#action_currency').hide();
       $("#main_action_box").attr("style", "height: 30px");
+      $('#service_controls_tab').removeClass('active').addClass("nonactive");
+      $('#action_service_settings').hide();
+      $('#service_controls_content').hide();
    });
 
    $("#currencies_tab").unbind("click").bind("click", function (event) {
@@ -45,6 +50,9 @@
        $('#catalog_links').hide();
        $("#second_line_under_planned").hide();
        $("#main_action_box").attr("style", "height: 30px");
+       $('#service_controls_tab').removeClass('active').addClass("nonactive");
+       $('#action_service_settings').hide();
+       $('#service_controls_content').hide();
    });
 
    $("#catalog_tab").unbind("click").bind("click", function (event) {
@@ -77,6 +85,9 @@
        $("#second_line_under_planned").closest(".widget_details_actionbox").attr("style", "height: auto");
        $("#second_line_under_planned").show();
        viewCatalogPlanned();
+       $('#service_controls_tab').removeClass('active').addClass("nonactive");
+       $('#action_service_settings').hide();
+       $('#service_controls_content').hide();
      }
 
    function popup_date_picker(event){
@@ -118,14 +129,7 @@
                           popUpDialogForAlerts("alert_dialog", date_before_or_today_msg);
                           return;
                         }
-                        if((now == newDate.getTime()) && ($("#bundlesaddedtocatalog").attr("value") == "false")){
-                          popUpDialogForAlerts("alert_dialog", i18n.errors.channels.no_bundle_added_to_catalog);
-                          return;
-                        }
-                        if(prevValue == nowVal)
-                        {
-                          return;
-                        }
+
                         $.ajax( {
                               type : "POST",
                               url : "/portal/portal/channels/changeplandate",
@@ -173,6 +177,22 @@
       });
     }
 
+   $("#service_controls_tab").unbind("click").bind("click", function (event) {
+       $('#details_tab').removeClass('active').addClass("nonactive");
+       $('#currencies_tab').removeClass('active').addClass("nonactive"); 
+       $('#catalog_tab').removeClass('active').addClass("nonactive");
+  
+       $('#details_content').hide();
+       $('#currencies_content').hide();
+       $('#action_currency').hide();
+       $("#catalog_content").hide();
+       $('#catalog_links').hide();
+       $("#second_line_under_planned").hide();
+       $("#main_action_box").attr("style", "height: 35px");
+       $('#service_controls_tab').removeClass('nonactive').addClass("active");
+       $('#action_service_settings').show();
+       $('#service_controls_content').show();
+   });
 </script>
 
 <style>
@@ -224,8 +244,16 @@
     </div>
 </div>
 
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 
 
 <div class="widget_browser">
@@ -272,10 +300,10 @@
               <div class="thumbnail_defaulticon channels">
                 <c:choose>
                  <c:when test="${not empty channel.imagePath}">
-                   <img src="/portal/portal/logo/channel/<c:out value="${channel.id}"/>" id="channelimage<c:out value="${channel.id}"/>" style="height:99px;width:97px;" />
+                   <img src="/portal/portal/logo/channel/<c:out value="${channel.id}"/>" id="channelimage<c:out value="${channel.id}"/>" style="height:99px;width:99px;" />
                  </c:when>
                  <c:otherwise>
-                   <img src="" id="channelimage<c:out value="${channel.id}"/>" style="height:99px;width:97px;" />
+                   <img src="" id="channelimage<c:out value="${channel.id}"/>" style="height:99px;width:99px;" />
                  </c:otherwise>
                  </c:choose>
               </div>
@@ -299,6 +327,7 @@
           <li id="details_tab" class="widgets_detailstab active"><spring:message code="label.details"/></li>
           <li id="currencies_tab" class="widgets_detailstab nonactive"><spring:message code="label.channel.currencies"/></li>
           <li id="catalog_tab" class="widgets_detailstab nonactive"><spring:message code="label.channel.catalog"/></li>
+          <li id="service_controls_tab" class="widgets_detailstab nonactive"><spring:message code="label.channel.service.controls"/></li>
       </ul>
   
       <div class="widget_details_actionbox" id="main_action_box" style="height: 30px">
@@ -373,8 +402,29 @@
             </span>
           </span>
       </div>
-
-      </div>
+      
+       <div id="action_service_settings" style="display:None;">
+          <div style="height:35px;">
+			    <div style="padding:8px;">
+				    <c:if test="${services}">
+				   		<span>
+	     					 <spring:message code="ui.label.service.sub.title" />
+	     				</span>
+						 <select  id="selectedInstance" class="select" style="margin: 0 0px; width:20px" onchange="refreshChannelServiceSettings();"  >
+						      <option value=""><spring:message code="label.view.channel.choose.service"/></option>
+							    <c:forEach items="${cloudService}" var="service">
+							    	<optgroup label="${service.servicename}" class="highlight">
+						                       <c:forEach items="${service.instances}" var="instance">
+						                        	<option value=<c:out value="${instance.instanceuuid}"/>>${instance.instancename}</option>
+						        			   </c:forEach> 
+						        	</optgroup>		   
+						        </c:forEach>
+				         </select>
+				    </c:if>   
+				</div>
+          </div>
+       </div>
+    </div>
   
       <!-- The channel details starts here -->
       <div id="details_content" class="widget_browsergrid_wrapper details">
@@ -394,6 +444,8 @@
                       <span><c:out value="${channel.domainId}"/></span>
                   </div>
             </div> --%>
+
+  
       </div>
       <!-- The channel details ends here -->
   
@@ -434,7 +486,14 @@
   
       <div id="catalog_content">
       </div>
-  
+    
+      
+    <div class="widget_browsergrid_wrapper details" id="service_controls_content" style="display:none;overflow-x: hidden;overflow-y: auto;">
+    <div id="service_controls_content_row_container">
+    <div id="channelServiceSettingsDiv" class="widget_details_actionbox">
+    </div>      
+    </div>
+    </div>
   </div>
 </div>
 
@@ -449,4 +508,3 @@
 
 <div id="dialog_utility_pricing" title='<spring:message code="ui.label.utility.pricing"/>'>
 </div>
-

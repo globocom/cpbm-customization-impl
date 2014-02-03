@@ -8,8 +8,16 @@
 <c:if test="${!empty task}">
   <spring:message code="date.format" var="date_format"/>
   <div class="widget_actionbar"></div>
-  <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-  <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+  <div class="top_notifications">
+    <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+    <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+  </div>
         
   <div class="widget_browser">
     <div class="widget_browsermaster">
@@ -75,7 +83,7 @@
         </div>
         <div class="widget_browsergrid_wrapper details" id="details_content">
         <c:if test="${task.state == 'PENDING' }">
-          <div class="widget_grid details even">
+          <div id="taskDiv" class="widget_grid details even">
             <div class="widget_grid_labels">
                <span><spring:message code="ui.task"/></span>
             </div>
@@ -83,7 +91,7 @@
               <span>
                 <c:choose>
                   <c:when test="${task.displayMode == 'POPUP'}">
-                    <a href="javascript:void(0);" class="taskPopup" id="taskPopup${task.uuid}">
+                    <a href="javascript:void(0);" class="taskPopup taskname" id="taskPopup${task.uuid}">
                       <spring:message code="message.view.pendingactions.click" />
                     </a>
                     <div id="approvalTask_panel" title="<spring:message code="task.approval.dialog.title" />" style="display: none"></div>
@@ -125,7 +133,7 @@
             </div>
             <div class="widget_grid_description" >
               <span>
-                ${task.businessTransaction.state}
+                <spring:message code="label.business.transaction.state.${fn:toLowerCase(task.businessTransaction.state)}"/>
               </span>
             </div>
           </div>

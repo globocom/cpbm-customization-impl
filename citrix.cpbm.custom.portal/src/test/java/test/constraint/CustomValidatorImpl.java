@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package test.constraint;
 
 import java.lang.annotation.Annotation;
@@ -417,7 +416,6 @@ public class CustomValidatorImpl implements Validator {
     return isIndexable;
   }
 
-  @SuppressWarnings("RedundantArrayCreation")
   private <T> void validateCascadedConstraint(GlobalExecutionContext<T> context, Iterator<?> iter, boolean isIndexable,
       Class<?> currentGroup, PathImpl currentPath) {
     Object value;
@@ -522,7 +520,6 @@ public class CustomValidatorImpl implements Validator {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private <T> void validateValue(Class<T> beanType, Object value, PathImpl propertyPath,
       List<ConstraintViolation<T>> failingConstraintViolations, GroupChain groupChain) {
     Set<MetaConstraint<T, ?>> metaConstraints = new HashSet<MetaConstraint<T, ?>>();
@@ -722,9 +719,7 @@ public class CustomValidatorImpl implements Validator {
   private <U> Class getLocalExecutionContext(U value) {
 
     if (Proxy.isProxyClass(value.getClass())) {
-      CustomProxy invocationHandler = (CustomProxy) Proxy.getInvocationHandler(value);
-      Class clazz = invocationHandler.getTenantInterfaces()[0];
-      return clazz;
+      return CustomProxy.getTenantInterfaces()[0];
     }
     return value.getClass();
   }

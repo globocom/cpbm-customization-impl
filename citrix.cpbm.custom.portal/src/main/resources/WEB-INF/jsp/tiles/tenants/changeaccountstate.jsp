@@ -8,7 +8,8 @@
 
 i18n.change = {
   state: {
-	  memo : '<spring:message javaScriptEscape="true" code="js.account.state.memo"/>'
+	  memo : '<spring:message javaScriptEscape="true" code="js.account.state.memo"/>',
+	  memomaxlength : '<spring:message javaScriptEscape="true" code="js.account.state.memo.maxlength"/>'
   }
 };
 
@@ -79,7 +80,7 @@ $(document).ready(function(){
               <div class="mandatory_wrapper">
                  <textarea id="memo" name="memo" class="longtextbox" rows="3" cols="20"></textarea>    
               </div>
-              <div class="main_addnew_formbox_errormsg" id="memoError" style="margin:10px 0 0 5px"></div>
+              <div class="main_addnew_formbox_errormsg" id="memoError" style="margin:0 0 0 128px"></div>
         </li>                    
       </ul>
       <div class="main_addnew_formbox_errormsg" id="miscFormErrors" style="margin:10px 0 0 5px"></div>

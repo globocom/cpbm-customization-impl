@@ -19,26 +19,17 @@
     <script type="text/javascript" src="<%=request.getContextPath() %>/resources/app.js"></script>
     <link rel="stylesheet" type="text/css" media="all" href="<%= request.getContextPath() %>/resources/all.css"/>
     <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main.css"/>
+    <c:if test="${not empty currentLocale && currentLocale.language ne 'en'}">
+      <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main_<c:out value="${currentLocale.language}"/>.css"/>
+      <c:if test="${not empty currentLocale.country}">
+        <link rel="stylesheet" type="text/css" media="all" href="<%=request.getContextPath()%>/css/main_<c:out value="${currentLocale.language}"/>-<c:out value="${currentLocale.country}"/>.css"/>
+      </c:if>
+    </c:if>
     <link rel="stylesheet" type="text/css" media="all" href="<%= request.getContextPath() %>/custom/css/custom.css"/>   
     <link rel="stylesheet" type="text/css" media="all" href="<%= request.getContextPath() %>/<spring:theme code="css" />"/> 
     <tiles:insertAttribute name="customHeader" ignore="true"/>
     <tiles:insertAttribute name="captcha_strings" ignore="true"/>
-    
-    <c:if test="${isGoogleAnalyticsEnabled}">
-    	<script type="text/javascript">
-
-  			var _gaq = _gaq || [];
- 			_gaq.push(['_setAccount', '<c:out value="${googleAnalyticsAccount}"/>']);
-  			_gaq.push(['_setDomainName', '<c:out value="${googleAnalyticsDomain}"/>']);
-  			_gaq.push(['_trackPageview']);
-
-  			(function() {
-    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  			})();
-		</script>
-	</c:if>
+	<tiles:insertDefinition name="google.analytics"/>
     
   </head>
   <body>
@@ -102,6 +93,7 @@
         <div id="footer_login">
           <tiles:insertAttribute name="footer" ignore="true" />
         </div>
+        <div class="clearboth"></div>
       </div>
       <div class="clearboth">
       </div>

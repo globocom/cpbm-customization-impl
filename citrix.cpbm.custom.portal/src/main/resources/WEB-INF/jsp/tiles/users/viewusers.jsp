@@ -56,6 +56,7 @@ $(selectedRow).addClass('selected');
 		                </c:if>
 		                 </c:when>
                      <c:when test="${user.tenant.state == 'NEW'}">
+                     <li class="edituser_link"><spring:message code="label.myprofile.edit"/></li>
                      <c:if test="${user.emailVerified == false }">
                       <li class="resenduserverification_link"><spring:message code="label.myprofile.resend"/></li>
                     </c:if>
@@ -74,8 +75,16 @@ $(selectedRow).addClass('selected');
        </div>
      </div>
    </div>
-   <div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-   <div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+   <div class="top_notifications">
+    <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+    <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+      <button type="button" class="close js_close_parent" >&times;</button>
+      <span id="status_icon"></span><p id="msg"></p>
+    </div>
+  </div>
    <div class="widget_browser">
      <div id="spinning_wheel" style="display:none">
        <div class="widget_loadingpanel">
@@ -154,8 +163,9 @@ $(selectedRow).addClass('selected');
        <c:if test="${hasUserMgmt eq 'true' || hasAccountUserCRUD eq 'true'}">
           <div class="widget_details_actionbox">
            <ul class="widget_detail_actionpanel">
-                 <input type="hidden" id="showEnabledButton" value="${showEnableServiceLink}">
-		 	     <li><a id="enableServiceButton" style="display:none" class="enableAllservicesForUser_link" class="widget_addbutton"  href="javascript:void(0);" onclick="enableAllServiceForUser('${user.uuid}','${currentTenant.param}')"><spring:message code="label.myprofile.enable.all.services"/></a> </li>
+                 <c:if test="${showEnableServiceLink}">
+		           <li><a id="enableServiceButton" class="enableAllservicesForUser_link" class="widget_addbutton"  href="javascript:void(0);" onclick="enableAllServiceForUser('${user.uuid}','${currentTenant.param}')"><spring:message code="label.enable.selected.services"/></a> </li>
+                 </c:if>
 		   </ul>
           </div>
        </c:if>	
@@ -218,25 +228,59 @@ $(selectedRow).addClass('selected');
          </div>           
        </div>
         <div class="widget_browsergrid_wrapper details" id="service_content" style="display:none;">
-        <input id="userstatus" type="hidden" value=${user.enabled}>
+        <input style="margin:10px;" id="userstatus" type="hidden" value=${user.enabled}>
          <c:forEach items="${serviceRegistrationStatus}" var="serviceInstanceEntry" varStatus="status">
-	     <div id="service_contentInner">
-	         <div id="serviceRow" class="widget_grid details even">
-	           <div id="serviceRowContent" class="widget_grid_description">
-                <span>
-                <c:if test="${serviceInstanceEntry.value== true}">
-                  <input type="checkbox"  disabled="true" checked="checked" />
-               </c:if>
-               <c:if test="${serviceInstanceEntry.value== false}">
-                  <input type="checkbox"  disabled="true" />
-              </c:if>  &nbsp;
-               <c:out value="${serviceInstanceEntry.key.name}"></c:out>
-              </span>
-           </div>
-	           
+          <div id="service_contentInner">
+            <c:set var="row_color" value="even"/>
+            <c:if test="${status.index%2 eq 0}">
+              <c:set var="row_color" value="odd" />
+            </c:if>
+            <div class="grid_rows ${row_color}">
+              <div style="margin: 5px; width: 250px; display: inline; float: left">
+                <c:set var="no_role" value="false"></c:set>
+                <c:if test="${user.getAuthorities(serviceInstanceEntry.key.service).size() eq 0}">
+                  <c:set var="no_role" value="true"></c:set>
+                </c:if>
+                <c:choose>
+                  <c:when
+                    test="${mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].state.name() eq 'ACTIVE' || mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].state.name() eq 'PROVISIONING'}">
+                    <input id="${serviceInstanceEntry.key.uuid}" type="checkbox" disabled="true" checked="checked" />
+                  </c:when>
+                  <c:otherwise>
+                    <input id="${serviceInstanceEntry.key.uuid}" type="checkbox" <c:if test="${no_role}"><c:out value="disabled"/> </c:if> />
+                  </c:otherwise>
+                </c:choose>
+                <c:out value="${serviceInstanceEntry.key.name}"></c:out>
+              </div>
+              <c:choose>
+                <c:when test="${mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid] != null}">
+                  <div style="margin: 5px; display: inline; float: left" " id="service_state_${serviceInstanceEntry.key.uuid}">
+                        <spring:message code="userHandle.state.${fn:toLowerCase(mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].state.name())}" />
+                        <c:if test="${mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].state.name() eq 'ERROR' || mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].state.name() eq 'INVALID'}">
+                          (<a class="js_user_enable_service_error" style="color:red;cursor:pointer;" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-container="body" data-content="<spring:message javaScriptEscape="true" text="${mapOfInstanceVsHandle[serviceInstanceEntry.key.uuid].data}"/>"><spring:message code="label.details"/></a>)
+                        </c:if>
+                  </div>
+                </c:when>
+                <c:otherwise>
+                  <c:choose>
+                    <c:when test="${no_role}">
+                      <div style="margin: 5px; display: inline; float: left" " id="service_state_${serviceInstanceEntry.key.uuid}">
+                        <spring:message code="label.no.role" />
+                      </div>
+                    </c:when>
+                    <c:otherwise>
+                      <div style="margin: 5px; display: inline; float: left" " id="service_state_${serviceInstanceEntry.key.uuid}">
+                        <spring:message code="label.not.provisioned" />
+                      </div>
+                    </c:otherwise>
+                  </c:choose>
+                </c:otherwise>
+              </c:choose>
+              <div id="service_provisioning_${serviceInstanceEntry.key.uuid}" class="maindetails_footer_loadingicon"
+                style="display: none; width: 20px;"></div>
+            </div>
           </div>
-          </div>
-         </c:forEach>
+        </c:forEach>
        </div>   
        <div id="tab_spinning_wheel" class="rightpanel_mainloader_panel" style="display: none;">
          <div class="rightpanel_mainloaderbox">
@@ -258,5 +302,6 @@ $(selectedRow).addClass('selected');
      </div>
    </div>
  </div>
+ <input type="hidden" id="userEnabled" value="${user.enabled}">
  <input type='hidden' id='user_param' value='<c:out value="${user.param}"/>'>
  <input id="isUsersMaxReached" name="isUsersMaxReached" type="hidden" value="<c:out value="${isUsersMaxReached}" />" />                    

@@ -14,7 +14,14 @@ var product_action="";
   $(document).ready(function() {
     currentstep = "step1";
     product_action = "create";
-    $(".j_accounttype:first").click();
+    $(".j_accounttype").each(function(idx, i) {
+      var accountType = $(i);
+      var isSelected = accountType.attr("defaultRegistered");
+      if(isSelected == "true") {
+        accountType.click();
+        return false;
+      }
+    });
   });
 </script>
 <!--  from old -->
@@ -46,8 +53,8 @@ var product_action="";
                 </div>
             </div>
         </div>
-        <div class="widgetwizard_contentarea sixstepswizard widgetwizard_contentareabig1">
-            <div class="widgetwizard_boxes sixstepswizard default_selection">
+        <div class="widgetwizard_contentarea sixstepswizard ">
+            <div class="widgetwizard_boxes sixstepswizard fullheight2">
                 <div class="widgetwizard_titleboxes">
                     <h2><spring:message code="label.tenants.channel"/></h2>
                     <span><spring:message code="label.tenants.channelDescription"/></span>
@@ -74,11 +81,11 @@ var product_action="";
                     <h2><spring:message code="label.tenants.accountType"/></h2>
                     <span><spring:message code="ui.account.accountType.title.desc"/></span>
                 </div>
-                <div class="widgetwizard_selectionbox sixstepswizard producttupe accounttype">
+                <div class="widgetwizard_selectionbox sixstepswizard producttupe ">
                     <ul>
                          <c:set var="accounttypes" value="${account.accountTypes}" scope="session" />
                          <c:forEach items="${account.accountTypes}" var="choice" varStatus="status">
-                            <li class="widgetwizard_selectionbox  j_accounttype" id='accountTypeId' onclick="changeAccountType1(this);" >
+                            <li class="widgetwizard_selectionbox  j_accounttype" defaultRegistered="<c:out value='${choice.defaultRegistered}' />" id='accountTypeId' onclick="changeAccountType1(this);" >
                               <div class="widget_radiobuttons">
                                   <span class="unchecked">
                                     <form:radiobutton  cssClass="radiobuttons_hidden" path="accountTypeId" value="${choice.id}" />
@@ -144,29 +151,34 @@ var product_action="";
                             <form:input cssClass="text" path="user.username" tabindex="104" title="${i18nUsernameTooltip}" id="user.username"/>
                           </div>
                           <c:if test="${showImportAdButton=='true'}">
-                            <input type="button" class="basic_button adimport" id="import_user_info_from_ad" onclick="importAdUserToAddAccount()"  value="<spring:message code="label.tenants.uername.import.ds.button"/>"/>
+                            <input class="basic_button adimport" type="button" onclick="importAdUserToAddAccount(this)"  value="<spring:message code="label.tenants.uername.import.ds.button"/>"  name="<spring:message code="label.tenants.uername.import.ds.button"/>" id="import_user_info_from_ad" disabled="disabled"/>
                             <input type="hidden" id="ad_import_enabled" class="basic_button adimport" value="ad_import_enabled"/>
                            </c:if>
                           <div class="main_addnew_formbox_errormsg_popup" id="user.usernameError"></div>
                            
                         </li>
-                        <li class="">
-                          <span class="label"><form:label path="user.firstName"><spring:message code="label.tenants.firstName"/></form:label></span>
-                          <div class="mandatory_wrapper">
-                            <spring:message code="label.userInfo.firstName.tooltip" var="i18nFirstNameTooltip"/>
-                            <form:input cssClass="text" tabindex="105" path="user.firstName" title="${i18nFirstNameTooltip}"/>
+                        <div class="user_name_order">
+                          <div class="user_first_name">
+                            <li>
+                              <span class="label"><form:label path="user.firstName"><spring:message code="label.tenants.firstName"/></form:label></span>
+                              <div class="mandatory_wrapper">
+                                <spring:message code="label.userInfo.firstName.tooltip" var="i18nFirstNameTooltip"/>
+                                <form:input cssClass="text" tabindex="105" path="user.firstName" title="${i18nFirstNameTooltip}"/>
+                              </div>
+                              <div class="main_addnew_formbox_errormsg_popup" id="user.firstNameError"></div>
+                            </li>
                           </div>
-                          <div class="main_addnew_formbox_errormsg_popup" id="user.firstNameError"></div>
-                        </li>
-              
-                        <li>
-                          <span class="label"><form:label path="user.lastName"><spring:message code="label.tenants.lastName"/></form:label></span>
-                          <div class="mandatory_wrapper">
-                            <spring:message code="label.userInfo.lastName.tooltip" var="i18nLastNameTooltip"/>
-                            <form:input cssClass="text" tabindex="106" path="user.lastName" title="${i18nLastNameTooltip}"/>
+                          <div class="user_last_name">
+                            <li>
+                              <span class="label"><form:label path="user.lastName"><spring:message code="label.tenants.lastName"/></form:label></span>
+                              <div class="mandatory_wrapper">
+                                <spring:message code="label.userInfo.lastName.tooltip" var="i18nLastNameTooltip"/>
+                                <form:input cssClass="text" tabindex="106" path="user.lastName" title="${i18nLastNameTooltip}"/>
+                              </div>
+                              <div class="main_addnew_formbox_errormsg_popup" id="user.lastNameError"></div>
+                            </li>
                           </div>
-                          <div class="main_addnew_formbox_errormsg_popup" id="user.lastNameError"></div>
-                        </li>
+                        </div>
                         
                         <li>
                           <span class="label"><form:label path="user.email" ><spring:message code="label.tenants.email"/></form:label></span>
@@ -269,7 +281,8 @@ var product_action="";
                               <form:select path="currency"  cssClass="select" tabindex="112" title="${i18ncurrencyTooltip}">
                                 <option value=""><spring:message code="label.choose"></spring:message> </option>
                                 <c:forEach var="currency" items="${account.currencyValueList}" varStatus="status">
-                                  <option value="<c:out value="${currency.currencyCode}"></c:out>"><spring:message code="currency.longname.${currency.currencyCode}"></spring:message></option>
+                                  <option value="<c:out value="${currency.currencyCode}"></c:out>"  <c:if test="${currency.currencyCode == account.currency}">selected="selected"</c:if> ><spring:message code="currency.longname.${currency.currencyCode}"></spring:message>
+                                  </option>
                                 </c:forEach>
                               </form:select>
                             </div>
@@ -333,7 +346,7 @@ var product_action="";
                             <span class="label"><form:label path="user.address.country" ><spring:message code="label.tenants.country"/></form:label></span>
                             <div class="mandatory_wrapper">
                               <spring:message code="label.moreUserInfo.country.tooltip" var="i18nCountryTooltip"/>
-                              <form:select cssClass="text" tabindex="116" path="user.address.country" title="${i18nCountryTooltip}">
+                              <form:select cssClass="text" tabindex="116" path="user.address.country" style="padding:3px 0 0;" title="${i18nCountryTooltip}">
                                     <option value=""><spring:message code="label.choose"/></option>
                                     <c:forEach items="${filteredCountryList}" var="choice" varStatus="status">
                                       <option value="<c:out value="${choice.countryCode2}"/>" <c:if test="${ipToCountryCode == choice.countryCode2}" >selected="selected" </c:if>><c:out value="${choice.name}" escapeXml="false"/></option> 
@@ -347,7 +360,7 @@ var product_action="";
                               <span class="label"><form:label path="user.address.state" ><spring:message code="label.tenants.state"/></form:label></span>
                               <div class="mandatory_wrapper">
                               <spring:message code="label.moreUserInfo.state.tooltip" var="i18nStateTooltip"/>
-                                <form:input cssClass="text" tabindex="117" path="user.address.state" title="${i18nStateTooltip}"/>
+                                <form:input cssClass="text" tabindex="117" path="user.address.state" title="${i18nStateTooltip}" maxlength="255"/>
                               </div>
                             </div>
                             <div  id="stateSelect" style="display:none">
@@ -372,7 +385,7 @@ var product_action="";
                             <span class="label"><form:label path="user.address.street1" ><spring:message code="label.tenants.address1"/></form:label></span>
                             <div class="mandatory_wrapper">
                               <spring:message code="label.moreUserInfo.address1.tooltip" var="i18nAddress1Tooltip"/>
-                              <form:input cssClass="text" tabindex="119" path="user.address.street1" title="${i18nAddress1Tooltip}"/>                
+                              <form:input cssClass="text" tabindex="119" path="user.address.street1" title="${i18nAddress1Tooltip}" maxlength="255"/>                
                             </div>
                             <div class="main_addnew_formbox_errormsg_popup" id="user.address.street1Error"></div>
                         </li>  
@@ -381,7 +394,7 @@ var product_action="";
                             <span class="label"><form:label path="user.address.street2" ><spring:message code="label.tenants.address2"/></form:label></span>
                             <div class="nonmandatory_wrapper">
                               <spring:message code="label.moreUserInfo.address2.tooltip" var="i18nAddress2Tooltip"/>
-                              <form:input cssClass="text" tabindex="120" path="user.address.street2" title="${i18nAddress2Tooltip}"/>                    
+                              <form:input cssClass="text" tabindex="120" path="user.address.street2" title="${i18nAddress2Tooltip}" maxlength="255"/>                    
                             </div>
                             <div class="main_addnew_formbox_errormsg_popup" id="user.address.street2Error"></div>
                         </li>  
@@ -389,7 +402,7 @@ var product_action="";
                             <span class="label"><form:label path="user.address.city" ><spring:message code="label.tenants.city"/></form:label></span>
                             <div class="mandatory_wrapper">
                               <spring:message code="label.moreUserInfo.city.tooltip" var="i18nCityTooltip"/>
-                              <form:input cssClass="text" tabindex="121" path="user.address.city" title="${i18nCityTooltip}"/>                    
+                              <form:input cssClass="text" tabindex="121" path="user.address.city" title="${i18nCityTooltip}" maxlength="255"/>                    
                             </div>
                             <div class="main_addnew_formbox_errormsg_popup" id="user.address.cityError"></div>
                         </li>
@@ -543,6 +556,9 @@ var product_action="";
         </div>
         <div class="widgetwizard_contentarea sixstepswizard">
             <div class="widgetwizard_boxes  sixstepswizard fullheight">
+            <div id="tenantCreateErrorDiv" class="alert alert-error" style="margin-top: 5px; float: left; width: 90%; margin-left: 15px;display: none">
+            	<spring:message code="errors.tenant.registration"/>
+            </div>
                 <div class="widgetwizard_titleboxes">
                     <h2><spring:message code="ui.account.review.confirm.title"/></h2>
                     <span><spring:message code="ui.account.review.confirm.title.desc"/></span>
@@ -632,4 +648,7 @@ var product_action="";
     
 </div>
 </form:form>
+<script>
+  swap_name_order_tab_index("user_first_name", "user_last_name");
+</script>
 

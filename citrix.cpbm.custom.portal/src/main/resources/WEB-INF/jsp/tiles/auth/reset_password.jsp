@@ -91,16 +91,20 @@ var i18n = {
         </li>
         </c:if>
 		    <li>
-		      <label for="password"><spring:message code="label.reset.new.password"/></label>
+		      <div class="mandatory_wrapper"> 
+              <label for="password"  style="margin-top: 0px; margin-left: 10px;"><spring:message code="label.reset.new.password"/></label>
               <spring:message code="label.newPassword.tooltip" var="i18nNewPasswordTooltip"/>
+             </div>
               <input class="text" id="password" autocomplete="off" type="password" tabindex="2" name="password" title="<c:out value="${i18nNewPasswordTooltip}"/>"/>
-		      <div class="login_formbox_errormsg" id="passwordError"></div>
+              <div class="login_formbox_errormsg" id="passwordError"></div>
 		    </li>
 		    <li>
-		      <label for="password_confirm"><spring:message code="label.reset.confirm.password"/></label>
+		     <div class="mandatory_wrapper"> 
+              <label for="password_confirm" style="margin-top: 0px; margin-left: 10px;"><spring:message code="label.reset.confirm.password"/></label>
               <spring:message code="label.newPassword.confirm.tooltip" var="i18nConfirmNewPasswordTooltip"/>
-              <input class="text" id="password_confirm" type="password" autocomplete="off" tabindex="3" name="password_confirm" title="<c:out value="${i18nConfirmNewPasswordTooltip}"/>"/>
-		      <div class="login_formbox_errormsg" id="password_confirmError"></div>
+             </div>
+             <input class="text" id="password_confirm" type="password" autocomplete="off" tabindex="3" name="password_confirm" title="<c:out value="${i18nConfirmNewPasswordTooltip}"/>"/>
+             <div class="login_formbox_errormsg" id="password_confirmError"></div>
 		    </li>
 	    </ol>
 		</form>

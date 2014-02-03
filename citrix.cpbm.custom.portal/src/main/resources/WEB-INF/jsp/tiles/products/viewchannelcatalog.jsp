@@ -4,8 +4,9 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
-<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <script type="text/javascript" src="<%=request.getContextPath()%>/resources/all.js"></script>
@@ -17,8 +18,9 @@
 <script type="text/javascript">
 var g_dictionary = {  
   dialogCancel: '<spring:message javaScriptEscape="true" code="label.cancel"/>',
-  youCanNotSubscribeUntilYouAcceptTheTermsAndConditions: '<spring:message javaScriptEscape="true" code="you.can.not.subscribe.until.you.accept.the.terms.and.conditions"/>'
-  }
+  youCanNotSubscribeUntilYouAcceptTheTermsAndConditions: '<spring:message javaScriptEscape="true" code="you.can.not.subscribe.until.you.accept.the.terms.and.conditions"/>',
+  decPoint: '<fmt:formatNumber var="str" value="0.1"/><c:out value="${fn:substring(str,1,2)}"/>'
+}
 </script >
 </head>
 <body>
@@ -58,5 +60,8 @@ var g_dictionary = {
     </div>
   </div>
 </div>
+
+<div id="utilityrates_lightbox" class="utility_table" title='<spring:message code="label.view.utility.rates.dialog.title"/>' style="display:none;padding:10px;max-height:800px;">
+    </div> 
 </body>
 </html>

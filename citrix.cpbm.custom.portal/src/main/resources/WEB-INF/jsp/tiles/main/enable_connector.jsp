@@ -144,7 +144,8 @@
 													<span style="margin-top: 4px;" class='navicon ${fn:replace((fn:toLowerCase(profile.name)), " ", "")}'></span>
 												</c:otherwise>
 											</c:choose>
-											<span class="title">${profile.name}</span>
+											<span class="title">
+                      <spring:message code="profileName.${fn:replace(profile.name, ' ', '')}"/></span>
 										</li>
 										<c:set var="activeClass" value=""/>
 									</c:if>										

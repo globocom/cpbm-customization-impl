@@ -90,6 +90,8 @@ HighChartsUtil.renderChart = function(containerId, series, categories, options){
   var yAxisStackLabelFormatter=options['yAxisStackLabelFormatter'] || function(){
                                                                         return Highcharts.numberFormat(this.total, precision, decPoint, thousandsSep);
                                                                        };
+
+  var toolTipPositioner = options['toolTipPositioner'] || null;
   var chartSpacingRight=options['chartSpacingRight'] || 30;
   var chartSpacingLeft=options['chartSpacingLeft'] || 10;
    var toolTipStyle=options['toolTipStyle'] || {};
@@ -201,7 +203,8 @@ HighChartsUtil.renderChart = function(containerId, series, categories, options){
     tooltip: {
       enabled: true,
       formatter: toolTipFormatter,
-      style:toolTipStyle
+      style:toolTipStyle,
+      positioner: toolTipPositioner
     },
     series: series,
     credits: {

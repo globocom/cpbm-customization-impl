@@ -12,7 +12,9 @@
         hideMasked: '<spring:message javaScriptEscape="true" code="label.hide"/>',
         code_not_unique: '<spring:message javaScriptEscape="true" code="js.errors.channel.code.notunique"/>',
         max_length_exceeded:"<spring:message javaScriptEscape="true" code='js.errors.channel.length.upperLimit'/>",
-        code_invalid:"<spring:message javaScriptEscape="true" code='js.errors.channel.catalogcode.invalid'/>"
+        code_invalid:"<spring:message javaScriptEscape="true" code='js.errors.channel.catalogcode.invalid'/>",
+        product_name_invalid:"<spring:message javaScriptEscape="true" code='js.errors.product.name'/>",
+        product_code_empty:"<spring:message javaScriptEscape="true" code='js.errors.product.code'/>"
         };
 </script>
 
@@ -187,7 +189,8 @@
                     <span style="width:145px;margin:14px 0 0 10px;" class="gridtext ellipsis" id="usageType.name.<c:out value="${usageTypes.usageTypeName}" />" title="<spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/>" ><spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/></span>
                   </div>
                   <div class="gridcell" style="width: 19%;">
-                      <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/>' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]"/>
+                      <input class="text" id="product.name.<c:out value="${usageTypes.usageTypeName}" />" value='<spring:message javaScriptEscape="true" code="${service.serviceName}.UsageType.${usageTypes.usageTypeName}.name"/>' name="product.name.[<c:out value="${usageTypes.usageTypeName}" />]" onchange="validate_name(this)"/>
+                       <div class="main_addnew_formbox_errormsg_popup" id="product.name.<c:out value="${usageTypes.usageTypeName}" />Error" style="margin: 0px 0 0 -5px;"></div>
                   </div>
                   <div class="gridcell" style="width: 19%;">
                       <input class="text" id="product.code.<c:out value="${usageTypes.usageTypeName}" />" value='' name="product.code.[<c:out value="${usageTypes.usageTypeName}" />]" onchange="validate_code(event, this, 'productCode')"/>
@@ -283,7 +286,7 @@
                     <div class="widget_grid_cell" style="width:150px;">
                       <span class="subheader ellipsis" id="selectedProductName" style="margin-left: 2px;width:100%;"><spring:message htmlEscape="false" code="ui.label.product.name" /></span>
                       <span class="subheader" style="margin-left: 2px; margin-top:0px;font-weight:normal;" id="selectedProductCategory"><spring:message htmlEscape="false" code="ui.products.label.create.product.category" /></span>
-                      <span class="levelicon INFORMATION" style="margin-top: 0px; padding-bottom: 0px; margin-left: 5px;position:relative;" onmouseover="onProductDetailMouseover(this);" onmouseout="onProductDetailMouseout(this);">
+                      <span class="levelicon INFORMATION js_product_details_popover" rel="popover" style="margin-top: 0px; padding-bottom: 0px; margin-left: 5px;position:relative;">
                       </span>
                     </div>
                     
@@ -301,20 +304,15 @@
                         </div>
                       </div>
                     </c:forEach>
-                    <div class="widget_details_popover" id="info_bubble" style="width:auto;top: 5px; left: 18px; display:none; min-height:0px;padding:0px;">
-                      <div class="popover_wrapper" >
-                        <div class="popover_shadow"></div>
-                        <div class="popover_contents">
-                          <div class="raw_contents" style="margin-left: 7px;">
-                            <div class="raw_content_row"  style="border-bottom: none;">
-                              <div class="raw_contents_title">
-                                <span class="raw_contents_title"><spring:message htmlEscape="false" code="ui.label.product.code" />:</span>
-                              </div>
-                              <div class="raw_contents_value" style="width:auto;">
-                                <span id="selectedProductCode">
-                                </span>
-                              </div>
-                            </div>
+                    <div class="widget_details_popover js_info_popover" id="info_bubble" style="display:none;">
+                      <div class="popover_content_container" >
+                        <div class="popover_rows">
+                          <div class="row_contents_title">
+                            <span><spring:message htmlEscape="false" code="ui.label.product.code" />:</span>
+                          </div>
+                          <div class="row_contents_value">
+                            <span id="selectedProductCode">
+                            </span>
                           </div>
                         </div>
                       </div>

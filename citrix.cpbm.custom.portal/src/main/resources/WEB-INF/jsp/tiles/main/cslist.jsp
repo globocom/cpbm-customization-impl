@@ -142,7 +142,7 @@ var dictionary = {
                     <img src="/portal/portal/logo/serviceInstance/<c:out value='${instance.uuid}'/>" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
                   </c:when>
                   <c:otherwise>
-                    <img src="" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
+                    <img src="/portal/portal/logo/connector/${service.uuid}/logo" width="52px" height="20px" style="background: #CCC;float: left;margin: 5px 2px;">
                   </c:otherwise>
                 </c:choose>    
                 <span id="instance_name" class="celltext" style="width:auto;"><c:out value="${instance.name}"/></span>

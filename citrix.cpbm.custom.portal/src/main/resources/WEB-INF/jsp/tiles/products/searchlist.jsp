@@ -4,7 +4,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
 <%@ taglib prefix="sec"
 	uri="http://www.springframework.org/security/tags"%>
-<ul class="widget_navigationlist" id="productgridcontent">
+<ul class="widget_navigationlist" id="productgridcontent" style="height:616px">
 	<c:choose>
 		<c:when test="${empty productsList || productsList == null}">
 			<c:set var="productsLen" value="0" />
@@ -83,7 +83,23 @@
 				<div class="raw_contents_value"><span id="value"><c:out
 					value="${product.code}" /></span></div>
 				</div>
-
+        
+       <div class="raw_content_row" id="info_bubble_code">
+         <div class="raw_contents_title">
+                <span><spring:message code="ui.products.label.create.type"/></span>
+         </div>
+         <div class="raw_contents_value">
+              <c:choose>
+              <c:when test="${product.discrete}">
+                   <span class = "ellipsis" title="<spring:message code="ui.products.label.type"/>" id="value"><spring:message code="ui.products.label.discrete"/></span>
+          
+             </c:when>
+            <c:otherwise>
+                  <span class = "ellipsis" title="<spring:message code="ui.products.label.type"/>" id="value"><spring:message code="ui.products.label.metered"/></span>
+             </c:otherwise>
+            </c:choose>
+            </div>
+       </div>
 
 				</div>
 				</div>

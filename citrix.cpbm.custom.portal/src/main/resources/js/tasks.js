@@ -25,6 +25,7 @@ $(document).ready(function() {
     }
     $("#approval_task_close,#okbutton").live("click", function() {
       $approvalDialog.dialog("close");
+      location.reload(); 
     });
     approvalTaskGet.done(function(html) {
       $approvalDialog.html(html);
@@ -53,8 +54,11 @@ $(document).ready(function() {
     });
     approvalTaskPost.done(function(state) {
       $("#taskState").html(state);
-      $("a#taskPopup" + taskId).removeClass("taskPopup");
-      $("a#taskPopup" + taskId).addClass("deleted");
+        $("a#taskPopup" + taskId).removeClass("taskPopup");
+        $("a#taskPopup" + taskId).addClass("deleted");
+        $("#taskDiv").hide();
+      
+      
       $("#viewTaskDiv .taskState").html(state);
 
       $(".j_actionForm").hide();

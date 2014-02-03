@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.io.File;
@@ -28,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.annotation.ExpectedException;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,8 +36,8 @@ import web.WebTestsBase;
 
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
+import com.citrix.cpbm.platform.spi.BaseMetadataRegistry;
 import com.citrix.cpbm.platform.spi.CloudConnector;
-import com.citrix.cpbm.platform.spi.MetadataRegistry;
 import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
 import com.vmops.model.Category;
 import com.vmops.model.Channel;
@@ -70,13 +70,16 @@ import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ChannelService;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.ProductService;
+import com.vmops.service.exceptions.CurrencyPrecisionException;
 import com.vmops.utils.DateUtils;
 import com.vmops.utils.JSONUtils;
 import com.vmops.web.forms.ProductForm;
 import com.vmops.web.forms.ProductLogoForm;
 import common.MockCloudInstance;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({
+    "unchecked", "deprecation"
+})
 public class AbstractProductsControllerTest extends WebTestsBase {
 
   @Autowired
@@ -142,7 +145,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   public void prepareMock() {
     MockCloudInstance mock = this.getMockCloudInstance();
     CloudConnector connector = mock.getCloudConnector();
-    MetadataRegistry metadataRegistry = mock.getMetadataRegistry();
+    BaseMetadataRegistry metadataRegistry = mock.getMetadataRegistry();
     Map<String, String> discriminatorMap = new HashMap<String, String>();
     EasyMock.expect(metadataRegistry.getDiscriminatorValues(EasyMock.anyObject(String.class)))
         .andReturn(discriminatorMap).anyTimes();
@@ -187,7 +190,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     }
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     ServiceInstance serviceInstance = serviceInstanceDAO.find(serviceInstanceId);
     Service service = serviceInstance.getService();
@@ -243,8 +246,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
 
   /*
    * Description: Test to create a product with Mediation Rule(Running_VM usage type) and
-   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID, HypervisorType, RamSize, Speed, GuestOSName) as
-   * ProductManager Author: Vinayv
+   * Discriminators(ServiceOfferingUUID, TemplateUUID, HypervisorType, RamSize, Speed, GuestOSName) as ProductManager
+   * Author: Vinayv
    */
   @Test
   public void testCreatProductWithRunningVM() throws Exception {
@@ -254,7 +257,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     userDAO.save(user);
     asUser(user);
     String[] discriminators = {
-        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
+        "ServiceOfferingUUID", "TemplateUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
     };
     for (int i = 0; i < discriminators.length; i++) {
 
@@ -292,8 +295,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
 
   /*
    * Description: Test to create a product with Mediation Rule(Allocated VM usage type) and
-   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID, HypervisorType, RamSize, Speed, GuestOSName) as
-   * ProductManager Author: Vinayv
+   * Discriminators(ServiceOfferingUUID, TemplateUUID, HypervisorType, RamSize, Speed, GuestOSName) as ProductManager
+   * Author: Vinayv
    */
   @Test
   public void testCreatProductWithAllocatedVM() throws Exception {
@@ -303,7 +306,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     userDAO.save(user);
     asUser(user);
     String[] discriminators = {
-        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
+        "ServiceOfferingUUID", "TemplateUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
     };
     for (int i = 0; i < discriminators.length; i++) {
 
@@ -704,7 +707,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "";
     String operator = "COMBINE";
@@ -717,10 +720,11 @@ public class AbstractProductsControllerTest extends WebTestsBase {
           break;
         }
       }
-      if (i == 2)
+      if (i == 2) {
         operator = "EXCLUDE";
-      else
+      } else {
         operator = "COMBINE";
+      }
       jsonString = "{conversionFactor: 1.00, operator: " + operator + ", usageTypeId: " + serviceUsageType.getId()
           + "}";
       jsonString = jsonString + ",";
@@ -761,13 +765,13 @@ public class AbstractProductsControllerTest extends WebTestsBase {
 
   /*
    * Description: Test to create a product with Mediation Rule(Running_VM usage type) and
-   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID) as Root Author: Vinayv
+   * Discriminators(ServiceOfferingUUID, TemplateUUID) as Root Author: Vinayv
    */
   @Test
   public void testCreatProductAsRoot() throws Exception {
 
     String[] discriminators = {
-        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID"
+        "ServiceOfferingUUID", "TemplateUUID"
     };
     for (int i = 0; i < discriminators.length; i++) {
 
@@ -846,7 +850,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
         + "} ]";
@@ -899,13 +903,75 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
         + "} ]";
     form.setProductMediationRules(jsonString);
     BindingResult result = validate(form);
     productsController.createProduct(form, result, map, response, request);
+  }
+
+  /**
+   * @Desc Test to check create product fails with null code, name by a product manager
+   * @author vinayv
+   */
+  @Test
+  public void testCreateProductNullCodeByProductManager() {
+    logger.info("Entering testCreateProductNullCodeByProductManager test");
+    User user = userDAO.find(8L);
+    user.setProfile(profileDAO.findByName("Product Manager"));
+    userDAO.merge(user);
+    asUser(user);
+    int beforeProductCount = productDAO.count();
+    try {
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      Service service = serviceInstance.getService();
+      ServiceUsageType serviceUsageType = null;
+      List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+      for (ServiceUsageType sut : sutlist) {
+        if (sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+          serviceUsageType = sut;
+          break;
+        }
+      }
+      Product product = new Product("New", null, null, "", user);
+      product.setCode(null);
+      product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+      product.setUom("Hours");
+
+      ProductForm form = new ProductForm(product);
+      form.setStartDate(new Date());
+      form.setServiceUUID(service.getUuid());
+      form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+
+      List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+      ProductCharge productCharge = new ProductCharge();
+      productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+      productCharge.setCatalog(null);
+      productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+      productCharge.setPrice(BigDecimal.valueOf(100));
+      productCharge.setCreatedAt(new Date());
+      productCharge.setCreatedBy(getRootUser());
+      productCharge.setUpdatedBy(getRootUser());
+      productsService.saveProductCharge(productCharge);
+      productCharges.add(productCharge);
+
+      form.setProductCharges(productCharges);
+      form.setIsNewProduct(true);
+
+      String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+          + "} ]";
+      form.setProductMediationRules(jsonString);
+      BindingResult result = validate(form);
+      productsController.createProduct(form, result, map, response, request);
+    } catch (Exception e) {
+      Assert.assertTrue(e instanceof NullPointerException);
+    }
+    int afterProductCount = productDAO.count();
+    Assert.assertEquals(beforeProductCount, afterProductCount);
+    logger.info("Exiting testCreateProductNullCodeByProductManager test");
+
   }
 
   /*
@@ -947,7 +1013,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
         + "} ]";
@@ -999,7 +1065,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
     String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
         + "} ]";
     form.setProductMediationRules(jsonString);
@@ -1048,7 +1114,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productsService.saveProductCharge(productCharge);
     productCharges.add(productCharge);
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
     String jsonString = "[ { } ]";
     form.setProductMediationRules(jsonString);
     BindingResult result = validate(form);
@@ -1072,6 +1138,13 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     BindingResult result = validate(form);
     String resultString = productsController.editProductLogo(form, result, request, map);
     Assert.assertNotNull(resultString);
+    String osName = System.getProperty("os.name");
+    if (osName.startsWith("Windows")) {
+      // The default config for saving product images in db is '/tmp'. Since '/' is not for Windows
+      // saving the product logo fails. So skipping this check for Windows. Following assertion will
+      // still happen on Hudson but will not fail on windows dev setup
+      return;
+    }
     Assert.assertTrue(resultString.contains("\"id\":" + product.getId() + ",\"name\":\"" + product.getName()
         + "\",\"code\":\"" + product.getCode() + "\""));
   }
@@ -1089,7 +1162,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     BindingResult result = validate(form);
     String resultString = productsController.editProductLogo(form, result, request, map);
     Assert.assertNotNull(resultString);
-    Assert.assertEquals("File should have either .jpeg/.jpg/.png/.gif/.bmp extension", resultString);
+    Assert.assertEquals("{\"errormessage\":\"File should have either .jpeg/.jpg/.png/.gif/.bmp extension\"}",
+        resultString);
   }
 
   /*
@@ -1115,7 +1189,6 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   /*
    * Description: Test to create a product and edit charges Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testEditProductCharges() throws Exception {
 
@@ -1154,7 +1227,6 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   /*
    * Description: Test to View Product Planned charges for future dates Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testViewProductPlannedChargesForFuture() throws Exception {
 
@@ -1186,7 +1258,6 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   /*
    * Description: Test to search Product Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testSearchProduct() throws Exception {
 
@@ -2440,7 +2511,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    // IN Current Retired Product will come as Active Product
+    Assert.assertEquals(0, count);
   }
 
   /*
@@ -2468,7 +2540,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    // If it Retired in future revsion it will come as active in previson revison and from future revison it will come
+// as retired
+    Assert.assertEquals(0, count);
   }
 
   /*
@@ -2496,7 +2570,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(0, count);
+    // IN planned Retired Product will come
+    Assert.assertEquals(1, count);
   }
 
   /*
@@ -2524,7 +2599,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    // IN current Retired Product will come as Active Product
+    Assert.assertEquals(0, count);
   }
 
   /*
@@ -2552,7 +2628,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    // IN History Retired Product will come as Active Product
+    Assert.assertEquals(0, count);
   }
 
   /*
@@ -2580,7 +2657,8 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(0, count);
+    // If it is Retired in Future revision i will come as retired in that revison
+    Assert.assertEquals(1, count);
   }
 
   @Test
@@ -2608,9 +2686,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertNotNull(result);
     Assert.assertEquals("products.list", result);
     List<Product> productList = (List<Product>) map1.get("productsList");
-    Assert.assertEquals(7, productList.size());
-    Assert.assertTrue(productList.get(0).getSortOrder() < productList.get(1).getSortOrder());
-    Assert.assertTrue(productList.get(3).getSortOrder() < productList.get(4).getSortOrder());
+    Assert.assertEquals(9, productList.size());
+    Assert.assertTrue((productList.get(0).getSortOrder() - productList.get(1).getSortOrder()) > 0);
+    Assert.assertTrue((productList.get(3).getSortOrder() - productList.get(4).getSortOrder()) < 0);
   }
 
   @Test
@@ -2685,7 +2763,30 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     }
   }
 
-  @SuppressWarnings("unchecked")
+  @ExpectedException(CurrencyPrecisionException.class)
+  @Test
+  public void testEditPlanChargesWithUncompatibleCurrencyPrecision() {
+
+    Configuration precision = configurationDAO.findByName("com_citrix_cpbm_portal_appearance_currency_precision"
+        .replace('_', '.'));
+    precision.setValue("3");
+    configurationDAO.save(precision);
+    String serviceInstanceUUID = serviceInstanceDAO.find(1L).getUuid();
+    for (ProductRevision productRevision : channelService.getFutureChannelRevision(null, false).getProductRevisions()) {
+      // Ignore removed products in the future revision
+      if (productRevision.getProduct().getRemoved() == null
+          && (productRevision.getProduct().getServiceInstance() != null && productRevision.getProduct()
+              .getServiceInstance().getUuid().equals(serviceInstanceUUID))) {
+        List<ProductCharge> pcharges = productRevision.getProductCharges();
+        ProductCharge pc = pcharges.get(0);
+        pc.setPrice(new BigDecimal("5.1234"));
+      }
+    }
+
+    productsController.editPlannedCharges(serviceInstanceUUID, map);
+
+  }
+
   @Test
   public void testSortProducts() {
     try {
@@ -2697,8 +2798,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
 
       for (int i = 1; i < size; i++) {
         Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
-        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId()) {
           Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+        }
       }
 
       productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "planned", null, null, null, map);
@@ -2707,8 +2809,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       Assert.assertEquals(size, productsList.size());
       for (int i = 1; i < size; i++) {
         Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
-        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId()) {
           Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+        }
       }
 
       Date date = productService.getReferencePriceBookHistoryRevisions().get(0).getStartDate();
@@ -2718,8 +2821,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       Assert.assertEquals(size, productsList.size());
       for (int i = 1; i < size; i++) {
         Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
-        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId()) {
           Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+        }
       }
 
     } catch (Exception e) {
@@ -2773,8 +2877,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       CurrencyValue currency = productChargesList.get(0).getCurrencyValue();
 
       for (ProductCharge charge : actualProductChargesList) {
-        if (charge.getCurrencyValue().equals(currency))
+        if (charge.getCurrencyValue().equals(currency)) {
           Assert.assertEquals(productChargesList.get(0).getPrice(), charge.getPrice());
+        }
       }
 
       Assert.assertEquals(historyDate, map.get("historyDate"));
@@ -2793,8 +2898,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       currency = productChargesList.get(0).getCurrencyValue();
 
       for (ProductCharge charge : actualProductChargesList) {
-        if (charge.getCurrencyValue().equals(currency))
+        if (charge.getCurrencyValue().equals(currency)) {
           Assert.assertEquals(productChargesList.get(0).getPrice(), charge.getPrice());
+        }
       }
 
     } catch (Exception e) {
@@ -2822,7 +2928,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       Assert.assertTrue(DateUtils.isSameDay(new Date(), date));
 
       ProductForm form = (ProductForm) map.get("planDateForm");
-      Assert.assertTrue(DateUtils.isSameDay(futureDate, (Date) form.getStartDate()));
+      Assert.assertTrue(DateUtils.isSameDay(futureDate, form.getStartDate()));
     } catch (Exception e) {
       e.printStackTrace();
       Assert.fail();
@@ -2888,7 +2994,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   @Test
   public void testIsCurrentHistoryApplicableForRPB() {
 
-    ModelMap map = new ModelMap();
+    new ModelMap();
     Map<String, String> result = productsController.isCurrentAndHistoryApplicableForRPB();
     Assert.assertNotNull(result);
     Assert.assertNotNull(result.get("current"));
@@ -2956,7 +3062,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertNotNull(map);
     List<Service> serviceCategoryList = (List<Service>) map.get("serviceCategoryList");
     Assert.assertNotNull(map.get("serviceCategoryList"));
-    Assert.assertEquals(4, serviceCategoryList.size());
+    Assert.assertEquals(5, serviceCategoryList.size());
     ;
     Assert.assertEquals(null, map.get("futurePlanDate"));
     Assert.assertEquals(null, map.get("revisionDate"));
@@ -2986,7 +3092,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertNotNull(map);
     List<Service> serviceCategoryList = (List<Service>) map.get("serviceCategoryList");
     Assert.assertNotNull(map.get("serviceCategoryList"));
-    Assert.assertEquals(4, serviceCategoryList.size());
+    Assert.assertEquals(5, serviceCategoryList.size());
     ;
     Assert.assertEquals(null, map.get("futurePlanDate"));
     Assert.assertEquals(null, map.get("revisionDate"));
@@ -3011,7 +3117,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   public void testViewProductCurrentCharges() throws Exception {
 
     ModelMap map = new ModelMap();
-    String result = productsController.viewProductCurrentCharges("SYSTEM_VOLUME", map);
+    productsController.viewProductCurrentCharges("SYSTEM_VOLUME", map);
     Assert.assertNotNull(map);
     List<ProductCharge> returnedCharges = (List<ProductCharge>) map.get("productChargesList");
     Assert.assertNotNull(returnedCharges);
@@ -3026,7 +3132,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertEquals(false, noChargesYetSet);
     boolean hasHistoricalRevisions = (Boolean) map.get("hasHistoricalRevisions");
     Assert.assertEquals(true, hasHistoricalRevisions);
-    String result1 = productsController.viewProductCurrentCharges("RVM", map);
+    productsController.viewProductCurrentCharges("RVM", map);
     Assert.assertNotNull(map);
     returnedCharges = (List<ProductCharge>) map.get("productChargesList");
     Assert.assertNotNull(returnedCharges);
@@ -3051,11 +3157,10 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertEquals(beforeCreationProductLength + 0, afterCreationProductLength);
     Assert.assertNotNull(map);
 
-    ProductForm productForm = (ProductForm) map.get("productForm");
-    // Assert.assertEquals("com.vmops.web.forms.ProductForm@6ebe20a", map.get("productForm").toString());
+    map.get("productForm");
 
     Assert.assertTrue(map.get("hasplannedcharges").toString(), true);
-    Revision currentRevision = productsService.getCurrentRevision(null);
+    productsService.getCurrentRevision(null);
     Assert.assertEquals("2013-01-09 00:00:00.0", map.get("date").toString());
     List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     Assert.assertEquals(6, activeCurrencies.size());
@@ -3065,9 +3170,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertEquals("com.company1.service1", map.get("serviceName").toString());
     Assert.assertEquals("b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6", map.get("serviceUuid").toString());
     Set<String> serviceUsageTypeNames = (Set<String>) map.get("serviceUsageTypeNames");
-    Assert.assertEquals(27, serviceUsageTypeNames.size());
+    Assert.assertEquals(28, serviceUsageTypeNames.size());
     Set<String> discrimintaorNames = (Set<String>) map.get("discrimintaorNames");
-    Assert.assertEquals(9, discrimintaorNames.size());
+    Assert.assertEquals(4, discrimintaorNames.size());
   }
 
   /*
@@ -3077,21 +3182,21 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   @Test
   public void testlistUsage() throws Exception {
 
-    ModelMap map = new ModelMap();
+    new ModelMap();
     List<ServiceUsageType> result = productsController.listUsageTypes(serviceInstanceDAO.find(1L).getUuid().toString());
     ServiceInstance serviceInstance = serviceInstanceDAO.getServiceInstance("003fa8ee-fba3-467f-a517-fd806dae8a80");
     Service service = serviceInstance.getService();
     List<ServiceUsageType> serviceUsageTypeList = service.getServiceUsageTypes();
     Assert.assertNotNull(result);
     Assert.assertEquals(serviceUsageTypeList, result);
-    Assert.assertEquals(28, result.size());
+    Assert.assertEquals(29, result.size());
     Assert.assertEquals("RUNNING_VM", serviceUsageTypeList.get(0).getUsageTypeName().toString());
     Assert.assertEquals("com.company1.service1", service.getServiceName());
     Assert.assertEquals(false, service.getSingleton());
     Assert.assertEquals("IAAS", service.getCategory());
     Assert.assertEquals("CLOUD", service.getType());
     Assert.assertEquals("b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6", service.getUuid());
-    Assert.assertEquals(28, service.getServiceUsageTypes().size());
+    Assert.assertEquals(29, service.getServiceUsageTypes().size());
     Assert.assertEquals("TEMPLATE", serviceUsageTypeList.get(1).getUsageTypeName().toString());
     Assert.assertEquals("HYPERVISOR", serviceUsageTypeList.get(2).getUsageTypeName().toString());
     Assert.assertEquals("VOLUME", serviceUsageTypeList.get(3).getUsageTypeName().toString());
@@ -3216,7 +3321,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     Assert.assertNotNull(productChannelChargesMap);
     Assert.assertNotNull(result);
     Assert.assertEquals("product.view.channelpricing", result);
-
+    channelRevision = channelService.getFutureRevision(channelDAO.find(14L));
     if (channelRevision != null) {
       Assert.assertEquals("2012-05-05 00:00:00.0", map.get("date").toString());
     } else {
@@ -3391,12 +3496,12 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     productCharges.add(productCharge);
 
     form.setProductCharges(productCharges);
-    form.setIsReplacementProduct(false);
+    form.setIsNewProduct(true);
 
     String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
         + "} ]";
     form.setProductMediationRules(jsonString);
-    BindingResult result = validate(form);
+    validate(form);
 
     ModelMap map = new ModelMap();
     BindingResult bindingResult = validate(form);
@@ -3440,10 +3545,10 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       discriminatorValMap.put("discriminatorValues", discriminatorValuesMap);
       finalMap.put(serviceDiscriminator.getId().toString(), discriminatorValMap);
     }
-    ModelMap map = new ModelMap();
+    new ModelMap();
     Map<String, Object> result = productsController.listDiscriminators(usageTypeId, serviceInstanceUUID);
     Assert.assertEquals(finalMap, result);
-    Assert.assertEquals(9, serviceDiscriminators.size());
+    Assert.assertEquals(4, serviceDiscriminators.size());
 
   }
 
@@ -3455,7 +3560,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   public void testEditProduct() throws Exception {
     Product product = productsService.locateProductById("1");
     ModelMap map = new ModelMap();
-    String result = productsController.editProduct("1", map);
+    productsController.editProduct("1", map);
     Assert.assertNotNull(map);
     ProductForm productForm = new ProductForm(product);
     productForm.setCategoryID(product.getCategory().getId().toString());
@@ -3478,7 +3583,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     ProductRevision productRevision = productsService.getProductRevision(product, channelService
         .getFutureRevision(null).getStartDate(), null);
     List<MediationRule> mediationRules = productRevision.getMediationRules();
-    List<Category> categories = productsService.getAllCategories();
+    productsService.getAllCategories();
     Assert.assertEquals(productsService.getAllCategories(), map.get("categories"));
 
     Map<String, Object> mediationRuleMap = new HashMap<String, Object>();
@@ -3493,7 +3598,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       mediationRuleEntitiesMap.put("uom", mediationRule.getServiceUsageType().getServiceUsageTypeUom().getName());
       mediationRuleEntitiesMap.put("productUom", product.getUom());
       mediationRuleEntitiesMap.put("usageTypeId", mediationRule.getServiceUsageType().getId());
-
+      mediationRuleEntitiesMap.put("discrete", mediationRule.getServiceUsageType().getDiscrete());
       Map<String, Object> medDiscsMap = new HashMap<String, Object>();
       for (MediationRuleDiscriminator mediationRuleDiscriminator : mediationRule.getMediationRuleDiscriminators()) {
         Map<String, Object> medRuleDisEntitiesMap = new HashMap<String, Object>();
@@ -3555,7 +3660,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   @Test
   public void testValidateProductCode() throws Exception {
 
-    ModelMap map = new ModelMap();
+    new ModelMap();
     // boolean result = productsController.validateProductCode("SYSTEM_VOLUME", "", "compute_1", "trial_camp",
 // "trial_camp", "default", "SERVICE11003fa8ee");
     boolean result = productsController.validateProductCode("CODEsmallRunningVm2Unique", "", "", "", "", "", "");
@@ -3589,8 +3694,9 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       BigDecimal productCharge = null;
       List<ProductCharge> productChargesList = productService.getProductCharges(product, new Date());
       for (ProductCharge charge : productChargesList) {
-        if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("SGD"))
+        if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("SGD")) {
           productCharge = charge.getPrice();
+        }
       }
 
       String contextString = "PSI_UD1=10";
@@ -3678,14 +3784,11 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     rootdir.setValue(currentDirectoryPath);
     configurationService.update(rootdir);
     Assert.assertNull(product.getImagePath());
-    String bytes = "testBytes";
-    String path = currentDirectoryPath + "//testfile";
-    MultipartFile logoFile = new MockMultipartFile("test", path, "jpg", bytes.getBytes());
     productsController.editProductLogo(form, result, request, map);
     product = productService.locateProduct("1", false);
     Assert.assertNotNull(product.getImagePath());
     String productsAbsoluteDir = FilenameUtils.concat(currentDirectoryPath, "products");
-    Assert.assertEquals(product.getImagePath(), "products\\1\\Product.jpeg");
+    Assert.assertEquals(product.getImagePath().replace("/", "\\"), "products\\1\\Product.jpeg");
     File dir = new File(productsAbsoluteDir);
     try {
       org.apache.commons.io.FileUtils.deleteDirectory(dir);
@@ -3724,9 +3827,6 @@ public class AbstractProductsControllerTest extends WebTestsBase {
     BindingResult result = validate(form);
     Assert.assertNotNull(result);
     String oldDescription = product.getDescription();
-    ProductRevision productRevision = productService.getProductRevision(product, channelService.getFutureRevision(null)
-        .getStartDate(), null);
-    List<MediationRule> mediationRules = productRevision.getMediationRules();
     String newDescription = "New Description.";
     product.setDescription(newDescription);
     productsController.editProduct(form, result, map);

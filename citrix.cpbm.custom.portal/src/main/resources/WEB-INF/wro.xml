@@ -14,9 +14,6 @@
 	<js>/js/i18n/jquery-ui-i18n.js</js>
   <js>/js/jquery.ui.dialog.patch.js</js>
 	<js>/js/jquery.timers.js</js>
-	<js>/js/lib/HighCharts/highcharts.js</js>
-	<js>/js/lib/HighCharts/modules/exporting.js</js>
-	<js>/js/util/HighChartsUtil.js</js>
 	<js>/js/header.js</js>
 	<css>/css/jquery/themes/base/jquery.ui.theme.css</css>
 	<css>/css/jquery/themes/base/jquery.ui.tabs.css</css>

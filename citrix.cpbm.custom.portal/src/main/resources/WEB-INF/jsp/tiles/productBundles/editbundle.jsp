@@ -178,14 +178,14 @@
                          <li id="trialEligibility">
                             <span class="label"><spring:message code="label.bundle.create.eligible.trial"/></span>
                             <div class="nonmandatory_wrapper" >
-                             <form:checkbox cssClass="text"  cssStyle="width:auto;" tabindex="6" path="productBundle.trialEligibility" /> 
+                             <form:checkbox  cssStyle="width:auto;float:left;margin:16px 0 0 10px;" tabindex="6" path="productBundle.trialEligibility" /> 
                               <span style="width: 450px; margin: 15px 0pt 0pt 10px;" class="helptext">(<spring:message code="ui.bundle.trail.eligibility.text"/>)</span> 
                               </div>
                         </li>
                         <li id="notificationEnabled">
                             <span class="label"><spring:message code="label.bundle.create.enable.notification"/></span>
                             <div class="nonmandatory_wrapper" >
-                             <form:checkbox cssClass="text"  cssStyle="width:auto;" tabindex="6" path="productBundle.notificationEnabled" /> 
+                             <form:checkbox  cssStyle="width:auto;float:left;margin:16px 0 0 10px;" tabindex="6" path="productBundle.notificationEnabled" /> 
                               <span style="width: 450px; margin: 15px 0pt 0pt 10px;" class="helptext">(<spring:message code="ui.bundle.enable.notification.text"/>)</span> 
                               </div>
                         </li>

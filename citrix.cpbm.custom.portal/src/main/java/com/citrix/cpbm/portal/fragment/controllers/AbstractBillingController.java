@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright Â© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.BufferedInputStream;
@@ -14,10 +13,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -49,8 +51,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.citrix.cpbm.core.workflow.service.BusinessTransactionService;
 import com.citrix.cpbm.core.workflow.service.TaskService;
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
-import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
 import com.vmops.config.BillingPostProcessor;
 import com.vmops.internal.service.ActorService;
@@ -63,9 +65,16 @@ import com.vmops.model.AccountType;
 import com.vmops.model.Address;
 import com.vmops.model.CreditCard;
 import com.vmops.model.DepositRecord;
+import com.vmops.model.Event.Category;
+import com.vmops.model.Event.Scope;
+import com.vmops.model.Event.Severity;
+import com.vmops.model.Event.Source;
 import com.vmops.model.Invoice;
 import com.vmops.model.PendingChange;
+import com.vmops.model.ServiceFilter;
 import com.vmops.model.ServiceResourceType;
+import com.vmops.model.ServiceResourceTypeGroupComponent;
+import com.vmops.model.ServiceResourceTypeProperty;
 import com.vmops.model.Subscription;
 import com.vmops.model.Subscription.State;
 import com.vmops.model.SubscriptionHandle;
@@ -79,12 +88,14 @@ import com.vmops.model.billing.SalesLedgerRecord.Type;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.EmailTemplateService;
+import com.vmops.service.ProductBundleService;
 import com.vmops.service.ReportService;
 import com.vmops.service.billing.BillingAdminService;
 import com.vmops.service.billing.BillingService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.BillingAdminServiceException;
 import com.vmops.service.exceptions.BillingServiceException;
+import com.vmops.service.exceptions.CloudServiceException;
 import com.vmops.service.exceptions.CreditCardFraudCheckException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
 import com.vmops.service.exceptions.PaymentGatewayServiceException;
@@ -96,6 +107,7 @@ import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.BillingInfoForm;
 import com.vmops.web.forms.DepositRecordForm;
 import com.vmops.web.forms.SetAccountTypeForm;
+import com.vmops.web.forms.SubscriptionSearchForm;
 import com.vmops.web.interceptors.UserContextInterceptor;
 import com.vmops.web.validators.DepositRecordValidator;
 
@@ -153,16 +165,22 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
   BillingService billingService;
 
   @Autowired
+  ProductBundleService productBundleService;
+
+  @Autowired
   protected ConnectorManagementService connectorManagementService;
 
-  private String utiltyInvoices = "__UTILITY__CHARGES__INVOICES__";
+  private final String utiltyInvoices = "__UTILITY__CHARGES__INVOICES__";
 
-  private String serviceBundleInvoices = "__SERVICE__BUNDLE__INVOICES__";
+  private final String serviceBundleInvoices = "__SERVICE__BUNDLE__INVOICES__";
 
   protected Logger logger = Logger.getLogger(AbstractBillingController.class);
 
   @Autowired
   private BusinessTransactionService businessTransactionService;
+
+  @Autowired
+  ConnectorConfigurationManager connectorConfigurationManager;
 
   protected boolean hasFullBillingView(User user) {
     // only master user has ROLE_ACCOUNT_ADMIN, certain system users has finance role.
@@ -177,7 +195,10 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       @RequestParam(value = "page", required = false, defaultValue = "1") String currentPage,
       @RequestParam(value = "id", required = false) String uuid,
       @RequestParam(value = "state", required = false) String state,
-      @RequestParam(value = "useruuid", required = false) String useruuid, ModelMap map, HttpServletRequest request) {
+      @RequestParam(value = "useruuid", required = false) String useruuid,
+      @RequestParam(value = "instanceuuid", required = false) String instanceuuid,
+      @RequestParam(value = "productBundleID", required = false) Long productBundleID, ModelMap map,
+      HttpServletRequest request) {
 
     int page;
     int perPage;
@@ -205,12 +226,10 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     Tenant effectiveTenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
 
     if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
-
       showUserProfile = true;
       setPage(map, Page.CRM_USAGE_BILLING_SUBSCRIPTION);
       map.addAttribute("userHasCloudServiceAccount",
           userService.isUserHasAnyActiveCloudService(effectiveTenant.getOwner()));
-
     } else {
       setPage(map, Page.USAGE_BILLING_SUBSCRIPTION);
       map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(currentUser));
@@ -218,21 +237,33 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     map.addAttribute("showUserProfile", showUserProfile);
     map.addAttribute("tenant", effectiveTenant);
     int totalSubscriptions = 0;
+    int filtersApplied = 0;
     List<Subscription> subscriptions = null;
+    Long instanceID = null;
+    if (StringUtils.isNotBlank(instanceuuid)) {
+      instanceID = connectorConfigurationManager.getInstance(instanceuuid).getId();
+    }
+
     if (uuid == null) {
       if (hasFullBillingView(currentUser)) {
         if (useruuid == null) {
-          subscriptions = subscriptionService.getSubscriptions(effectiveTenant, subscriptionState, page, perPage);
-          totalSubscriptions = subscriptionService.getCountByTenant(effectiveTenant);
+          subscriptions = subscriptionService.getSubscriptions(effectiveTenant, subscriptionState, instanceID,
+              productBundleID, page, perPage);
+          totalSubscriptions = subscriptionService.getSubscriptionCount(effectiveTenant, subscriptionState, instanceID,
+              productBundleID, 0, 0);
         } else {
           User filterUser = userService.get(useruuid);
-          subscriptions = subscriptionService.getSubscriptions(filterUser, subscriptionState, page, perPage);
-          totalSubscriptions = subscriptionService.getCountByUser(filterUser);
+          subscriptions = subscriptionService.getSubscriptions(filterUser, subscriptionState, instanceID,
+              productBundleID, page, perPage);
+          totalSubscriptions = subscriptionService.getSubscriptionCount(filterUser, subscriptionState, instanceID,
+              productBundleID, 0, 0);
           map.addAttribute("useruuid", useruuid);
         }
       } else {
-        subscriptions = subscriptionService.getSubscriptions(currentUser, subscriptionState, page, perPage);
-        totalSubscriptions = subscriptionService.getCountByUser(currentUser);
+        subscriptions = subscriptionService.getSubscriptions(currentUser, subscriptionState, instanceID,
+            productBundleID, page, perPage);
+        totalSubscriptions = subscriptionService.getSubscriptionCount(currentUser, subscriptionState, instanceID,
+            productBundleID, 0, 0);
       }
     } else {
       subscriptions = new ArrayList<Subscription>();
@@ -248,15 +279,33 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       customFieldService.populateCustomFields(subscription.getUser());
     }
     map.addAttribute("subscriptions", subscriptions);
-    map.addAttribute("state", state);
+    map.addAttribute("stateSelected", state);
+    map.addAttribute("instanceuuid", instanceuuid);
+    map.addAttribute("productBundleID", productBundleID);
 
-    if (totalSubscriptions - (page * perPage) > 0) {
+    filtersApplied = StringUtils.isNotBlank(useruuid) ? filtersApplied + 1 : filtersApplied;
+    filtersApplied = StringUtils.isNotBlank(state) && !state.equalsIgnoreCase("ALL") ? filtersApplied + 1
+        : filtersApplied;
+    filtersApplied = StringUtils.isNotBlank(instanceuuid) ? filtersApplied + 1 : filtersApplied;
+    filtersApplied = productBundleID != null ? filtersApplied + 1 : filtersApplied;
+    map.addAttribute("filtersApplied", filtersApplied);
+
+    if (totalSubscriptions - page * perPage > 0) {
       map.addAttribute("enable_next", true);
-    } else
+    } else {
       map.addAttribute("enable_next", false);
+    }
 
     map.addAttribute("current_page", page);
     map.addAttribute("states", State.values());
+
+    SubscriptionSearchForm searchForm = new SubscriptionSearchForm();
+    searchForm.setUsers(effectiveTenant.getUsers());
+    searchForm.setStates(Arrays.asList(State.values()));
+    searchForm.setServiceInstances(tenantService.getEnabledCSInstances(effectiveTenant));
+    searchForm.setProductBundles(productBundleService.listProductBundles(0, 0));
+    map.addAttribute("searchForm", searchForm);
+
     return "billing.showSubscriptions";
   }
 
@@ -266,39 +315,57 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     logger.debug("Entry ShowSubscriptionDetails with Id:" + uuid);
     map.addAttribute("tenantParam", tenantParam);
     Subscription subscription = subscriptionService.locateSubscriptionByParam(uuid, true);
+    subscription = subscriptionService.updateFilterAndResourceComponentNamesinConfigurationData(subscription);
     customFieldService.populateCustomFields(subscription);
     customFieldService.populateCustomFields(subscription.getTenant());
     customFieldService.populateCustomFields(subscription.getUser());
     map.addAttribute("subscription", subscription);
-
-    boolean allowTermination = subscription.getState().equals(State.ACTIVE);
-    SubscriptionHandle subscriptionHandle = subscription.getActiveHandle();
-    if (subscriptionHandle != null) {
-      map.addAttribute("vmId", subscriptionHandle.getResourceHandle());
+    Map<String, String> configurationProperties = prepareConfigurationMap(subscription);
+    map.addAttribute("configurationProperties", configurationProperties);
+    SubscriptionHandle activeHandle = subscription.getActiveHandle();
+    if (activeHandle != null) {
+      map.addAttribute("vmId", activeHandle.getResourceHandle());
     }
     Boolean hasCloudAccess = false;
     if (userService.isUserHasAnyActiveCloudService(getCurrentUser())) {
       hasCloudAccess = true;
     }
+
+    map.addAttribute("allowTermination", subscription.getState().equals(State.ACTIVE));
     map.addAttribute("toProvision", false);
-    if (subscription.getState().equals(State.ACTIVE) && subscription.getActiveHandle() == null) {
-      map.addAttribute("toProvision", true);
-    } else if (subscription.getState().equals(State.ACTIVE)) {
-      // Call validate method.
-      CloudConnector cloudConnector;
-      cloudConnector = (CloudConnector) connectorManagementService.getServiceInstance(subscription.getServiceInstance()
-          .getUuid());
-      logger.trace("###SPI Calling SubscriptionLifecycleHandler().validate(subscription) for instance:"
-          + cloudConnector.getServiceInstanceUUID() + " subscription:" + subscription.getParam());
-      boolean isValid = cloudConnector.getSubscriptionLifecycleHandler().validate(subscription);
-      if (!isValid) {
+    map.addAttribute("toReconfigure", false);
+
+    boolean isValid = false;
+    try {
+      isValid = subscriptionService.validateAndUpdateStates(subscription);
+
+      SubscriptionHandle subscriptionHandle = subscription.getHandle();
+
+      if (subscriptionHandle != null) {
+        com.vmops.model.SubscriptionHandle.State handleState = subscriptionHandle.getState();
+        map.addAttribute("allowTermination", subscription.getState().equals(State.ACTIVE));
+        if (subscription.getState().equals(State.NEW)) {
+          if (handleState.equals(com.vmops.model.SubscriptionHandle.State.ERROR)) {
+            map.addAttribute("toProvision", true);
+          }
+        } else if (subscription.getState().equals(State.ACTIVE)) {
+          if (handleState.equals(com.vmops.model.SubscriptionHandle.State.ACTIVE) || isValid) {
+            map.addAttribute("toReconfigure", true);
+          } else if (handleState.equals(com.vmops.model.SubscriptionHandle.State.ERROR)
+              || handleState.equals(com.vmops.model.SubscriptionHandle.State.TERMINATED) || !isValid) {
+            map.addAttribute("toProvision", true);
+          }
+        }
+      } else if (subscription.getState().equals(State.ACTIVE)) {
         map.addAttribute("toProvision", true);
-        subscriptionService.updateSubscription(subscription);
       }
+      map.addAttribute("cloudStackCallFailed", false);
+    } catch (CloudServiceException cse) {
+      map.addAttribute("cloudStackCallFailed", true);
+      map.addAttribute("cloudServiceErrorMessage", cse.getMessage());
     }
-    map.addAttribute("cloudStackCallFailed", false);
-    map.addAttribute("allowTermination", allowTermination);
     map.addAttribute("hasCloudAccess", hasCloudAccess);
+    map.addAttribute("endDate", subscription.getTerminationDate());
     String workflowUuid = businessTransactionService.getWorkflowUuid(subscription);
     if (StringUtils.isNotEmpty(workflowUuid)) {
       map.addAttribute("workflowUuid", workflowUuid);
@@ -307,6 +374,42 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     map.addAttribute("isPayAsYouGoChosen", isPayAsYouGoChosen);
     logger.debug("Exit ShowSubscriptionDetails");
     return "billing.viewSubscription";
+  }
+
+  private Map<String, String> prepareConfigurationMap(Subscription subscription) {
+    Map<String, String> configurationProperties = new LinkedHashMap<String, String>();
+    Map<String, String> configurationMap = subscription.getConfigurationMap();
+    for (ServiceFilter filter : subscription.getServiceInstance().getService().getServiceFilters()) {
+      putValueToMap(configurationProperties, configurationMap, filter.getDiscriminatorName());
+    }
+
+    if (subscription.getResourceType() != null) {
+      List<ServiceResourceTypeGroupComponent> uniqueResourceTypeComponents = connectorConfigurationManager
+          .getResourceComponents(subscription.getServiceInstance().getUuid(), subscription.getResourceType()
+              .getResourceTypeName());
+      for (ServiceResourceTypeGroupComponent serviceResourceTypeGroupComponent : uniqueResourceTypeComponents) {
+        putValueToMap(configurationProperties, configurationMap,
+            serviceResourceTypeGroupComponent.getResourceComponentName());
+      }
+      for (ServiceResourceTypeProperty property : subscription.getResourceType().getServiceResourceTypeProperty()) {
+        putValueToMap(configurationProperties, configurationMap, property.getName());
+      }
+    }
+
+    return configurationProperties;
+  }
+
+  private void putValueToMap(Map<String, String> configurationProperties, Map<String, String> configurationMap,
+      String name) {
+    String value = configurationMap.get(name);
+    if (value == null) {
+      return;
+    }
+    value = configurationMap.get(name + "_name");
+    if (StringUtils.isBlank(value)) {
+      value = configurationMap.get(name);
+    }
+    configurationProperties.put(name, value);
   }
 
   @RequestMapping(value = "/subscriptions/terminate/{subscriptionParam}", method = RequestMethod.POST)
@@ -445,10 +548,10 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     map.addAttribute("showUserProfile", showUserProfile);
     map.addAttribute("errorMsg", "");
     map.addAttribute("tenant", effectiveTenant);
-    List<SalesLedgerRecord> slrList = billingAdminService.listPaymentAndCredits(effectiveTenant, page, perPage);
+    List<SalesLedgerRecord> slrList = billingService.listPaymentAndCredits(effectiveTenant, page, perPage);
     long totalPayments = 0l;
     try {
-      totalPayments = billingAdminService.getPaymentAndCreditsRecordCount(effectiveTenant);
+      totalPayments = billingService.getPaymentAndCreditsRecordCount(effectiveTenant);
     } catch (Exception e) {
       map.addAttribute("errorMsg",
           messageSource.getMessage("error.message.tenant.not.active", null, getSessionLocale(request)));
@@ -456,10 +559,11 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
 
     map.addAttribute("salesLedgerRecords", slrList);
 
-    if (totalPayments - (page * perPage) > 0) {
+    if (totalPayments - page * perPage > 0) {
       map.addAttribute("enable_next", true);
-    } else
+    } else {
       map.addAttribute("enable_next", false);
+    }
 
     map.addAttribute("current_page", page);
 
@@ -526,7 +630,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     setPage(map, Page.USAGE_BILLING_PAYMENT_INFO);
 
     CreditCard creditCard = null;
-    map.addAttribute("showUserProfile", (Boolean) request.getAttribute("isSurrogatedTenant"));
+    map.addAttribute("showUserProfile", request.getAttribute("isSurrogatedTenant"));
     Tenant effectiveTenant = tenantService.get(tenantParam);
 
     map.addAttribute("tenant", effectiveTenant);
@@ -555,7 +659,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       creditCard = new CreditCard();
       billingInfoForm = new BillingInfoForm(effectiveTenant, null, creditCard);
       map.addAttribute("errormsg",
-          messageSource.getMessage("ui.usage.billing.paymentinfo.cc.errormsg", null, this.getSessionLocale(request)));
+          messageSource.getMessage("ui.usage.billing.paymentinfo.cc.errormsg", null, getSessionLocale(request)));
     }
     logger.debug("###Exiting showCreditCard()");
     map.addAttribute("billingInfo", billingInfoForm);
@@ -572,10 +676,10 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
 
     Tenant effectiveTenant = tenantService.get(tenantParam);
     map.addAttribute("tenant", effectiveTenant);
-    map.addAttribute("isAccountExistInPaymentGateway", ((PaymentGatewayService) connectorManagementService
-        .getOssServiceInstancebycategory(ConnectorType.PAYMENT_GATEWAY))
-        .isAccountExistInPaymentGateway(effectiveTenant));
     try {
+      map.addAttribute("isAccountExistInPaymentGateway", ((PaymentGatewayService) connectorManagementService
+          .getOssServiceInstancebycategory(ConnectorType.PAYMENT_GATEWAY))
+          .isAccountExistInPaymentGateway(effectiveTenant));
       CreditCard creditCard = form.getCreditCard();
       billingService.editCreditCard(effectiveTenant, creditCard, getRemoteUserIp(request), request.getLocale(),
           getCurrentUser());
@@ -592,10 +696,14 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       logger.error("Got Exception while updating billing info : ", e);
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
       throw new InvalidAjaxRequestException(messageSource.getMessage("ui.usage.billing.paymentinfo.cc.edit.errormsg",
-          null, this.getSessionLocale(request)));
+          null, getSessionLocale(request)));
     }
     String redirectToURL = "/portal/portal/tenants/editcurrent?action=showcreditcardtab&tenant=" + tenantParam;
     map.put("redirecturl", redirectToURL);
+    String message = "billing.info.updated";
+    String messageArgs = effectiveTenant.getName();
+    eventService.createEvent(new Date(), effectiveTenant, message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
+        Category.ACCOUNT, Severity.INFORMATION, true);
     return map;
   }
 
@@ -616,7 +724,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       }
       return;
     }
-    if (chargesMap.containsKey((serviceResourceType))) {
+    if (chargesMap.containsKey(serviceResourceType)) {
       chargesMap.get(serviceResourceType).add(invoice);
     } else {
       ArrayList<Invoice> newInvoiceList = new ArrayList<Invoice>();
@@ -651,7 +759,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       perPage = 14;
     }
     User user = getCurrentUser();
-    if (this.tenantService.getSystemTenant().equals(user.getTenant())) {
+    if (tenantService.getSystemTenant().equals(user.getTenant())) {
       map.addAttribute("isSystemProviderUser", "Y");
     } else {
       map.addAttribute("isSystemProviderUser", "N");
@@ -681,7 +789,14 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     map.addAttribute("accountStatements", accountStatements);
     map.addAttribute("accountStatementUuid", accountStatement.getUuid());
     map.addAttribute("accountStatementState", accountStatement.getState().name());
+    int accStatSize = billingAdminService.countAccountStatements(tenant, null, null);
+    if (accStatSize - page * perPage > 0) {
+      map.addAttribute("enable_next", true);
+    } else {
+      map.addAttribute("enable_next", false);
+    }
 
+    map.addAttribute("current_page", page);
     LinkedHashMap<ServiceResourceType, ArrayList<Invoice>> newChargesMap = new LinkedHashMap<ServiceResourceType, ArrayList<Invoice>>();
     LinkedHashMap<ServiceResourceType, ArrayList<Invoice>> renewalChargesMap = new LinkedHashMap<ServiceResourceType, ArrayList<Invoice>>();
 
@@ -737,6 +852,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
         newBigTax = newBigTax.add(invoice.getTaxAmount());
         newBigTotal = newBigTotal.add(invoice.getAmount());
       } else {
+        Collections.sort(invoice.getInvoiceItems());
         utilityInvoiceList.add(invoice);
         newBigAmount = newBigAmount.add(invoice.getRawAmount());
         newBigDiscount = newBigDiscount.add(invoice.getDiscountAmount());
@@ -746,9 +862,11 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       }
     }
 
-    newChargesMap.put(getNewDummyResourceType(this.serviceBundleInvoices), newServiceInvoiceList);
-    newChargesMap.put(getNewDummyResourceType(this.utiltyInvoices), utilityInvoiceList);
-    renewalChargesMap.put(getNewDummyResourceType(this.serviceBundleInvoices), renewServiceInvoiceList);
+    Collections.sort(utilityInvoiceList);
+
+    newChargesMap.put(getNewDummyResourceType(serviceBundleInvoices), newServiceInvoiceList);
+    newChargesMap.put(getNewDummyResourceType(utiltyInvoices), utilityInvoiceList);
+    renewalChargesMap.put(getNewDummyResourceType(serviceBundleInvoices), renewServiceInvoiceList);
 
     map.addAttribute("newChargesMap", newChargesMap);
     map.addAttribute("renewalChargesMap", renewalChargesMap);
@@ -867,6 +985,12 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
           && salesLedgerRecord.getPaymentTransaction().getState().equals(PaymentTransaction.State.COMPLETED)) {
         response.setStatus(HttpStatus.OK.value());
         logger.debug("###Exiting makePaymentInvoice(tenantId,form ,response) method @POST");
+
+        String message = "payment.received";
+        String messageArgs = tenant.getName();
+        eventService.createEvent(new Date(), tenant, message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
+            Category.ACCOUNT, Severity.INFORMATION, true);
+
         return "success";
       }
       response.setStatus(HttpStatus.OK.value());
@@ -894,6 +1018,11 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       }
       BigDecimal roundedAmount = billingPostProcessor.setScaleByCurrency(amount, tenant.getCurrency());
       billingService.addPaymentOrCredit(tenant, roundedAmount, Type.RECORD, memo, null);
+
+      String message = "payment.received";
+      String messageArgs = tenant.getName();
+      eventService.createEvent(new Date(), tenant, message, messageArgs, Source.PORTAL, Scope.ACCOUNT,
+          Category.ACCOUNT, Severity.INFORMATION, true);
       logger.debug("###Exiting recordPaymentInvoice(tenantId,amount,form ,response) method @POST");
     } catch (BillingServiceException e) {
       response.setStatus(HttpStatus.PRECONDITION_FAILED.value());
@@ -956,7 +1085,8 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     } catch (Exception ex) {
       logger.error(ex);
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      throw new InvalidAjaxRequestException(ex.getMessage());
+      throw new InvalidAjaxRequestException(messageSource.getMessage("ui.usage.billing.paymentinfo.cc.edit.errormsg",
+          null, getSessionLocale(request)));
     }
     map.put("redirecturl", "/portal/portal/tenants/editcurrent");
     return map;
@@ -980,15 +1110,28 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     logger.debug("###Entering in record deposit");
 
     setPage(map, Page.USAGE_BILLING_RECORD_DEPOSIT);
-    map.addAttribute("showUserProfile", (Boolean) request.getAttribute("isSurrogatedTenant"));
+
+    boolean showUserProfile = false;
+    Tenant effectiveTenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
+    User currentUser = getCurrentUser();
+    if ((Boolean) request.getAttribute("isSurrogatedTenant")) {
+      showUserProfile = true;
+      map.addAttribute("userHasCloudServiceAccount",
+          userService.isUserHasAnyActiveCloudService(effectiveTenant.getOwner()));
+    } else {
+      map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(currentUser));
+    }
+
+    map.addAttribute("showUserProfile", showUserProfile);
 
     Tenant tenant = tenantService.get(tenantParam);
     DepositRecord depositRecord = tenantService.getDepositRecordByTenant(tenant);
     if (depositRecord != null) {
       map.addAttribute("show_deposit_record", true);
       map.addAttribute("depositRecord", depositRecord);
-    } else
+    } else {
       map.addAttribute("show_deposit_record", false);
+    }
 
     map.addAttribute("tenant", tenant);
     return "billing.show_record_deposit";
@@ -1000,7 +1143,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     logger.debug("###Entering in record deposit");
 
     setPage(map, Page.USAGE_BILLING_RECORD_DEPOSIT);
-    map.addAttribute("showUserProfile", (Boolean) request.getAttribute("isSurrogatedTenant"));
+    map.addAttribute("showUserProfile", request.getAttribute("isSurrogatedTenant"));
 
     Tenant tenant = tenantService.get(tenantParam);
     map.addAttribute("tenant", tenant);
@@ -1030,8 +1173,9 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
       map.addAttribute("depositRecordForm", depositRecordForm);
       List<FieldError> l = result.getFieldErrors();
       for (FieldError f : l) {
-        if (f.getCode().equals("js.deposit.record.validationReceivedOn"))
+        if (f.getCode().equals("js.deposit.record.validationReceivedOn")) {
           throw new AjaxFormValidationException(result);
+        }
       }
     }
 
@@ -1074,12 +1218,16 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
 
     OutputStream pdfOut = null;
     AccountStatement accountStatement = billingService.getAccountStatement(accountStatementUuid);
-    String pdfHtmlString = getInvoicePdfHtmlString(effectiveTenant, accountStatement);
+    Locale locale = getCurrentUser().getLocale() != null ? getCurrentUser().getLocale() : getDefaultLocale();
+    String pdfHtmlString = getInvoicePdfHtmlString(effectiveTenant, accountStatement, locale.toString());
 
     if (pdfHtmlString != null) {
-      ByteArrayInputStream htmlSource = new ByteArrayInputStream(pdfHtmlString.getBytes());
+      ByteArrayInputStream htmlSource;
       try {
+        htmlSource = new ByteArrayInputStream(pdfHtmlString.getBytes("UTF-8"));
         pdfOut = pdfGenerator.generatePdfFromHtml(htmlSource);
+      } catch (UnsupportedEncodingException e) {
+        logger.error(e.getMessage(), e);
       } catch (FileNotFoundException e) {
         logger.error(e.getMessage(), e);
       } catch (IOException e) {
@@ -1130,21 +1278,22 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     Tenant effectiveTenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
 
     AccountStatement accountStatement = billingService.getAccountStatement(accountStatementUuid);
-    String invoicePdfString = getInvoicePdfHtmlString(effectiveTenant, accountStatement);
     Locale locale = getCurrentUser().getLocale() != null ? getCurrentUser().getLocale() : getDefaultLocale();
+    String invoicePdfString = getInvoicePdfHtmlString(effectiveTenant, accountStatement, locale.toString());
+
     List<String> listUser = new ArrayList<String>();
     User currentUser = getCurrentUser();
     listUser.add(currentUser.getEmail());
     billingService.sendInvoiceEmail(currentUser, invoicePdfString, accountStatement, locale, listUser);
   }
 
-  private String getInvoicePdfHtmlString(Tenant tenant, AccountStatement accountStatement) {
+  private String getInvoicePdfHtmlString(Tenant tenant, AccountStatement accountStatement, String locale) {
     User currentUser = getCurrentUser();
     boolean hasFullView = hasFullBillingView(currentUser);
     if (hasFullView) {
       currentUser = null;
     }
-    return billingService.getInvoiceAsHTMLString(accountStatement, currentUser);
+    return billingService.getInvoiceAsHTMLString(accountStatement, currentUser, locale);
   }
 
 }

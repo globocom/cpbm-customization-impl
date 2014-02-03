@@ -42,27 +42,27 @@
 
 <div class="dialog_formcontent">
 	<form:form id="paymentForm">
-		<div class="db_gridbox_columns" style="width: 30%;">
+		<div class="db_gridbox_columns" style="width: 35%;">
 			<div class="db_gridbox_celltitles details">
 				<strong><spring:message code="label.record.payment.invoice.payment.amount" /></strong>
 			</div>
 		</div>
-		<div class="db_gridbox_columns" style="width: 45%;">
+		<div class="mandatory_wrapper" style="width: 60%;">
 			<p style="float: left; margin-top: 10px; color: black">
 				<c:out value="${salesLedgerRecord.tenant.currency.sign}" />
 			</p>
-			<input class="text" id="payAmount" name="payAmount" style="width: 165px;"/>
+			<input class="text" id="payAmount" name="payAmount" style="width: 175px;"/>
 		</div>
 		<div class="main_addnew_formbox_errormsg" id="payAmountError" style="margin: 4px 0px 0 111px; width: 60%"></div>
-		<div class="db_gridbox_columns" style="width: 30%;">
+		<div class="db_gridbox_columns" style="width: 35%;">
 			<div class="db_gridbox_celltitles details">
 				<strong><spring:message code="label.record.payment.invoice.payment.memo" /></strong>
 			</div>
 		</div>
-		<div class="db_gridbox_columns" style="width: 45%;">
+		<div class="db_gridbox_columns" style="width: 60%;">
 			<p style="float: left; margin-top: 10px; color: black">				
 			</p>
-			<textarea style="width: 200px; height: 80px;" tabindex="2" cols="20" rows="3" class="longtextbox"name="paymentMemo" id="paymentMemo"></textarea>
+			<textarea style="width: 175px; height: 80px;" tabindex="2" cols="20" rows="3" class="longtextbox"name="paymentMemo" id="paymentMemo"></textarea>
 		</div>
 		<div class="main_addnew_formbox_errormsg" id="paymentMemoError" style="margin: 4px 0px 0 111px; width: 60%"></div>
 	</form:form>

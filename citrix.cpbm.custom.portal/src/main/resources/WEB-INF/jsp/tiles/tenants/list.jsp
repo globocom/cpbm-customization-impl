@@ -77,6 +77,7 @@ $(document).ready(function(){
     });
   
   $("#normalSearchButton").click(function() {
+    $("#normalSearchButton").unbind("click");
     var searchText="<spring:message javaScriptEscape="true" code="ui.label.search.by.accountId"/>";
     if(document.getElementById('normalSearch').value == searchText){
       $("input[id^='accountId']").attr('value', "");
@@ -86,11 +87,13 @@ $(document).ready(function(){
       $("input[id^='fieldName']").attr('value', '');
       $("input[id^='name']").attr('value', '');
     }
+    
     $("#searchForm").submit();
+    $("#normalSearchButton").bind("click");
   });
   $("#advancesearchButton").click(function() {
     $("#filterDropdownDiv").hide();
-    $("#advanceSearchDropdownDiv").show();
+    $("#advanceSearchDropdownDiv").toggle();
     $("input[id^='name']").focus();
   });
   $("#filterButton").click(function() {
@@ -113,22 +116,7 @@ $(document).ready(function(){
   $("#filterDropdownDiv").bind("mouseout", function (event) {
     hideFilterPopup(event); 
   });
-  function showSearchPopup(event){
-    $("#advanceSearchDropdownDiv").show();
-    event.stopPropagation();
-  }
-  function hideSearchPopup(event){
-    $("#advanceSearchDropdownDiv").hide();
-    event.stopPropagation();
-  }
-   
-  $("#advanceSearchDropdownDiv").bind("mouseover", function (event) {
-    showSearchPopup(event);
-  });
-
-  $("#advanceSearchDropdownDiv").bind("mouseout", function (event) {
-    hideSearchPopup(event); 
-  });
+  
   currentPage = parseInt(currentPage);
   perPageValue = parseInt(perPageValue);
   accountsListLen = parseInt(accountsListLen);
@@ -315,10 +303,19 @@ var i18nAccountTypeDictionary = {
                   </li>
               </c:when>
               <c:otherwise>
+              <c:set var="selectFirst" value="1"/>
+              <c:if test="${empty selectedAccount}">
+              <c:set var="selectFirst" value="0"/>
+              </c:if>
                 <c:forEach var="tenant" items="${tenants}" varStatus="status">
                     <c:set var="accountsListLen" value="${accountsListLen+1}"/>
                     <c:choose>
-                      <c:when test="${status.index == 0}">
+                      <c:when test="${status.index == 0 && selectFirst == 0}">
+                        <c:set var="firstTenant" value="${tenant}"/>
+                        <c:set var="selected" value="selected"/>
+                        <c:set var="active" value="active"/>
+                      </c:when>
+                       <c:when test="${tenant.uuid == selectedAccount && selectFirst == 1}">
                         <c:set var="firstTenant" value="${tenant}"/>
                         <c:set var="selected" value="selected"/>
                         <c:set var="active" value="active"/>
@@ -369,7 +366,7 @@ var i18nAccountTypeDictionary = {
                                   <span><spring:message code="ui.accounts.all.header.name"/>:</span>
                                 </div>
                                 <div class="raw_contents_value">
-                                  <span>
+                                  <span class="account_name">
                                     <c:out value="${tenant.name}"/>
                                   </span>
                                 </div>

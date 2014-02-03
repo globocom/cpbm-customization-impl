@@ -4,11 +4,18 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles" %>
+
+
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/lib/HighCharts/highcharts.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/lib/HighCharts/no-data-to-display.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/lib/HighCharts/modules/exporting.js"></script>
+<script type="text/javascript" src="<%=request.getContextPath() %>/js/util/HighChartsUtil.js"></script>
+
 <div class="secondlevel_withsubmenu">
 
     <div class="secondlevel_breadcrumb_panel">
-        <div class="secondlevel_breadcrumbbox">
-        	<p><c:out value="${tenant.name}"/></p>
+        <div class="secondlevel_breadcrumbbox_tenant">
+        	<p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
         </div>
         <div class="doc_help_link"></div>
     </div>        

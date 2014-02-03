@@ -8,6 +8,6 @@
 
 
 
-  <li>
+  <li style="display:none;"><!-- Setting display 'none' as there are no items here -->
   
   </li>

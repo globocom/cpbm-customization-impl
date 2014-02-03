@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 /**
  * @author vinayv
  **/
@@ -25,7 +24,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 
-import web.WebTestsBase;
 import web.WebTestsBaseWithMockConnectors;
 
 import com.citrix.cpbm.portal.fragment.controllers.ReportController;
@@ -169,7 +167,7 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
       count = count + jsonArr.getInt(0);
     }
-    Assert.assertEquals(13, count);
+    Assert.assertEquals(15, count);
   }
 
   /**
@@ -203,8 +201,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
     for (int i = 0; i < jsonArray.length(); i++) {
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
-      if (jsonArr.length() > 0)
+      if (jsonArr.length() > 0) {
         count = count + jsonArr.getInt(0);
+      }
     }
     Assert.assertEquals(0, count);
   }
@@ -271,7 +270,7 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
       count = count + jsonArr.getInt(0);
     }
-    Assert.assertEquals(13, count);
+    Assert.assertEquals(15, count);
   }
 
   /**
@@ -302,8 +301,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
     for (int i = 0; i < jsonArray.length(); i++) {
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
-      if (jsonArr.length() > 0)
+      if (jsonArr.length() > 0) {
         count = count + jsonArr.getInt(0);
+      }
     }
     Assert.assertEquals(0, count);
   }
@@ -327,8 +327,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
     for (int i = 0; i < jsonArray.length(); i++) {
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
-      if (jsonArr.length() > 0)
+      if (jsonArr.length() > 0) {
         count = count + jsonArr.getInt(0);
+      }
     }
     Assert.assertEquals(0, count);
   }
@@ -351,8 +352,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
     for (int i = 0; i < jsonArray.length(); i++) {
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       org.codehaus.jettison.json.JSONArray jsonArr = jsonObject.getJSONArray("data");
-      if (jsonArr.length() > 0)
+      if (jsonArr.length() > 0) {
         count = count + jsonArr.getInt(0);
+      }
     }
     Assert.assertEquals(0, count);
   }
@@ -540,8 +542,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       String data = (String) jsonObject.get("data");
       String prodName = (String) jsonObject.get("productname");
-      if (prodName.equalsIgnoreCase("largerunningvm1"))
+      if (prodName.equalsIgnoreCase("largerunningvm1")) {
         Assert.assertEquals("150.00000000000000000000", data);
+      }
     }
   }
 
@@ -624,8 +627,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       String data = (String) jsonObject.get("data");
       String prodName = (String) jsonObject.get("productname");
-      if (prodName.equalsIgnoreCase("largerunningvm1"))
+      if (prodName.equalsIgnoreCase("largerunningvm1")) {
         Assert.assertEquals("150.00000000000000000000", data);
+      }
     }
   }
 
@@ -704,8 +708,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       String data = (String) jsonObject.get("data");
       String prodName = (String) jsonObject.get("productname");
-      if (prodName.equalsIgnoreCase("compute_1"))
-        Assert.assertEquals("450.00000000000000000000", data);
+      if (prodName.equalsIgnoreCase("compute_1")) {
+        Assert.assertEquals("0.00000000000000", data);
+      }
     }
   }
 
@@ -789,8 +794,9 @@ public class AbstractReportControllerTest extends WebTestsBaseWithMockConnectors
       JSONObject jsonObject = jsonArray.getJSONObject(i);
       String data = (String) jsonObject.get("data");
       String prodName = (String) jsonObject.get("productname");
-      if (prodName.equalsIgnoreCase("compute_1"))
-        Assert.assertEquals("450.00000000000000000000", data);
+      if (prodName.equalsIgnoreCase("compute_1")) {
+        Assert.assertEquals("0.00000000000000", data);
+      }
     }
   }
 

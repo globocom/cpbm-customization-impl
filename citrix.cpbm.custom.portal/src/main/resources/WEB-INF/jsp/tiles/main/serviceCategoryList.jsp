@@ -56,9 +56,9 @@
             <button class="btn btn-info btn-mini dropdown-toggle" data-toggle="dropdown" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" style="padding-bottom:8px;padding-top:0px;">
               <span class="caret"></span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-50px;">
+            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-50px;width: 150px">
                 <c:forEach items="${cloudTypeServiceInstances}" var="cloudTypeServiceInstance">
-                  <li><a href="javascript:void(0);" onclick="launchCloudServiceConsoleWithServiceInstanceUUID(this, '<c:out value="${cloudTypeServiceInstance.uuid}" />');"><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
+                  <li><a href="javascript:void(0);" onclick="launchCloudServiceConsoleWithServiceInstanceUUID(this, '<c:out value="${cloudTypeServiceInstance.uuid}" />');" class='ellipsis' title='<c:out value="${cloudTypeServiceInstance.name}" />'><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
             </c:forEach>
             </ul>
           </div>
@@ -80,10 +80,10 @@
             <button class="btn btn-info btn-mini dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" style="padding-bottom:8px;padding-top:0px;">
               <span class="caret"></span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-34px;">
+            <ul class="dropdown-menu dropdown-menu-blue" style="z-index:10000;left:-34px;width: 150px">
                 <li><a href="javascript:void(0);" onclick="launchMyResourcesWithServiceInstanceUUID();"><spring:message code="page.level2.allservices"/></a></li>
                 <c:forEach items="${cloudTypeServiceInstances}" var="cloudTypeServiceInstance">
-                  <li><a href="javascript:void(0);" onclick="launchMyResourcesWithServiceInstanceUUID('<c:out value="${cloudTypeServiceInstance.uuid}" />');"><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
+                  <li><a href="javascript:void(0);" onclick="launchMyResourcesWithServiceInstanceUUID('<c:out value="${cloudTypeServiceInstance.uuid}" />');" class='ellipsis' title='<c:out value="${cloudTypeServiceInstance.name}" />'><c:out value="${cloudTypeServiceInstance.name}" /></a></li>
             </c:forEach>
             </ul>
           </div>

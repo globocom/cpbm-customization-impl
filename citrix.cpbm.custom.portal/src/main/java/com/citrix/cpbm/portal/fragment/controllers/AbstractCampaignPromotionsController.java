@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.math.BigDecimal;
@@ -30,28 +29,20 @@ import com.vmops.model.CampaignPromotion.State;
 import com.vmops.model.CampaignPromotionDiscountAmount;
 import com.vmops.model.Channel;
 import com.vmops.model.CurrencyValue;
-import com.vmops.model.PromotionSignup;
-import com.vmops.model.PromotionToken;
 import com.vmops.service.ChannelService;
 import com.vmops.service.CurrencyValueService;
-import com.vmops.service.ProductBundleService;
 import com.vmops.service.PromotionService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
-import com.vmops.service.exceptions.TokenGenerationException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.CampaignPromotionsForm;
-import com.vmops.web.forms.TokenRequestForm;
 import com.vmops.web.validators.CampaignPromotionsFormValidator;
 
 public abstract class AbstractCampaignPromotionsController extends AbstractAuthenticatedController {
 
   @Autowired
   PromotionService promotionService;
-
-  @Autowired
-  ProductBundleService productBundleService;
 
   @Autowired
   ChannelService channelService;
@@ -180,9 +171,17 @@ public abstract class AbstractCampaignPromotionsController extends AbstractAuthe
 
     if (totalCampaigns - (page * perPage) > 0) {
       map.addAttribute("enable_next", "True");
-    } else
+    } else {
       map.addAttribute("enable_next", "False");
+    }
     map.addAttribute("current_page", page);
+
+    // Following attribute decides whether to show the 'Add new campaign' link in UI
+    if (channelService.getDefaultServiceProviderChannel() == null) {
+      map.addAttribute("atleastOneChannelPresent", false);
+    } else {
+      map.addAttribute("atleastOneChannelPresent", true);
+    }
 
     logger.debug("### list method ending...");
     return "promotions.list";
@@ -238,13 +237,19 @@ public abstract class AbstractCampaignPromotionsController extends AbstractAuthe
     logger.debug("### edit method starting...");
 
     CampaignPromotion promotion = form.getCampaignPromotion();
-    List<String> channelIds = new ArrayList<String>();
-    if (promotion.getSupportedChannels() != null && promotion.getSupportedChannels().size() > 0) {
-      for (Channel channel : promotion.getSupportedChannels()) {
-        channelIds.add(channel.getId().toString());
-      }
-    }
     promotion.setCode(form.getPromoCode());
+    
+    List<String> channelIds = new ArrayList<String>();
+    List<String> formChannelIds = form.getChannelIdLst();
+    if (formChannelIds == null) {
+      if (promotion.getSupportedChannels() != null && promotion.getSupportedChannels().size() > 0) {
+        for (Channel channel : promotion.getSupportedChannels()) {
+          channelIds.add(channel.getId().toString());
+        }
+      }
+    } else {
+      channelIds = formChannelIds;
+    }
     try {
       promotion = promotionService.editCampaignPromotion(promotion, channelIds, form.getDiscountAmountMap());
     } catch (IllegalArgumentException e) {
@@ -274,62 +279,4 @@ public abstract class AbstractCampaignPromotionsController extends AbstractAuthe
     return Boolean.TRUE.toString();
   }
 
-  /**
-   * This method is used get token to create promotion token
-   * 
-   * @param map
-   * @return String
-   */
-  @RequestMapping(value = "/createToken", method = RequestMethod.GET)
-  public String createTrialToken(ModelMap map) {
-    logger.debug("### createTrialToken method starting...(GET)");
-    setPage(map, Page.TRIAL_TOKEN);
-    TokenRequestForm tokenRequestForm = new TokenRequestForm();
-    map.addAttribute("tokenRequest", tokenRequestForm);
-    List<CampaignPromotion> campaignPromotions = promotionService.listCampaignPromotions(0, 0);
-    map.addAttribute("campaignPromotions", campaignPromotions);
-    logger.debug("### createTrialToken method ending...(GET)");
-    return "campaign.token.create";
-  }
-
-  /**
-   * This method is used to create token
-   * 
-   * @param form
-   * @param result
-   * @param map
-   * @return String
-   */
-  @RequestMapping(value = "/createToken", method = RequestMethod.POST)
-  public String createTrialToken(@ModelAttribute("tokenRequestForm") TokenRequestForm form, BindingResult result,
-      ModelMap map) {
-    logger.debug("### createTrialToken method starting...(POST)");
-    setPage(map, Page.TRIAL_TOKEN);
-    if (result.hasErrors()) {
-      logger.error("### requestToken Binding result had some errors");
-      displayErrors(result);
-      return "campaign.token.create";
-    }
-    List<CampaignPromotion> campaignPromotions = promotionService.listCampaignPromotions(0, 0);
-    map.addAttribute("campaignPromotions", campaignPromotions);
-    PromotionToken token = null;
-    try {
-      token = promotionService.generatePromotionalToken(form.getCampaignCode(), form.getPromotionSignup());
-    } catch (TokenGenerationException e) {
-      logger.error(e);
-      map.addAttribute("emailValidationFailed", e.getMessage());
-      map.addAttribute("tokenRequest", form);
-      return "campaign.token.create";
-    }
-    if (token != null) {
-      map.addAttribute("isTokenAvailable", "Y");
-      PromotionSignup signup = promotionService.locatePromotionSignUpByCode(token.getCode());
-      map.addAttribute("currency", signup.getCurrency());
-    } else {
-      map.addAttribute("isTokenAvailable", "N");
-    }
-    map.addAttribute("tokenRequest", form);
-    logger.debug("### createTrialToken method end...(POST)");
-    return "campaign.token.create";
-  }
 }

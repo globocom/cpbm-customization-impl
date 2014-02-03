@@ -12,7 +12,7 @@ $(document).ready(function() {
   $.createNewCatalog = function(jsonResponse) {
 
     if (jsonResponse == null) {
-      alert(i18n.errors.catalog.createNewCatalog);
+      popUpDialogForAlerts("dialog_info", i18n.errors.catalog.createNewCatalog);
     } else {
       $("#addnewcatalogDiv").html("");
       var rowClass = "db_gridbox_rows even";
@@ -207,7 +207,7 @@ $(document).ready(function() {
   $.editCatalog = function(jsonResponse) {
 
     if (jsonResponse == null) {
-      alert(i18n.errors.catalog.editCatalog);
+      popUpDialogForAlerts("dialog_info", i18n.errors.catalog.editCatalog);
     } else {
       $("#editcatalogDiv").html("");
 
@@ -315,9 +315,9 @@ function addNewCatalog(event, form) {
         if (XMLHttpRequest.status === AJAX_FORM_VALIDATION_FAILED_CODE) {
           displayAjaxFormError(XMLHttpRequest, "catalogForm", "main_addnew_formbox_errormsg");
         } else if (XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE) {
-          alert(i18n.errors.common.codeNotUnique);
+          popUpDialogForAlerts("dialog_info", i18n.errors.common.codeNotUnique);
         } else {
-          alert(i18n.errors.catalog.addNewCatalog);
+          popUpDialogForAlerts("dialog_info", i18n.errors.catalog.addNewCatalog);
         }
         $("addcatalog").val(i18n.label.catalog.addCatalog);
       }
@@ -416,7 +416,7 @@ function removeCatalog(current) {
         $(".countDiv").attr("id", "count" + size);
         resetGridRowStyle();
       } else {
-        alert(i18n.errors.catalog.removeCatalog);
+        popUpDialogForAlerts("dialog_info", i18n.errors.catalog.removeCatalog);
       }
 
     },

@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -32,10 +32,16 @@ $(document).ready(function() {
         type: "POST",
         dataType: "html",
         afterActionSeccessFn: function(html) {
-          window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&currentPage=" + currentPage;
+          var filterBy = "";
+          if($("#l3_account_All_tab").hasClass('on')){
+            filterBy = "&filterBy=All";
+          }else{
+            filterBy = "&filterBy=4";
+          }
+          window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&currentPage=" + currentPage + filterBy;
         },
         error: function() {
-          alert(i18n.errors.tenants.removeTenant.error);
+          popUpDialogForAlerts("dialog_info", i18n.errors.tenants.removeTenant.error);
         }
       }
     };
@@ -170,6 +176,10 @@ $(document).ready(function() {
                   var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
                   var tenantCredentialLiCloned = null;
                   $.each(instance, function(key, value) {
+	            	if ((key == "ServiceName" || key == "ServiceUuid" || key == "InstanceName")) {
+                      // Service Name, Uuid and instance need not be shown in list as they are shown in LHS
+                      return;
+	                }
                     tenantCredentialLiCloned = apiCredentialsDivCloned.find("#tenantCredentialLi").clone();
                     tenantCredentialLiCloned.find('#tenantCredentialLabel').text(key);
                     tenantCredentialLiCloned.find("#tenantCredentialLabel").attr("for",
@@ -263,13 +273,14 @@ $(document).ready(function() {
       $('#secondaryAddress\\.city').val($('#tenant\\.address\\.city').val());
       $('#secondaryAddress\\.postalCode').val($('#tenant\\.address\\.postalCode').val());
     } else {
-      $('#secondaryAddress\\.country').val('');
-      $('#secondaryAddress\\.state').val('');
-      $('#secondaryAddress\\.street1').val('');
-      $('#secondaryAddress\\.street2').val('');
-      $('#secondaryAddress\\.city').val('');
-      $('#secondaryAddress\\.postalCode').val('');
+      $('#secondaryAddress\\.country').val($('#secondaryAddressCountry').val());
       $("#secondaryAddress\\.country").change();
+      $('#tenantSecondaryAddressStateSelect').val($('#secondaryAddressState').val());
+      $('#secondaryAddress\\.state').val($('#secondaryAddressState').val());
+      $('#secondaryAddress\\.street1').val($('#secondaryAddressStreet').val());
+      $('#secondaryAddress\\.street2').val($('#secondaryAddressStreet2').val());
+      $('#secondaryAddress\\.city').val($('#secondaryAddressCity').val());
+      $('#secondaryAddress\\.postalCode').val($('#secondaryAddressPostalCode').val());
     }
   });
 
@@ -630,7 +641,7 @@ $(document).ready(function() {
   jQuery.validator.addMethod('validateConfirmEmail',
     function(value, element, param) {
       if (requiredField(element)) {
-        if (value == param)
+        if (value.toLowerCase() == param.toLowerCase())
           return true;
         return false;
       }
@@ -928,7 +939,7 @@ $(document).ready(function() {
 
       },
       error: function() {
-        alert(g_dictionary.failed);
+        popUpDialogForAlerts("dialog_info", g_dictionary.failed);
       },
       complete: function() {
         $("#spinning_wheel_rhs").hide();
@@ -988,7 +999,10 @@ $('#editSecondaryAddressSaveButton').live('click', function() {
         required: true
       },
       "secondaryAddress.postalCode": {
-        required: true
+        required: true,
+        postalcode: function() {
+            return $('#secondaryAddress\\.country').val();
+          }
       }
     },
     messages: {
@@ -1268,64 +1282,6 @@ $('#editAccountLimitsSave').live('click', function() {
   });
 });
 
-
-function importAdUserToAddAccount() {
-  if (!$("#accountForm").validate().element("#user\\.username")) {
-    return;
-  }
-  var usernameforad = $("#user\\.username").val();
-  actionurl = '/portal/portal/users/importfromad.json?username=' + usernameforad;
-  $.ajax({
-    type: "GET",
-    url: actionurl,
-    dataType: "json",
-    success: function(userdetails) {
-      $("#add_tenant_next2").removeAttr('disabled');
-      $("#user\\.username").attr('readonly', 'true');
-      $("#user\\.firstName").val(userdetails.firstName);
-      $("#user\\.lastName").val(userdetails.lastName);
-      $("#user\\.email").val(userdetails.email);
-      $("#confirmEmail").val(userdetails.email);
-      $("#tenant\\.name").val(userdetails.companyName);
-      $("#user\\.address\\.country").val(userdetails.countryName);
-      if (userdetails.countryName != null) {
-        if ($('#user\\.address\\.country').val() == 'US' || $('#user\\.address\\.country').val() == 'CA' ||
-          $('#user\\.address\\.country').val() == 'AU' || $('#user\\.address\\.country').val() == 'IN' || $(
-            '#user\\.address\\.country').val() == 'JP') {
-          $("#stateInput").hide();
-          $("#user\\.address\\.country").defautlinkstates("#userAddressStateSelect");
-          if (state_name_to_state_codes[userdetails.countryName + '.' + userdetails.stateName.toLowerCase()] == null) {
-            $("#userAddressStateSelect").val("");
-          } else {
-            $("#userAddressStateSelect").val(state_name_to_state_codes[userdetails.countryName + '.' + userdetails.stateName
-              .toLowerCase()]);
-          }
-          if ($('#user\\.address\\.country').val() == 'JP') {
-            $("#otherstateDiv").hide();
-            $("#JPstateDiv").show();
-          } else {
-            $("#otherstateDiv").show();
-            $("#JPstateDiv").hide();
-          }
-          $("#stateSelect").show();
-        } else {
-          $("#stateSelect").hide();
-          $("#stateInput").show();
-        }
-
-      }
-      $('#user\\.address\\.state').val(userdetails.stateName);
-      $('#user\\.address\\.city').val(userdetails.cityName);
-      $('#user\\.address\\.street1').val(userdetails.street1);
-      $('#user\\.address\\.street2').val(userdetails.street2);
-      $('#user\\.address\\.postalCode').val(userdetails.postalCode);
-    },
-    error: function(e) {
-      alert(e.responseText);
-    }
-  });
-}
-
 /**
  * View tenant details
  * @param current
@@ -1352,7 +1308,7 @@ function viewTenant(current) {
       bindActionMenuContainers();
     },
     error: function() {
-      alert(g_dictionary.failed);
+      popUpDialogForAlerts("dialog_info", g_dictionary.failed);
     },
     complete: function() {
       $("#spinning_wheel_rhs").hide();
@@ -1624,6 +1580,7 @@ function addTenantInListView(jsonResponse) {
 }
 
 function addTenantPrevious(current) {
+	$("#tenantCreateErrorDiv").hide();
   var prevStep = $(current).parents(".j_tenantspopup").find('#prevstep').val();
   if (prevStep != "") {
     $(".j_tenantspopup").hide();
@@ -1637,6 +1594,7 @@ function addTenantPrevious(current) {
 trial_selected = false;
 
 function addTenantNext(current) {
+	$("#tenantCreateErrorDiv").hide();
   var currentstep = $(current).parents(".j_tenantspopup").attr('id');
   var $currentstep = $("#" + currentstep);
   var nextstep = $currentstep.find("#nextstep").val();
@@ -1708,7 +1666,6 @@ function addTenantNext(current) {
     } else if (currentstep == "step5") {
       $("#add_tenant_next5").attr('value', dictionary.label_adding);
       $("#spinning_wheel5").show();
-
       $.ajax({
         type: "POST",
         url: $("#accountForm").attr('action'),
@@ -1729,11 +1686,12 @@ function addTenantNext(current) {
               "main_addnew_formbox_errormsg");
             $("#add_tenant_next5").attr('value', 'Next');
             $("#spinning_wheel5").hide();
-            $(".j_tenantspopup").hide();
             checkErrors1(fieldErrorList, currentstep);
-            //$("#step5").show();
+            if(fieldErrorList.length == 0){
+            	$("#tenantCreateErrorDiv").show();
+            }
           } else if (XMLHttpRequest.status === CODE_NOT_UNIQUE_ERROR_CODE) {
-            alert("Not unique");
+            popUpDialogForAlerts("dialog_info", "Not unique");
           } else {
             window.location.href = "/portal/portal/errors/error";
           }
@@ -1762,8 +1720,66 @@ function addTenantNext(current) {
 
 }
 
+function importAdUserToAddAccount(current) {
+  var usernameforad = $("#user\\.username").val();
+  actionurl = '/portal/portal/users/importfromad.json?username=' + usernameforad;
+  $.ajax({
+    type: "GET",
+    url: actionurl,
+    dataType: "json",
+    success: function(userdetails) {
+      $("#add_tenant_next2").removeAttr('disabled');
+      $("#user\\.username").attr('readonly', 'true');
+      $("#user\\.firstName").val(userdetails.firstName);
+      $("#user\\.lastName").val(userdetails.lastName);
+      $("#user\\.email").val(userdetails.email);
+      $("#confirmEmail").val(userdetails.email);
+      $("#tenant\\.name").val(userdetails.companyName);
+      $("#user\\.address\\.country").val(userdetails.countryName);
+      if (userdetails.countryName != null) {
+        if ($('#user\\.address\\.country').val() == 'US' || $('#user\\.address\\.country').val() == 'CA' ||
+          $('#user\\.address\\.country').val() == 'AU' || $('#user\\.address\\.country').val() == 'IN' || $(
+            '#user\\.address\\.country').val() == 'JP') {
+          $("#stateInput").hide();
+          $("#user\\.address\\.country").defautlinkstates("#userAddressStateSelect");
+          if (state_name_to_state_codes[userdetails.countryName + '.' + userdetails.stateName.toLowerCase()] == null) {
+            $("#userAddressStateSelect").val("");
+          } else {
+            $("#userAddressStateSelect").val(state_name_to_state_codes[userdetails.countryName + '.' + userdetails.stateName
+              .toLowerCase()]);
+          }
+          if ($('#user\\.address\\.country').val() == 'JP') {
+            $("#otherstateDiv").hide();
+            $("#JPstateDiv").show();
+          } else {
+            $("#otherstateDiv").show();
+            $("#JPstateDiv").hide();
+          }
+          $("#stateSelect").show();
+        } else {
+          $("#stateSelect").hide();
+          $("#stateInput").show();
+        }
+
+      }
+      $('#user\\.address\\.state').val(userdetails.stateName);
+      $('#user\\.address\\.city').val(userdetails.cityName);
+      $('#user\\.address\\.street1').val(userdetails.street1);
+      $('#user\\.address\\.street2').val(userdetails.street2);
+      $('#user\\.address\\.postalCode').val(userdetails.postalCode);
+    },
+    error: function(e) {
+      popUpDialogForAlerts("dialog_info", e.responseText);
+    }
+  });
+}
+
+
 function checkErrors1(fieldErrorList, currentStepFlowId) {
   var stepToNavigate = 100;
+  if(fieldErrorList.length > 0){
+	  $(".j_tenantspopup").hide();
+  }
   $.each(fieldErrorList, function(index, value) {
     console.log(index + '..checkErrors1..' + value);
     var escapedValue = value.replace(/\./g, '\\.');
@@ -1802,7 +1818,7 @@ function onAddTenantLoad() {
 
       },
       error: function(request) {
-        alert('Failed to load currencies for channel');
+        popUpDialogForAlerts("dialog_info", 'Failed to load currencies for channel');
       }
     });
 
@@ -1877,17 +1893,24 @@ function onAddTenantLoad() {
     }
   }
 
-  //  $("#user\\.username").focusout(function(){
-  //    $(this)
-  //    if($("#accountForm").validate().element("#user\\.username"))
-  //    {
-  //      $(".import_user_info_from_adreturn").show();
-  //    }
-  //    else{
-  //      $(".import_user_info_from_adreturn").hide();
-  //    }
-  //  });
-  //  
+    function toggleAdImport(){
+      if($("#accountForm").validate().element("#user\\.username"))
+      {
+        $("#import_user_info_from_ad").removeAttr("disabled");
+      }
+      else{
+        $("#import_user_info_from_ad").attr("disabled", true);
+      }
+    }
+  
+    $("#user\\.username").mouseout(function(){
+      toggleAdImport();
+    });
+  
+    $("#user\\.username").focusout(function(){
+      toggleAdImport();
+    });
+    
   $("#user\\.address\\.country").change(function() {
     $('#user\\.address\\.state').val('');
     if ($('#user\\.address\\.country').val() == 'US' || $('#user\\.address\\.country').val() == 'CA' ||
@@ -1933,6 +1956,7 @@ function onAddTenantLoad() {
           return requiredField(element);
         },
         minlength: 1,
+        maxlength: 255,
         flname: true
       },
       "user.lastName": {
@@ -1940,6 +1964,7 @@ function onAddTenantLoad() {
           return requiredField(element);
         },
         minlength: 1,
+        maxlength: 255,
         flname: true
       },
       "user.title": {
@@ -1990,6 +2015,9 @@ function onAddTenantLoad() {
           data: {
             channelParam: function() {
               return $("#channelParam").val();
+            },
+            accountTypeId : function() {
+              return $("#accountForm input:radio[name=accountTypeId]:checked").val();
             }
           }
         }
@@ -2265,7 +2293,7 @@ function addNewTenantGet() {
     error: function(e) {
       $(".widget_addbutton").unbind('click');
       if (e.responseText.indexOf("Manual Registration Not Allowed") != -1) {
-        alert(i18n.errors.tenants.accountType.noManualRegistrationAccountType.error);
+        popUpDialogForAlerts("dialog_info", i18n.errors.tenants.accountType.noManualRegistrationAccountType.error);
       }
     }
   });
@@ -2332,8 +2360,7 @@ function editTenantGet(current) {
 function editTenantListView(tenantUUID, tenantName) {
   var $tenantEdited = $("#grid_row_container").find("#row" + tenantUUID);
   $tenantEdited.find(".widget_navtitlebox").find(".title").text(tenantName);
-  $tenantEdited.find(".widget_info_popover").find('.raw_contents').find('.raw_contents_value : first').find("#value").text(
-    tenantName);
+  $tenantEdited.find(".account_name").text(tenantName);
   $("#grid_row_container").find("#row" + tenantUUID).click();
 }
 
@@ -2472,7 +2499,7 @@ function viewPendingChangesGet(current) {
  * @return
  */
 
-function issueCreditPost(event, form) {
+function issueCreditPost(event, form, selectedAccount) {
   //	var ID = $("#hiddenTenantId").val();
   if (event.preventDefault) {
     event.preventDefault();
@@ -2494,7 +2521,7 @@ function issueCreditPost(event, form) {
         var $thisPanel = $("#issueCreditDiv");
         $thisPanel.dialog("close");
         window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&filterBy=" + filterBy +
-          "&currentPage=" + currentPage;
+          "&currentPage=" + currentPage  +"&selectedAccount=" + selectedAccount;
       },
       error: function(XMLHttpRequest) {
         $("#issueCreditSave").attr("value", i18n.errors.tenants.issueCreditForm.title);
@@ -2586,7 +2613,12 @@ function changeAccountState(event, form) {
         success: function(jsonResponse) {
           var $thisPanel = $("#editTenantDiv");
           $thisPanel.dialog("close");
-          window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&currentPage=" + currentPage;
+          var filterBy = "";
+          if(!$("#l3_account_All_tab").hasClass('on')){
+            filterBy = "&filterBy=" + jsonResponse.stateOrdinal;
+          }
+          window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&currentPage=" + currentPage + filterBy;
+          
         },
         error: function() {
           $("#miscFormErrors").text(i18n.errors.tenants.changeStateForm.errors);
@@ -2615,7 +2647,7 @@ function resetGridRowStyle() {
 $.editTenant = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.tenants.editAccount.error);
+    popUpDialogForAlerts("dialog_info",i18n.errors.tenants.editAccount.error );
   } else {
     var className = $("#grid_row_container").find("#row" + jsonResponse.param).find("#nav_icon").attr('class');
     if (jsonResponse.accountType == 'SYSTEM') {
@@ -2649,7 +2681,7 @@ $.editTenant = function(jsonResponse) {
 $.editAccountLimits = function(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.tenants.editAccount.error);
+    popUpDialogForAlerts("dialog_info", i18n.errors.tenants.editAccount.error);
   } else {
     $("#editTenantsLimitDiv").html("");
     var content = "";
@@ -2696,37 +2728,6 @@ function i18nAccountType(accountType) {
   }
   return i18nAccountType;
 }
-
-/**
- * Remove account/tenant (POST)
- */
-
-function removeTenant(current) {
-  var r = confirm(i18n.confirm.removeTenant);
-  if (r == false) {
-    return false;
-  }
-  var divId = $(current).attr('id');
-  var ID = divId.substr(6);
-  var actionurl = "/portal/portal/tenants/" + ID + "/delete";
-  $.ajax({
-    type: "POST",
-    url: actionurl,
-    data: {
-      Id: ID
-    },
-    dataType: "text",
-    success: function(html) {
-      window.location = tenantPageUrl + "?accountType=" + selectedAccountType + "&currentPage=" + currentPage;
-    },
-    error: function() {
-      alert(i18n.errors.tenants.removeTenant.error);
-    }
-
-  });
-}
-
-
 
 $("#requestAccountTypeConversionLink").live("click", function(event) {
   changeAccounttype();
@@ -2790,6 +2791,7 @@ $(document).ready(function() {
 
   var showReadOnlyEditCardDetailsForm = function() {
     $("#creditCardTypeDetailsDiv .read").show();
+    $("#creditCardTypeDetailsDiv .mandatory_wrapper.withlabel").hide();
     $("#creditCardTypeDetailsDiv .write").hide();
     $("#creditCardTypeDetailsDiv div[id$=Error]").hide();
     if ($("#ccerrormessage").val() != null && $("#ccerrormessage").val() != "") {
@@ -2827,6 +2829,7 @@ $(document).ready(function() {
   var showReadWriteEditCardDetailsForm = function() {
     $("#creditCardTypeDetailsDiv div[id$=Error]").show();
     $("#creditCardTypeDetailsDiv .read").hide();
+    $("#creditCardTypeDetailsDiv .mandatory_wrapper.withlabel").show();
     $("#creditCardTypeDetailsDiv .write").show();
     if ($("#allowSecondaryCheckBox").val() == "true") {
       $("#allowSecondaryIdLi").show();
@@ -2934,6 +2937,13 @@ $(document).ready(function() {
       },
       dataType: "json",
       success: function(data) {
+        if(data.userHasCloudServiceAccount != true){
+          cleanCredentialsDiv();
+          var $thisPanel = $("#verifyUserDiv");
+          $thisPanel.dialog("close");
+          popUpDialogForAlerts("dialog_info", i18n.errors.tenants.user.noServiceEnabledForApiCreds);
+          return false;
+          } 
         if (data.success == true) {
           $("#generalInfoDiv").hide();
           $("#creditCardDetailsDiv").hide();
@@ -2946,6 +2956,10 @@ $(document).ready(function() {
             var apiCredentialsDivCloned = $("#apiCredentialsDiv").clone();
             var tenantCredentialLiCloned = null;
             $.each(instance, function(key, value) {
+              if ((key == "ServiceName" || key == "ServiceUuid" || key == "InstanceName")) {
+                // Service Name, Uuid and instance need not be shown in list as they are shown in LHS
+                return;
+              }
               tenantCredentialLiCloned = apiCredentialsDivCloned.find("#tenantCredentialLi").clone();
               tenantCredentialLiCloned.find('#tenantCredentialLabel').text(key);
               tenantCredentialLiCloned.find("#tenantCredentialLabel").attr("for", 'tenantCredentialLabel_' +
@@ -3124,3 +3138,4 @@ function showTenantPasswordVerificationBox(callback) {
   $thisPanel.dialog("open");
   $("#password").focus();
 }
+

@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.io.IOException;
@@ -43,6 +42,8 @@ import web.support.DispatcherTestServlet;
 import web.support.MockSessionStatus;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.core.workflow.service.BusinessTransactionService;
+import com.citrix.cpbm.core.workflow.service.TaskService;
 import com.citrix.cpbm.platform.admin.service.utils.ServiceInstanceConfiguration;
 import com.citrix.cpbm.platform.bootstrap.service.BootstrapActivator;
 import com.citrix.cpbm.platform.spi.AccountLifecycleHandler;
@@ -50,11 +51,11 @@ import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.UserLifecycleHandler;
 import com.citrix.cpbm.portal.forms.UserRegistration;
 import com.citrix.cpbm.portal.fragment.controllers.RegistrationController;
+import com.citrix.cpbm.portal.fragment.controllers.TasksController;
 import com.vmops.event.EmailVerified;
 import com.vmops.event.PortalEvent;
 import com.vmops.event.TenantActivation;
 import com.vmops.event.VerifyEmailRequest;
-import com.vmops.internal.service.DeviceFraudDetectionService;
 import com.vmops.internal.service.PaymentGatewayService;
 import com.vmops.model.AccountType;
 import com.vmops.model.Address;
@@ -75,14 +76,13 @@ import com.vmops.persistence.AccountTypeDAO;
 import com.vmops.persistence.CampaignPromotionDAO;
 import com.vmops.persistence.PromotionTokenDAO;
 import com.vmops.portal.config.Configuration.Names;
+import com.vmops.service.AuthorityService;
 import com.vmops.service.ChannelService;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.exceptions.UserAuthorizationInvalidException;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.CreditCardType;
-
 import common.MockCloudInstance;
-import common.MockOSSInstance;
 
 public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
 
@@ -116,16 +116,28 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
   private ConfigurationService configurationService;
 
   @Autowired
+  private BusinessTransactionService businessTransactionService;
+
+  @Autowired
   ChannelService channelservice;
 
   @Autowired
   CampaignPromotionDAO campaignpromotiondao;
 
-  private BootstrapActivator bootstrapActivator;
+  private BootstrapActivator bootstrapActivator = new BootstrapActivator();
 
   private static boolean isMockInstanceCreated = false;
 
   private PaymentGatewayService ossConnector = null;
+
+  @Autowired
+  private TasksController tasksController;
+
+  @Autowired
+  private AuthorityService authorityService;
+
+  @Autowired
+  private TaskService taskService;
 
   @Before
   public void init() throws Exception {
@@ -155,6 +167,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     ossConnector = EasyMock.createMock(PaymentGatewayService.class);
     mockAccountLifecycleHandler = EasyMock.createMock(AccountLifecycleHandler.class);
     mockUserLifecycleHandler = EasyMock.createMock(UserLifecycleHandler.class);
+    EasyMock.expect(connector.getServiceInstanceUUID()).andReturn("12345-786").anyTimes();
     EasyMock.replay(connector);
     ServiceInstanceConfiguration sic2 = connector.getServiceInstanceConfiguration();
     EasyMock.reset(ossConnector);
@@ -208,6 +221,12 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     handler = servlet.recognize(getRequestTemplate(HttpMethod.GET, "/verify_user"));
     Assert.assertEquals(expected, handler);
 
+    expected = locateMethod(controllerClass, "verifyPhoneVerificationPIN", new Class[] {
+        String.class, String.class, HttpServletRequest.class
+    });
+    handler = servlet.recognize(getRequestTemplate(HttpMethod.POST, "/phoneverification/verify_pin"));
+    Assert.assertEquals(expected, handler);
+
     expected = locateMethod(controllerClass, "verifyEmail", new Class[] {
         HttpServletRequest.class, ModelMap.class, HttpSession.class
     });
@@ -257,9 +276,11 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
       MockHttpServletRequest request = new MockHttpServletRequest();
       DispatcherServletWebRequest webRequest = new DispatcherServletWebRequest(request);
       RequestContextHolder.setRequestAttributes(webRequest);
-      String view = controller.signup(registration, null, map, null, null, null, status, new MockHttpServletRequest());
+      String view = controller.signup(map, null, null, "3", status, new MockHttpServletRequest());
       Assert.assertEquals("register.userinfo", view);
       Assert.assertTrue(map.containsKey("registration"));
+      UserRegistration userRegistration = (UserRegistration) map.get("registration");
+      Assert.assertNotNull("Account Type Id Should not be null ", userRegistration.getAccountTypeId());
     } catch (Exception e) {
       Assert.fail();
 
@@ -918,6 +939,8 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(1, eventListener.getEvents().size());
     eventListener.clear();
 
+    Tenant tenant = tenantService.get(registration.getTenant().getUuid());
+    completeBusinessTransactionsForTenant(tenant);
     tenantService.changeState(registration.getTenant().getUuid(), "ACTIVE", null, "Manual");
     PortalEvent tenantActivationEvent = eventListener.getEvents().get(0);
     Assert.assertTrue(tenantActivationEvent.getPayload() instanceof TenantActivation);
@@ -1005,7 +1028,6 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
   public void testPromoCodeAddedInGivenChannel() throws Exception {
     AccountType accountType = accountTypeDAO.find("3");
 
-    Channel defaultChannel = channelDAO.find(1L);
     Channel actualChannel = channelDAO.find(3L);
     Tenant tenant2 = new Tenant("Acme Corp " + random.nextInt(), accountType, null, randomAddress(), true,
         currencyValueDAO.findByCurrencyCode("USD"), null);
@@ -1014,8 +1036,7 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
     userRegistration.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     userRegistration.setTenant(tenant1);
     userRegistration.setAccountTypeId("3");
-    controller.signup(userRegistration, null, map, defaultChannel.getParam(), campaignpromotiondao.find("1").getCode(),
-        actualChannel.getCode(), status, request);
+    controller.signup(map, campaignpromotiondao.find("1").getCode(), actualChannel.getCode(), "3", status, request);
     Assert.assertEquals(actualChannel.getParam(), map.get("channelParam"));
 
   }
@@ -1031,12 +1052,13 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
   public void testUserInfo() {
     ModelMap model = new ModelMap();
     UserRegistration registration = new UserRegistration();
+    registration.setAcceptedTerms(true);
     AccountType disposition = accountTypeDAO.getTrialAccountType();
     BindingResult result;
     try {
       result = setupRegistration(disposition, registration);
       String register = controller.userInfo(registration, result, model, null, status, request);
-      Assert.assertEquals(register, new String("register.moreuserinfo"));
+      Assert.assertEquals("register.moreuserinfo", register);
     } catch (Exception e) {
       Assert.fail();
     }
@@ -1087,5 +1109,48 @@ public class RegistrationControllerTest extends WebTestsBaseWithMockConnectors {
   public void testValidateMailDomain() {
     String value = controller.validateMailDomain(VALID_EMAIL);
     Assert.assertNotNull(value);
+  }
+
+  @Test
+  public void testUserInfoWithIntranetOnlyModeEnabled() throws Exception {
+    configurationService.clearConfigurationCache(true, "");
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("true");
+    configurationService.update(isIntranetModeEnabled);
+
+    ModelMap model = new ModelMap();
+    UserRegistration registration = new UserRegistration();
+    AccountType disposition = accountTypeDAO.getTrialAccountType();
+    BindingResult result;
+    registration.setAcceptedTerms(true);
+    result = setupRegistration(disposition, registration);
+    String view = controller.userInfo(registration, result, model, null, status, request);
+    Assert.assertEquals("register.moreuserinfo", view);
+    Assert.assertFalse(model.containsKey("showCaptcha"));
+    Assert.assertFalse(model.containsKey("recaptchaPublicKey"));
+
+  }
+
+  @Test
+  public void testUserInfoWithIntranetOnlyModeDisabled() throws Exception {
+    configurationService.clearConfigurationCache(true, "");
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("false");
+    configurationService.update(isIntranetModeEnabled);
+
+    ModelMap model = new ModelMap();
+    UserRegistration registration = new UserRegistration();
+    AccountType disposition = accountTypeDAO.getTrialAccountType();
+    BindingResult result;
+    registration.setAcceptedTerms(true);
+    result = setupRegistration(disposition, registration);
+    String view = controller.userInfo(registration, result, model, null, status, request);
+    Assert.assertEquals("register.moreuserinfo", view);
+    Assert.assertTrue(model.containsKey("showCaptcha"));
+    Assert.assertTrue(Boolean.valueOf(model.get("showCaptcha").toString()));
+    Assert.assertTrue(model.containsKey("recaptchaPublicKey"));
+
   }
 }

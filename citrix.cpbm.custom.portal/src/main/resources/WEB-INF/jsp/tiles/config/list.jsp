@@ -24,9 +24,8 @@ var dictionary = {
     configurationDisableFailure: '<spring:message javaScriptEscape="true" code="message.configuration.setting.disable.failure"/>',
     configurationFetchError: '<spring:message javaScriptEscape="true" code="message.configuration.dialog.fetch.error"/>',
     toggleButtonEnable:'<spring:message javaScriptEscape="true" code="label.configuration.integration.togglebutton.enable"/>',
-    toggleButtonDisable:'<spring:message javaScriptEscape="true" code="label.configuration.integration.togglebutton.disable"/>'
-      
-    
+    toggleButtonDisable:'<spring:message javaScriptEscape="true" code="label.configuration.integration.togglebutton.disable"/>',
+    configurationRestartRequiredAlert : '<spring:message javaScriptEscape="true" code="label.configuration.restart.info"/>'
 };
 
 </script>
@@ -117,7 +116,7 @@ var configPath = "<%=request.getContextPath() %>/portal/admin/config/show_config
    </div>
   </div>
 </div>
-<div id="configuration_edit_panel" title='Edit' style="display:none;"> 
+<div id="configuration_edit_panel" title="<spring:message code="label.edit"/>" style="display:none;"> 
     <div class="dialog_formcontent">
     </div>
 </div>

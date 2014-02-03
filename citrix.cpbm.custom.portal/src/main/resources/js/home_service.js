@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -51,7 +51,8 @@ var refreshHomeItems = function loadHomeItems(serviceInstanceUUID, tenantParam) 
 };
 
 function launchCloudServiceConsole(current) {
-  launchCloudServiceConsoleWithServiceInstanceUUID(current, selectedServiceInstance);
+  var selectedCloudServiceInstance = $("#selectedServiceInstance").find(".downarrow").attr("id");
+  launchCloudServiceConsoleWithServiceInstanceUUID(current, selectedCloudServiceInstance);
 }
 
 function launchCloudServiceConsoleWithServiceInstanceUUID(current, serviceInstanceUUID) {

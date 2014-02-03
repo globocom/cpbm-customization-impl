@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.File;
@@ -53,6 +52,7 @@ import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
 import com.citrix.cpbm.platform.spi.FilterComponent;
 import com.citrix.cpbm.platform.spi.ResourceComponent;
+import com.google.gson.JsonObject;
 import com.vmops.internal.service.PrivilegeService;
 import com.vmops.internal.service.SubscriptionService;
 import com.vmops.model.Catalog;
@@ -71,7 +71,6 @@ import com.vmops.model.ServiceFilter;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceResourceType;
 import com.vmops.model.ServiceResourceType.ResourceConstraint;
-import com.vmops.model.ServiceResourceTypeGroup;
 import com.vmops.model.ServiceResourceTypeGroupComponent;
 import com.vmops.model.Subscription;
 import com.vmops.model.Tenant;
@@ -84,8 +83,8 @@ import com.vmops.service.ProductService;
 import com.vmops.service.TenantService;
 import com.vmops.service.UserService.Handle;
 import com.vmops.service.exceptions.AjaxFormValidationException;
+import com.vmops.service.exceptions.CurrencyPrecisionException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
-import com.vmops.service.exceptions.NoSuchProductBundleException;
 import com.vmops.utils.DateUtils;
 import com.vmops.utils.JSONUtils;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
@@ -215,7 +214,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
           dateFormat = "MM/dd/yyyy HH:mm:ss";
           DateFormat formatter = new SimpleDateFormat(dateFormat);
           try {
-            historyDateObj = (Date) formatter.parse(historyDate);
+            historyDateObj = formatter.parse(historyDate);
           } catch (ParseException e) {
             throw new InvalidAjaxRequestException(e.getMessage());
           }
@@ -603,17 +602,10 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     }
     filtersAndComponents.put("filters", filters);
 
-    List<ServiceResourceTypeGroup> groups = resourceTypeObj.getServiceResourceGroups();
-
     // Using list instead of set to maintain the order
     List<String> components = new ArrayList<String>();
-    for (ServiceResourceTypeGroup group : groups) {
-      for (ServiceResourceTypeGroupComponent groupComponent : group.getServiceResourceGroupComponents()) {
-        String componentName = groupComponent.getResourceComponentName();
-        if (!components.contains(componentName)) {
-          components.add(componentName);
-        }
-      }
+    for (ServiceResourceTypeGroupComponent groupComponent : resourceTypeObj.getServiceResourceGroupsComponents()) {
+      components.add(groupComponent.getResourceComponentName());
     }
     filtersAndComponents.put("components", components);
 
@@ -644,6 +636,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
 
     return privilegeService.runAsPortal(new PrivilegedAction<Collection<ResourceComponent>>() {
 
+      @Override
       public Collection<ResourceComponent> run() {
         return ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID))
             .getMetadataRegistry().getResourceComponentValues(resourceTypeObj.getResourceTypeName(), component);
@@ -669,6 +662,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
 
     return privilegeService.runAsPortal(new PrivilegedAction<Collection<FilterComponent>>() {
 
+      @Override
       public Collection<FilterComponent> run() {
         return ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID))
             .getMetadataRegistry().getFilterValues(
@@ -691,7 +685,7 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
   public Collection<ServiceResourceType> getServiceResources(
       @RequestParam(value = "serviceInstance", required = true) String serviceInstanceUUID) {
     logger.debug("### getServiceResources method starting...");
-    return connectorConfigurationManager.getInstance(serviceInstanceUUID).getService().getServiceResourceTypes();
+    return connectorConfigurationManager.getAvailableResourceTypesForSystem(serviceInstanceUUID);
   }
 
   /**
@@ -743,6 +737,8 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
 
     ProductBundle productBundle = new ProductBundle();
     ProductBundleForm productBundleForm = new ProductBundleForm(productBundle);
+    productBundleForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     productBundleForm.setChargeRecurrenceFrequencyList(productBundleService.getChargeRecurrenceFrequencyList());
 
     productBundleForm.createChargeEntriesForTheProductBundle(currencyValueService.listActiveCurrencies(),
@@ -765,11 +761,14 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     for (ServiceFilter serviceFilter : serviceInstance.getService().getServiceFilters()) {
       filters.add(serviceFilter.getDiscriminatorName());
     }
-    for (ServiceResourceType serviceResourceType : serviceInstance.getService().getServiceResourceTypes()) {
+    List<ServiceResourceType> availableServiceResourceTypes = connectorConfigurationManager
+        .getAvailableResourceTypesForSystem(serviceInstanceUUID);
+    for (ServiceResourceType serviceResourceType : availableServiceResourceTypes) {
+      List<ServiceResourceTypeGroupComponent> serviceResourceTypeGroupComponents = serviceResourceType
+          .getServiceResourceGroupsComponents();
       Set<String> resourceComponents = new HashSet<String>();
-      for (ServiceResourceTypeGroup group : serviceResourceType.getServiceResourceGroups()) {
-        for (ServiceResourceTypeGroupComponent groupComponent : group.getServiceResourceGroupComponents())
-          resourceComponents.add(groupComponent.getResourceComponentName());
+      for (ServiceResourceTypeGroupComponent groupComponent : serviceResourceTypeGroupComponents) {
+        resourceComponents.add(groupComponent.getResourceComponentName());
       }
       resourceComponents.addAll(filters);
       serviceResourceTypesAndComponentsMap.put(serviceResourceType.getResourceTypeName(), resourceComponents);
@@ -802,13 +801,15 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     // Add name validation check
     if (productBundle.getName() == null) {
       result.rejectValue("productBundle.name", "js.errors.bundle.bundle.form.provide.name");
-      throw new AjaxFormValidationException(result);
     }
 
     if (!productService.isCodeUnique(productBundle.getCode())) {
       logger.debug("### bundle code is NOT unique ");
       response.setStatus(CODE_NOT_UNIQUE_ERROR_CODE);
-      return null;
+      result.rejectValue("productBundle.code", "js.errors.common.CodeNotUnique");
+    }
+    if (result.hasErrors()) {
+      throw new AjaxFormValidationException(result);
     }
 
     JSONArray compAssociations = new JSONArray(productBundleForm.getCompAssociationJson());
@@ -898,9 +899,10 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     }
     for (ServiceResourceType serviceResourceType : serviceResourceTypes) {
       Set<String> resourceComponents = new HashSet<String>();
-      for (ServiceResourceTypeGroup group : serviceResourceType.getServiceResourceGroups()) {
-        for (ServiceResourceTypeGroupComponent groupComponent : group.getServiceResourceGroupComponents())
-          resourceComponents.add(groupComponent.getResourceComponentName());
+      List<ServiceResourceTypeGroupComponent> serviceResourceTypeGroupComponents = serviceResourceType
+          .getServiceResourceGroupsComponents();
+      for (ServiceResourceTypeGroupComponent groupComponent : serviceResourceTypeGroupComponents) {
+        resourceComponents.add(groupComponent.getResourceComponentName());
       }
       resourceComponents.addAll(filters);
       serviceResourceTypesAndComponentsMap.put(serviceResourceType.getResourceTypeName(), resourceComponents);
@@ -1002,8 +1004,9 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     String[] productRowIds;
     productRowIds = productBundleOrderData.split(",");
     String[] productIds = productBundleOrderData.split(",");
-    for (int i = 0; i < productRowIds.length; i++)
+    for (int i = 0; i < productRowIds.length; i++) {
       productIds[i] = productRowIds[i].split("row")[1];
+    }
     productBundleService.updateProductBundleSortOrder(productIds);
 
     logger.debug("### editproductbundleorder method ending...(POST)");
@@ -1194,28 +1197,6 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
   }
 
   /**
-   * This method is used to validate the Product Bundle name
-   * 
-   * @param bundleName
-   * @return
-   */
-  @RequestMapping(value = "/validate_bundle")
-  @ResponseBody
-  public String validateBundle(@RequestParam("productBundle.name") final String bundleName) {
-    logger.debug("In validateBundle() method start and bundleName is : " + bundleName);
-
-    try {
-      productBundleService.locateProductBundleByName(bundleName);
-    } catch (NoSuchProductBundleException ex) {
-      logger.debug(bundleName + ": not exits.");
-      return Boolean.TRUE.toString();
-    }
-
-    logger.debug("In validateBundle() method end");
-    return Boolean.FALSE.toString();
-  }
-
-  /**
    * This method is used to get details for Editing the logo
    * 
    * @param Id
@@ -1248,6 +1229,15 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
   public String editBundleLogo(@ModelAttribute("bundleLogoForm") ProductBundleLogoForm form, BindingResult result,
       HttpServletRequest request, ModelMap map) {
     logger.debug("### editBundleLogo method starting...(POST)");
+    String fileSize = checkFileUploadMaxSizeException(request);
+    if (fileSize != null) {
+      result.rejectValue("logo", "error.image.max.upload.size.exceeded");
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage", messageSource.getMessage(result.getFieldError("logo").getCode(), new Object[] {
+        fileSize
+      }, request.getLocale()));
+      return error.toString();
+    }
 
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
     if (rootImageDir != null && !rootImageDir.trim().equals("")) {
@@ -1278,6 +1268,11 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
           bundle = productBundleService.updateProductBundle(bundle, false);
         } catch (IOException e) {
           logger.debug("###IO Exception in writing custom image file");
+          result.rejectValue("logo", "error.uploading.file");
+          JsonObject error = new JsonObject();
+          error.addProperty("errormessage",
+              messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+          return error.toString();
         }
       }
       String response = null;
@@ -1293,7 +1288,10 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
       return response;
     } else {
       result.rejectValue("logo", "error.custom.image.upload.dir");
-      return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage",
+          messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+      return error.toString();
     }
   }
 
@@ -1820,19 +1818,29 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
     Map<ProductBundle, Map<RateCardComponent, List<RateCardCharge>>> plannedBundleChargesMap = productBundleService
         .getPlannedChargesForAllBundles(channelService.getFutureRevision(null).getStartDate());
 
+    rateCardForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     rateCardForm.setCurrentBundleChargesMap(plannedBundleChargesMap);
     List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     Revision futureRevision = channelService.getFutureRevision(null);
     Set<Entry<ProductBundle, Map<RateCardComponent, List<RateCardCharge>>>> entrySet = plannedBundleChargesMap
         .entrySet();
     for (Entry<ProductBundle, Map<RateCardComponent, List<RateCardCharge>>> entry : entrySet) {
-      // if current price exists then clone otherwise create new product charge object for each currency.
-      if (entry.getValue() != null && entry.getValue().size() > 0) {
-        rateCardForm.updateRateCardChargesFormList(entry.getKey(), entry.getValue(), futureRevision, activeCurrencies,
-            false);
-      } else {
-        rateCardForm.updateRateCardChargesFormList(entry.getKey(), entry.getValue(), futureRevision, activeCurrencies,
-            true);
+      try {
+        // if current price exists then clone otherwise create new product charge object for each currency.
+        if (entry.getValue() != null && entry.getValue().size() > 0) {
+
+          rateCardForm.updateRateCardChargesFormList(entry.getKey(), entry.getValue(), futureRevision,
+              activeCurrencies, false);
+
+        } else {
+          rateCardForm.updateRateCardChargesFormList(entry.getKey(), entry.getValue(), futureRevision,
+              activeCurrencies, true);
+        }
+      } catch (ArithmeticException e) {
+        logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+            + "the currency precision level was reduced " + e);
+        throw new CurrencyPrecisionException(e);
       }
     }
     map.addAttribute("rateCardForm", rateCardForm);
@@ -1994,8 +2002,9 @@ public abstract class AbstractProductBundlesController extends AbstractAuthentic
   }
 
   private List<ProductBundleRevision> getLighterProductBundles(List<ProductBundleRevision> bundleRevisions) {
-    if (bundleRevisions == null)
+    if (bundleRevisions == null) {
       return null;
+    }
 
     List<ProductBundleRevision> returnProductBundle = new ArrayList<ProductBundleRevision>();
     for (ProductBundleRevision pbr : bundleRevisions) {

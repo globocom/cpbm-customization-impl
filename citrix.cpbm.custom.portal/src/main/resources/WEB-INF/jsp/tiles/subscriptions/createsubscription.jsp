@@ -11,13 +11,12 @@
 <link rel="stylesheet" href="<%=request.getContextPath() %>/css/jslider.plastic.css" type="text/css">
 <link rel="stylesheet" href="<%=request.getContextPath() %>/css/customproperties.css" type="text/css">
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/createSubscription.js"></script>
-<script type="text/javascript" src="<%=request.getContextPath() %>/js/jquery.slider.min.js"></script>
 <script type="text/javascript" src="<%=request.getContextPath()%>/resources/app.js"></script>
 
 <jsp:include page="/WEB-INF/jsp/tiles/shared/js_messages.jsp"></jsp:include>
 
 <script type="text/javascript">
-
+var subscriptionButtonVisiblity = true;
     var dictionary = {    
         onlyAlphanumericCharactersAreAllowed: '<spring:message javaScriptEscape="true" code="only.alphanumeric.characters.are.allowed"/>',
         oneTimeChargeType: '<spring:message javaScriptEscape="true" code="launchvm.chargetype.text.onetime"/>',
@@ -53,7 +52,9 @@
         error_select_required_rcs:'<spring:message javaScriptEscape="true" code="error.catalog.Select.missing.components" />',
         label_configure:'<spring:message javaScriptEscape="true" code="label.configure" />',
         label_back_to_catalog:'<spring:message javaScriptEscape="true" code="label.subscribe.backtocatalog" />',
-        msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />'
+        msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />',
+        msg_any_required_component:'<spring:message javaScriptEscape="true" code="message.catalog.any.resource.component" />',
+        cloud_service_down:'<spring:message javaScriptEscape="true" code="cloud.service.down" />'
     };
 
     var l10dict = new Array();
@@ -78,7 +79,7 @@
     var serviceFilterNames = [];
     var serviceFilterDescl10dict = [];
     var serviceFilterDescKey = [];
-    <c:if test="${not empty service.serviceFilters}">
+    <c:if test="${not empty service.serviceFilters && resourceType != '__SERVICE__'}">
       <c:forEach items="${service.serviceFilters}" var="filter" varStatus="status">
         l10dict['${filter.discriminatorName}' + '-name']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter.discriminatorName}.name"/>';
         l10dict['${filter.discriminatorName}' + '-desc']='<spring:message javaScriptEscape="true" code="${service.serviceName}.Filter.${filter.discriminatorName}.description"/>';
@@ -89,19 +90,10 @@
     </c:if>
     
     var reconfigurableMap = {};
-    var groupNameList = [];
-    var groups = [];
-    var group;
-    <c:if test="${not empty groups}">
-    <c:forEach items="${groups}" var="group">
-      group = [];
-      <c:forEach items="${group.serviceResourceGroupComponents}" var="serviceResourceGroupComponent">
+    <c:if test="${not empty resourceComponents}">
+      <c:forEach items="${resourceComponents}" var="serviceResourceGroupComponent">
         reconfigurableMap['${serviceResourceGroupComponent.resourceComponentName}'] = '${serviceResourceGroupComponent.reconfigurable}';
-        group.push('<c:out value="${serviceResourceGroupComponent.resourceComponentName}" escapeXml="false"/>');
       </c:forEach>
-      groups.push(group);
-      groupNameList.push('${group.groupName}');
-    </c:forEach>
     </c:if>
     
     var resourceProperties = [];
@@ -124,6 +116,14 @@
     </c:forEach>
 </script>
 
+<sec:authorize access="hasAnyRole('ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')">
+    <sec:authorize ifNotGranted="ROLE_FINANCE_CRUD">
+    <script type="text/javascript">
+         var   subscriptionButtonVisiblity = false;
+          </script>
+</sec:authorize>
+</sec:authorize>
+
 <c:if test="${not empty subscription && subscription.activeHandle == null}">
   <c:set var="isReprovision" value="true" scope="request"></c:set>
 </c:if>
@@ -138,7 +138,7 @@
 <c:choose>
   <c:when test="${not empty cloudServiceException && cloudServiceException}">
     <c:if test="${not empty cloudServiceExceptionStr}">
-      <div style="width: 99%; margin-bottom: 0px; padding: 5px;" class="common_messagebox error">
+      <div style="width: 95%;float:left;" class="alert alert-error">
         <c:out value="${cloudServiceExceptionStr}" />
       </div>
     </c:if>
@@ -159,7 +159,7 @@
           <!-- Listing Pricing Filters Start -->
           <div class="row">
             <div class="navbar pull-right" id="pricing">
-              <div class="pull-left" style="padding: 10px;">
+              <div class="pull-left" style="padding:10px;font-size:12px;">
                 <spring:message code="label.subscribe.pricing" />
                 :
               </div>
@@ -212,16 +212,23 @@
 <!-- Component UI Template to clone from -->
 <div class="filterlistbox" style="display: none;float:left;width:100%;" id="list_box_container" >
   <div class="bs_selectbox title user">
-      <h2 id="filterBoxTitle"></h2>
+      <h2 id="filterBoxTitle" class="ellipsis" style="width:95%;"></h2>
     </div>
   <div id="filterBoxSelection" class="catalogfilter_filterlist templates">
   </div>
 </div>
 <!-- Component UI Template to clone from -->
 
+<!-- List RC Element to clone from Start-->
+<li id="list_rc_element_clone" style="display:none;">
+  <span id="span_rc_name" class="catalog_rc_list ellipsis js_displaytext"></span>
+  <span id="span_rc_desc" class="catalog_rc_list description ellipsis"></span>
+</li>
+<!-- List RC Element to clone from End -->
+
 <!-- Hidden fields for filters, components and properties Start -->
 
-<c:if test="${not empty service.serviceFilters}">
+<c:if test="${not empty service.serviceFilters && resourceType != '__SERVICE__'}">
   <c:forEach items="${service.serviceFilters}" var="service_filter" varStatus="status">
     <input type="hidden" id="conf_prop_${service_filter.discriminatorName}" name="${service_filter.discriminatorName}" />
   </c:forEach>

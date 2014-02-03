@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.lang.reflect.Method;
@@ -12,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -21,7 +21,6 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
@@ -29,6 +28,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 
 import web.WebTestsBaseWithMockConnectors;
@@ -36,6 +36,8 @@ import web.support.DispatcherTestServlet;
 import web.support.MockSessionStatus;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
+import com.citrix.cpbm.platform.admin.service.utils.ServiceInstanceConfiguration;
 import com.citrix.cpbm.platform.bootstrap.service.BootstrapActivator;
 import com.citrix.cpbm.platform.spi.AccountLifecycleHandler;
 import com.citrix.cpbm.platform.spi.CloudConnector;
@@ -43,27 +45,39 @@ import com.citrix.cpbm.platform.spi.UserLifecycleHandler;
 import com.citrix.cpbm.platform.spi.View;
 import com.citrix.cpbm.platform.spi.View.ViewMode;
 import com.citrix.cpbm.platform.spi.ViewResolver;
+import com.citrix.cpbm.platform.util.CssdkConstants;
 import com.citrix.cpbm.portal.fragment.controllers.UsersController;
+import com.vmops.event.PortalEvent;
+import com.vmops.event.UserActivateEmail;
+import com.vmops.event.UserCreation;
+import com.vmops.event.UserDeactivateEmail;
+import com.vmops.event.UserDeletion;
+import com.vmops.event.VerifyAlertEmailRequest;
 import com.vmops.internal.service.PaymentGatewayService;
 import com.vmops.internal.service.SubscriptionService;
 import com.vmops.model.Configuration;
 import com.vmops.model.Profile;
 import com.vmops.model.Service;
+import com.vmops.model.ServiceInstance;
 import com.vmops.model.SpendAlertSubscription;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
 import com.vmops.model.UserAlertPreferences;
 import com.vmops.model.UserAlertPreferences.AlertType;
+import com.vmops.model.UserHandle;
 import com.vmops.model.billing.PaymentTransaction;
 import com.vmops.model.billing.PaymentTransaction.State;
 import com.vmops.persistence.AuditLogDAO;
+import com.vmops.persistence.EventDAO;
 import com.vmops.persistence.SpendAlertSubscriptionDAO;
 import com.vmops.persistence.UserAlertPreferencesDAO;
+import com.vmops.persistence.UserHandleDAO;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.TenantService;
 import com.vmops.service.UserAlertPreferencesService;
 import com.vmops.service.UserService;
+import com.vmops.service.UserService.Handle;
 import com.vmops.service.exceptions.NoSuchTenantException;
 import com.vmops.service.exceptions.NoSuchUserException;
 import com.vmops.web.controllers.menu.Page;
@@ -107,9 +121,18 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   AuditLogDAO auditDAO;
 
   @Autowired
+  EventDAO eventDAO;
+
+  @Autowired
+  UserHandleDAO userHandleDAO;
+
+  @Autowired
   ConfigurationService configurationService;
 
-  private BootstrapActivator bootstrapActivator = new BootstrapActivator();
+  @Autowired
+  private ConnectorConfigurationManager connectorConfigurationManagerService;
+
+  private final BootstrapActivator bootstrapActivator = new BootstrapActivator();
 
   private static boolean isMockInstanceCreated = false;
 
@@ -124,6 +147,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     map = new ModelMap();
     status = new MockSessionStatus();
     session = new MockHttpSession();
+    request = new MockHttpServletRequest();
     prepareMock(true, bootstrapActivator);
     if (isMockInstanceCreated == false) {
 
@@ -153,18 +177,24 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
     EasyMock.expect(iaasConnector.getAccountLifeCycleHandler()).andReturn(mockAccountLifecycleHandler).anyTimes();
 
-    View view = EasyMock.createMock(View.class);
+    View view = new View("test", "test", ViewMode.WINDOW);
+
     EasyMock.expect(viewResolver.getConsoleView(EasyMock.anyObject(User.class))).andReturn(view).anyTimes();
 
     EasyMock.expect(iaasConnector.getUserLifeCycleHandler()).andReturn(mockUserLifecycleHandler).anyTimes();
-
+    EasyMock.expect(cloudConnector.getStatus()).andReturn(Boolean.TRUE).anyTimes();
+    EasyMock.expect(cloudConnector.getServiceInstanceUUID()).andReturn("003fa8ee-fba3-467f-a517-ed806dae8a87")
+        .anyTimes();
+    ServiceInstanceConfiguration serviceInstanceConfiguration = mock.getSic();
+    EasyMock.expect(serviceInstanceConfiguration.getInstanceUUID()).andReturn("003fa8ee-fba3-467f-a517-ed806dae8a87")
+        .anyTimes();
     EasyMock.expect(ossConnector.getAccountLifeCycleHandler()).andReturn(mockAccountLifecycleHandler).anyTimes();
     EasyMock.expect(ossConnector.getUserLifeCycleHandler()).andReturn(mockUserLifecycleHandler).anyTimes();
-
     final Capture<BigDecimal> amount = new Capture<BigDecimal>();
     EasyMock.expect(ossConnector.authorize(EasyMock.anyObject(Tenant.class), EasyMock.capture(amount)))
         .andAnswer(new IAnswer<PaymentTransaction>() {
 
+          @Override
           public PaymentTransaction answer() throws Throwable {
             return new PaymentTransaction(new Tenant(), 0, State.COMPLETED,
                 com.vmops.model.billing.PaymentTransaction.Type.CAPTURE);
@@ -173,8 +203,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     EasyMock.replay(iaasConnector);
     EasyMock.replay(ossConnector);
     EasyMock.replay(viewResolver);
-    EasyMock.replay(cloudConnector);
-
+    EasyMock.replay(cloudConnector, serviceInstanceConfiguration);
   }
 
   @SuppressWarnings({
@@ -218,8 +247,8 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testUsersShow() throws Exception {
-    User expected = userDAO.findAll(null).get(0);
-    asUser(expected.getTenant().getOwner());
+    User expected = userDAO.find(11L);
+    asUser(expected);
 
     String view = controller.show(expected.getUuid(), map);
     Assert.assertEquals("user.show", view);
@@ -374,6 +403,51 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
+  public void testValidateUsernameWithSuffix() throws Exception {
+    asRoot();
+    com.vmops.model.Configuration configuration = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_username_duplicate_allowed);
+    configuration.setValue("true");
+    configurationService.update(configuration);
+
+    User user = userDAO.find(3L);
+
+    Tenant userTenant = user.getTenant();
+    String suffix = "testSuffix";
+    userTenant.setUsernameSuffix(suffix);
+    tenantService.update(userTenant);
+
+    asUser(user);
+    UserForm form = new UserForm();
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    com.citrix.cpbm.access.User newUser = form.getUser();
+    newUser.setEmail("test@test.com");
+    newUser.setUsername("testuser");
+    newUser.setFirstName("firstName");
+    newUser.setLastName("lastName");
+    Profile profile = profileDAO.findByName("User");
+    form.setUserProfile(profile.getId());
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    request.addParameter("submitButtonEmail", "Finish");
+    BindingResult bindingResult = validate(form);
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
+    Assert.assertEquals(Boolean.FALSE.toString(), controller.validateUsername("testuser"));
+    Assert.assertEquals(Boolean.TRUE.toString(), controller.validateUsername("testuser1"));
+  }
+
+  @Test
+  public void testValidateUserName() throws Exception {
+    asRoot();
+    User user = userDAO.find(3L);
+
+    asUser(user);
+    Assert.assertEquals(Boolean.FALSE.toString(), controller.validateUsername(user.getUsername()));
+
+  }
+
+  @Test
   public void testCreateUserStep2CustomizeEmail() throws Exception {
     User user = userDAO.find(3L);
     asUser(user);
@@ -405,18 +479,17 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
     com.citrix.cpbm.access.User newUser = form.getUser();
     newUser.setEmail("test@test.com");
-    newUser.setUsername("testuser##");
+    newUser.setUsername("testuser###");
     newUser.setFirstName("firstName");
     newUser.setLastName("lastName");
     Profile profile = profileDAO.findByName("User");
     form.setUserProfile(profile.getId());
-
-    BindingResult bindingResult = validate(form);
-    Assert.assertTrue(bindingResult.hasErrors());
+    BeanPropertyBindingResult result = new BeanPropertyBindingResult(form, "validation");
     com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
         .getTenant());
-    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, new MockHttpServletRequest(),
+    String view = controller.createUserStepTwo(form, result, proxyTenant, map, new MockHttpServletRequest(),
         new MockHttpSession());
+    Assert.assertTrue(result.hasErrors());
     Assert.assertFalse("users.newuserregistration.finish".equals(view));
   }
 
@@ -452,7 +525,6 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     com.citrix.cpbm.access.User newUser = form.getUser();
     newUser.setUsername("foobar");
     newUser.setEmail("test@test.com");
-
     validate(form);
     MockHttpServletRequest request = new MockHttpServletRequest();
     controller.createStepOne(controller.getTenant(), null, map, new MockHttpSession(), request);
@@ -468,17 +540,28 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     UserForm form = (UserForm) map.get("user");
     Assert.assertNotNull(form);
     Assert.assertNotNull(form.getUser());
-    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals(user.getUsername(), form.getUser().getUsername());
     Assert.assertEquals("users.edit.myprofile", view);
   }
 
+  /**
+   * @Desc Test to check editing of User First name, Last name in My Profile page
+   * @author vinayv
+   * @throws Exception
+   */
   @Test
   public void testUpdateUser() throws Exception {
     asRoot();
     User user = userDAO.find(3L);
+    Assert.assertEquals("firstName", user.getFirstName());
+    Assert.assertEquals("lastName", user.getLastName());
     UserForm form = new UserForm((com.citrix.cpbm.access.User) CustomProxy.newInstance(user));
     form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
-    user.setFirstName("Updated");
+    user.setFirstName("UpdatedFirstName");
+    user.setLastName("UpdatedLastName");
+    Assert.assertEquals("1-1", user.getPhone());
+    form.setCountryCode("91");
+    form.setPhone("9902399549");
     BindingResult result = validate(form);
     form.setUserClone((com.citrix.cpbm.access.User) CustomProxy.newInstance((User) user.clone()));
     String view = controller.edit(user.getParam(), form, result,
@@ -486,8 +569,9 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals("redirect:/portal/users/" + user.getUuid() + "/myprofile", view);
     Assert.assertTrue(status.isComplete());
     User found = userDAO.find(user.getId());
-    Assert.assertEquals(user.getFirstName(), found.getFirstName());
-    Assert.assertEquals(user.getAddress(), found.getAddress());
+    Assert.assertEquals("UpdatedFirstName", found.getFirstName());
+    Assert.assertEquals("UpdatedLastName", found.getLastName());
+    Assert.assertEquals("91-9902399549", found.getPhone());
     Assert.assertTrue(status.isComplete());
   }
 
@@ -518,7 +602,6 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
   }
 
   @Test
-  @Ignore
   public void testUpdateUserFail() throws Exception {
     asRoot();
     User user = userDAO.find(3L);
@@ -609,14 +692,48 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertNotNull(Hashmap.get("userCredentialList"));
     List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
     credentialList = (List<Map<String, String>>) Hashmap.get("userCredentialList");
-    Assert.assertEquals(credentialList.get(0).get("apiKey"),
-        "_KvuJ0mLMn4Z_FyLnQawAth-y1tobX3t44UUN1QYVyGVVyZETh_EcjyMrmEoEV-4y_5G_6AcHUw61FcFVv_qGw");
-    Assert.assertEquals(credentialList.get(0).get("secretKey"),
-        "gvuiqvCkBzcLuVFEtYVjY_vE9-X6m4bsxmcHMcXQMz7Iy-QPZs1X_RlvZW0-5reoWqMmql2eA1DEFNOsMVyFkg");
-    Assert.assertEquals(credentialList.get(0).get("InstanceName"), "SERVICE11");
-    Assert.assertEquals(credentialList.get(0).get("ServiceName"), "com.company1.service1.service.name");
-    Assert.assertEquals(credentialList.get(0).get("InstanceName"), "SERVICE11");
+    Set<UserHandle> userHandles = getRootUser().getUserHandles();
+    Assert.assertTrue(userHandles.size() > 0);
+    Assert.assertTrue(credentialList.size() > 0);
+    for (UserHandle userHandle : userHandles) {
+      Map<String, String> apiCreds = null;
+      ServiceInstance si = connectorConfigurationManagerService.getInstance(userHandle.getServiceInstanceUuid());
+      if (si.getService().getType().equals(CssdkConstants.OSS)) {
+        continue;
+      }
+      for (Map<String, String> credentialMap : credentialList) {
+        if (credentialMap.entrySet().containsAll(userHandle.getApiCredentials().entrySet())
+            && si.getName().equals(credentialMap.get("InstanceName"))) {
+          apiCreds = credentialMap;
+          break;
+        }
+      }
+      Assert.assertNotNull("Returned credential list does not have the api credential for the servieInstance uuid:"
+          + userHandle.getServiceInstanceUuid(), si);
+      Assert.assertNotNull("Returned credential list does not have the api credential for the servieInstance uuid:"
+          + userHandle.getServiceInstanceUuid(), apiCreds);
+      Assert.assertEquals(si.getName(), apiCreds.get("InstanceName"));
+      Assert.assertEquals(si.getService().getUuid(), apiCreds.get("ServiceUuid"));
+      Assert.assertEquals(messageSource.getMessage(si.getService().getServiceName() + ".service.name", null, null),
+          apiCreds.get("ServiceName"));
+    }
+  }
 
+  @SuppressWarnings("unchecked")
+  @Test
+  public void generateApiKey() {
+    Map<String, Object> Hashmap = controller.verifyPassword("Portal123#", new MockHttpServletRequest());
+    Assert.assertNotNull(Hashmap.get("userCredentialList"));
+    List<Map<String, String>> credentialList = new ArrayList<Map<String, String>>();
+    credentialList = (List<Map<String, String>>) Hashmap.get("userCredentialList");
+    String oldApiKey = credentialList.get(0).get("apiKey");
+    String oldSecretKey = credentialList.get(0).get("secretKey");
+    Map<String, Object> generateApiKeyHashmap = controller.generateApiKey(new MockHttpServletRequest());
+    Map<String, String> generatedBSSAPICreds = (Map<String, String>) generateApiKeyHashmap.get("bssApiCredentials");
+    Assert.assertNotNull(generatedBSSAPICreds);
+    System.out.println(generatedBSSAPICreds);
+    Assert.assertFalse(generatedBSSAPICreds.get("apiKey").equals(oldApiKey));
+    Assert.assertFalse(generatedBSSAPICreds.get("secretKey").equals(oldSecretKey));
   }
 
   @Test
@@ -740,13 +857,14 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     MockHttpServletRequest request = new MockHttpServletRequest();
     request.setAttribute("isSurrogatedTenant", false);
     request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
+    asUser(tenant.getOwner());
     String timeZone = controller.getUserTimezoneOffset(tenant, request);
-    Assert.assertEquals(timeZone, new String("5.50"));
+    Assert.assertEquals(timeZone, new String("0.00"));
     tenant1.getOwner().setTimeZone(null);
     service.save(tenant1);
     request.setAttribute("isSurrogatedTenant", true);
     request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant1);
-    timeZone = controller.getUserTimezoneOffset(tenant, request);
+    timeZone = controller.getUserTimezoneOffset(tenant1, request);
     Assert.assertNotNull(timeZone);
   }
 
@@ -760,22 +878,36 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(remove, new String("redirect:/portal/users/subscribe"));
   }
 
+  /**
+   * @Desc Test to add a valid secondary email's
+   * @author vinayv
+   */
   @Test
   public void testsaveAlertsDeliveryOptions() {
+    logger.info("Entering testsaveAlertsDeliveryOptions test");
+    User user = userDAO.find("3");
+    asUser(user);
+    int beforeCount = userAlertPreferencesService.listAllUserAlertPreferences(user).size();
+    int beforeEventCount = eventDAO.count();
     String status = controller.saveAlertsDeliveryOptions("Test@citrix.com", map);
-    Assert.assertEquals(status, new String("success"));
+    Assert.assertEquals("success", status);
     Assert.assertNotNull(map.containsAttribute("user"));
-    Assert.assertEquals(userAlertPreferencesService.getCount((User) map.get("user")), 1);
-    status = controller.saveAlertsDeliveryOptions(null, map);
-    Assert.assertEquals(status, new String("failure"));
-
+    int afterCount = userAlertPreferencesService.listAllUserAlertPreferences(user).size();
+    int afterEventCount = eventDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals(beforeEventCount + 1, afterEventCount);
+    PortalEvent event = eventListener.getEvents().get(0);
+    Assert.assertEquals(user, event.getSource());
+    Assert.assertTrue(event.getPayload() instanceof VerifyAlertEmailRequest);
+    logger.info("Exiting testsaveAlertsDeliveryOptions test");
   }
 
   @Test
   public void testLogin() {
     Tenant tenant = service.getTenantByParam("id", "2", false);
     String login = controller.login(tenant, tenant.getParam(), "Test", "4847df70-63bb-4273-a8db-30662b32d098", map);
-    Assert.assertEquals(login, new String("redirect:users.cloud_deleted&lp=Test"));
+    // as the mock returns view with url test
+    Assert.assertEquals("test&lp=Test", login);
   }
 
   @Test
@@ -805,20 +937,77 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     Assert.assertEquals(HashMap.get("locale").toString(), new String("English/US"));
     HashMap.clear();
     HashMap = controller.editPrefs(form, null, null, null, map, request);
+    user = userService.getUserByParam("id", "3", false);
     Assert.assertNull(user.getLocale());
 
   }
 
+  /**
+   * @Desc Test to remove a user By Root
+   * @author vinayv
+   */
   @Test
   public void testdelete() {
     User user = userDAO.find(3L);
+    Assert.assertEquals(null, user.getRemoved());
     String view = null;
     try {
-      view = controller.delete(user.getParam(), map);
+      view = controller.delete(user.getParam(), map, session);
     } catch (NoSuchUserException e) {
       e.printStackTrace();
     }
     Assert.assertNull(view);
+    Assert.assertNotNull(user.getRemoved());
+    List<PortalEvent> eventList = eventListener.getEvents();
+    PortalEvent deletionEvent = eventList.get(eventList.size() - 1);
+    Assert.assertEquals(user, deletionEvent.getSource());
+    Assert.assertTrue(deletionEvent.getPayload() instanceof UserDeletion);
+  }
+
+  /**
+   * @Desc Test to remove a user By Master User
+   * @author vinayv
+   */
+  @Test
+  public void testDeleteAsTenant() {
+    logger.info("Entering testDeleteAsTenant test");
+    User masterUser = userDAO.find(21L);
+    asUser(masterUser);
+    List<User> userList = userService.getUsersInTenantByProfile(masterUser.getTenant(), 1, 10,
+        profileDAO.findByName("User"));
+    User user = userList.get(0);
+    Assert.assertEquals(null, user.getRemoved());
+    String view = null;
+    try {
+      view = controller.delete(user.getParam(), map, session);
+    } catch (NoSuchUserException e) {
+      e.printStackTrace();
+    }
+    Assert.assertNull(view);
+    Assert.assertNotNull(user.getRemoved());
+    List<PortalEvent> eventList = eventListener.getEvents();
+    PortalEvent deletionEvent = eventList.get(eventList.size() - 1);
+    Assert.assertEquals(user, deletionEvent.getSource());
+    Assert.assertTrue(deletionEvent.getPayload() instanceof UserDeletion);
+    logger.info("Exiting testDeleteAsTenant test");
+  }
+
+  /**
+   * @Desc Test to remove a user By Normal User
+   * @author vinayv
+   */
+  @Test
+  public void testDeleteAsNormalUser() {
+    logger.info("Entering testDeleteAsNormalUser test");
+    User normalUser = userDAO.find(22L);
+    User masterUser = userDAO.find(21L);
+    asUser(normalUser);
+    try {
+      controller.delete(masterUser.getParam(), map, session);
+    } catch (Exception e) {
+      Assert.assertEquals("Access is denied", e.getMessage());
+    }
+    logger.info("Exiting testDeleteAsNormalUser test");
   }
 
   @Test
@@ -842,11 +1031,18 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
 
   @Test
   public void testshow() {
-    Tenant tenant = tenantService.getTenantByParam("id", "1", false);
+    Tenant tenant = tenantService.getTenantByParam("id", "3", false);
     asUser(tenant.getOwner());
     controller.show(tenant.getOwner().getParam(), map);
     Assert.assertTrue(map.containsKey("serviceRegistrationStatus"));
     Assert.assertEquals(Boolean.FALSE, map.get("showEnableServiceLink"));
+
+    asUser(tenantService.getSystemUser(Handle.ROOT));
+    tenant = tenantService.getTenantByParam("id", "5", false);
+    asUser(tenant.getOwner());
+    controller.show(tenant.getOwner().getParam(), map);
+    Assert.assertTrue(map.containsKey("serviceRegistrationStatus"));
+    Assert.assertEquals(Boolean.TRUE, map.get("showEnableServiceLink"));
   }
 
   @Test
@@ -855,8 +1051,11 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     User user = createTestUserInTenant(tenant);
     user = controller.activateUser(user.getParam(), map);
     user.setEnabled(true);
+    userService.save(user);
     String userUUID = user.getUuid();
-    Map<String, Boolean> es = controller.enableServices("17eda09f-506b-4364-b67e-469071429b76", userUUID);
+    controller.enableServices("17eda09f-506b-4364-b67e-469071429b76", userUUID, "003fa8ee-fba3-467f-a517-fd806dae8a80");
+    Map<String, String> es = controller.getServiceProvisioningStatus("17eda09f-506b-4364-b67e-469071429b76", userUUID,
+        "003fa8ee-fba3-467f-a517-fd806dae8a80");
     Assert.assertTrue(!es.isEmpty());
   }
 
@@ -1074,7 +1273,7 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     UserForm form = (UserForm) map.get("user");
     Assert.assertNotNull(form);
     Assert.assertNotNull(form.getUser());
-    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals(user.getUsername(), form.getUser().getUsername());
     Assert.assertEquals("users.edit.myprofile", view);
   }
 
@@ -1121,8 +1320,359 @@ public class UsersControllerTest extends WebTestsBaseWithMockConnectors {
     UserForm form = (UserForm) map.get("user");
     Assert.assertNotNull(form);
     Assert.assertNotNull(form.getUser());
-    Assert.assertEquals(user.getUsername(), ((com.citrix.cpbm.access.User) form.getUser()).getUsername());
+    Assert.assertEquals(user.getUsername(), form.getUser().getUsername());
     Assert.assertEquals("users.edit.myprofile", view);
   }
 
+  @Test
+  public void testGenerateGravatarUrlWithIntranetOnlyModeDisabled() throws Exception {
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("false");
+    request = new MockHttpServletRequest();
+    request.setSession(session);
+    controller.edit("", getRootUser().getParam(), request, map);
+    Assert.assertTrue(map.containsKey("gravatarUrl"));
+    Assert.assertTrue(map.get("gravatarUrl").toString().contains("gravatar.com"));
+    Assert.assertFalse((Boolean) map.get("doNotShowGravatarLink"));
+  }
+
+  @Test
+  public void testGenerateGravatarUrlWithIntranetOnlyModeEnabled() throws Exception {
+    com.vmops.model.Configuration isIntranetModeEnabled = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_use_intranet_only);
+    isIntranetModeEnabled.setValue("true");
+    request = new MockHttpServletRequest();
+    request.setSession(session);
+    controller.edit("", getRootUser().getParam(), request, map);
+    Assert.assertTrue(map.containsKey("gravatarUrl"));
+    Assert.assertFalse(map.get("gravatarUrl").toString().contains("gravatar.com"));
+    Assert.assertTrue(map.get("gravatarUrl").toString().contains("portal/images"));
+    Assert.assertTrue((Boolean) map.get("doNotShowGravatarLink"));
+  }
+
+  /**
+   * @Desc Test to create Normal User By Root
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateNormalUserAsRoot() throws Exception {
+    logger.info("Entering testCreateNormalUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("User");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("User", obtainedUser.getProfile().getName());
+    User userFromDB = userDAO.find(obtainedUser.getId());
+    PortalEvent event = eventListener.getEvents().get(0);
+    Assert.assertEquals(userFromDB, event.getSource());
+    Assert.assertTrue(event.getPayload() instanceof UserCreation);
+    logger.info("Exiting testCreateNormalUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Master User By Root
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateMasterUserAsRoot() throws Exception {
+    logger.info("Entering testCreateMasterUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Master User");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Master User", obtainedUser.getProfile().getName());
+    User userFromDB = userDAO.find(obtainedUser.getId());
+    PortalEvent event = eventListener.getEvents().get(0);
+    Assert.assertEquals(userFromDB, event.getSource());
+    Assert.assertTrue(event.getPayload() instanceof UserCreation);
+    logger.info("Exiting testCreateMasterUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Normal User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateNormalUserAsTenant() throws Exception {
+    logger.info("Entering testCreateNormalUserAsTenant test");
+    int beforeCount = userDAO.count();
+    User user = userDAO.find(3L);
+    asUser(user);
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("User");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("User", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateNormalUserAsTenant test");
+  }
+
+  /**
+   * @Desc Test to create Power User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreatePowerUserAsTenant() throws Exception {
+    logger.info("Entering testCreatePowerUserAsTenant test");
+    int beforeCount = userDAO.count();
+    User user = userDAO.find(3L);
+    asUser(user);
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Power User");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Power User", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreatePowerUserAsTenant test");
+  }
+
+  /**
+   * @Desc Test to create Billing Admin User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateBillingAdminUserAsTenant() throws Exception {
+    logger.info("Entering testCreateBillingAdminUserAsTenant test");
+    int beforeCount = userDAO.count();
+    User user = userDAO.find(3L);
+    asUser(user);
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Billing Admin");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Billing Admin", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateBillingAdminUserAsTenant test");
+  }
+
+  /**
+   * @Desc Test to create Ops Admin User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateOpsAdminUserAsRoot() throws Exception {
+    logger.info("Entering testCreateOpsAdminUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Ops Admin");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Ops Admin", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateOpsAdminUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Sales Support User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateSalesSupportUserAsRoot() throws Exception {
+    logger.info("Entering testCreateSalesSupportUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Sales Support");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Sales Support", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateSalesSupportUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Help Desk User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateHelpDeskUserAsRoot() throws Exception {
+    logger.info("Entering testCreateHelpDeskUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Sales Support");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Sales Support", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateHelpDeskUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Product Manager User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateProductManagerUserAsRoot() throws Exception {
+    logger.info("Entering testCreateProductManagerUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Product Manager");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Product Manager", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateProductManagerUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to create Finance Admin User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateFinanceAdminUserAsRoot() throws Exception {
+    logger.info("Entering testCreateFinanceAdminUserAsRoot test");
+    int beforeCount = userDAO.count();
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Finance Admin");
+    Assert.assertNotNull(obtainedUser);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("Finance Admin", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateFinanceAdminUserAsRoot test");
+  }
+
+  /**
+   * @Desc Test to activate newly created Normal User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testActivateNormalUser() throws Exception {
+    logger.info("Entering testActivateNormalUser test");
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("User");
+    Assert.assertNotNull(obtainedUser);
+    Long userId = obtainedUser.getId();
+    User user = userDAO.find(userId);
+    Assert.assertEquals(false, user.isEnabled());
+    user.setEmailVerified(true);
+    userDAO.merge(user);
+    User activatedUser = controller.activateUser(user.getUuid(), map);
+    Assert.assertEquals(true, activatedUser.isEnabled());
+    PortalEvent event = eventListener.getEvents().get(1);
+    Assert.assertEquals(user, event.getSource());
+    Assert.assertTrue(event.getPayload() instanceof UserActivateEmail);
+    logger.info("Exiting testActivateNormalUser test");
+  }
+
+  /**
+   * @Desc Test to activate newly created Service Provider User
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testActivateServiceProviderUser() throws Exception {
+    logger.info("Entering testActivateServiceProviderUser test");
+    com.citrix.cpbm.access.User obtainedUser = createUserByProfile("Ops Admin");
+    Assert.assertNotNull(obtainedUser);
+    Long userId = obtainedUser.getId();
+    User user = userDAO.find(userId);
+    Assert.assertEquals(false, user.isEnabled());
+    user.setEmailVerified(true);
+    userDAO.merge(user);
+    User activatedUser = controller.activateUser(user.getUuid(), map);
+    Assert.assertEquals(true, activatedUser.isEnabled());
+    PortalEvent event = eventListener.getEvents().get(1);
+    Assert.assertEquals(user, event.getSource());
+    Assert.assertTrue(event.getPayload() instanceof UserActivateEmail);
+    logger.info("Exiting testActivateServiceProviderUser test");
+  }
+
+  /**
+   * @Desc Test to deactivate a user By Tenant
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testDeactivateUserByTenant() throws Exception {
+    logger.info("Entering testDeactivateUserByTenant test");
+    UserHandle handle = userHandleDAO.find(3L);
+    handle.setServiceInstanceUuid("4847df70-63bb-4273-a8db-30662b32d098");
+    userHandleDAO.merge(handle);
+    User masterUser = userDAO.find(21L);
+    asUser(masterUser);
+    List<User> userList = userService.getUsersInTenantByProfile(masterUser.getTenant(), 1, 10,
+        profileDAO.findByName("User"));
+    User user = userList.get(0);
+    // deactivating the user
+    User deactivatedUser = controller.deactivateUser(user.getUuid(), map);
+    Assert.assertEquals(false, deactivatedUser.isEnabled());
+    List<PortalEvent> eventList = eventListener.getEvents();
+    Assert.assertEquals(user, eventList.get(0).getSource());
+    Assert.assertTrue(eventList.get(0).getPayload() instanceof UserDeactivateEmail);
+    logger.info("Entering testDeactivateUserByTenant test");
+  }
+
+  /**
+   * @Desc Test to create Normal User with Custom Email template
+   * @author vinayv
+   * @throws Exception
+   */
+  @Test
+  public void testCreateNormalUserWithCustomEmailTemplate() throws Exception {
+    logger.info("Entering testCreateNormalUserWithCustomEmailTemplate test");
+    int beforeCount = userDAO.count();
+    User user = userDAO.find(3L);
+    asUser(user);
+    UserForm form = new UserForm();
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    com.citrix.cpbm.access.User newUser = form.getUser();
+    newUser.setEmail("test@test.com");
+    newUser.setUsername("testuser");
+    newUser.setFirstName("firstName");
+    newUser.setLastName("lastName");
+    Profile profile = profileDAO.findByName("User");
+    form.setUserProfile(profile.getId());
+    request.addParameter("submitButtonEmail", "CustomeEmail");
+    BindingResult bindingResult = validate(form);
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
+    Assert.assertEquals("users.newuser.customemail", view);
+    UserForm obtainedForm = (UserForm) map.get("user");
+    Assert.assertEquals(form.getUser().getUsername(), obtainedForm.getUser().getUsername());
+    com.citrix.cpbm.access.User obtainedUser = obtainedForm.getUser();
+    Assert.assertNotNull(obtainedUser);
+    obtainedForm.setCustomEmailSubject("customEmailSubject");
+    obtainedForm.setEmailText("customEmailText");
+    bindingResult = validate(obtainedForm);
+    view = controller.createStepThree(obtainedForm, bindingResult, proxyTenant, map, request);
+    Assert.assertEquals("users.newuserregistration.finish", view);
+    int afterCount = userDAO.count();
+    Assert.assertEquals(beforeCount + 1, afterCount);
+    Assert.assertEquals("User", obtainedUser.getProfile().getName());
+    logger.info("Exiting testCreateNormalUserWithCustomEmailTemplate test");
+  }
+
+  /**
+   * @Desc Private method to create a user
+   * @author vinayv
+   * @param profileName
+   * @return user object
+   * @throws Exception
+   */
+  private com.citrix.cpbm.access.User createUserByProfile(String profileName) throws Exception {
+    UserForm form = new UserForm();
+    form.setCountryList(countryService.getCountries(null, null, null, null, null, null, null));
+    com.citrix.cpbm.access.User newUser = form.getUser();
+    newUser.setEmail("test@test.com");
+    newUser.setUsername("testuser");
+    newUser.setFirstName("firstName");
+    newUser.setLastName("lastName");
+    Profile profile = profileDAO.findByName(profileName);
+    form.setUserProfile(profile.getId());
+    request.addParameter("submitButtonEmail", "Finish");
+    BindingResult bindingResult = validate(form);
+    com.citrix.cpbm.access.Tenant proxyTenant = (com.citrix.cpbm.access.Tenant) CustomProxy.newInstance(controller
+        .getTenant());
+    String view = controller.createUserStepTwo(form, bindingResult, proxyTenant, map, request, new MockHttpSession());
+    Assert.assertEquals("users.newuserregistration.finish", view);
+    UserForm obtainedForm = (UserForm) map.get("user");
+    Assert.assertEquals(form.getUser().getUsername(), obtainedForm.getUser().getUsername());
+
+    return obtainedForm.getUser();
+  }
 }

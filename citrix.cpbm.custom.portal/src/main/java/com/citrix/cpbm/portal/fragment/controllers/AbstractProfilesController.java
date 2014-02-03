@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.ArrayList;
@@ -26,6 +25,7 @@ import com.vmops.model.ProfileAuthority;
 import com.vmops.model.SecurityContextScope.Scope;
 import com.vmops.service.AuthorityService;
 import com.vmops.service.ProfileService;
+import com.vmops.service.UserService.Handle;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ProfileForm;
@@ -65,6 +65,11 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
     } else {
       map.addAttribute("isOpsProfile", "");
     }
+    String systemProfileName = userService.getSystemUser(Handle.PORTAL).getProfile().getName();
+    String rootProfileName = tenantService.getSystemTenant().getOwner().getProfile().getName();
+
+    map.addAttribute("systemProfileName", systemProfileName);
+    map.addAttribute("rootProfileName", rootProfileName);
 
     logger.debug("###Exiting showProfiles method @GET");
 
@@ -108,6 +113,11 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
     map.addAttribute("nonOpsProfileList", nonOpsProfileList);
 
     map.addAttribute("authorityTypes", authorityService.getAllAuthorities());// Authority.getTypes());
+    String systemProfileName = userService.getSystemUser(Handle.PORTAL).getProfile().getName();
+    String rootProfileName = tenantService.getSystemTenant().getOwner().getProfile().getName();
+
+    map.addAttribute("systemProfileName", systemProfileName);
+    map.addAttribute("rootProfileName", rootProfileName);
 
     logger.debug("###Exiting editProfile method @POST");
 
@@ -127,8 +137,9 @@ public abstract class AbstractProfilesController extends AbstractAuthenticatedCo
 
       ProfileForm profileForm = new ProfileForm(profile);
       String profileName = profile.getName().trim();
-      if (!profileName.equalsIgnoreCase("Master User") && !profileName.equalsIgnoreCase("Root")
-          && !profileName.equalsIgnoreCase("User")) {
+      if (!profileName.equalsIgnoreCase(privilegeService.getOwnerProfile().getName())
+          && !profileName.equalsIgnoreCase("Root")
+          && !profileName.equalsIgnoreCase(privilegeService.getUserProfile().getName())) {
         profileForm.setProfileDelete(true);
       }
 

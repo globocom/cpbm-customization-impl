@@ -12,7 +12,7 @@
 <div style="text-align:right">
   <sec:authorize access="hasRole('ROLE_ACCOUNT_CRUD')">
   
-  <a href="../license/index.html" target="_blank"><spring:message code="version.id" /> </a> (<spring:message code="build.id" />) 
+    <a href="<%=request.getContextPath() %>/license/index.html" target="_blank"><c:out value="${globalConfiguration['version.id']}"></c:out> </a> (<c:out value="${globalConfiguration['build.id']}"></c:out>)
   
       
   </sec:authorize>

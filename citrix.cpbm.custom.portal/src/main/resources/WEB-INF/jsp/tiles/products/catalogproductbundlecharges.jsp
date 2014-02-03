@@ -37,7 +37,7 @@
 
        <c:if test="${(fn:length(currencies) > 4 and noDialog)}">
          <div class="widget_grid_cell" style="width:4%;">
-           <a class="moretabbutton" onclick="getFullListingOfCharges(<c:out value="${productBundleRevision.productBundle.id}"/>);" href="#" title="<spring:message code='label.show.more'/>">
+           <a class="moretabbutton" onclick="getFullListingOfCharges(this, <c:out value="${productBundleRevision.productBundle.id}"/>);" href="javascript:void(0);" title="<spring:message code='label.show.more'/>">
            </a>
          </div>
        </c:if>

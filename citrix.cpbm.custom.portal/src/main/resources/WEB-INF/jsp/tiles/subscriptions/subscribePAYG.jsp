@@ -13,13 +13,23 @@
     </h3>
     <span id="effective_date_box" class="sub_title"></span>
   </div>
+  
+  
   <div class="page_heading_description">
     <p>
-      <spring:message code="label.catalog.pay.as.you.go.description" />
+    <c:choose>
+      <c:when test="${not noResourceType}">
+        <spring:message code="label.catalog.pay.as.you.go.description" />
+      </c:when>
+      <c:otherwise>
+        <spring:message code="label.catalog.pay.as.you.go.description.without.resourcetype"/>
+      </c:otherwise>
+    </c:choose>
     </p>
   </div>
+  
 </div>
-  <c:if test="${not viewChannelCatalog && not anonymousBrowsing}">
+  <c:if test="${not viewChannelCatalog && not anonymousBrowsing && not noResourceType}">
 <div class="full_width_box">
   <div class="utility_view_launch_form pull-right">
     <div class="go_button_class"> <label class="pull-left"> <spring:message code="label.launch" />:
@@ -34,19 +44,15 @@
     </div>
     <div class="btn-group">
       <button class="btn btn-primary js_pay_as_you_go_action" style="width:43px;" data-hover="dropdown" data-delay="1000" data-close-others="false"><spring:message code="label.button.go" /></button>
-      <button class="btn btn-primary dropdown-toggle js_pay_as_you_go_dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" data-toggle="dropdown" style="padding-bottom:12px;padding-top:4px;">
-      <span class="caret"></span>
-      </button>
-      <ul id="group_choice_radios" class="dropdown-menu dropdown-menu-blue" style="z-index: 10000; width: 235px; margin-left: -168px;">
-      </ul>
     </div>
     
     </div>
   </div>
 </div>
     </c:if>
+
 <div id="utilityrate_table" class="full_width_box utility_table"></div>
-  <c:if test="${not viewChannelCatalog && not anonymousBrowsing}">
+  <c:if test="${not viewChannelCatalog && not anonymousBrowsing && not noResourceType}">
 <div class="full_width_box" id="pay_as_you_go_action_container_2" style="display: none;">
   <div class="utility_view_launch_form pull-right">
     <div class="go_button_class"> <label class="pull-left"> <spring:message code="label.launch" />:
@@ -61,13 +67,8 @@
     </span>
     <div class="btn-group">
       <button class="btn btn-primary js_pay_as_you_go_action" style="width:43px;" data-hover="dropdown" data-delay="1000" data-close-others="false"><spring:message code="label.button.go" /></button>
-      <button class="btn btn-primary dropdown-toggle js_pay_as_you_go_dropdown" data-hover="dropdown" data-delay="1000" data-close-others="false" data-toggle="dropdown" style="padding-bottom:12px;padding-top:4px;">
-      <span class="caret"></span>
-      </button>
-      <ul id="group_choice_radios" class="dropdown-menu dropdown-menu-blue" style="z-index: 10000; width: 235px; margin-left: -168px;">
-      </ul>
     </div>
     </div>
   </div>
 </div>
-    </c:if>
+  </c:if>

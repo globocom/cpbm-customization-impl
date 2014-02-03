@@ -6,8 +6,8 @@
 <%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles"%>
 <div class="secondlevel_withoutsubmenu">
   <div class="secondlevel_breadcrumb_panel">
-    <div class="secondlevel_breadcrumbbox">
-      <p>
+    <div class="secondlevel_breadcrumbbox_tenant">
+      <p title="${tenant.name}">
         <c:out value="${tenant.name}" />
       </p>
     </div>

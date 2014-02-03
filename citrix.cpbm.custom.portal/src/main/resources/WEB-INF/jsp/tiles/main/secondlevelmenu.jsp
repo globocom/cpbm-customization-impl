@@ -7,8 +7,8 @@
 <input type="hidden" id="l3_tenant_param" value='<c:out value="${tenant.param}"/>'/>
 <div class="secondlevel_withsubmenu">
     <div class="secondlevel_breadcrumb_panel">
-    	<div class="secondlevel_breadcrumbbox">
-        	<p><c:out value="${tenant.name}"/></p>
+    	<div class="secondlevel_breadcrumbbox_tenant">
+        	<p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
       </div>
       <div class="doc_help_link"></div>
     </div>        
@@ -34,7 +34,7 @@
            </sec:authorize>
            </c:if>
            <c:if test="${(showUserProfile && currentTenant.id == 1) || currentTenant.id != 1}">
-           <sec:authorize access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_USER')">
+           <sec:authorize access="hasAnyRole('ROLE_USER_CRUD','ROLE_ACCOUNT_USER_CRUD','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_ACCOUNT_CRUD','ROLE_ACCOUNT_MGMT')">
               <spring:url value="/portal/tenants/alerts" var="all_alerts_path" htmlEscape="false">
                 <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
               </spring:url>

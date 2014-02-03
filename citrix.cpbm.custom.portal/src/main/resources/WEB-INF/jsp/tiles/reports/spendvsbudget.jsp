@@ -10,6 +10,7 @@
 $(document).ready(function(){
 
   var currencySymbol = "<c:out value="${effectiveTenant.currency.sign}" />"; 
+  var max_decimal_digits="<c:out value="${currencyFractionalDigitsLimit}" />";
   var chartId='<c:out value="${chartId}" />';
 	var chartData = '<c:out value="${chartData}" escapeXml="false"/>';
 	var formatted_budget_value='<fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="0" minFractionDigits="0" value="${spend_vs_budget_chart_data_obj.spendvsbudget.spendLimit}" />';
@@ -72,7 +73,8 @@ $(document).ready(function(){
 	        "numberprefix": currencySymbol,
 	        "animation":"1",
 	        "autoScale":"1",
-	        "manageResize":"1"
+	        "manageResize":"1",
+	        "decimals":max_decimal_digits
 	        
 	        
 	    },

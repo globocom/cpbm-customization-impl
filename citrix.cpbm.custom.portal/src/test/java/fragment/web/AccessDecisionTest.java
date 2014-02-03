@@ -51,6 +51,7 @@ public class AccessDecisionTest extends WebTestsBase {
 
   private static final FilterChain DUMMY_CHAIN = new FilterChain() {
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
       throw new UnsupportedOperationException();
     }
@@ -68,6 +69,8 @@ public class AccessDecisionTest extends WebTestsBase {
             HttpMethod.GET, "/portal/portal/login"
         }, {
             HttpMethod.POST, "/portal/portal/login"
+        }, {
+            HttpMethod.GET, "/portal/portal/getGoogleAnalytics"
         }, {
             HttpMethod.GET, "/portal/portal/register"
         }, {
@@ -118,13 +121,13 @@ public class AccessDecisionTest extends WebTestsBase {
         }, {
             HttpMethod.PUT, "/portal/portal/tenants/1"
         }, {
-          HttpMethod.GET, "/portal/portal/tasks/"
+            HttpMethod.GET, "/portal/portal/tasks/"
         }, {
-          HttpMethod.GET, "/portal/portal/tasks/1/"
+            HttpMethod.GET, "/portal/portal/tasks/1/"
         }, {
-          HttpMethod.GET, "/portal/portal/tasks/approval-task/1"
+            HttpMethod.GET, "/portal/portal/tasks/approval-task/1"
         }, {
-          HttpMethod.POST, "/portal/portal/tasks/approval-task"
+            HttpMethod.POST, "/portal/portal/tasks/approval-task"
         }
     };
     verify(auth, anonymousAccessValid, anonymousAccessInvalid);

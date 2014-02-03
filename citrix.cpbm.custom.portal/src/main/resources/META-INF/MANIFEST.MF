@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Version: 2.1.1
+Bundle-Version: 2.2.0
 Bundle-Name: CPBM Portal Custom
 Fragment-Host: citrix.cpbm.portal.core;bundle-version="[2.0.0,3.0.0)"
 Bundle-SymbolicName: citrix.cpbm.custom.portal

@@ -93,8 +93,16 @@
     </div>
 </div>
 
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 
 <div class="widget_browser">
   <c:choose>
@@ -122,7 +130,6 @@
   <div class="widget_browsermaster fullscreen">
     	<div class="widget_browser_contentarea">
     		<div class="widget_browsergrid_wrapper fullpagegrid">
-            	<div class="widget_browsergrid_wrapper fullpagegrid">
                 	<div class="widget_grid inline header">
                     	<div class="widget_grid_cell" style="width:15%;">
                         	<span class="header">
@@ -202,19 +209,13 @@
                                 </c:otherwise>
                               </c:choose>
                             </span>
-                            <a href="#" style="cursor:default;" onmouseover="onNotificationDetailMouseover(<c:out value='${status.index}' />);" onmouseout="onNotificationDetailMouseout(<c:out value='${status.index}' />);">
+                            <a href="javascript:void(0);" style="cursor:default;" rel="popover" id="details_link_${status.index}" class="js_notification_details_popover">
                               <spring:message code="notification.detail.more" /></a>
                           </span>
                         </div>
                         <!--Info popover starts here-->
-                        <div class="widget_details_popover" id="info_bubble2_<c:out value='${status.index}' />" style="display:none;">
-                          <div class="popover_wrapper" >
-                          <div class="popover_shadow"></div>
-                          <div class="popover_contents">
-                            <div class="raw_contents raw_contents_details">
-                              
-                              <div class="raw_content_row raw_detailscontent_row">
-                                <div class="raw_contents_value raw_detailscontents_value">
+                        <div  id="info_bubble2_<c:out value='${status.index}' />" style="display:none;">
+                              <div style="max-width:300px;word-wrap: break-word;">
                                   <span>
                                     <c:choose>
                                       <c:when test="${notification2.useMessageKey eq true}">
@@ -225,25 +226,19 @@
                                       </c:otherwise>
                                     </c:choose>
                                   </span>
-                                </div>
                               </div>
-                              <div class="raw_content_row raw_detailscontent_row">
-                                <div class="raw_contents_value raw_detailscontents_value">
-                                  <span>
-                                    <c:choose>
-                                      <c:when test="${notification2.useMessageKey eq true}">
-                                        <strong><spring:message code="${notification2.description}" arguments="${notification2.messageArguments}"/></strong>
-                                      </c:when>
-                                      <c:otherwise>
-                                        <strong><c:out value="${notification2.attributesJson}"></c:out></strong>
-                                      </c:otherwise>
-                                    </c:choose>
-                                  </span>
-                                </div>
+                              <div style="max-width:300px;word-wrap: break-word;">
+                                <span>
+                                  <c:choose>
+                                    <c:when test="${notification2.useMessageKey eq true}">
+                                      <strong><spring:message code="${notification2.description}" arguments="${notification2.messageArguments}"/></strong>
+                                    </c:when>
+                                    <c:otherwise>
+                                      <strong><c:out value="${notification2.attributesJson}"></c:out></strong>
+                                    </c:otherwise>
+                                  </c:choose>
+                                </span>
                               </div>
-                            </div>
-                          </div>
-                          </div>
                         </div>
                         <!--Info popover ends here-->
                     </div>
@@ -256,9 +251,16 @@
                          <a class="widget_navnext_buttons next nonactive" href="javascript:void(0);" id="click_next2"><spring:message code="label.next"/></a>
                       </div>
                 </div>
-            </div>
         </div>
     </div>
 	
   </div>
 </div>
+<script>  
+  $(function (){
+      $(".js_notification_details_popover").popover({trigger:"hover",html : true, content: function() {
+    	var popover_index = $(this).attr('id').substr(13);
+        return $('#info_bubble2_'+popover_index).html();
+    }});
+  });
+</script>  

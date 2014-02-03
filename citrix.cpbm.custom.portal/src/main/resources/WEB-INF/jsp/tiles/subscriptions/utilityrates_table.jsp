@@ -27,7 +27,16 @@
     </tr>  
   </thead>  
   <tbody>
-  <c:forEach items="${retMap}" var="serviceMap" varStatus="serviceLoopStatus">
+  <c:choose>
+    <c:when test="${empty retMap }">
+      <tr>
+        <td colspan="2">
+          <p class="alert alert-info"><spring:message code="ui.warning.message.no.products.available"/></p>
+        </td>
+      </tr>
+    </c:when>
+    <c:otherwise>
+    <c:forEach items="${retMap}" var="serviceMap" varStatus="serviceLoopStatus">
     
     <c:set var="serviceInstanceMap" value="${serviceMap.value}"></c:set>
     
@@ -51,9 +60,9 @@
               <p class="ur_title"><c:out value="${productsMapVar.key.name}"/></p>
               
                 <c:choose>
-                    <c:when test="${fn:length(productsMapVar.key.description) > 155}">
+                    <c:when test="${fn:length(productsMapVar.key.description) > 70}">
                     <p class="description" id="stripped_content_${productMapLoopStatus.count}" style="float:left;">
-                        <c:out value="${fn:substring(productsMapVar.key.description, 0, 150)}"/>&hellip;
+                        <c:out value="${fn:substring(productsMapVar.key.description, 0, 70)}"/>&hellip;
                     </p>
                     <p class="description" id="hidden_content_${productMapLoopStatus.count}" style="display:none;">
                         
@@ -80,6 +89,8 @@
       </c:forEach>
     
   </c:forEach>
+  </c:otherwise>
+  </c:choose>
         
   </tbody>  
 </table>

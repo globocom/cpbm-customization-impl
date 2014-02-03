@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright ¬© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.File;
@@ -28,6 +27,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,12 +55,14 @@ import org.springframework.web.servlet.ModelAndView;
 import com.citrix.cpbm.access.proxy.CustomProxy;
 import com.citrix.cpbm.access.proxy.CustomProxyUtils;
 import com.citrix.cpbm.core.workflow.model.BusinessTransaction;
+import com.citrix.cpbm.core.workflow.model.CloudServiceActivationTransaction;
 import com.citrix.cpbm.core.workflow.model.Task;
 import com.citrix.cpbm.core.workflow.service.TaskService;
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.spi.AccountLifecycleHandler;
 import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
+import com.citrix.cpbm.platform.spi.UserLifecycleHandler;
 import com.citrix.cpbm.platform.util.CssdkConstants;
 import com.citrix.cpbm.portal.forms.TenantForm;
 import com.vmops.config.BillingPostProcessor;
@@ -87,6 +90,7 @@ import com.vmops.model.PendingChange;
 import com.vmops.model.ResourceLimit;
 import com.vmops.model.Service;
 import com.vmops.model.ServiceInstance;
+import com.vmops.model.ServiceInstanceTenantConfiguration;
 import com.vmops.model.SpendAlertSubscription;
 import com.vmops.model.SupportedCurrency;
 import com.vmops.model.Tenant;
@@ -116,10 +120,12 @@ import com.vmops.service.exceptions.BillingAdminServiceException;
 import com.vmops.service.exceptions.IPtoCountryException;
 import com.vmops.service.exceptions.InternalIPException;
 import com.vmops.service.exceptions.InvalidAjaxRequestException;
+import com.vmops.service.exceptions.LDAPException;
 import com.vmops.service.exceptions.NoManualRegistrationAccountTypeException;
 import com.vmops.service.exceptions.ServiceException;
 import com.vmops.service.exceptions.TenantStateChangeFailedException;
 import com.vmops.service.exceptions.UserLimitServiceException;
+import com.vmops.utils.JSONUtils;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Level1;
 import com.vmops.web.controllers.menu.Page;
@@ -469,8 +475,18 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
    */
   @RequestMapping(value = "/{tenantParam}/editlogo", method = RequestMethod.POST)
   public String editTenantLogo(@PathVariable String tenantParam,
-      @ModelAttribute("tenantLogoForm") TenantLogoForm tenantLogoForm, BindingResult result, ModelMap map) {
+      @ModelAttribute("tenantLogoForm") TenantLogoForm tenantLogoForm, BindingResult result, ModelMap map,
+      HttpServletRequest httpServletRequest) {
     logger.debug("### edit logo method starting...(POST)");
+    String fileSize = checkFileUploadMaxSizeException(httpServletRequest);
+    if (fileSize != null) {
+      result.reject("error.image.max.upload.size.exceeded", new Object[] {
+        fileSize
+      }, "");
+      setPage(map, Page.HOME);
+      return "tenants.editcurrentlogo";
+    }
+
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
     if (rootImageDir != null && !rootImageDir.trim().equals("")) {
       Tenant tenant = tenantService.get(tenantParam);
@@ -562,7 +578,9 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       @RequestParam(value = "filterBy", required = false) String filterBy,
       @RequestParam(value = "currentPage", required = false, defaultValue = "1") String currentPage,
       @RequestParam(value = "tenantParam", required = false) String tenantParam,
-      @RequestParam(value = "size", required = false) String size, ModelMap map, HttpServletRequest request) {
+      @RequestParam(value = "size", required = false) String size,
+      @RequestParam(value = "selectedAccount", required = false) String selectedAccount, ModelMap map,
+      HttpServletRequest request) {
     logger.debug("###Entering in list(map) method @GET");
     // The tenantForm object is added into map just to populate country list in country_states.jsp
     TenantForm tenantForm = new TenantForm();
@@ -711,12 +729,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
 
     SearchForm searchForm = new SearchForm();
 
-    /*
-     * ResourceBundle resourceBundle = ResourceBundle.getBundle("cloud"); String customFieldsProp =
-     * resourceBundle.getString("tenant.custom.searchField"); String
-     * customFieldsNamesProp=resourceBundle.getString("tenant.custom.searchField.displayName");
-     */
-
     String customFieldsProp = CustomProxyUtils.getSearchableFields(com.citrix.cpbm.access.Tenant.class);
 
     String[] customFields = null;
@@ -729,7 +741,9 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
     map.addAttribute("customFieldList", customFields);
     map.addAttribute("searchForm", searchForm);
-
+    if (StringUtils.isNotEmpty(selectedAccount)) {
+      map.addAttribute("selectedAccount", selectedAccount);
+    }
     logger.debug("###Exiting list(map) method @GET");
     return "tenant.listing";
   }
@@ -793,7 +807,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     map.addAttribute("supportedLocaleList", this.getLocaleDisplayName(listSupportedLocales()));
     map.addAttribute("defaultLocale", getDefaultLocale());
     String showImportFromDirectoryServiceButton = "false";
-    if (config.getBooleanValue(Configuration.Names.com_citrix_cpbm_portal_directory_service_enabled)
+    if (config.getBooleanValue(Names.com_citrix_cpbm_portal_directory_service_enabled)
         && config.getValue(Names.com_citrix_cpbm_directory_mode).equals("pull")) {
       showImportFromDirectoryServiceButton = "true";
     }
@@ -906,6 +920,11 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
         ex.getMessage()
       }, null);
       errorMsgList.add("You must accept the terms and conditions to use this service");
+    } catch (LDAPException le) {
+      logger.error(le);
+      result.reject("errors.registration", new Object[] {
+        le.getMessage()
+      }, null);
     } catch (Exception ex) {
       logger.error("###handleTenantCreationError:" + ex.getMessage());
       throw ex;
@@ -1160,7 +1179,11 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       setPage(map, Page.ACCOUNT_ALL_ACCOUNTS);
     } else {
       if (accountType != "") {
+        String accountTypeName = accountTypeObj != null ? accountTypeObj.getName() : "";
+
         map.addAttribute("accountresult", "true");
+        map.addAttribute("selectedTab", accountTypeName);
+        map.addAttribute("on", "on");
         if (accountType.equals("1")) {
           setPage(map, Page.ACCOUNT_SYSTEM);
         } else if (accountType.equals("3")) {
@@ -1245,7 +1268,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
     if (size == null || size.equals("")) {
       if (hasStaticCriteria) {
-        sizeInt = tenantService.listTenants(currentPageValue, perPageValue, null, null, false, stateString, null, null,
+        sizeInt = tenantService.listTenants(0, 0, null, null, false, stateString, null, null,
             null, null, searchKeyMap, null, null).size();
       } else {
         sizeInt = tenantService.listTenants(0, 0, null, null, false, stateString, null,
@@ -1290,12 +1313,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       map.addAttribute("creditBalance", creditBalance);
     }
 
-    /*
-     * ResourceBundle resourceBundle = ResourceBundle.getBundle("cloud"); String customFieldsProp =
-     * resourceBundle.getString("tenant.custom.searchField"); String
-     * customFieldsNamesProp=resourceBundle.getString("tenant.custom.searchField.displayName");
-     */
-
     map.addAttribute("customFieldList", customFields);
     map.addAttribute("searchForm", searchForm);
 
@@ -1322,9 +1339,10 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
    */
   @RequestMapping(value = "/get_account_type", method = RequestMethod.GET)
   @ResponseBody
-  public HashMap<String,Object> getAccountType(@RequestParam(value = "accountTypeName", required = true) String accountTypeName) {
+  public HashMap<String, Object> getAccountType(
+      @RequestParam(value = "accountTypeName", required = true) String accountTypeName) {
     AccountType accountType = tenantService.getAccountTypeByName(accountTypeName);
-    
+
     HashMap<String, Object> accountTypeMap = new HashMap<String, Object>();
     accountTypeMap.put("name", accountType.getName());
     accountTypeMap.put("paymentModes", accountType.getPaymentModes());
@@ -1369,10 +1387,9 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     List<Event> eventLst = new ArrayList<Event>();
     try {
+      List<Event> allEvents = eventService.showEventDates(user, filterBy, 0, 0, null, null, null, null);
+      sizeInt = allEvents.size();
       if (size == null || size.equals("")) {
-        // sizeInt = notificationService.showNotificationDates(user, filterBy, 0, 0).size();
-        List<Event> allEvents = eventService.showEventDates(user, filterBy, 0, 0);
-        sizeInt = allEvents.size();
         int fromIndex = (currentPageValue - 1) * perPageValue;
         int toIndex = fromIndex + perPageValue;
         if (toIndex > sizeInt) {
@@ -1380,11 +1397,8 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
         }
         eventLst = allEvents.subList(fromIndex, toIndex);
       } else {
-        sizeInt = Integer.parseInt(size);
-        eventLst = eventService.showEventDates(user, filterBy, currentPageValue, perPageValue);
+        eventLst = eventService.showEventDates(user, filterBy, currentPageValue, perPageValue, null, null, null, null);
       }
-      // List<Alert> subscribedAlerts = alertService.getSubscribedAlerts(user);
-      // alerts.addAll(subscribedAlerts);
       map.addAttribute("notificationsList", eventLst);
       map.addAttribute("size", eventLst.size());
     } catch (Exception e) {
@@ -1463,9 +1477,9 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     List<Event> eventLst = new ArrayList<Event>();
     try {
       date = date.substring(0, date.indexOf(' '));// get date as '%Y-%m-%d' from 'yyyy-MM-dd HH:mm:ss'
+      List<Event> allEvents = eventService.showEvents(user, date, 0, 0, null, null, null, null, null, false);
+      sizeInt = allEvents.size();
       if (size == null || size.equals("")) {
-        List<Event> allEvents = eventService.showEvents(user, date, 0, 0, null, null, null, null, null, false);
-        sizeInt = allEvents.size();
         int fromIndex = (currentPageValue - 1) * perPageValue;
         int toIndex = fromIndex + perPageValue;
         if (toIndex > sizeInt) {
@@ -1473,7 +1487,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
         }
         eventLst = allEvents.subList(fromIndex, toIndex);
       } else {
-        sizeInt = Integer.parseInt(size);
         eventLst = eventService.showEvents(user, date, currentPageValue, perPageValue, null, null, null, null, null,
             false);
       }
@@ -1490,7 +1503,6 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
 
     // Need for pagination
     map.addAttribute("url", "/portal/portal/tenants/notifications?");
-    // setPaginationValues(map, perPageValue, currentPageValue, sizeInt, null);
 
     int totalpages = 1;
     if (perPageValue > 0) {
@@ -1555,6 +1567,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
     map.addAttribute("user", effectiveUser);
     map.addAttribute("tenant", effectiveTenant);
+
     logger.debug("###Exiting viewAlertsDeliveryOptions(map) method @GET");
     return "alerts.delivery_opts";
   }
@@ -1569,7 +1582,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
    */
   @RequestMapping(value = "/change_primary_email", method = RequestMethod.POST)
   @ResponseBody
-  public String saveNewPrimaryEmail(@RequestParam(value = "param", required = true) String tenantParam,
+  public Map<String, String> saveNewPrimaryEmail(@RequestParam(value = "param", required = true) String tenantParam,
       @RequestParam(value = "userParam", required = true) String userParameter,
       @RequestParam(value = "newEmail", required = false) String notificationPrefId, ModelMap map,
       HttpServletRequest request) {
@@ -1586,18 +1599,23 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     if (userParameter != null) {
       effectiveUser = userService.get(userParameter);
     }
-    String secondaryEmailAdd = null;
+    Map<String, String> returnMap = new HashMap<String, String>();
     try {
       UserAlertPreferences userAlertPreferences = userAlertPreferencesService.locateUserAlertPreference(new Long(
           notificationPrefId));
-      secondaryEmailAdd = userService.setPrimaryEmailAddress(effectiveUser, userAlertPreferences);
+      UserAlertPreferences modifiedUserAlertPreference = userService.setPrimaryEmailAddress(effectiveUser,
+          userAlertPreferences);
+      returnMap.put("email", modifiedUserAlertPreference.getEmailAddress());
+      returnMap.put("isVerified", Boolean.toString(modifiedUserAlertPreference.isEmailVerified()));
+      returnMap.put("status", "success");
+
       // After making the secondary email id as primary the old primary email id should become secondary (DE3540)
+      logger.debug("###Exiting saveNewPrimaryEmail(map) method @POST - success");
     } catch (Exception e) {
       logger.debug("###Exiting saveNewPrimaryEmail(map) method @POST - failure", e);
-      return "failure";
+      returnMap.put("status", "failure");
     }
-    logger.debug("###Exiting saveNewPrimaryEmail(map) method @POST - success");
-    return secondaryEmailAdd;
+    return returnMap;
   }
 
   /**
@@ -1633,7 +1651,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       logger.error(e);
     }
     map.addAttribute("user", effectiveUser);
-    map.addAttribute("tenant", effectiveUser);
+    map.addAttribute("tenant", effectiveTenant);
     logger.debug("###Exiting viewVerifiedEmails(map) method @GET");
     return "alerts.change_primary_email";
   }
@@ -1647,13 +1665,15 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
    */
   @RequestMapping(value = "/alert_prefs", method = RequestMethod.POST)
   @ResponseBody
-  public String saveAlertsDeliveryOptions(@Valid @ModelAttribute("userAlertEmailForm") UserAlertEmailForm form,
-      BindingResult result) {
+  public Map<String, String> saveAlertsDeliveryOptions(
+      @Valid @ModelAttribute("userAlertEmailForm") UserAlertEmailForm form, BindingResult result) {
     logger.debug("###Entering in viewAlertsDeliveryOptions(map) method @POST");
+    Map<String, String> returnMap = new HashMap<String, String>();
     if (result.hasErrors()) {
       throw new AjaxFormValidationException(result);
     }
     User user = form.getUser();
+    user = userService.get(user.getUuid());
     String email = form.getEmail();
     AlertType alertType = form.getAlertType();
 
@@ -1681,8 +1701,9 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
 
     UserAlertPreferences alertPref = userAlertPreferencesService.createUserAlertPreference(user, email, alertType);
+    returnMap.put("id", alertPref.getId().toString());
     logger.debug("###Exiting viewAlertsDeliveryOptions(map) method @POST - success");
-    return alertPref.getId().toString();
+    return returnMap;
   }
 
   /**
@@ -1836,6 +1857,17 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     map.addAttribute("subscription", subscription);
     map.addAttribute("spendbudget", tenant.getSpendBudget().toString());
     map.addAttribute("tenant", tenant);
+
+    AccountHolder target = subscription.getAccountHolder();
+    if (target instanceof Tenant) {
+      if (subscription.getUser().getTenant().equals(getCurrentUser().getTenant())) {
+        map.addAttribute("allowEdit", true);
+      }
+    } else if (target instanceof User) {
+      if (subscription.getUser().equals(getCurrentUser())) {
+        map.addAttribute("allowEdit", true);
+      }
+    }
 
     // Calculate the exact limit for spend budget
     float spend_budget_alert_cap;
@@ -2006,7 +2038,8 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
   public SpendAlertSubscription editSpendAlertSubscription(
       @RequestParam(value = "Id", required = true) String subscriptionId,
       @RequestParam(value = "newValue", required = true) String newVal,
-      @ModelAttribute("subscriptionForm") CustomAlertForm form, BindingResult result, ModelMap map) {
+      @ModelAttribute("subscriptionForm") CustomAlertForm form, BindingResult result, ModelMap map,
+      HttpServletRequest request) {
     logger.debug("###Entering editSubscription method @POST");
     SpendAlertSubscription subscription = notificationService.getSpendAlertSubscription(new Long(subscriptionId));
     if (newVal == null) {
@@ -2017,6 +2050,19 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     if ((percentage.intValue() < 0) || (percentage.intValue() > 100)) {
       result.rejectValue("tenantPercentage", "js.errors.tenantPercentage.percentage");
       throw new AjaxFormValidationException(result);
+    }
+    Tenant effectiveTenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
+    form.setTenantPercentage(new BigDecimal(newVal));
+    if (effectiveTenant != null) {
+      List<SpendAlertSubscription> spendAlertSubscription = notificationService.getAllSubscriptions(effectiveTenant);
+      if (CollectionUtils.isNotEmpty(spendAlertSubscription)) {
+        for (SpendAlertSubscription spendAlertSubscription2 : spendAlertSubscription) {
+          if (spendAlertSubscription2.getPercentage().doubleValue() == form.getTenantPercentage().doubleValue()) {
+            result.rejectValue("tenantPercentage", "js.errors.tenantPercentage.validatePercentage");
+            throw new AjaxFormValidationException(result);
+          }
+        }
+      }
     }
     subscription.setPercentage(percentage);
     subscription = notificationService.saveSubscription(subscription);
@@ -2115,6 +2161,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
   }
 
   @RequestMapping(value = "/{tenantParam}/delete", method = RequestMethod.POST)
+  @ResponseBody
   public String delete(@PathVariable String tenantParam, ModelMap map) {
     logger.debug("###Entering in delete(@PathVariable String tenantParam, ModelMap map) method @POST");
     Tenant tenant = tenantService.get(tenantParam);
@@ -2125,7 +2172,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       logger.error("###Exception whilst deleting tenant id:" + tenant.getId(), e);
     }
     logger.debug("###Exitng in delete(@PathVariable String tenantParam, ModelMap map) method @POST");
-    return "redirect:/portal/tenants/list";
+    return "success";
   }
 
   protected HashMap<String, String> getTenantDataHashMap(Tenant tenant) {
@@ -2135,6 +2182,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     map.put("accountType", tenant.getAccountType().getDisplayName());
     map.put("accountId", tenant.getAccountId());
     map.put("state", tenant.getState().getName());
+    map.put("stateOrdinal", "" + tenant.getState().ordinal());
     map.put("username", tenant.getOwner().getUsername());
     return map;
   }
@@ -2153,18 +2201,30 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     Tenant tenant = tenantService.get(tenantParam);
 
     Map<String, String> resLimitMap = connectorConfigurationManager.getAccountControls(tenant, instanceParam);
+
+    resLimitMap.putAll(connectorConfigurationManager.getUserControls(tenant.getOwner(), instanceParam));
     ServiceInstance instance = connectorConfigurationManager.getInstance(instanceParam);
 
-    if (resLimitMap != null) {
+    if (resLimitMap != null && !resLimitMap.isEmpty()) {
+      Set<AccountControlServiceConfigMetadata> properties = instance.getService()
+          .getAccountControlServiceConfigMetadata();
+      List<AccountControlServiceConfigMetadata> accountControlProperties = new ArrayList<AccountControlServiceConfigMetadata>();
+
+      for (AccountControlServiceConfigMetadata accountControlServiceConfigMetadata : properties) {
+        if (resLimitMap.get(accountControlServiceConfigMetadata.getName()) != null) {
+          accountControlProperties.add(accountControlServiceConfigMetadata);
+        }
+      }
+
+      Collections.sort(accountControlProperties);
+
+      map.addAttribute("account_control_edit_properties", accountControlProperties);
       map.addAttribute("resourceLimitsMap", resLimitMap);
     }
 
     map.addAttribute("tenantid", tenant.getId());
     map.addAttribute("tenantuuid", tenantParam);
     map.addAttribute("instance", instance);
-
-    Long userLimit = tenant.getMaxUsers();
-    map.addAttribute("userLimit", userLimit); // TODO show userlimit in UI
 
     logger.debug("### Exiting getAccountLimits method...(GET)");
     return "tenant.showlimits";
@@ -2174,29 +2234,29 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     logger.debug("### Entering editAccountLimits method...(GET)");
     Tenant tenant = tenantService.get(tenantParam);
     Map<String, String> resLimitMap = connectorConfigurationManager.getAccountControls(tenant, instanceParam);
+    resLimitMap.putAll(connectorConfigurationManager.getUserControls(tenant.getOwner(), instanceParam));
     ServiceInstance instance = connectorConfigurationManager.getInstance(instanceParam);
 
-    Set<AccountControlServiceConfigMetadata> properties = instance.getService()
-        .getAccountControlServiceConfigMetadata();
-    Map<String, AccountControlServiceConfigMetadata> metadata = new HashMap<String, AccountControlServiceConfigMetadata>();
-    for (AccountControlServiceConfigMetadata accountControlServiceConfigMetadata : properties) {
-      metadata.put(accountControlServiceConfigMetadata.getName(), accountControlServiceConfigMetadata);
+    if (resLimitMap != null && !resLimitMap.isEmpty()) {
+      Set<AccountControlServiceConfigMetadata> properties = instance.getService()
+          .getAccountControlServiceConfigMetadata();
+      List<AccountControlServiceConfigMetadata> accountControlProperties = new ArrayList<AccountControlServiceConfigMetadata>();
+
+      for (AccountControlServiceConfigMetadata accountControlServiceConfigMetadata : properties) {
+        if (resLimitMap.get(accountControlServiceConfigMetadata.getName()) != null) {
+          accountControlProperties.add(accountControlServiceConfigMetadata);
+        }
+      }
+
+      Collections.sort(accountControlProperties);
+
+      map.addAttribute("account_control_edit_properties", accountControlProperties);
+      map.addAttribute("resLimitMap", resLimitMap);
     }
 
-    List<AccountControlServiceConfigMetadata> propertyList = new ArrayList<AccountControlServiceConfigMetadata>();
-    Set<String> resourceNames = resLimitMap.keySet();
-    for (String resourceName : resourceNames) {
-      AccountControlServiceConfigMetadata property = metadata.get(resourceName);
-      propertyList.add(property);
-    }
-    List<AccountControlServiceConfigMetadata> sortedProperties = new ArrayList<AccountControlServiceConfigMetadata>(
-        propertyList);
-    Collections.sort(sortedProperties);
-    map.addAttribute("account_control_edit_properties", sortedProperties);
     map.addAttribute("service", instance.getService());
     map.addAttribute("instance", instance);
     map.addAttribute("tenantuuid", tenantParam);
-    map.addAttribute("resLimitMap", resLimitMap);
 
     logger.debug("### Exiting editAccountLimits method...(GET)");
     return "tenant.editaccountlimits";
@@ -2234,6 +2294,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       }
       Tenant tenant = tenantService.get(tenantParam);
       getAccountLifecycleHandler(instanceParam).setControls(tenant, limitMap);
+      getUserLifecycleHandler(instanceParam).setControls(tenant.getOwner(), limitMap);
       map.put("result", CssdkConstants.SUCCESS);
     } catch (Exception ex) {
       map.put("result", CssdkConstants.FAILURE);
@@ -2255,6 +2316,11 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
   private AccountLifecycleHandler getAccountLifecycleHandler(String instanceParam) {
     CloudConnector connector = (CloudConnector) connectorManagementService.getServiceInstance(instanceParam);
     return connector != null ? connector.getAccountLifeCycleHandler() : null;
+  }
+
+  private UserLifecycleHandler getUserLifecycleHandler(String instanceParam) {
+    CloudConnector connector = (CloudConnector) connectorManagementService.getServiceInstance(instanceParam);
+    return connector != null ? connector.getUserLifeCycleHandler() : null;
   }
 
   @RequestMapping(value = "/edit_account_limits", method = RequestMethod.GET)
@@ -2317,12 +2383,19 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
   @RequestMapping(value = "/validate_trial")
   @ResponseBody
   public String validatePromotionCodeforTenant(@RequestParam("trialCode") final String trialCode,
-      @RequestParam("channelParam") final String channelParam) {
+      @RequestParam("channelParam") final String channelParam, @RequestParam("accountTypeId") final String accountTypeId) {
 
     logger.debug("###validatePromotionCode() method starting...." + trialCode);
     CampaignPromotion promotion = promotionService.locatePromotionByToken(trialCode);
     if (promotion == null) {
       return Boolean.FALSE.toString();
+    }
+    AccountType targetAccountType = null; 
+    if(StringUtils.isNotBlank(accountTypeId)){
+      targetAccountType = accountTypeService.locateAccountTypeById(accountTypeId);
+      if(!targetAccountType.isTrial() && promotion.isTrial()){
+        return Boolean.FALSE.toString();
+      }
     }
     if (promotion.getSupportedChannels() != null && promotion.getSupportedChannels().size() > 0) {
       Channel channel = channelService.getChannel(channelParam);
@@ -2353,6 +2426,7 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
       logger.error(e);
     }
     mapresult.put("tenantCredentialList", credentialList);
+    mapresult.put("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
     mapresult.put("success", true);
 
     logger.debug("###Exiting getapidetails(password,map) method @POST returning  for " + user.getName());
@@ -2369,20 +2443,57 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @ResponseBody
   @RequestMapping(value = "/enable_service", method = RequestMethod.POST)
-  public Map<String, List<String>> enableService(
-      @RequestParam(value = "tenantparam", required = true) String tenantParam,
+  public ModelMap enableService(@RequestParam(value = "tenantparam", required = true) String tenantParam,
       @RequestParam(value = "instanceUuid", required = true) String serviceInstanceUuid,
-      @RequestParam(value = "instanceProperty", required = true) String instancePropertyJson) {
-    Map<String, List<String>> serviceEnabled = new HashMap<String, List<String>>();
-    @SuppressWarnings("unchecked")
-    Map<String, String> instanceProperty = net.sf.json.JSONObject.fromObject(instancePropertyJson);
-    Tenant tenant = tenantService.get(tenantParam);
-    serviceEnabled = tenantService.enableServiceForTenant(tenant, serviceInstanceUuid, instanceProperty);
-    tenantService.refresh(tenant);
-    return serviceEnabled;
+      @RequestParam(value = "instanceProperty", required = true) String instancePropertyJson,
+      @RequestParam(value = "enableAllUsers", required = false, defaultValue = "false") boolean enableAllUsers,
+      ModelMap map, HttpServletRequest request) throws JsonParseException, JsonMappingException, IOException {
 
+    Tenant tenant = tenantService.get(tenantParam);
+    Map<String, String> instanceProperty = new HashMap<String, String>();
+    if (StringUtils.isNotBlank(instancePropertyJson)) {
+      instanceProperty = JSONUtils.fromJSONString(instancePropertyJson, Map.class);
+    }
+    ServiceInstance serviceInstance = connectorManagementService.getInstance(serviceInstanceUuid);
+    List<BusinessTransaction> businessTransactions = businessTransactionService.getBusinessTransactions(tenant,
+        serviceInstance.getId(), BusinessTransaction.Type.cloudServiceActivation, new BusinessTransaction.State[] {
+          BusinessTransaction.State.SUCCESS
+        }, 0, 0);
+
+    tenantService.setServiceInstanceTenantConfiguration(tenant, serviceInstanceUuid, enableAllUsers, instanceProperty);
+    // Directly call enable service if the BT for the Service instance is already completed
+    if (businessTransactions.size() > 0) {
+      tenantService.enableService(tenant, serviceInstanceUuid, instanceProperty, enableAllUsers);
+    } else {
+      BusinessTransaction businessTransaction = new CloudServiceActivationTransaction(serviceInstance, tenant,
+          instancePropertyJson, enableAllUsers);
+      businessTransactionService.trigger(businessTransaction);
+    }
+    map.addAttribute("result", CssdkConstants.SUCCESS);
+
+    return map;
+  }
+
+  @ResponseBody
+  @RequestMapping(value = "/set_autoprovision", method = RequestMethod.POST)
+  public ModelMap setAutoProvisioning(@RequestParam(value = "tenantparam", required = true) String tenantParam,
+      @RequestParam(value = "instanceUuid", required = true) String serviceInstanceUuid,
+      @RequestParam(value = "enableAllUsers", required = false, defaultValue = "false") boolean enableAllUsers,
+      ModelMap map, HttpServletRequest request) {
+
+    Tenant tenant = tenantService.get(tenantParam);
+    try {
+      ServiceInstanceTenantConfiguration sitc = tenantService.getServiceInstanceTenantConfiguration(tenant,
+          serviceInstanceUuid);
+      tenantService.setServiceInstanceTenantConfiguration(tenant, serviceInstanceUuid, enableAllUsers, sitc.getData());
+      map.addAttribute("result", CssdkConstants.SUCCESS);
+    } catch (Exception e) {
+      map.addAttribute("result", CssdkConstants.FAILURE);
+    }
+    return map;
   }
 
   protected List<CurrencyValue> getCurrencies() {

@@ -25,6 +25,7 @@
   <input type="hidden" id="secondaryAddressState" value="<c:out value="${tenant.secondaryAddress.state}"/>"/>
   <input type="hidden" id="secondaryAddressCity" value="<c:out value="${tenant.secondaryAddress.city}"/>"/>
   <input type="hidden" id="secondaryAddressStreet" value="<c:out value="${tenant.secondaryAddress.street1}"/>"/>
+  <input type="hidden" id="secondaryAddressStreet2" value="<c:out value="${tenant.secondaryAddress.street2}"/>"/>
   <input type="hidden" id="secondaryAddressPostalCode" value="<c:out value="${tenant.secondaryAddress.postalCode}"/>"/>
   </c:if>
 </c:if>
@@ -103,14 +104,13 @@
                             <li class="commonboxes_formbox equalwidth">
                                 <label for="name" style="width:130px;"><spring:message code="label.editcurrent.bp"/></label>
                                 <c:if test="${BillingPeriodLength != null}">
-                                <!-- TODO change it to the spring message code once the message source is working with arguments -->
-                                  <div class="commonboxes_formbox_withouttextbox equalwidth"><c:out value="{${BillingPeriodLength}}Days" /></div>
+                                   <c:if test="${BillingPeriodLength eq 1}"><div class="commonboxes_formbox_withouttextbox equalwidth"><spring:message code="label.editcurrent.bp.day" arguments="${BillingPeriodLength}"/></div></c:if>
+                                   <c:if test="${BillingPeriodLength ne 1}"><div class="commonboxes_formbox_withouttextbox equalwidth"><spring:message code="label.editcurrent.days.format" arguments="${BillingPeriodLength}"/></div></c:if>
                                 </c:if>
                             </li>
                             
                              <li class="commonboxes_formbox equalwidth last">
                               <label for="name" style="width:130px;"><spring:message code="label.editcurrent.accountBalance"/></label>
-                                  
                                 <div class="commonboxes_formbox_withouttextbox equalwidth">
                                 <div style="float:left;"><c:out value="${tenantForm.tenant.currency.sign}"/></div> <fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}"  value="${currentBalanceTopRightNav}"  />
                                 </div>
@@ -187,8 +187,8 @@
   <form:form commandName="tenantForm" cssClass="ajaxform" id="tenantEditForm" action="${edit_tenant_path}" 
   onsubmit="editTenant(event,this)">
     <div class="commonboxes_container">
-      <div class="commonboxes_titlebox">
-        <h2><spring:message code="label.editcurrent.edit"/> - <c:out value="${tenantForm.tenant.name}" /></h2>
+      <div class="commonboxes_titlebox ellipsis">
+        <h2 class="ellipsis" style="width: 100%" title='<c:out value="${tenantForm.tenant.name}" />'><spring:message code="label.editcurrent.edit"/> - <c:out value="${tenantForm.tenant.name}" /></h2>
       </div>
       <div class="commonboxes">
         <div class="commonboxes_contentcontainer">
@@ -248,20 +248,20 @@
                     </div> 
                     <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.stateError" style="padding-left:110px;"></div>                    
                </li>  
-               <li class="commonboxes_formbox equalwidth" style="width: 430px;">
+               <li class="commonboxes_formbox equalwidth ellipsis" style="width: 430px;">
                   <form:label path="tenant.address.street1"><spring:message code="label.editcurrent.address1"/></form:label>
-                  <div class="commonboxes_formbox_withouttextbox read" id="address1_readvalue"><c:out value="${tenantForm.tenant.address.street1}"></c:out></div> 
+                  <div class="commonboxes_formbox_withouttextbox read ellipsis" id="address1_readvalue" style="width: 100%" title='<c:out value="${tenantForm.tenant.address.street1}"></c:out>'><c:out value="${tenantForm.tenant.address.street1}"></c:out></div> 
                   <div class="mandatory_wrapper write" ><form:input  cssClass="text" path="tenant.address.street1" tabindex="3"></form:input></div>
                   <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.street1Error" style="padding-left:110px;"></div>
                 </li>     
-                <li class="commonboxes_formbox equalwidth" style="width: 430px;">
+                <li class="commonboxes_formbox equalwidth ellipsis" style="width: 430px;">
                   <form:label path="tenant.address.street2"><spring:message code="label.editcurrent.address2"/></form:label> 
-                  <div class="commonboxes_formbox_withouttextbox read" id="address2_readvalue"><c:out value="${tenantForm.tenant.address.street2}"></c:out></div>
+                  <div class="commonboxes_formbox_withouttextbox read ellipsis" id="address2_readvalue" style="width: 100%" title='<c:out value="${tenantForm.tenant.address.street2}"></c:out>'><c:out value="${tenantForm.tenant.address.street2}"></c:out></div>
                   <div class="nonmandatory_wrapper write" ><form:input cssClass="text" path="tenant.address.street2" tabindex="4"></form:input></div>
                 </li>
-                <li class="commonboxes_formbox equalwidth" style="width: 430px;">
+                <li class="commonboxes_formbox equalwidth ellipsis" style="width: 430px;">
                   <form:label path="tenant.address.city"><spring:message code="label.editcurrent.city"/></form:label>
-                  <div class="commonboxes_formbox_withouttextbox read" id="city_readvalue"><c:out value="${tenantForm.tenant.address.city}"></c:out></div> 
+                  <div class="commonboxes_formbox_withouttextbox read ellipsis" id="city_readvalue" style="width: 100%" title='<c:out value="${tenantForm.tenant.address.city}"></c:out>'><c:out value="${tenantForm.tenant.address.city}"></c:out></div> 
                   <div class="mandatory_wrapper write" ><form:input  cssClass="text" path="tenant.address.city" tabindex="5"></form:input></div>
                   <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.cityError" style="padding-left:110px;"></div>
                 </li>
@@ -292,8 +292,7 @@
 </div>
 
 
-<div class="maincontent_equalverticalpanel" style="float:right;">  
-       <div class="commonboxes_container" >
+<div class="maincontent_equalverticalpanel" style="float:right;margin-top:35px;">  
         <div class="commonboxes_titlebox">
               <h2><spring:message code="label.editcurrent.masteruser.info"/></h2>
         </div>
@@ -334,7 +333,6 @@
             </div>
           </div>
         </div>
-  </div>
 
 </div>
 

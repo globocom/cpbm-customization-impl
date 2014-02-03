@@ -50,7 +50,7 @@
             
              <div class="mandatory_wrapper">
               <div class="nonmandatory_wrapper">&nbsp;&nbsp;&nbsp;</div>
-               <form:select cssClass="text" path="tenant.address.country" style="width:203px;">
+               <form:select cssClass="text" path="tenant.address.country">
                   <c:forEach items="${tenantForm.countryList}" var="choice" varStatus="status">
                     <form:option value="${choice.countryCode2}">
                       <c:out value="${choice.name}" escapeXml="false"/>
@@ -131,33 +131,29 @@
             <label for="name"><spring:message code="ui.accounts.all.header.add.secondary.address"/></label>
             <div class="nonmandatory_wrapper">
               <div class="nonmandatory_wrapper">&nbsp;&nbsp;&nbsp;</div>
-                <form:checkbox id="allowSecondaryId" path="allowSecondary" />
+                <form:checkbox id="allowSecondaryId" path="allowSecondary" class="checkbox"/>
             </div>
            </li>
            </ul>
             <div id="secondaryAddressDetailsDiv" <c:if test="${tenantForm.tenant.secondaryAddress == null}">style="display:none"</c:if> >
-              
               <ul>
+                  <li style="width:100%;margin-top:20px;">
+                    <label for="name" style="font-weight:bold;"><spring:message code="ui.accounts.all.billing.address"/></label>
+                  </li>
                   <li>
-                  <label for="name" style="margin-top: 35px; margin-left: -150px;"><spring:message code="ui.accounts.all.header.add.secondary.syncaddress"/></label>
+                  <label for="name"><spring:message code="ui.accounts.all.header.add.secondary.syncaddress"/></label>
                   <div class="nonmandatory_wrapper">
                     <div class="nonmandatory_wrapper">&nbsp;&nbsp;&nbsp;</div>
-                      <input type="checkbox" class="checkbox " id="syncAddressEdit" tabindex="23" name="syncAddressEdit" style="margin-top: 40px; margin-left: -25px; width: 13px; height: 13px;">
+                      <input type="checkbox" class="checkbox " id="syncAddressEdit" tabindex="23" name="syncAddressEdit" >
                     </div>
                   </li>
-                  
-                  
+
                   <li>
-                  <label for="name" style="margin-top: 80px; margin-left: -163px;"><spring:message code="ui.accounts.all.billing.address"/></label>
-                  </li>
-                  
-                  
-                  <li style="margin-top: 30px;">
                   <label for="name"><spring:message code="ui.accounts.all.header.country"/></label>
                   
                    <div class="mandatory_wrapper">
                     <div class="nonmandatory_wrapper">&nbsp;&nbsp;&nbsp;</div>
-                     <form:select cssClass="select" path="tenant.secondaryAddress.country">
+                     <form:select cssClass="text" path="tenant.secondaryAddress.country">
                         <c:forEach items="${tenantForm.countryList}" var="choice" varStatus="status">
                           <form:option value="${choice.countryCode2}">
                             <c:out value="${choice.name}" escapeXml="false"/>

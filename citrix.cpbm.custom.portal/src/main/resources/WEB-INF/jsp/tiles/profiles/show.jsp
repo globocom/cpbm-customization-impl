@@ -65,7 +65,7 @@ $(document).ready(function() {
                 </c:when>
                 <c:otherwise>
                   <c:forEach items="${opsProfileList}" var="profile_choice" varStatus="status">
-                      <c:if test="${profile_choice.profile.name != 'System'}">
+                      <c:if test="${profile_choice.profile.name != systemProfileName}">
                       <c:set var="opsProfileListLen" value="${opsProfileListLen+1}"/>
                       <c:choose>
                         <c:when test="${status.index == 1}">
@@ -82,7 +82,7 @@ $(document).ready(function() {
                       <c:when test="${profile_choice.profile.id == updatedProfile}">
                         <c:set var="dotted_blue" value="dotted_blue"/>
                       </c:when>
-                      <c:when test="${empty updatedProfile  && profile_choice.profile.name == 'Root'}">
+                      <c:when test="${empty updatedProfile  && profile_choice.profile.name == rootProfileName }">
                         <c:set var="dotted_blue" value="dotted_blue"/>
                       </c:when>   
                       <c:otherwise>
@@ -231,19 +231,27 @@ $(document).ready(function() {
       
       </div>
 </div>
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 <div class="widget_browser">
 
 <div class="maincontent_bigverticalpanel" style="float:right; margin:0;">       
        <!-- Start Grid -->
   <c:forEach items="${allProfileList}" var="profile_choice" varStatus="status">
-    <c:if test="${profile_choice.profile.name != 'System'}">
+    <c:if test="${profile_choice.profile.name != systemProfileName}">
     	<c:choose>
   			<c:when test="${profile_choice.profile.id == updatedProfile}">
   				<c:set var="displayProfile" value="display:block"/>
   			</c:when>
-  			<c:when test="${empty updatedProfile  && profile_choice.profile.name == 'Root'}"> <!-- inconceivably messy this one is.. :( -->
+  			<c:when test="${empty updatedProfile  && profile_choice.profile.name == rootProfileName}"> <!-- inconceivably messy this one is.. :( -->
   				<c:set var="displayProfile" value="display:block"/>
   			</c:when>		
   			<c:otherwise>
@@ -333,7 +341,7 @@ $(document).ready(function() {
                     </c:choose>  
             
                     <c:choose>
-                    	<c:when test="${authority_choice.type == 'ROLE_USER' || authority_choice.required eq true || profile_choice.profile.name eq 'Root' || authority_choice.type eq 'ROLE_PROFILE_CRUD'}">
+                    	<c:when test="${authority_choice.type == 'ROLE_ACCOUNT_MGMT' || authority_choice.type == 'ROLE_USER' || authority_choice.required eq true || profile_choice.profile.name eq rootProfileName || authority_choice.type eq 'ROLE_PROFILE_CRUD'}">
                     		<c:set var="readOnlyClass" value="disabled"></c:set>
                     		<c:set var="disabledValue" value="disabled='disabled'"></c:set>
                     	</c:when>
@@ -370,7 +378,15 @@ $(document).ready(function() {
                               </c:choose>
                             </span>
                             
-                            <a href="#" style="cursor:default;" onmouseover="onRoleDetailMouseover(<c:out value='${profile_choice.profile.id}' />, '<c:out value="${authority_choice.type}" />');" onmouseout="onRoleDetailMouseout(<c:out value='${profile_choice.profile.id}' />, '<c:out value="${authority_choice.type}" />');">
+                            <a href="#" style="cursor:default;" class="js_profiles_details_popover_link" rel="popover" 
+                            data-content="<c:choose>
+                                <c:when test="${empty authority_choice.serviceName}">
+                                  <spring:message htmlEscape="true" code="profiles.description.${authority_choice.type}" />
+                                </c:when>
+                                <c:otherwise>
+                                  <spring:message htmlEscape="true" code="${authority_choice.serviceName}.profiles.description.${authority_choice.type}" />
+                                </c:otherwise>
+                              </c:choose>">
                               <spring:message code="notification.detail.more" /></a>
                           </span>
                         </div>
@@ -395,37 +411,10 @@ $(document).ready(function() {
                        </span>
                        
                        </div>
-
-                      <!--Info popover starts here-->
-                        <div class="widget_details_popover" id="info_bubble2_<c:out value='${profile_choice.profile.id}' />_<c:out value='${authority_choice.type}' />" style="display:none;">
-                          <div class="popover_wrapper" >
-                          <div class="popover_shadow"></div>
-                          <div class="popover_contents">
-                            <div class="raw_contents raw_contents_details">
-                              
-                              <div class="raw_content_row raw_detailscontent_row">
-                                <div class="raw_contents_value raw_detailscontents_value">
-                                  <span>
-                                    <c:choose>
-                                      <c:when test="${empty authority_choice.serviceName}">
-                                        <spring:message htmlEscape="true" code="profiles.description.${authority_choice.type}" />
-                                      </c:when>
-                                      <c:otherwise>
-                                        <spring:message htmlEscape="true" code="${authority_choice.serviceName}.profiles.description.${authority_choice.type}" />
-                                      </c:otherwise>
-                                    </c:choose>
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          </div>
-                        </div>
-                        <!--Info popover ends here-->
                 </div>
             </c:forEach>
             </div>
-          <c:if test="${profile_choice.profile.name != 'Root'}">      
+          <c:if test="${profile_choice.profile.name != rootProfileName}">      
           <spring:url value="/portal/profiles/{profileId}/edit" var="edit_profile_path" htmlEscape="false">
             <spring:param name="profileId"><c:out value="${profile_choice.profile.id}" /></spring:param>
           </spring:url>

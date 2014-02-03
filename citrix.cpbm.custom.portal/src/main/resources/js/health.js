@@ -264,7 +264,7 @@ function addNewStatusUI(jsonResponse) {
 
 
   if (jsonResponse == null) {
-    alert(i18n.errors.status.failedCreateStatus);
+    popUpDialogForAlerts("dialog_info", i18n.errors.status.failedCreateStatus);
   } else {
     $("#addNewStatusDiv").html("");
     var selectedZone = $("#selectedZone").val();
@@ -354,7 +354,7 @@ function addNewStatusUI(jsonResponse) {
 function editStatusUI(jsonResponse) {
 
   if (jsonResponse == null) {
-    alert(i18n.errors.status.failedEditStatu);
+    popUpDialogForAlerts("dialog_info", i18n.errors.status.failedEditStatu);
   } else {
     $("#editStatusDetailsDiv").html("");
     var content = "<div class='details_commentslist_content'>";
@@ -604,7 +604,7 @@ function removeMaintenanceSchdule(current) {
       resetGridRowStyleMaintenance();
     },
     error: function() {
-      alert(i18n.errors.MaintenanceSchdule.remove);
+      popUpDialogForAlerts("dialog_info", i18n.errors.MaintenanceSchdule.remove);
     }
   });
 }

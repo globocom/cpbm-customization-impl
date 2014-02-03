@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.custom.service.impl;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
 import javax.sql.DataSource;
 
 import org.apache.commons.lang.StringUtils;
@@ -33,8 +31,8 @@ import com.vmops.portal.reports.GenericReport;
 import com.vmops.service.CustomReportService;
 import com.vmops.service.SequenceService;
 import com.vmops.service.TenantService;
-import com.vmops.utils.transfer.FtpConfiguration;
-import com.vmops.utils.transfer.FtpTransfer;
+import com.vmops.utils.transfer.impl.FtpConfiguration;
+import com.vmops.utils.transfer.impl.FtpTransfer;
 
 /**
  * @author Damoderr
@@ -94,8 +92,7 @@ public class CustomReportServiceImpl implements CustomReportService {
         params.put(CustomReportsConstants.LIMIT, limit);
       }
       logger.debug("Fetch Limit is : " + limit);
-      @SuppressWarnings("unchecked")
-      Class paramtypes[] = new Class[2];
+      Class<?> paramtypes[] = new Class[2];
 
       paramtypes[0] = Map.class;
       paramtypes[1] = DataSource.class;
@@ -141,7 +138,7 @@ public class CustomReportServiceImpl implements CustomReportService {
                 // propery
                 // file or configuration Db if already present
                 fileName = String.format(fileName, sequence_counter++, report.getFileType());
-                if ("transfer".equalsIgnoreCase(mode)) {
+                if (CustomReportsConstants.REPORT_TRANSFER_MODE.equalsIgnoreCase(mode)) {
                   FtpConfiguration fc = new FtpConfiguration();
                   fc.setSourceResouceUrl(file.getAbsolutePath());
                   fc.setTargetResourceUrl(schedReport.getDeliveryUrl() + fileName);
@@ -168,7 +165,7 @@ public class CustomReportServiceImpl implements CustomReportService {
             }
           }
         }
-        if (!"transfer".equalsIgnoreCase(mode)) {
+        if (!CustomReportsConstants.REPORT_TRANSFER_MODE.equalsIgnoreCase(mode)) {
           if (fileArray.size() > 0) {
             FtpTransfer.zipFile(fileArray, targetZipFile);
             for (File tempFile : fileArray) {
@@ -201,7 +198,7 @@ public class CustomReportServiceImpl implements CustomReportService {
       result.append("No class associated with report " + schedReport.getCustomReport().getName() + " \n");
       return "failure";
     }
-    if ("transfer".equalsIgnoreCase(mode)) {
+    if (CustomReportsConstants.REPORT_TRANSFER_MODE.equalsIgnoreCase(mode)) {
       return "success";
     } else {
       return targetFileName;

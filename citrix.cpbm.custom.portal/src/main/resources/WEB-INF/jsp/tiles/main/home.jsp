@@ -53,7 +53,8 @@ var loadGravtars = true;
 	      		channel: '<spring:message javaScriptEscape="true" code="js.user.channel"/>',
 	      		title: '<spring:message javaScriptEscape="true" code="js.user.title"/>',
 	    		del : '<spring:message javaScriptEscape="true" code="js.user.del.confirm"/>',
-	    		deact: '<spring:message javaScriptEscape="true" code="js.user.deact.confirm"/>',
+	    		generateAPIKey : '<spring:message javaScriptEscape="true" code="js.user.generate.api.key"/>',
+          deact: '<spring:message javaScriptEscape="true" code="js.user.deact.confirm"/>',
 	    		act: '<spring:message javaScriptEscape="true" code="js.user.act.confirm"/>',
 	    		delproject : '<spring:message javaScriptEscape="true" code="js.user.del.confirmproject"/>',	      		
 			    max : '<spring:message javaScriptEscape="true" code="js.user.max"/>',
@@ -101,7 +102,6 @@ var dictionary = {
 
 <div class="maincontent_horizontalpanels">
     <div class="db_gridverticalpanel">
-		<c:if test="${!empty top_nav_cs_instances}">
 		<div class="db_statsbox default">
 		  <div class="db_statsbox title user">
 		    <h2><spring:message code="ui.home.page.title.service.health"/></h2>
@@ -110,14 +110,8 @@ var dictionary = {
 		  <div class="db_statsbox contentarea" >
 		       <div id="serviceHealthChart" style="min-height:30px;">
                </div>
-		    <div class="db_statsbox_footerlinksbox">
-                <c:if test="${!currentUser.profile.operationsProfile}">
-		         <p><a id="details_link" href="<%=request.getContextPath() %>/portal/health"><spring:message code="labe.view.all"/></a></p>
-                </c:if>
 		    </div>
-		  </div>
 		</div>
-		</c:if>
 		<c:set var="normalUser" value="true"/>
 		<sec:authorize access="hasAnyRole('ROLE_ACCOUNT_ADMIN','ROLE_ACCOUNT_BILLING_ADMIN','ROLE_FINANCE_CRUD')">
 		<div class="db_statsbox default">
@@ -137,7 +131,7 @@ var dictionary = {
 	                           <c:set var="showUsageBilling" value="Y"></c:set>
 	                <p id="showCreditBalance">
 	                    <a href="javascript:void(0);"><spring:message code="label.usage.billing.net.balance.colon"/></a>
-	                    <c:out value="${tenant.currency.sign}" /><strong><span><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${minFractionDigits}" minFractionDigits="${minFractionDigits}" value="${currentBalance}" /></span>
+	                    <c:out value="${tenant.currency.sign}" /><strong><span><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${currencyFractionalDigitsLimit}" minFractionDigits="${minFractionDigits}" value="${currentBalance}" /></span>
 	                    </strong> |
 	                </p>                
 	                <!--Info popover ends here-->        
@@ -167,13 +161,15 @@ var dictionary = {
              <div class="db_statsbox contentarea">
                  <div class="db_billing_calendarblock">
                      <div class="calendaricon">
-                          <span class="title"><spring:message code="label.dashboard.start.date" /></span>
+                          <span class="title"><spring:message code="label.dashboard.next.invoice" /></span>
                          <span class="date">
                          <spring:message code="dayonly.format" var="dayonly_format"/>
-                         <fmt:formatDate value="${currentBillingStart}" pattern="${dayonly_format}"/></span>
+                         <fmt:formatDate value="${nextInvoiceDate}" pattern="${dayonly_format}"/></span>
                      </div>
-                    
-                     <span class="infotext"><spring:message code="label.dashboard.billing.start.date.desc"/></span>
+                    <span class="infotext">
+                      <fmt:formatDate dateStyle="medium" value="${nextInvoiceDate}" pattern="MMM"/>,
+                      <fmt:formatDate value="${nextInvoiceDate}" pattern="yyyy"/>
+                    </span>
                  </div>
                  <div class="db_billinglist">
                      <ul>
@@ -234,7 +230,7 @@ var dictionary = {
 	    <c:set var="userHome" value="user" scope="request"/>
 	    
         <sec:authorize access="hasRole('ROLE_ACCOUNT_ADMIN')">
-            <c:if test="${!userHasCloudServiceAccount}">
+            <c:if test="${!userHasCloudServiceAccount && tenant.state == 'ACTIVE'}">
 	          <div class ="common_messagebox error"> 
 	            <p>                              
                  <spring:message code="service.no.instance.warning" htmlEscape="false" arguments="${tenant.param}"> </spring:message>
@@ -256,9 +252,9 @@ var dictionary = {
               <spring:url value="/portal/users/listusersforaccount" var="manage_users_path" htmlEscape="false">
                 <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
               </spring:url>
-              <p><a href="<c:out value="${manage_users_path}"/>"><spring:message code="ui.home.page.title.manage.users"/></a> |</p>
-              <c:if test="${isUsersMaxReached != 'Y'}">
-	              <p><a onclick="return addNewUserButton()"  href="javascript:void(0);"><spring:message code="ui.home.page.title.adduser"/></a>
+              <p><a href="<c:out value="${manage_users_path}"/>"><spring:message code="ui.home.page.title.manage.users"/></a></p>
+              <c:if test="${isUsersMaxReached != 'Y' && tenant.state eq 'ACTIVE'}">
+	              <p>|&nbsp;&nbsp;<a onclick="return addNewUserButton()"  href="javascript:void(0);"><spring:message code="ui.home.page.title.adduser"/></a>
 	              <div  id="dialog_add_user" title='<spring:message code="label.newUserStep1.addUser"/>' style="display: none">
 	                <div id="dialog_formcontent"  class="dialog_formcontent wizard"> </div>
 	              </div>
@@ -325,7 +321,7 @@ var dictionary = {
                             </c:otherwise>
                             </c:choose>
                           </div>
-                            <span class="icon notification" ref="today" onclick="go_to_notifications(this);"></span>
+                            <span class="icon notification ${level}" ref="today" onclick="go_to_notifications(this);"></span>
                         </li>
                       </c:forEach>
                         
@@ -382,7 +378,7 @@ var dictionary = {
                               </c:otherwise>
                             </c:choose>
                           </div>
-                          <span class="icon notification" ref="yesterday" onclick="go_to_notifications(this);"></span>
+                          <span class="icon notification ${level}" ref="yesterday" onclick="go_to_notifications(this);"></span>
                         </li>
                       </c:forEach>
                         
@@ -412,33 +408,46 @@ var dictionary = {
                     <input type="hidden" name="tenantParam" id="tenantParam" value="<c:out value="${tenant.param}"/>">    
                 </div>
             </div> 
-		<c:if test="${(isTicketAdmin || currentTenant == tenant) && ticketCapabilities == 'CRUD'}">
-			  <sec:authorize access="hasAnyRole('ROLE_TICKET_MANAGEMENT', 'ROLE_USER_TICKET_MANAGEMENT', 'ROLE_SPL_USER_TICKET_MANAGEMENT', 'ROLE_TENANT_TICKET_MANAGEMENT')">
-              <div class="db_statsbox default">
-                <div class="db_statsbox title">
-                  <h2><spring:message code="ui.home.page.title.tickets"/></h2>
+            
+            <c:if test="${(isTicketAdmin || currentTenant == tenant) && ticketCapabilities == 'CRUD' && isTicketServiceEnabled}">
+              <c:set var="showTicketWidget" value="no" />
+              <sec:authorize access="hasAnyRole('ROLE_TICKET_MANAGEMENT')">
+                <c:if test="${ticketServiceInstance}">
+                  <c:set var="showTicketWidget" value="yes" />
+                </c:if>
+              </sec:authorize>
+              <sec:authorize access="hasAnyRole('ROLE_USER_TICKET_MANAGEMENT', 'ROLE_SPL_USER_TICKET_MANAGEMENT', 'ROLE_TENANT_TICKET_MANAGEMENT')">
+                <c:if test="${ticketServiceInstance}">
+                  <c:set var="showTicketWidget" value="yes" />
+                </c:if>
+              </sec:authorize>
+
+              <c:if test="${showTicketWidget == 'yes'}">
+                <div class="db_statsbox default">
+                  <div class="db_statsbox title">
+                    <h2><spring:message code="ui.home.page.title.tickets"/></h2>
+                  </div>
+                  <div id="top_message_panel" class="alert alert-success" style="float:left;width:390px;word-wrap:break-word;display:none;" ><p id="msg"></p></div>
+                  <div class="db_statsbox contentarea">
+                      <div id="ticketsCountChart">
+                        <div id="spinnerDiv" class="spinnerDiv" style="margin: 70px 0 0 200px;"> </div>
+                      </div>
+                      <div class="db_statsbox_footerlinksbox">
+  	                  <spring:url value="/portal/support/tickets" var="view_tickets_path" htmlEscape="false">
+  	                    <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
+  	                  </spring:url> 
+                        <p><a href="<c:out value="${view_tickets_path}"/>"><spring:message code="ui.home.page.title.view.all.tickets"/></a></p>
+                        <c:if test="${!effectiveTenant.owner.profile.operationsProfile}">
+    	                    <sec:authorize access="hasRole('ROLE_USER_TICKET_MANAGEMENT')">
+    	                     <p>|</p> <p><a href="<c:out value="${view_tickets_path}&showNewTicket=1"/>"><spring:message code="ui.home.page.title.submit.ticket"/></a></p>
+    	                    </sec:authorize>
+                        </c:if>
+                      </div>
+                  </div>
                 </div>
-                <div id="top_message_panel" class="common_messagebox widget" ><p id="msg"></p></div>
-               <div class="db_statsbox contentarea">
-                    <div id="ticketsCountChart">
-                      <div id="spinnerDiv" class="spinnerDiv" style="margin: 70px 0 0 200px;"> </div>
-                    </div>
-                    <div class="db_statsbox_footerlinksbox">
-	                  <spring:url value="/portal/support/tickets" var="view_tickets_path" htmlEscape="false">
-	                    <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
-	                  </spring:url> 
-                    <p><a href="<c:out value="${view_tickets_path}"/>"><spring:message code="ui.home.page.title.view.all.tickets"/></a></p>
-                    <c:if test="${!effectiveTenant.owner.profile.operationsProfile}">
-	                    <sec:authorize access="hasAnyRole('ROLE_USER_TICKET_MANAGEMENT', 'ROLE_TICKET_MANAGEMENT')">
-	                     <p>|</p> <p><a href="<c:out value="${view_tickets_path}&showNewTicket=1"/>"><spring:message code="ui.home.page.title.submit.ticket"/></a></p>
-	                    </sec:authorize>
-                    </c:if>
-                    
-                    </div>
-                </div>
-              </div>
-          </sec:authorize>
-		</c:if>
+              </c:if>
+            </c:if>
+    
        </div>
     </div>
 

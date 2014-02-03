@@ -18,6 +18,7 @@
           <ref bean="consistencyCheckerJobTrigger" />
           <ref bean="workflowJobTrigger" />
           <ref bean="subscriptionValidationJobTrigger"/>
+          <ref bean="subscriptionActivationJobTrigger"/>
           <ref bean="billingExportJobTrigger"/>
         </list>
     </property>

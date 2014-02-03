@@ -133,9 +133,8 @@ var perPageValue = "<c:out value="${perPage}"/>";
     <div class="widget_rightpanel" id="viewnotificationDiv">
         <c:if test="${firstNotification != null}">
           <script>
-          var li_id = "<c:out value="row${firstNotification.generatedAt}"/>";
-          
-          viewFirstNotification(li_id);
+            var li_id = 'row<fmt:formatDate value="${firstNotification.generatedAt}" pattern="yyyy-MM-dd HH:mm:ss" timeZone="${currentUser.timeZone}"/>';
+            viewFirstNotification(li_id);
           </script>  
         </c:if>
         

@@ -75,12 +75,14 @@
         </div>
         <div class="main_addnew_formbox_errormsg edit_error_msg" id="accountType.accountRestrictionGracePeriodError" ></div>
       </li>
+      <c:if test="${!(accountTypeForm.accountType.trial)}">
       <li style='<c:out value="${onBoardStyle}" />'>
         <form:label path="accountType.depositRequired"><spring:message code="ui.accounttypes.list.page.initialDepositRequired"/></form:label>
         <div class="nonmandatory_wrapper">
             <form:checkbox path="accountType.depositRequired" cssClass="checkbox"/>
         </div>
-      </li> 
+      </li>
+      </c:if>
       <!-- /On Boarding Controls -->
       
       

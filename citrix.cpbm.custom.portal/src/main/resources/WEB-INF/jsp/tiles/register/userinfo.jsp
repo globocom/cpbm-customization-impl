@@ -8,9 +8,6 @@
 <tiles:insertAttribute name="pageHeader" />
 <script type="text/javascript">
 var trialAcountSelected = "<c:out value='${trialAcountSelected}'/>";
-$(function(){
-  $("#user\\.firstName").focus();
-});
 </script>
 <c:if test="${ThreatMetrixEnabled == 'True'}">
 <iframe style="color:rgb(0,0,0);float:left; position:absolute; top:-200px; left:-200px; border:0px"
@@ -19,7 +16,13 @@ $(function(){
         width=100>
 </iframe>
 </c:if>
-
+<c:choose>
+  <c:when test="${! empty signupwarningmessage}">
+     <div class="common_messagebox success">
+          <p><c:out value="${signupwarningmessage}"></c:out> </p>
+      </div>
+  </c:when>
+  <c:otherwise>
 
             	<div class="login_headerarea">
                 	<div class="login_headerarea_left">
@@ -61,21 +64,26 @@ $(function(){
                     	<form:form name="registration" commandName="registration" id="registrationForm" cssClass="registration formPanel" action="${userinfo}">
                             <ul>
                            
-                            
+                              <div class="user_name_order">
+                                <div class="user_first_name">
                             	<li>
                                 	<form:label path="user.firstName"><spring:message code="label.userInfo.firstName"/></form:label><div class="red_compulsoryicon"><spring:message code="label.userInfo.asterix"/></div>
                                     <spring:message code="label.userInfo.firstName.tooltip" var="i18nFirstNameTooltip"/>
-                                    <form:input cssClass="text" tabindex="102" path="user.firstName" title="${i18nFirstNameTooltip}" maxlength="255"/>
+                                    <form:input cssClass="text" tabindex="101" path="user.firstName" title="${i18nFirstNameTooltip}" maxlength="255"/>
                                     <div class="registration_formbox_errormsg" id="user.firstNameError"></div>
                                 
                                 </li>
+                                </div>
+                                <div class="user_last_name">
 								<li>
                                 	<form:label path="user.lastName"><spring:message code="label.userInfo.lastName"/></form:label><div class="red_compulsoryicon"><spring:message code="label.userInfo.asterix"/></div>
                                     <spring:message code="label.userInfo.lastName.tooltip" var="i18nLastNameTooltip"/>
                                     <form:input cssClass="text" tabindex="102" path="user.lastName" title="${i18nLastNameTooltip}" maxlength="255"/>
                                     <div class="registration_formbox_errormsg" id="user.lastNameError"></div>
                                 
-                                </li>                                
+                                </li>  
+                                </div>
+                                </div>                              
                                 <li>
                                 	<form:label path="user.email" ><spring:message code="label.userInfo.yourEmail"/></form:label><div class="red_compulsoryicon"><spring:message code="label.userInfo.asterix"/></div>
                                     <spring:message code="label.userInfo.yourEmail.tooltip" var="i18nEmailTooltip"/>
@@ -161,4 +169,17 @@ $(function(){
                 
                 
                 </div>
-  
+</c:otherwise>
+</c:choose>
+
+<script type="text/javascript">
+  swap_name_order_tab_index("user_first_name", "user_last_name");
+  $(function(){
+	  if(parseInt($("#user\\.lastName").attr("tabindex")) < parseInt($("#user\\.firstName").attr("tabindex"))){
+		  $("#user\\.lastName").focus();
+	  }else{
+		  $("#user\\.firstName").focus();
+	  }
+	    
+	});
+</script>

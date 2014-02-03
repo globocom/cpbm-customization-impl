@@ -9,7 +9,7 @@
 <div id="bundle_with_selection_summary_div">
     <c:if test="${not viewChannelCatalog && not anonymousBrowsing && resourceType != '__SERVICE__'}">
   <div id="bundle_subscriptions_tabs" style="float:left;width:100%;display:none;">
-  <span class="title" style="float:left;padding-top:8px;font-size:11px;font-weight:normal;"><spring:message code="label.Showing.bundles" />:</span>
+  <span class="title" style="float:left;padding-top:8px;font-size:12px;font-weight:normal;"><spring:message code="label.Showing.bundles" />:</span>
   <ul class="widgets_transparent_tab" style="width:auto;">
     <li class="js_bundle_subscriptions_tabs" id="view_bundles_tab"><spring:message code="message.New.subscriptions" /></li>
     <li class="js_bundle_subscriptions_tabs" id="view_subscriptions_tab"><spring:message code="message.My.unprovisioned.subscriptions" /></li>
@@ -33,7 +33,7 @@
   <div id="bundle_container">
     <div class="widgetcatalog_cataloglist" id="bundle_template" style="display: none; width: 650px;">
       <div class="widgetcatalog_cataloglist sections bundles" style="border-right: none;">
-        <div id="entitlmentsribbon" class="widgetcatalog_bundlesbox">
+        <div id="entitlmentsribbon" class="widgetcatalog_bundlesbox imagebox">
           <div class="widgetcatalog_bundlesbox iconbox">
             <span class="compute"></span>
           </div>
@@ -47,14 +47,14 @@
         <div id="totalentitlmentsdiv" title='<spring:message code="label.details"/>'
           style="display: none; overflow: hidden;">
           <div class="dialog_formcontent_entitlement_selectedbox">
-            <div id="totalentitlmentsribbon" class="widgetcatalog_bundlesbox" style="width:90px; margin-top: 0;float:left;">
+            <div id="totalentitlmentsribbon" class="widgetcatalog_bundlesbox imagebox" style="width:90px;float:left;">
               <div class="widgetcatalog_bundlesbox iconbox">
                 <span class="compute"></span>
               </div>
             </div>
             <div style="width:310px; height:inherit; float:left;margin-left:25px;">
-              <h2 id="bundle_name" style="width:80%; margin-left:10px;"></h2>
-              <p id="bundle_description" style="width:80%; margin-top: 0px; margin-left:10px; text-align:justify;"></p>
+              <h2 id="bundle_name" class="ellipsis" style="width:90%; margin-left:10px;"></h2>
+              <p id="bundle_description" style="width:90%;max-height:80px;overflow:auto; margin-top: 0px; margin-left:10px; text-align:justify;"></p>
             </div>
             <div class="widgetcatalog_cataloglist sections subscription contentarea" style="background:none;">
                 <h4><spring:message code="label.subscribe.price.message"/>:</h4>
@@ -65,17 +65,17 @@
             </div>
           </div>
           <div style="max-height:500px;overflow:auto;float:left;width:100%;">
-          <div class="entitlementlightbox_bundledetails entitlements_div">
-            <div class="utility_table" id="entitlements_table_container">
-                <table  id="entitlements_table" class="table table-condensed table-hover table-bordered" >
+          <div class="entitlementlightbox_bundledetails entitlements_div fixed_header_table_wrapper">
+            <div class="utility_table fixed_header_table_inner entitlements_table_inner" id="entitlements_table_container" >
+                <table  id="entitlements_table" class="table table-condensed table-hover table-bordered" style="width:665px;">
                   <thead class="table_header fixedHeader">  
                     <tr>  
-                      <th style="width:200px;"><spring:message code="label.bundle.list.includes.title" /></th>
-                      <th style="width:240px;"><spring:message code="label.catalog.utility.card.table.header.product" /></th>
-                      <th style="width:216px;"><spring:message code="label.bundle.list.overages.title" /></th>  
+                      <th style="width:170px;border-top:1px solid #DDDDDD;"><spring:message code="label.bundle.list.includes.title" /></th>
+                      <th style="width:231px;border-top:1px solid #DDDDDD;"><spring:message code="label.catalog.utility.card.table.header.product" /></th>
+                      <th style="width:230px;border-top:1px solid #DDDDDD;border-right:1px solid #DDDDDD;"><spring:message code="label.bundle.list.overages.title" /></th>  
                     </tr>  
                   </thead>  
-                  <tbody id="totalentitlments" class="scrollContent">
+                  <tbody id="totalentitlments" style="overflow-x:hidden;">
                   
                   </tbody>
                 </table>
@@ -108,7 +108,7 @@
             <span class="charges" id="activationCharges"></span>
           </div>
           <c:if test="${not viewChannelCatalog && not anonymousBrowsing}">
-          <div id="configure_button_group_choice_div">
+            <div id="configure_button_group_choice_div">
               <div class="configure_subscribe_button" data-hover="dropdown" data-delay="1000" data-close-others="false">
                 <a class="subscribebutton btn btn-info" id="subscribe" href="javascript:void(0)"> <c:choose>
                     <c:when test="${serviceBundleResourceType == resourceType}">
@@ -120,7 +120,6 @@
                   </c:choose>
                 </a>
               </div>
-              <ul id="group_choice_radios" class="dropdown-menu dropdown-menu-blue" style="width: 235px;position:relative;top:0px;left:-41px;"></ul>
             </div>
           </c:if>
         </div>
@@ -136,7 +135,3 @@
   <div class="infinite_loading" style="display: none;"></div>
   </div>
 </div>
-
-<!-- Group Row Template to show on click of Subscribe button Start-->
-  <li id="group_row_template_payg" style="display:none;"><a href="javascript:void(0);" class="ellipsis" id="group_components_text"></a></li>
-<!-- Group Row Template to show on click of Subscribe button End-->

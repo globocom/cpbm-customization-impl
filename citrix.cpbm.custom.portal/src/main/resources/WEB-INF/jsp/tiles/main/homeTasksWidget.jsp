@@ -44,27 +44,44 @@
 								<c:choose>
 									<c:when
 										test="${pendingChange.key.businessTransaction.type == 'tenantStateChange'}">
+										<c:set var="initialState">
+						            		<spring:message code="tenant.state.${fn:toLowerCase(pendingChange.key.businessTransaction.tenantInitialState)}"/>
+						            	</c:set>
+						            	<c:set var="targetState">
+						            		<spring:message code="tenant.state.${fn:toLowerCase(pendingChange.key.businessTransaction.tenantTargetState)}"/>
+						            	</c:set>
 										<c:set var="transactionMessage">
 											<spring:message
 												code="ui.task.businesstransaction.${pendingChange.key.businessTransaction.type}"
-												arguments="${pendingChange.key.businessTransaction.tenantInitialState},${pendingChange.key.businessTransaction.tenantTargetState},${pendingChange.key.tenant.name}"></spring:message>
+												arguments="${initialState},${targetState},${pendingChange.key.tenant.name}"></spring:message>
 										</c:set>
 									</c:when>
 									<c:when
 										test="${pendingChange.key.businessTransaction.type == 'tenantAccountTypeConversion'}">
+										<c:set var="initialAT">
+						            		<spring:message code="page.level2.${fn:toLowerCase(pendingChange.key.businessTransaction.accountTypeInitial.name)}"/>
+						            	</c:set>
+						            	<c:set var="targetAT">
+						            		<spring:message code="page.level2.${fn:toLowerCase(pendingChange.key.businessTransaction.accountType.name)}"/>
+						            	</c:set>
 										<c:set var="transactionMessage">
 											<spring:message
 												code="ui.task.businesstransaction.${pendingChange.key.businessTransaction.type}"
-												arguments="${pendingChange.key.businessTransaction.accountTypeInitial.name},${pendingChange.key.businessTransaction.accountType.name},${pendingChange.key.tenant.name}"></spring:message>
-										</c:set>
+												arguments="${initialAT},${targetAT},${pendingChange.key.tenant.name}"></spring:message>
+										</c:set> 										
 									</c:when>
 									<c:when
 										test="${pendingChange.key.businessTransaction.type == 'subscriptionActivation'}">
-										<c:set var="transactionMessage">
-											<spring:message
-												code="ui.task.businesstransaction.${pendingChange.key.businessTransaction.type}"
-												arguments="${pendingChange.key.businessTransaction.subscriptionInitialState},${pendingChange.key.businessTransaction.subscriptionTargetState},${pendingChange.key.businessTransaction.subscription.user.lastName}"></spring:message>
-										</c:set>
+										<c:set var="subscriptionInitialState">
+						            		<spring:message code="subscription.state.${fn:toLowerCase(pendingChange.key.businessTransaction.subscriptionInitialState)}"/>
+						            	</c:set>
+						            	<c:set var="subscriptionTargetState">
+						            		<spring:message code="subscription.state.${fn:toLowerCase(pendingChange.key.businessTransaction.subscriptionTargetState)}"/>
+						            	</c:set>
+						            	<c:set var="transactionMessage">
+											<spring:message code="ui.task.businesstransaction.${pendingChange.key.businessTransaction.type}"
+												arguments="${subscriptionInitialState},${subscriptionTargetState},${pendingChange.key.businessTransaction.subscription.user.lastName}"></spring:message>
+										</c:set>										
 									</c:when>
 									<c:otherwise>
 										<c:set var="transactionMessage">
@@ -90,7 +107,7 @@
 							</c:otherwise>
 						</c:choose>
 						<span class="datestamp">
-								<fmt:formatDate value="${pendingChange.key.createdAt}" pattern="${dateonly_format}" type="date" dateStyle="MEDIUM"/>
+								<fmt:formatDate value="${pendingChange.key.createdAt}" pattern="${dateonly_format}" type="date" dateStyle="MEDIUM" timeZone="${currentUser.timeZone}"/>
 						</span>
 					</li>
 				</c:forEach>

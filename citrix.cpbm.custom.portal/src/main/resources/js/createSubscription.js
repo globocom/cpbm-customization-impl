@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -58,6 +58,8 @@ function initCreateSubscription() {
   var isReconfigure = isNotBlank($("#isReconfigure").val());
   var isReprovision = isNotBlank(subscriptionId) && !isReconfigure;
 
+  var selectedSubscriptionId = null;
+  
   // This is the id used to keep track of the selected tab out of 'New Subscriptions' or 'Unprovisioned subscriptions'
   var selectedBundleTab = isNotBlank(subscriptionId) ? "view_subscriptions_tab" : "view_bundles_tab";
 
@@ -82,11 +84,19 @@ function initCreateSubscription() {
 
   //PayG change resource type
   $(".js_resourceType").unbind("change").bind("change", function() {
+    var target = $(this);
+    if (target.attr('disabled') == true || target.attr('disabled') == 'disabled') {
+      return;
+    }
     changeResourceType($(this).val());
   });
 
   //Subscribe bundle change resource type
   $(".js_resource_type_default").unbind("click").bind("click", function() {
+    var target = $(this);
+    if (target.attr('disabled') == true || target.attr('disabled') == 'disabled') {
+      return;
+    }
     changeResourceType($(this).attr('id'));
   });
 
@@ -150,7 +160,7 @@ function initCreateSubscription() {
   });
 
   $("#back_to_catalog").unbind("click").bind("click", function() {
-
+    $("#top_message_panel").hide();
     if (isReprovision) {
       window.location = "/portal/portal/billing/subscriptions?tenant=" + tenantParam;
       return;
@@ -171,11 +181,15 @@ function initCreateSubscription() {
     $("#SECTION_4").hide();
     $("#componentsHeaderProvisionPage").hide();
 
-    //Showing custom component if hidden due group fullfillment in step 1 to step 2
+    // Showing custom component if hidden due RCs fullfillment in step 1 to step 2
     $("#customComponentSelectorContent").show();
 
     if (resourceTypeSelection != SERVICE_RESOURCE_TYPE && !isPayAsYouGoChosen) {
-      loadFiltersAndRCs();
+      var returnValue = loadFiltersAndRCs();
+      if (returnValue == false) {
+        $("#spinning_wheel").hide();
+        return false;
+      }
     }
 
     //
@@ -249,19 +263,16 @@ function initCreateSubscription() {
     $bundleContainer.show();
   }
 
-  $(".js_pay_as_you_go_action, .js_pay_as_you_go_dropdown").bind("mouseover", function() {
-    decideOnGroupChoice($(this).parents(".btn-group"));
+  $(".js_pay_as_you_go_action").unbind("click").bind("click", function() {
+    setAndSubscribeSelectedResourceComponentsForStep2($(this).parents(".btn-group"), uniqueResourceComponents);
   });
 
   $(".utility_rates_link").unbind("click").bind("click", function() {
     viewUtilityPricing();
   });
 
-  $("#launchResourcePrimaryMenu, #launchResource").unbind("click").bind("click", function() {
+  $("#launchResource").unbind("click").bind("click", function() {
     launchVM(true);
-  });
-  $("#launchResourceSecondaryMenu").unbind("click").bind("click", function() {
-    launchVM(false);
   });
 
   $("#currency_selector").bind('mouseover', function() {
@@ -303,6 +314,10 @@ function initCreateSubscription() {
         var value = subscriptionConfJsonObj[allConfigurationProperties[i]];
         if (isNotBlank(value)) {
           $("input[name='" + allConfigurationProperties[i] + "']").val(value);
+          var name = subscriptionConfJsonObj[allConfigurationProperties[i] + "_name"];
+          if(isNotBlank(name)) {
+            $("input[name='" + allConfigurationProperties[i] + "']").data('valueDisplayName', name);
+          }
         }
       }
     }
@@ -481,9 +496,9 @@ function initCreateSubscription() {
             } else {
               usage = entitlement.includedUnits + " " + i18nUomText(entitlement.product.uom);
             }
-            var entitlementText = "<td style='width:200px;'>" + usage + "</td>";
+            var entitlementText = "<td style='width:170px;'>" + usage + "</td>";
 
-            entitlementText += "<td style='width:240px;'>" + entitlement.product.name + "</td>";
+            entitlementText += "<td style='width:231px;'>" + entitlement.product.name + "</td>";
 
             var productCharge = productRatesMap[entitlement.product.id];
             var chargeText = "";
@@ -494,11 +509,11 @@ function initCreateSubscription() {
                 "#minFractionDigits").val()));
               chargeText += " / " + i18nUomText(entitlement.product.uom);
             }
-            entitlementText += "<td style='width:200px;'>" + chargeText + "</td>";
+            entitlementText += "<td style='width:230px;'>" + chargeText + "</td>";
             $table_body.append("<tr class='hover_enabled'>" + entitlementText + "</tr>");
           }
         } else {
-          var noEntitlementText = "<td style='width:656px;'><p class='alert alert-info' style='margin:0px;'>" +
+          var noEntitlementText = "<td style='width:656px;'><p class='alert alert-info empty_body' >" +
             dictionary.label_no_entitlements + "</p></td>";
           $table_body.append("<tr>" + noEntitlementText + "</tr>");
         }
@@ -588,12 +603,10 @@ function initCreateSubscription() {
       $("#one_time_charges_content_area").show();
       $("#recurring_charges_content_area").show();
 
-      if (subscriptionId) {
-        newSubscriptionId = subscriptionId;
-        if (isReconfigure) {
-          for (var i = 0; i < resourceProperties.length; i++) {
-            $("input[name='prop_" + resourceProperties[i] + "']").prop('disabled', true);
-          }
+      newSubscriptionId = selectedSubscriptionId;
+      if (isReconfigure) {
+        for (var i = 0; i < resourceProperties.length; i++) {
+          $("input[name='prop_" + resourceProperties[i] + "']").prop('disabled', true);
         }
       }
 
@@ -606,8 +619,6 @@ function initCreateSubscription() {
       }
 
       update_price_summary();
-
-      subscriptionId = $("#subscriptionId").val();
 
       if (isReconfigure) {
         $("#componentsSectionProvisionPage").find('input:radio').each(function() {
@@ -633,64 +644,13 @@ function initCreateSubscription() {
   }
 
   function setAndSubscribeSelectedResourceComponentsForStep2(current, resourceComponents) {
+    $("#accept_checkbox").prop("checked", false);
     selectedResourceComponentsForStep2 = resourceComponents;
     if (isPayAsYouGoChosen) {
       subscribePAYG();
     } else {
       currentBundleTemplate = current;
       actionConfigureAndSubscribe();
-    }
-  }
-
-  function decideOnGroupChoice(current) {
-
-    var possibleGroups = [];
-
-    if (isPayAsYouGoChosen) {
-      possibleGroups = getGroupPossibilities();
-    } else {
-      var possibleGroupsFromBundle = $(current).data("bundleRevisionObj").groups;
-      if (possibleGroupsFromBundle != null) {
-        for (var j = 0; j < possibleGroupsFromBundle.length; j++) {
-          for (var i = 0; i < groupNameList.length; i++) {
-            if (possibleGroupsFromBundle[j].groupName == groupNameList[i]) {
-              possibleGroups.push(groups[i]);
-            }
-          }
-        }
-      }
-    }
-
-    if (resourceTypeSelection == SERVICE_RESOURCE_TYPE || possibleGroups.length == 0) {
-      $(current).find(".configure_subscribe_button").unbind("click").bind("click", function() {
-        setAndSubscribeSelectedResourceComponentsForStep2(current, []);
-      });
-      return;
-    }
-
-    $(current).find(".configure_subscribe_button").unbind("click");
-
-    $(current).find("#group_choice_radios").empty();
-
-    for (var i = 0; i < possibleGroups.length; i++) {
-      var componentNames = [];
-      for (var j = 0; j < possibleGroups[i].length; j++) {
-        var componentName = l10dict[possibleGroups[i][j] + '-name'];
-        componentNames.push(componentName);
-      }
-
-      var $newGroupRow = $("#group_row_template_payg").clone();
-      $newGroupRow.data("group", possibleGroups[i]);
-      $newGroupRow.find("#group_components_text").text(dictionary.label_Using + " " + componentNames.join(", "));
-
-      $newGroupRow.attr("title", dictionary.label_Using + " " + componentNames.join(", "));
-      $newGroupRow.unbind("click").bind("click", function() {
-        setAndSubscribeSelectedResourceComponentsForStep2(current, $(this).data("group"));
-      });
-      $(current).find("#group_choice_radios").append($newGroupRow.show()).show();
-      $(current).find("#configure_button_group_choice_div").unbind("mouseleave").bind("mouseleave", function() {
-        $(this).find("#group_choice_radios").hide();
-      });
     }
   }
 
@@ -720,9 +680,8 @@ function initCreateSubscription() {
 
     var bundleRevisionObj = $(currentBundleTemplate).data("bundleRevisionObj");
     bundleObj = bundleRevisionObj.productBundle;
-    subscriptionId = $(currentBundleTemplate).data("subscriptionId");
+    selectedSubscriptionId = $(currentBundleTemplate).data("subscriptionId");
     bundleObj_id = bundleRevisionObj.pbid;
-
     populateRCsAndFiltersStep2();
   }
 
@@ -774,7 +733,7 @@ function initCreateSubscription() {
       roundNumber((bundle_recurring_charges), $("#minFractionDigits").val())));
   }
 
-  $("#pricing_filters").find('a').unbind('click').bind('click', function(event) {
+  $("#pricing_filters").find('a').unbind('click').bind('click', function() {
 
     if ($(this).attr('disabled') == 'disabled' || $(this).attr('disabled') == true) {
       return;
@@ -785,12 +744,12 @@ function initCreateSubscription() {
     enableMore = 0;
     pageNumberForActive = 0;
     enableMoreForActive = 0;
-    pricingFilter = $(event.target).attr('id')
+    pricingFilter = $(this).attr('id')
     $("#pricing_filters").find('li').each(function() {
       $(this).removeClass("nonactive");
       $(this).removeClass("active");
     });
-    $(event.target).parent('li').addClass("active");
+    $(this).parent('li').addClass("active");
     refreshBundlesListingForSelectedTab();
     $("#spinning_wheel").hide();
   });
@@ -1110,7 +1069,7 @@ function initCreateSubscription() {
         continue;
       }
 
-      entitlementHtml = entitlementHtml + '<li style="color: #000"><span class="navicon ' + entitlement.product.name +
+      entitlementHtml = entitlementHtml + '<li class = "ellipsis" style="color: #000" title = "'+ entitlement.product.name +'"><span class="navicon ' + entitlement.product.name +
         '"></span><span class="text ellipsis" style="margin-top: 14px;">' + usage + "&nbsp;" + dictionary.of + "&nbsp;" +
         entitlement.product.name + "</span></li>";
     }
@@ -1121,12 +1080,18 @@ function initCreateSubscription() {
     }
     var $newBundle = $bundleTemplate.clone(false);
     //Add service offering details.
-    $newBundle.find("#bundle_name").text(bundle.name);
+    $newBundle.find("#bundle_name").text(bundle.name).attr("title",bundle.name);
     $newBundle.find("#bundle_description").text(bundle.description);
     $newBundle.find("#bundleDescription").html(bundle.description);
-    var ribbonId = Math.floor((Math.random() * 7) + 1);
-    $newBundle.find("#entitlmentsribbon").addClass("col" + ribbonId);
-    $newBundle.find("#totalentitlmentsribbon").addClass("col" + ribbonId);
+    if (bundle.imagePath != null){
+    	$newBundle.find("#totalentitlmentsribbon").html('<img src="/portal/portal/logo/productBundles/' + bundleRevision.pbid + '" />');
+    	$newBundle.find("#entitlmentsribbon").html('<img src="/portal/portal/logo/productBundles/' + bundleRevision.pbid + '" />');
+    }
+    else{
+    	var ribbonId = Math.floor((Math.random() * 7) + 1);
+    	$newBundle.find("#entitlmentsribbon").addClass("col" + ribbonId);
+    	$newBundle.find("#totalentitlmentsribbon").addClass("col" + ribbonId);
+    }
     $newBundle.find("#entitlements").html(entitlementHtml);
     $newBundle.find("#entitlements").attr("title", bundle.name);
 
@@ -1160,6 +1125,10 @@ function initCreateSubscription() {
         activationCharge = activationCharge + rateCardPrice.price;
       }
     }
+    activationCharge = formatNumber(roundNumber((activationCharge),
+        $("#minFractionDigits").val())) ;
+    recurringCharge = formatNumber(roundNumber((recurringCharge),
+        $("#minFractionDigits").val())) ;
     $newBundle.find("#activationCharges").text("+ " + $("#selectedCurrencySign").val() + activationCharge + " " +
       dictionary.oneTimeChargeType);
     if (bundle.rateCard.chargeType.name == 'NONE') {
@@ -1186,8 +1155,8 @@ function initCreateSubscription() {
       $newBundle.find("#subscribe" + bundleRevision.pbid).text(buttonLabel);
     }
     if (isCompatible) {
-      $newBundle.find("#subscribe" + bundleRevision.pbid).unbind("mouseover").bind("mouseover", function() {
-        decideOnGroupChoice($(this).closest("div[id^='bundle_']"));
+      $newBundle.find("#subscribe" + bundleRevision.pbid).unbind("click").bind("click", function() {
+        setAndSubscribeSelectedResourceComponentsForStep2($(this).closest("div[id^='bundle_']"), uniqueResourceComponents);
       });
     }
     if (buttonClass) {
@@ -1260,6 +1229,7 @@ function initCreateSubscription() {
     });
 
     var buttons = {};
+    if(subscriptionButtonVisiblity==true){
     buttons["Go to Subscriptions"] = function() {
       var location = "/portal/portal/billing/subscriptions?tenant=" + tenantParam;
       if (isNotBlank(returnVal) && isNotBlank(returnVal.subscriptionId)) {
@@ -1267,7 +1237,7 @@ function initCreateSubscription() {
       }
       window.location = location;
     };
-
+    }
     buttons["Go to Catalog"] = function() {
       window.location = "/portal/portal/subscription/createsubscription?tenant=" + tenantParam;
     };
@@ -1275,7 +1245,7 @@ function initCreateSubscription() {
     if (resourceTypeSelection != SERVICE_RESOURCE_TYPE) {
       buttons["Go to My Resources"] = function() {
         $launchVmDialog.dialog("close");
-        launchMyResourcesWithServiceInstanceUUID($("#serviceInstanceUuid").val());
+        launchMyResourcesWithServiceInstanceUUID($("#serviceInstanceUuid").val(), "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam);
       };
     }
 
@@ -1307,17 +1277,17 @@ function initCreateSubscription() {
     $("#top_message_panel").find("#msg").text("");
     $("#top_message_panel").hide();
 
-    if ($("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").attr('disabledByCustom') ==
-      "true") {
-      msg = $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").data('message');
+    if ($("#launchResource").attr('disabledByCustom') == "true") {
+      msg = $("#launchResource").data('message');
       if (msg != null) {
         popUpDialogForAlerts("dialog_info", msg);
       }
       return;
     }
 
-    if (!checkGroupFullFillment()) {
-
+    if (!checkRCsFullFillment()) {
+      // If RCs still not fulfilled on final provision click, then generate a popup to let user know
+      // abput the components stull not selected
       var msg = dictionary.error_select_required_rcs + ":";
       var remainingRCs = arr_diff(selectedResourceComponentsForStep2, getCurrentSelectedComponentsNames());
       msg += "<ul style='margin-top:5px;'>";
@@ -1344,7 +1314,20 @@ function initCreateSubscription() {
       var eleValue = target.val();
       productPropertyObj[eleName] = eleValue;
     }
+    
+    var configurationNamesObj = new Object();
+    for (var i = 0; i < allConfigurationProperties.length; i++) {
+      target = $("input[name='" + allConfigurationProperties[i] + "']");
+      var eleName = target.attr("name");
+      var eleValue = target.data('valueDisplayName');
+      if(isNotBlank(eleValue)) {
+        configurationNamesObj[eleName + "_name"] = eleValue;
+      }
+    }
 
+    var configurationNames = JSON.stringify(configurationNamesObj);
+    configurationNames = encodeURIComponent(configurationNames);
+    
     var deployVmUrl = "/portal/portal/subscription/subscribe_resource?tenant=" + tenantParam + "&productBundleId=" +
       bundleObj_id;
     var propConfigs = JSON.stringify(productPropertyObj);
@@ -1352,6 +1335,7 @@ function initCreateSubscription() {
     propConfigs = encodeURIComponent(propConfigs);
     //console.log('...Prop Values..',propConfigs);
     deployVmUrl += "&configurationData=" + propConfigs;
+    deployVmUrl += "&configurationNames=" + configurationNames;
     deployVmUrl += "&serviceInstaceUuid=" + serviceInstaceUuid;
     deployVmUrl += "&resourceType=" + resourceTypeSelection;
     deployVmUrl += "&filters=" + getSelectedFilterString();
@@ -1386,55 +1370,63 @@ function initCreateSubscription() {
         openSubscribeDialog(message, "success", returnVal);
       },
       error: function(jqXHR) {
-        $("#spinning_wheel").hide();
-        var responseText = jqXHR.responseText.trim();
-        if (jqXHR.status != AJAX_FORM_VALIDATION_FAILED_CODE) {
-          var message = "";
-          if (responseText.startsWith("RECONFIGURED:")) {
-            message = dictionary.subscriptionReconfiguredFailure;
-            responseText = responseText.substring(13);
-          } else if (responseText.startsWith("PROVISIONED:")) {
-            message = dictionary.subscriptionProvisionedFailure;
-            responseText = responseText.substring(12);
-          } else if (responseText.startsWith("NEWLY_CREATED:")) {
-            message = dictionary.subscriptionFailure;
-            responseText = responseText.substring(14);
-          } else {
-            message = dictionary.subscriptionFailure;
-          }
-          message = message + "<br /> " + responseText;
-          openSubscribeDialog(message, "error");
-        } else {
-          var message = "";
-          if (responseText.startsWith("RECONFIGURED:")) {
-            message = dictionary.subscriptionReconfiguredFailure;
-            responseText = responseText.substring(13);
-          } else if (responseText.startsWith("PROVISIONED:")) {
-            message = dictionary.subscriptionProvisionedFailure;
-            responseText = responseText.substring(12);
-          } else if (responseText.startsWith("NEWLY_CREATED:")) {
-            message = dictionary.subscriptionFailure;
-            responseText = responseText.substring(14);
-          } else {
-            var fieldErrorList = displayAjaxFormError(jqXHR,
-              "subscriptionForm",
-              "registration_formbox_errormsg");
-            if (fieldErrorList.length > 0) {
-              customFieldError = true;
+          $("#spinning_wheel").hide();
+          var responseText = jqXHR.responseText.trim();
+          if (jqXHR.status != AJAX_FORM_VALIDATION_FAILED_CODE) {
+            var message = "";
+            var status="";
+            if (responseText.startsWith("RECONFIGURED:")) {
+              message = dictionary.subscriptionReconfiguredFailure;
+              responseText = "";
+            } else if (responseText.startsWith("PROVISIONED:")) {
+              message = dictionary.subscriptionProvisionedFailure;
+              status = "failed";
+              responseText = "";
+            } else if (responseText.startsWith("NEWLY_CREATED:")) {
+              message = dictionary.subscriptionFailure;
+              responseText = "";
             } else {
               message = dictionary.subscriptionFailure;
             }
-          }
-          if (!customFieldError) {
-            message = message + ": " + $.parseJSON(responseText)["validationResult"];
-            $("#top_message_panel").find("#msg").html(message);
-            $("#top_message_panel").find("#status_icon").removeClass("successicon").addClass("erroricon");
-            $("#top_message_panel").removeClass("success").addClass("error").show();
+            message = message + "<br /> " + responseText;
+            openSubscribeDialog(message, "error");
+          } else {
+            var message = "";
+            var status="";
+            if (responseText.startsWith("RECONFIGURED:")) {
+              message = dictionary.subscriptionReconfiguredFailure;
+              responseText = "";
+            } else if (responseText.startsWith("PROVISIONED:")) {
+              message = dictionary.subscriptionProvisionedFailure;
+              status = "failed";
+              responseText = "";
+            } else if (responseText.startsWith("NEWLY_CREATED:")) {
+              message = dictionary.subscriptionFailure;
+              responseText = "";
+            } else {
+              var fieldErrorList = displayAjaxFormError(jqXHR,
+                "subscriptionForm",
+                "registration_formbox_errormsg");
+              if (fieldErrorList.length > 0) {
+                customFieldError = true;
+              } else {
+                message = dictionary.subscriptionFailure;
+              }
+            }
+            if (!customFieldError) {
+          	  if(status=="failed"){
+          		  message = message;  
+          	  }else{
+          		  message = message + ": " + $.parseJSON(responseText)["validationResult"];
+          	  }
+              $("#top_message_panel").find("#msg").html(message);
+              $("#top_message_panel").find("#status_icon").removeClass("successicon").addClass("erroricon");
+              $("#top_message_panel").removeClass("success").addClass("error").show();
+            }
           }
         }
-      }
-    });
-  }
+      });
+    }
 
   function refreshBundlesOrSelectionSummary() {
     if (currentPage == 2) {
@@ -1483,19 +1475,47 @@ function initCreateSubscription() {
   }
 
   function loadFiltersAndRCs() {
-    loadServiceFilters();
+    var returnValue = loadServiceFilters();
+    if (returnValue == false){
+      return false;
+    }
     refreshRCsListing();
+    return true;
   }
 
+  function preparePopOver($element, header, content) {
+    var data = "";
+    if(isNotBlank(header)) {
+      if(isBlank(content)) {
+        data  = "<div class='rc_info_bubble_header'>" + header + "</div>";
+      } else {
+        data = "<div class='rc_info_bubble_header' style='border-bottom: 1px dotted #CCCCCC;'>" + header + "</div><br/>";
+      }
+    }
+    data += content;
+    $element.popover({
+      content : data,
+      trigger : "hover",
+      placement : "right",
+      container : "body",
+      html : true
+    });
+  }
+  
+  
+  //This function populates the filter choices for the service for step 1
   function loadServiceFilters() {
     var $container = $("#filters_SECTION_2").empty();
     for (i = 0; i < serviceFilterNames.length; i++) {
       var html = $("#list_box_container").clone();
       html.find("#filterBoxTitle").text(l10dict[serviceFilterNames[i] + "-name"]);
-      html.find("#filterBoxTitle").parent().attr('title', l10dict[serviceFilterNames[i] + "-desc"]);
+      preparePopOver(html.find("#filterBoxTitle").parent(), l10dict[serviceFilterNames[i] + "-name"], l10dict[serviceFilterNames[i] + "-desc"]);
       var $listBox = html.find("#filterBoxSelection").empty();
       $listBox.attr("name", serviceFilterNames[i]);
       var serviceFilterValues = getValuesForFilter(serviceFilterNames[i]);
+      if (serviceFilterValues == false) {
+        return false;
+      }
       for (j = 0; j < serviceFilterValues.length; j++) {
         var serviceFilterValue = serviceFilterValues[j];
         if (isBlank(JSON.stringify(serviceFilterValue)) || JSON.stringify(serviceFilterValue) == "undefined") {
@@ -1505,15 +1525,16 @@ function initCreateSubscription() {
         var name = serviceFilterValue["name"];
         var value = serviceFilterValue["value"];
 
-        var extras = getl10nComponentDetails("Filter", serviceFilterValue["attributes"], serviceFilterValue[
-          "displayAttributes"], i);
+        var extras = getl10nComponentDetails("Filter", serviceFilterValue["attributes"], serviceFilterValue["displayAttributes"], i);
+        var extrasInfo = getl10nComponentDetails("Filter", serviceFilterValue["attributes"], serviceFilterValue["displayAttributes"], i, true);
 
-        $listBox.append('<li id="' + value + '" fieldDisplayName="' + l10dict[serviceFilterNames[i] + "-name"] +
-          '"><span class="catalog_rc_list ellipsis js_displaytext">' + name +
-          '</span><span class="catalog_rc_list description ellipsis">' + extras + '</span> </li>');
-        var $itemDesc = $listBox.find('#' + value + " .description");
-        $itemDesc.parent('li').attr('title', $itemDesc.text());
-
+        var $li = $("#list_rc_element_clone").clone();
+        $li.attr("id", value);
+        $li.attr("fieldDisplayName", l10dict[serviceFilterNames[i] + "-name"]);
+        $li.find("#span_rc_name").html(name);
+        $li.find("#span_rc_desc").html(extras);
+        preparePopOver($li, name, extrasInfo);
+        $listBox.append($li.show());
       }
       $listBox.find('li').unbind("click").bind("click", function() {
         var $target = $(this);
@@ -1557,6 +1578,7 @@ function initCreateSubscription() {
     $inputField.data('valueDisplayName', target.find('.js_displaytext').text());
     $inputField.data('fieldDisplayName', target.attr('fieldDisplayName'));
     $inputField.data('effectiveValue', target.attr("effectiveValue"));
+    $inputField.data("componentAttributes", target.data("componentAttributes"));
   }
 
   function refreshFilterInputField($target) {
@@ -1566,7 +1588,7 @@ function initCreateSubscription() {
     $inputField.data('fieldDisplayName', $target.attr("fieldDisplayName"));
   }
 
-  function getl10nComponentDetails(type, attributes, displayAttributes, index) {
+  function getl10nComponentDetails(type, attributes, displayAttributes, index, forInfo) {
     var compKey;
     var compValue;
     if (type == "ResourceComponent") {
@@ -1577,13 +1599,13 @@ function initCreateSubscription() {
       compValue = serviceFilterDescl10dict[index];
     }
     var extras = "";
-    var extras = getFormattedDisplayAttribtutesString(displayAttributes);
+    var extras = getFormattedDisplayAttribtutesString(displayAttributes, forInfo);
     if (isNotBlank(extras)) {
       if (compKey != compValue) {
         extras = getFormattedDisplayAttribtutesDescription(compValue, displayAttributes);
       }
     } else {
-      extras = getFormattedAttribtutesString(attributes);
+      extras = getFormattedAttribtutesString(attributes, forInfo);
     }
     return extras;
   }
@@ -1601,14 +1623,18 @@ function initCreateSubscription() {
 
       var html = $("#list_box_container").clone();
       html.find("#filterBoxTitle").text(l10dict[uniqueResourceComponents[i] + "-name"]);
-      html.find("#filterBoxTitle").parent().attr('title', l10dict[uniqueResourceComponents[i] + "-desc"]);
+      preparePopOver(html.find("#filterBoxTitle").parent(), l10dict[uniqueResourceComponents[i] + "-name"], l10dict[uniqueResourceComponents[i] + "-desc"]);
       var $listBox = html.find("#filterBoxSelection").empty();
       $listBox.attr("name", uniqueResourceComponents[i]);
 
-      $listBox.append('<li effectiveValue="' + anyOptionStaticValue +
-        '" class="active"><span class="catalog_rc_list ellipsis">' + dictionary.label_Any +
-        '</span><span class="catalog_rc_list description ellipsis"></span></li>');
-
+      var $li = $("#list_rc_element_clone").clone();
+      $li.addClass("active");
+      $li.attr("id", "");
+      $li.attr("effectiveValue", anyOptionStaticValue);
+      $li.find("#span_rc_name").html(dictionary.label_Any);
+      preparePopOver($li, null, dictionary.msg_any_required_component);
+      $listBox.append($li.show());
+      
       for (var component in data) {
 
         if (isBlank(JSON.stringify(data[component])) || JSON.stringify(data[component]) == "undefined") {
@@ -1624,12 +1650,17 @@ function initCreateSubscription() {
           "displayAttributes"
         ], i);
 
-        $listBox.append('<li id="' + data[component]["value"] + '" effectiveValue="' + effectiveValue +
-          '" fieldDisplayName="' + l10dict[uniqueResourceComponents[i] + "-name"] +
-          '"><span class="catalog_rc_list ellipsis js_displaytext">' + data[component]["name"] +
-          '</span><span class="catalog_rc_list description ellipsis">' + extras + '</span> </li>');
-        var $itemDesc = $listBox.find('#' + data[component]["value"] + " .description");
-        $itemDesc.parent('li').attr('title', $itemDesc.text());
+        var extrasInfo = getl10nComponentDetails("ResourceComponent", data[component]["attributes"], data[component]["displayAttributes"], i, true);
+
+        var $li = $("#list_rc_element_clone").clone();
+        $li.attr("id", data[component]["value"]);
+        $li.attr("effectiveValue", effectiveValue);
+        $li.attr("fieldDisplayName", l10dict[uniqueResourceComponents[i] + "-name"]);
+        $li.data("componentAttributes", data[component]["attributes"]);
+        $li.find("#span_rc_name").html(data[component]["name"]);
+        $li.find("#span_rc_desc").html(extras);
+        preparePopOver($li, data[component]["name"], extrasInfo);
+        $listBox.append($li.show());
       }
 
       $listBox.find('li').unbind("click").bind("click", function() {
@@ -1637,6 +1668,7 @@ function initCreateSubscription() {
         if (target.attr('disabled') == true || target.attr('disabled') == 'disabled') {
           return;
         }
+        $(".popover").hide();
         target.siblings(".active").removeClass("active");
         target.addClass("active");
         refreshInputField(target);
@@ -1713,9 +1745,7 @@ function initCreateSubscription() {
 
     // In case of reprovision, the user should be directed to step2 directly with the current subscription bundle selected
     if (isReprovision && currentPage == 1) {
-      var possibleGroups = getGroupPossibilities();
-      setAndSubscribeSelectedResourceComponentsForStep2($bundleContainer.find('div[id^=bundle_]').filter(":first"),
-        possibleGroups[0]);
+      setAndSubscribeSelectedResourceComponentsForStep2($bundleContainer.find('div[id^=bundle_]').filter(":first"), uniqueResourceComponents);
     }
 
     $("#spinning_wheel").hide();
@@ -1762,44 +1792,6 @@ function initCreateSubscription() {
     return returnHtml;
   }
 
-  function getGroupPossibilities() {
-    if (resourceTypeSelection == SERVICE_RESOURCE_TYPE) {
-      return true;
-    }
-    var currentComponents = getCurrentSelectedComponentsNames();
-    var isAnySelectedComponentInOnlyOneGroup = false;
-    var nonAmbiguousGroups = {};
-    for (var currentComponent in currentComponents) {
-      var thisComponentOccurence = 0;
-      var applicableGroupId = null;
-      for (var i = 0; i < groups.length; i++) {
-        for (var j = 0; j < groups[i].length; j++) {
-          if (groups[i][j] === currentComponents[currentComponent]) {
-            thisComponentOccurence++;
-            applicableGroupId = i;
-            break;
-          }
-        }
-      }
-      if (thisComponentOccurence == 1) {
-        isAnySelectedComponentInOnlyOneGroup = true;
-        nonAmbiguousGroups[applicableGroupId] = groups[applicableGroupId];
-      }
-    }
-
-    var possibleGroups = [];
-    for (data in nonAmbiguousGroups) {
-      var group = nonAmbiguousGroups[data];
-      possibleGroups.push(group);
-    }
-
-    if (possibleGroups.length == 0) {
-      possibleGroups = groups;
-    }
-
-    return possibleGroups;
-  }
-
   function getCurrentSelectedComponentsNames() {
     var currentComponents = [];
     for (var i = 0; i < uniqueResourceComponents.length; i++) {
@@ -1811,15 +1803,15 @@ function initCreateSubscription() {
     return currentComponents;
   }
 
-  function checkGroupFullFillment() {
-    var groupSatisfied = true;
+  function checkRCsFullFillment() {
+    // This function return true or false on basis of whether all the RCs required for provision are selected ot not
     for (var i = 0; i < selectedResourceComponentsForStep2.length; i++) {
       var compInputVal = $("input[name='" + selectedResourceComponentsForStep2[i] + "']").val();
       if (isBlank(compInputVal)) {
-        groupSatisfied = false;
+        return false;
       }
     }
-    return groupSatisfied;
+    return true;
   }
 
   function refreshFiltersInputStep2(target) {
@@ -1836,6 +1828,7 @@ function initCreateSubscription() {
     $inputField.data('valueDisplayName', target.data('valueDisplayName'));
     $inputField.data('fieldDisplayName', target.data('fieldDisplayName'));
     $inputField.data('effectiveValue', target.data("effectiveValue"));
+    $inputField.data('componentAttributes', target.data("componentAttributes"));
     $inputField.change();
   }
 
@@ -1844,13 +1837,18 @@ function initCreateSubscription() {
     if (isPayAsYouGoChosen || isReprovision) {
       loadServiceFiltersStep2();
     }
-    if (!checkGroupFullFillment() || isReprovision) {
-      $("#componentsHeaderProvisionPage").show();
+    if (!checkRCsFullFillment() || isReprovision) {
+      // If any RCs are pending selection or its the case of reprovision, then only load resource components
+      // view in step2
       refreshRCsListingStep2();
+      $("#componentsHeaderProvisionPage").show();
+      $("#componentsSectionProvisionPage").show();
     } else {
+      // Else skip the connector call and hide respective div
       $("#customComponentSelectorContent").hide();
-      $("#componentsHeaderProvisionPage").hide();
       prepareStep2PricingAndEntitlements();
+      $("#componentsHeaderProvisionPage").hide();
+      $("#componentsSectionProvisionPage").hide();
     }
   }
 
@@ -2033,6 +2031,7 @@ function initCreateSubscription() {
         $newResourceValue.find(".radio").val(data[component]["value"]);
         $newResourceValue.find(".radio").attr('id', data[component]["value"]);
         $newResourceValue.find(".radio").data('componentId', rcName);
+        $newResourceValue.find(".radio").data('componentAttributes', data[component]["attributes"]);
         $newResourceValue.find(".radio").data('fieldDisplayName', l10dict[rcName + "-name"]);
         $newResourceValue.find(".radio").data('valueDisplayName', data[component]["name"]);
         $newResourceValue.find(".radio").data('effectiveValue', effectiveValue);
@@ -2077,6 +2076,7 @@ function initCreateSubscription() {
       $inputField.data('valueDisplayName', null);
       $inputField.data('fieldDisplayName', null);
       $inputField.data('effectiveValue', null);
+      $inputField.data('componentAttributes', null);
     }
   }
 
@@ -2085,6 +2085,7 @@ function initCreateSubscription() {
     $inputField.data('valueDisplayName', null);
     $inputField.data('fieldDisplayName', null);
     $inputField.data('effectiveValue', null);
+    $inputField.data('componentAttributes', null);
   }
 
   function resetInputFieldByName(name) {
@@ -2093,6 +2094,7 @@ function initCreateSubscription() {
     $inputField.data('valueDisplayName', null);
     $inputField.data('fieldDisplayName', null);
     $inputField.data('effectiveValue', null);
+    $inputField.data('componentAttributes', null);
     $inputField.change();
   }
 
@@ -2166,8 +2168,10 @@ function getValuesForFilter(filterType) {
       returnValues = data;
     },
     error: function(error) {
-      $("#spinning_wheel").hide();
-      $("#catalog_content_area").hide();
+      handleConnectorError();
+      returnValues = false;
+    },
+    complete: function(xhr, status) {
     }
   });
   return returnValues;
@@ -2175,20 +2179,20 @@ function getValuesForFilter(filterType) {
 
 function enableProvisionButton(enable, msg) {
   if (enable) {
-    $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").css({
+    $("#launchResource").css({
       opacity: 1.0,
       visibility: "visible"
     });
-    $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").attr('disabledByCustom', "false");
+    $("#launchResource").attr('disabledByCustom', "false");
   } else {
-    $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").css({
+    $("#launchResource").css({
       opacity: 0.5,
       visibility: "visible"
     });
-    $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").attr('disabledByCustom', "true");
+    $("#launchResource").attr('disabledByCustom', "true");
 
     if (msg != null && msg != "") {
-      $("#launchResource, #launchResourcePrimaryMenu, #launchResourceSecondaryMenu").data('message', msg);
+      $("#launchResource").data('message', msg);
     }
   }
 }
@@ -2298,4 +2302,9 @@ function getSelectedFilterString() {
     }
   }
   return filterStr;
+}
+
+function handleConnectorError() {
+  $("#spinning_wheel").hide();
+  $("#catalog_content_area").html('<div class="alert alert-error" style="width: 95%;float:left;">' + dictionary.cloud_service_down + '</div>');
 }

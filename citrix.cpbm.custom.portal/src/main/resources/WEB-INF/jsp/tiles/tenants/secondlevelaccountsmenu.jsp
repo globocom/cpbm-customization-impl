@@ -5,8 +5,8 @@
 <%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <div class="secondlevel_withsubmenu">
     <div class="secondlevel_breadcrumb_panel">
-      <div class="secondlevel_breadcrumbbox">
-          <p><c:out value="${tenant.name}"/></p>
+      <div class="secondlevel_breadcrumbbox_tenant">
+          <p title="${tenant.name}"><c:out value="${tenant.name}"/></p>
       </div>
       <div class="doc_help_link"></div>
     </div>

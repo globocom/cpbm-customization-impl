@@ -41,10 +41,6 @@
     <Group name="fromTemplate">
       <Component name="serviceOfferingUuid" discriminator="serviceOfferingUuid" reconfigurable="true"/>
       <Component name="templateUuid" discriminator="templateUuid" />
-    </Group>
-    <Group name="fromISO">
-      <Component name="serviceOfferingUuid" discriminator="serviceOfferingUuid" reconfigurable="true" />
-      <Component name="isoUuid" discriminator="isoUuid" />
       <Component name="hypervisorType" discriminator="hypervisorType" />
     </Group>
     <Generates>

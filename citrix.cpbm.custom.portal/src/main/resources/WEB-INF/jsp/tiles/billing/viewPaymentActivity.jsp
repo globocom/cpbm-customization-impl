@@ -17,8 +17,16 @@
 		</div>
 	</div>
 </div>
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg">${errorMsg}</p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg">${errorMsg}</p>
+  </div>
+</div>
 
 <div class="widget_browser">
  	<!-- <div id="spinning_wheel" style="display: none">
@@ -37,8 +45,8 @@
 					</div>
 					<div class="widget_grid_description">
 						<span> 
-							<spring:message code="dateonly.format" var="dateonly_format" /> <fmt:formatDate
-								value="${salesLedgerRecord.createdAt}" pattern="${dateonly_format}" timeZone="${currentUser.timeZone}" />
+							<spring:message code="date.format" var="date_format" /> <fmt:formatDate
+								value="${salesLedgerRecord.createdAt}" pattern="${date_format}" timeZone="${currentUser.timeZone}" />
 						</span>
 					</div>
 				</div>
@@ -115,26 +123,26 @@
 				</div>
 			</div>
 			</sec:authorize>
+		<c:if test="${salesLedgerRecord != null and salesLedgerRecord.paymentTransaction.state !=null and (not empty salesLedgerRecord.paymentTransaction.state)}">
 			<div class="widget_grid details odd">
 				<div class="widget_grid_labels">
 					<span><spring:message code="label.state" /></span>
 				</div>
-				<c:if test="${salesLedgerRecord != null}">
 					<div class="widget_grid_description">
 						<span>${salesLedgerRecord.paymentTransaction.state}</span>
 					</div>
-				</c:if>
 			</div>
-			<div class="widget_grid details even">
-				<div class="widget_grid_labels">
-					<span><spring:message code="label.billing.history.billingId.payment" /></span>
-				</div>
-				<c:if test="${salesLedgerRecord != null}">
-					<div class="widget_grid_description">
-						<span>${salesLedgerRecord.paymentTransaction.transactionId}</span>
-					</div>
+	 </c:if>
+				<c:if test="${salesLedgerRecord != null and salesLedgerRecord.paymentTransaction.transactionId !=null and (not empty salesLedgerRecord.paymentTransaction.transactionId)}">
+    			<div class="widget_grid details even">
+    				<div class="widget_grid_labels">
+    					<span><spring:message code="label.billing.history.billingId.payment" /></span>
+    				</div>
+    					<div class="widget_grid_description">
+    						<span>${salesLedgerRecord.paymentTransaction.transactionId}</span>
+    					</div>
+    			</div>
 				</c:if>
-			</div>
 		</div>
 	</div>
 </div>

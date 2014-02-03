@@ -40,3 +40,16 @@
 .db_billing_calendarblock span.infotext {
   font-size: 9px;
 }
+span.required_product_units_header{
+  margin-top:0px !important;
+}
+.widget_searchcontentarea span.label {
+  font-size: 9px;
+}
+
+.maintitlebox h1 {
+  font-size: 15px;
+}
+.widgetwizard_reviewbox li span.label,.widgetwizard_reviewbox li span.description{
+  width: 220px;
+}

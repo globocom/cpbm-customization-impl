@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright Â© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.IOException;
@@ -45,6 +44,7 @@ import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
 import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
 import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.CloudConnectorFactory.ConnectorType;
+import com.google.gson.JsonObject;
 import com.vmops.internal.service.PrivilegeService;
 import com.vmops.model.Category;
 import com.vmops.model.Channel;
@@ -54,6 +54,7 @@ import com.vmops.model.Entitlement;
 import com.vmops.model.MediationRule;
 import com.vmops.model.MediationRuleDiscriminator;
 import com.vmops.model.Product;
+import com.vmops.model.ProductBundle;
 import com.vmops.model.ProductBundleRevision;
 import com.vmops.model.ProductCharge;
 import com.vmops.model.ProductRevision;
@@ -72,6 +73,8 @@ import com.vmops.service.ChannelService;
 import com.vmops.service.CurrencyValueService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.ProductService;
+import com.vmops.service.exceptions.CurrencyPrecisionException;
+import com.vmops.service.exceptions.FileUploadException;
 import com.vmops.utils.DateUtils;
 import com.vmops.utils.JSONUtils;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
@@ -138,7 +141,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     return productList;
   }
 
-  private List<Product> getProductListByFilters(List<Product> allProductList, String filterBy, String category) {
+  private List<Product> getProductListByFilters(List<Product> allProductList, String filterBy, String category,
+      Revision effectiveRevision) {
     logger.debug("Entering getProductsListByFilters...");
     List<Product> productList = new ArrayList<Product>();
 
@@ -152,17 +156,23 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
           productList.add(product);
         } else {
           if (StringUtils.isEmpty(category) || "All".equalsIgnoreCase(category)) {
-            if ("Active".equalsIgnoreCase(filterBy) && product.getRemovedBy() == null) {
+            if ("Active".equalsIgnoreCase(filterBy)
+                && (product.getRemovedBy() == null || (product.getRemovedBy() != null && product.getRemovedInRevision()
+                    .getId() > effectiveRevision.getId()))) {
               productList.add(product);
-            } else if ("Retire".equalsIgnoreCase(filterBy) && product.getRemovedBy() != null) {
+            } else if ("Retire".equalsIgnoreCase(filterBy) && product.getRemovedBy() != null
+                && product.getRemovedInRevision().getId() <= effectiveRevision.getId()) {
               productList.add(product);
             }
           } else {
-            if ("Active".equalsIgnoreCase(filterBy) && product.getRemovedBy() == null
+            if ("Active".equalsIgnoreCase(filterBy)
+                && (product.getRemovedBy() == null || (product.getRemovedBy() != null && product.getRemovedInRevision()
+                    .getId() > effectiveRevision.getId()))
                 && product.getCategory().getName().equalsIgnoreCase(category)) {
               productList.add(product);
             } else if ("Retire".equalsIgnoreCase(filterBy) && product.getRemovedBy() != null
-                && product.getCategory().getName().equalsIgnoreCase(category)) {
+                && product.getCategory().getName().equalsIgnoreCase(category)
+                && product.getRemovedInRevision().getId() <= effectiveRevision.getId()) {
               productList.add(product);
             }
           }
@@ -180,7 +190,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       if (prod1.getCategory().getOrder() > prod2.getCategory().getOrder()) {
         return 1;
       } else if (prod1.getCategory().getOrder() == prod2.getCategory().getOrder()) {
-        if ((Long) prod1.getSortOrder() > (Long) prod2.getSortOrder()) {
+        if (prod1.getSortOrder() > prod2.getSortOrder()) {
           return 1;
         } else if (prod1.getSortOrder() == prod2.getSortOrder()) {
           return Integer.valueOf(prod1.getId().toString()) - Integer.valueOf(prod2.getId().toString());
@@ -199,9 +209,9 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     public int compare(ProductCharge pc1, ProductCharge pc2) {
       if (pc1.getCurrencyValue().getRank() == pc2.getCurrencyValue().getRank()) {
         return 0;
-      } else if (pc1.getCurrencyValue().getRank() < pc2.getCurrencyValue().getRank())
+      } else if (pc1.getCurrencyValue().getRank() < pc2.getCurrencyValue().getRank()) {
         return -1;
-      else {
+      } else {
         return 1;
       }
     }
@@ -356,7 +366,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     setPage(map, Page.PRODUCTS);
 
     int currentPageValue = currentPage != null ? Integer.parseInt(currentPage) : 1;
-    int perPageValue = getDefaultPageSize();
+    int perPageValue = getDefaultPageSize() - 1; // Page size is decreased by one as category section is included.
 
     List<ProductRevision> allProductRevisions = new ArrayList<ProductRevision>();
     Revision effectiveRevision = null;
@@ -390,10 +400,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       Product product = productRevision.getProduct();
       // Add only those products which have removedBy null or if it is removed, then in a revision after the
       // revision under consideration
-      if ((product.getRemoved() == null || (product.getRemoved() != null && effectiveRevision != null && product
-          .getRemovedInRevision().getId() > effectiveRevision.getId()))
-          && (product.getServiceInstance() != null && product.getServiceInstance().getUuid()
-              .equals(serviceInstanceUUID))) {
+      if (effectiveRevision != null && product.getServiceInstance() != null
+          && product.getServiceInstance().getUuid().equals(serviceInstanceUUID)) {
         if (namePattern != null && !namePattern.trim().equals("")
             && !product.getName().toLowerCase().startsWith(namePattern.toLowerCase())) {
           continue;
@@ -404,7 +412,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     }
 
     Collections.sort(allProductList, new ProductSortOrderSort());
-    List<Product> productListByFilters = getProductListByFilters(allProductList, filterBy, category);
+    List<Product> productListByFilters = getProductListByFilters(allProductList, filterBy, category, effectiveRevision);
     List<Product> productList = getProductList(productListByFilters, currentPageValue, perPageValue);
 
     map.addAttribute("namePattern", namePattern);
@@ -477,7 +485,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
 
     List<Category> categories = productService.getAllCategories();
     map.addAttribute("categories", categories);
-
+    productForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     productForm.createChargeEntriesForTheProductYetToBeCreated(activeCurrencies, currentRevision);
 
     Set<String> serviceUsageTypeNames = new HashSet<String>();
@@ -516,20 +525,9 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       @RequestParam(value = "serviceUsageTypeId", required = true) final Long usageTypeId,
       @RequestParam(value = "serviceInstanceUUID", required = true) final String serviceInstanceUUID) {
 
-// * Dictionary created will be of the type
-// * {"DISCRIMINATOR_ID": {
-// * ______________________"name": "DISCRIMINATOR_NAME",
-// * ______________________"discriminatorValues": {
-// * _______________________________"KEY_1": "VALUE_1",
-// * _______________________________"KEY_2": "VALUE_2",
-// * _______________________________...
-// * _______________________________"KEY_N": "VALUE_N"
-// * _______________________________}
-// * _____________________}
-// * }
-
     Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {
 
+      @Override
       public Map<String, Object> run() {
         Set<ServiceDiscriminator> serviceDiscriminators = new HashSet<ServiceDiscriminator>();
         ServiceInstance serviceInstance = serviceInstanceDao.getServiceInstance(serviceInstanceUUID);
@@ -570,7 +568,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     String serviceInstanceUUID = form.getServiceInstanceUUID();
     String categoryID = form.getCategoryID();
     List<ProductCharge> productCharges = form.getProductCharges();
-    boolean ifReplacementProduct = form.getIsReplacementProduct();
+    boolean ifReplacementProduct = !form.getIsNewProduct();
     JSONArray mediationRules = new JSONArray(form.getProductMediationRules());
     BigDecimal conversionFactor = new BigDecimal(form.getConversionFactor());
     Product createdProduct = productService.createProduct(product, serviceInstanceUUID, categoryID, productCharges,
@@ -611,34 +609,14 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     logger.debug("### editProduct method starting...(GET)");
     Product product = productService.locateProductById(ID);
     ProductForm productForm = new ProductForm(product);
+    productForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     productForm.setCategoryID(product.getCategory().getId().toString());
     map.addAttribute("productForm", productForm);
 
     ProductRevision productRevision = productService.getProductRevision(product, channelService.getFutureRevision(null)
         .getStartDate(), null);
     List<MediationRule> mediationRules = productRevision.getMediationRules();
-    // * The Map structure for mediation rules is
-    // * {"MEDIATION_RULE_ID": {
-    // * _______________________"usageType": USAGE_TYPE,
-    // * _______________________"usageTypeId" : USAGE_TYPE_ID;
-    // * _______________________"conversionFactor" : CONVERSION_FACTOR,
-    // * _______________________"operator" : OPERATOR,
-    // * _______________________"uom" : UOM,
-    // * _______________________"productUom" : PRODUCTUOM(SCALE),
-    // * _______________________"discriminators": {
-    // * _____________________________"DISCRIMINATOR_ID": {
-    // * _________________________________________"discriminatorType": DISCRIMNATOR_TYPE,
-    // * _________________________________________"discrimniatorValue": DISCRIMINATOR_VALUE,
-    // * _________________________________________"discriminatorResourceComponent": DISCRIMINATOR_RES_COMP,
-    // * _________________________________________"operator" : OPERATOR,
-    // * _________________________________________"discriminatorTypeId" : DISCRIMINATOR_TYPE_ID
-    // * _________________________________________},
-    // * _________________________________________...
-    // * __________________________________}
-    // * ______________________}
-    // * ______________________...
-    // * }
-
     Map<ServiceUsageType, Set<MediationRuleDiscriminator>> usgaeTypeForWhichDiscValesAreToBeGotAndDiscsMap = new HashMap<ServiceUsageType, Set<MediationRuleDiscriminator>>();
     for (MediationRule mediationRule : mediationRules) {
       if (mediationRule.getMediationRuleDiscriminators().size() > 0) {
@@ -675,7 +653,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
         mediationRuleEntitiesMap.put("uom", mediationRule.getServiceUsageType().getServiceUsageTypeUom().getName());
         mediationRuleEntitiesMap.put("productUom", product.getUom());
         mediationRuleEntitiesMap.put("usageTypeId", mediationRule.getServiceUsageType().getId());
-
+        mediationRuleEntitiesMap.put("discrete", mediationRule.getServiceUsageType().getDiscrete());
         Map<String, Object> medDiscsMap = new HashMap<String, Object>();
         for (MediationRuleDiscriminator mediationRuleDiscriminator : mediationRule.getMediationRuleDiscriminators()) {
           Map<String, Object> medRuleDisEntitiesMap = new HashMap<String, Object>();
@@ -702,6 +680,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
             Map<String, Object> discValueMap = privilegeService
                 .runAsPortal(new PrivilegedAction<Map<String, Object>>() {
 
+                  @Override
                   public Map<String, Object> run() {
                     Map<String, Object> discValueMap = new HashMap<String, Object>();
                     Set<ServiceDiscriminator> usageTypeDiscriminators = serviceInstance.getService()
@@ -788,6 +767,15 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
   public String editProductLogo(@ModelAttribute("productLogoForm") ProductLogoForm form, BindingResult result,
       HttpServletRequest request, ModelMap map) {
     logger.debug("### edit product logo method starting...(POST)");
+    String fileSize = checkFileUploadMaxSizeException(request);
+    if (fileSize != null) {
+      result.rejectValue("logo", "error.image.max.upload.size.exceeded");
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage", messageSource.getMessage(result.getFieldError("logo").getCode(), new Object[] {
+        fileSize
+      }, request.getLocale()));
+      return error.toString();
+    }
 
     String rootImageDir = config.getValue(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
     if (rootImageDir != null && !rootImageDir.trim().equals("")) {
@@ -796,9 +784,21 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       validator.validate(form, result);
       if (result.hasErrors()) {
         setPage(map, Page.PRODUCTS);
-        return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
+        JsonObject error = new JsonObject();
+        error.addProperty("errormessage",
+            messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+        return error.toString();
       } else {
-        product = productService.editProductLogo(product, form.getLogo());
+        try {
+          product = productService.editProductLogo(product, form.getLogo());
+        } catch (FileUploadException e) {
+          logger.debug("###IO Exception in writing custom image file", e);
+          result.rejectValue("logo", "error.uploading.file");
+          JsonObject error = new JsonObject();
+          error.addProperty("errormessage",
+              messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+          return error.toString();
+        }
       }
       String response = null;
       try {
@@ -814,7 +814,10 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     } else {
       result.rejectValue("logo", "error.custom.image.upload.dir");
       setPage(map, Page.PRODUCTS);
-      return messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale());
+      JsonObject error = new JsonObject();
+      error.addProperty("errormessage",
+          messageSource.getMessage(result.getFieldError("logo").getCode(), null, request.getLocale()));
+      return error.toString();
     }
   }
 
@@ -987,6 +990,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     map.addAttribute("mediationRules", mediationRules);
     Integer HoursInMonths = configuration.getIntValue(Names.com_citrix_cpbm_portal_billing_hoursIn_month);
     map.addAttribute("hoursInMonths", HoursInMonths);
+    map.addAttribute("isProductDiscrete", product.getDiscrete());
     logger.debug("### viewmediationrules method ending...");
     return "view.product.mediation.rules";
   }
@@ -1047,6 +1051,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     Product product = productService.locateProductByCode(productCode);
     List<CurrencyValue> currencyValueList = currencyValueService.listActiveCurrencies();
     ProductForm productForm = new ProductForm(product);
+    productForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     for (CurrencyValue cv : currencyValueList) {
       ProductCharge charge = new ProductCharge();
       // TODO: a configuration for scale (incase we change the scale in db, this wont get changed)
@@ -1066,7 +1072,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       @RequestParam(value = "serviceInstanceUUID", required = true) String serviceInstanceUUID, ModelMap map) {
     logger.debug("### editPlannedCharges method starting...(GET)");
     ProductForm productForm = new ProductForm();
-
+    productForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     Revision futureRevision = channelService.getFutureRevision(null);
     productForm.setStartDate(futureRevision.getStartDate());
 
@@ -1080,23 +1087,28 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       }
     }
     productForm.setCurrentProductChargesMap(plannedCharges);
-
     List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
     Set<Entry<Product, List<ProductCharge>>> entrySet = plannedCharges.entrySet();
     for (Entry<Product, List<ProductCharge>> entry : entrySet) {
-      // if current price exists then clone otherwise create new product charge object for each currency.
-      if (entry.getValue() != null && entry.getValue().size() > 0) {
-        productForm.updateProductChargesFormList(entry.getKey(), entry.getValue(), activeCurrencies, futureRevision,
-            false);
-      } else {
-        productForm.updateProductChargesFormList(entry.getKey(), null, activeCurrencies, futureRevision, true);
+      try {
+        // if current price exists then clone otherwise create new product charge object for each currency.
+        if (entry.getValue() != null && entry.getValue().size() > 0) {
+
+          productForm.updateProductChargesFormList(entry.getKey(), entry.getValue(), activeCurrencies, futureRevision,
+              false);
+        } else {
+          productForm.updateProductChargesFormList(entry.getKey(), null, activeCurrencies, futureRevision, true);
+        }
+      } catch (ArithmeticException ae) {
+        logger.error("ArithmeticException while editing the product charge, Possible Cause- "
+            + "the currency precision level was reduced " + ae);
+        throw new CurrencyPrecisionException(ae.getMessage(), ae);
       }
 
     }
     map.addAttribute("productForm", productForm);
     map.addAttribute("currencieslist", activeCurrencies);
     map.addAttribute("currencieslistsize", activeCurrencies.size());
-
     logger.debug("### editPlannedCharges method ending...(GET)");
     return "edit.planned.charges";
   }
@@ -1157,14 +1169,12 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       for (Product product : products) {
         // Add only those products which have removedBy null or if it is removed, then in a revision after the
         // revision under consideration
-        if ((product.getRemoved() == null || (product.getRemoved() != null && effectiveRevision != null && product
-            .getRemovedInRevision().getId() > effectiveRevision.getId()))
-            && (product.getServiceInstance() != null && product.getServiceInstance().getUuid().toString()
-                .equals(serviceInstanceUUID.trim()))) {
+        if (product.getServiceInstance() != null
+            && product.getServiceInstance().getUuid().toString().equals(serviceInstanceUUID.trim())) {
           productsList.add(product);
         }
       }
-      productListByFilters = getProductListByFilters(productsList, filterBy, category);
+      productListByFilters = getProductListByFilters(productsList, filterBy, category, effectiveRevision);
       Collections.sort(productListByFilters, new ProductSortOrderSort());
     }
     map.addAttribute("productsList", productListByFilters);
@@ -1175,6 +1185,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
 
   class DateCompare implements Comparator<Date> {
 
+    @Override
     public int compare(Date one, Date two) {
       return one.compareTo(two);
     }
@@ -1210,6 +1221,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
     logger.debug("### setPlanDate method starting...(GET)");
 
     ProductForm productForm = new ProductForm();
+    productForm.setCurrencyPresicion(Integer.parseInt(config
+        .getValue(Names.com_citrix_cpbm_portal_appearance_currency_precision)));
     Revision currentRevision = channelService.getCurrentRevision(null);
     // Case of 0th revision with null plan date. We need to allow today as a plan date
     if (currentRevision.getStartDate() == null || currentRevision.getStartDate().after(new Date())) {
@@ -1393,7 +1406,7 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
         }
 
       } else {
-        if (!resourceType.equals(SERVICEBUNDLE)) {
+        if (!resourceType.equals(ProductBundle.SERVICEBUNDLE)) {
           Map<String, String> discriminators = createStringMap(contextString);
           discriminators.putAll(createStringMap(filters));
           productRevisions = productService.listProductRevisions(serviceInstance, serviceResourceType, discriminators,

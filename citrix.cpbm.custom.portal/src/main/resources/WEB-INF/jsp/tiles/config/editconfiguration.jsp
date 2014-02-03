@@ -22,9 +22,10 @@
                  </div>
                  <!-- Header end -->
                  <!-- Data Start-->
-                 
-                 <div class="main_gridlistbox" style="height:315px;">
-                 <c:forEach var="configuration" items="${configurationList}" varStatus="status">
+             
+                 <div class="main_gridlistbox configurations_box" style="height:315px;">
+                 <form:form commandName="configurationForm" id="configurationForm">
+                 <c:forEach var="configuration" items="${configurationForm.configurations}" varStatus="status">
                    
                   <c:choose>
                   <c:when test="${status.index % 2 == 0}">
@@ -37,7 +38,7 @@
                   <c:set var="enable_service_config" value="${fn:toLowerCase(configuration.module)}.${fn:toLowerCase(fn:replace(configuration.component, ' ', ''))}.enabled" />
                   <c:if  test='${configuration.name != enable_service_config}'>            
                   <div class="<c:out value="widget_grid ${rowClass}"/>">
-                    <div class="widget_grid_cell" style="width:30%;" title="<c:out value="${configuration.name}"/>" >
+                    <div class="widget_grid_cell" style="width:30%;" title="<c:out value="${configuration.label}"/>" >
                        <span class="celltext ellipsis" style="margin-left:10px;">
                           <c:out value="${configuration.label}"/>
                         </span>
@@ -55,8 +56,17 @@
                             </c:choose> 
                           </div>  
                                 <div id="valueedit<c:out value="${configuration.id}"/>" style="display: none;">
-                                  <input type="text" id="value<c:out value="${configuration.id}"/>" class="configtext" value="<c:out value="${configuration.value}"/>" name="value" />
-                                  <div class="main_addnew_formbox_errormsg" style="margin:0;width:180px;"  id="valueerror<c:out value="${configuration.id}"/>"></div>  
+								<input type="hidden" name="configurations[${status.index}].id" value="${configuration.id}"/>
+								<input type="hidden" name="configurations[${status.index}].name" value="${configuration.name}"/>
+                                  <c:choose>
+                                    <c:when test="${configuration.isEncryptionRequired == true}">
+                                     <input type="password" name="configurations[${status.index}].value" id="${configuration.id}" class="configtext" style="padding: 0px; margin-bottom: 0px;" value="${configuration.value}" isEncrypted="true" restart="<c:out value="${configuration.isRestartRequired}"/>"/>
+                                    </c:when>
+                                     <c:otherwise>
+                                      <input type="text" name="configurations[${status.index}].value" id="${configuration.id}" class="configtext" value="${configuration.value}" restart="<c:out value="${configuration.isRestartRequired}"/>"/>
+                                     </c:otherwise>
+                                  </c:choose> 
+                                  <div class="configuration_error_container" id="configurations[${status.index}].valueError"></div>  
                                 </div> 
                         </div>
                     </div>
@@ -75,6 +85,7 @@
                   </c:forEach>
                     
                  <!-- Data end -->
+                 </form:form>
           </div>
        </div>
        <!-- End Grid -->

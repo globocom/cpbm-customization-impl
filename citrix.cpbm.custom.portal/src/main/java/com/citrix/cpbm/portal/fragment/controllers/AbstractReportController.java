@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.BufferedInputStream;
@@ -42,14 +41,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.vmops.constants.CustomReportsConstants;
 import com.vmops.model.AccountType;
 import com.vmops.model.Event;
-import com.vmops.model.Report;
-import com.vmops.model.ScheduledCustomReports;
 import com.vmops.model.Event.Category;
 import com.vmops.model.Event.Scope;
 import com.vmops.model.Event.Severity;
 import com.vmops.model.Event.Source;
+import com.vmops.model.Report;
+import com.vmops.model.ScheduledCustomReports;
 import com.vmops.portal.config.Configuration;
 import com.vmops.portal.config.Configuration.Names;
 import com.vmops.portal.reports.GenericReport;
@@ -116,10 +116,11 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     newRegistrationValidator.validate(newRegistrationForm, result);
     if (result.hasErrors()) {
       modelMap.addAttribute("registrationFormReport", newRegistrationForm);
-      List<FieldError> l = (List<FieldError>) result.getFieldErrors();
+      List<FieldError> l = result.getFieldErrors();
       for (FieldError f : l) {
-        if (f.getCode().equals("js.report.errors.validationDate"))
+        if (f.getCode().equals("js.report.errors.validationDate")) {
           return "report.newRegistration";
+        }
       }
     }
     getRegistrationReport(newRegistrationForm.getStartDate(), newRegistrationForm.getEndDate(), modelMap,
@@ -136,8 +137,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     logger.debug("###Entering in customerRank(modelMap) method @GET");
     String status = getReport(month, year, modelMap, CustomerRankReport.class, Page.REPORTS_CUSTOMER_RANK,
         getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     CustomerRankReportForm customerRankReportForm = new CustomerRankReportForm();
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("rotateYAxisLabels", true);
@@ -158,7 +160,7 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     if (result.hasErrors()) {
       setPage(modelMap, Page.REPORTS_CUSTOMER_RANK);
       modelMap.addAttribute("customerRankReport", customerRankReportForm);
-      List<FieldError> l = (List<FieldError>) result.getFieldErrors();
+      List<FieldError> l = result.getFieldErrors();
       for (FieldError f : l) {
         if (f.getCode().equals("js.report.errors.validationMonth")
             || f.getCode().equals("js.report.errors.validationYear")) {
@@ -169,8 +171,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     }
     String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
         modelMap, CustomerRankReport.class, Page.REPORTS_CUSTOMER_RANK, getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("rotateYAxisLabels", true);
     modelMap.addAttribute("formatNumber", true);
@@ -186,8 +189,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     logger.debug("###Entering in productUsage(modelMap) method @GET");
     String status = getReport(month, year, modelMap, MonthlyProductUsage.class, Page.REPORTS_PRODUCT_USAGE,
         getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     CustomerRankReportForm customerRankReportForm = new CustomerRankReportForm();
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productUsage");
@@ -207,7 +211,7 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     if (result.hasErrors()) {
       setPage(modelMap, Page.REPORTS_PRODUCT_USAGE);
       modelMap.addAttribute("customerRankReport", customerRankReportForm);
-      List<FieldError> l = (List<FieldError>) result.getFieldErrors();
+      List<FieldError> l = result.getFieldErrors();
       for (FieldError f : l) {
         if (f.getCode().equals("js.report.errors.validationMonth")
             || f.getCode().equals("js.report.errors.validationYear")) {
@@ -218,8 +222,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     }
     String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
         modelMap, MonthlyProductUsage.class, Page.REPORTS_PRODUCT_USAGE, getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productUsage");
     modelMap.addAttribute("rotateXAxisLabels", true);
@@ -235,8 +240,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     logger.debug("###Entering in productBundleUsage(modelMap) method @GET");
     String status = getReport(month, year, modelMap, MonthlyProductBundleUsage.class,
         Page.REPORTS_PRODUCT_BUNDLE_USAGE, getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     CustomerRankReportForm customerRankReportForm = new CustomerRankReportForm();
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productbundleUsage");
@@ -256,17 +262,19 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
     if (result.hasErrors()) {
       setPage(modelMap, Page.REPORTS_PRODUCT_BUNDLE_USAGE);
       modelMap.addAttribute("customerRankReport", customerRankReportForm);
-      List<FieldError> l = (List<FieldError>) result.getFieldErrors();
+      List<FieldError> l = result.getFieldErrors();
       for (FieldError f : l) {
         if (f.getCode().equals("js.report.errors.validationMonth")
-            || f.getCode().equals("js.report.errors.validationYear"))
+            || f.getCode().equals("js.report.errors.validationYear")) {
           return "report.usageByProductBundle";
+        }
       }
     }
     String status = getReport(customerRankReportForm.getReportMonth(), customerRankReportForm.getReportYear(),
         modelMap, MonthlyProductBundleUsage.class, Page.REPORTS_PRODUCT_BUNDLE_USAGE, getSessionLocale(request));
-    if (status.equalsIgnoreCase("failure"))
+    if (status.equalsIgnoreCase("failure")) {
       return "failure";
+    }
     modelMap.addAttribute("customerRankReport", customerRankReportForm);
     modelMap.addAttribute("usageReportName", "productbundleUsage");
     modelMap.addAttribute("rotateXAxisLabels", true);
@@ -309,8 +317,8 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
       Date dt = sdf.parse(date);
       cal.setTime(dt);
     }
-    String targetFileName = reportService.generateCustomReport(schedReport, type, sequenceService, result, "generate",
-        cal, month, year);
+    String targetFileName = reportService.generateCustomReport(schedReport, type, sequenceService, result,
+        CustomReportsConstants.REPORT_GENERATE_MODE, cal, month, year);
     return targetFileName;
   }
 
@@ -336,7 +344,9 @@ public abstract class AbstractReportController extends AbstractAuthenticatedCont
       logger.error(e.getMessage(), e);
     } finally {
       try {
-        is.close();
+        if (is != null) {
+          is.close();
+        }
         out.close();
       } catch (IOException e) {
         logger.error("Error while closing streams", e);

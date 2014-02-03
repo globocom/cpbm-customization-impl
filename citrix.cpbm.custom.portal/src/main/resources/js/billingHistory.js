@@ -6,8 +6,8 @@
 $(document).ready(function() {
   activateThirdMenuItem("l3_billing_invoices_tab");
   if (isDelinquent == true) {
-    if (showMakePaymentMessage != "") {
-      alert(showMakePaymentMessage);
+    if (typeof showMakePaymentMessage!="undefined" && showMakePaymentMessage != "") {
+      popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
     }
   }
 

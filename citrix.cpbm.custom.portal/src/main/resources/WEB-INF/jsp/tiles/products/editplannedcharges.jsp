@@ -6,13 +6,12 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <script type="text/javascript" src="<%=request.getContextPath() %>/js/products.js"></script>
-
 <script type="text/javascript">
-  var productsUrl = "<%=request.getContextPath() %>/portal/products/";
+   var productsUrl = "<%=request.getContextPath() %>/portal/products/";
   $("#dialog_view_planned_charges").empty();  
   $("#dialog_plan_charges").empty();  
 </script>
-
+              
 <style>
 .ui-datepicker-trigger {
     margin-left : 5px;
@@ -80,7 +79,7 @@
               <div class="widget_grid_cell currency_cell" >
               
                 <div class="mandatory_wrapper" style="margin:5px 0 0 1px;">
-               <input style="width:60px;"  id="productChargesFormList<c:out value='${status.index}' />.charges<c:out value='${priceStatus.index}' />" 
+                 <input style="width:60px;"  id="productChargesFormList<c:out value='${status.index}' />.charges<c:out value='${priceStatus.index}' />" 
                 value='<c:out value="${productCharge.price }" />'
                   class="text priceRequired j_pricerequired" name="productChargesFormList[<c:out value='${status.index}' />].charges[<c:out value='${priceStatus.index}' />].price" >
                   </div>

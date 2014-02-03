@@ -50,7 +50,16 @@
                   >    
                         <div class="db_gridbox_columns" style="width:20%;">
                           <div class="db_gridbox_celltitles">
-                            <c:if test="${invoiceitem.chargeType eq 'CHARGE'}"><c:out value="${invoiceitem.subscription.uuid}"></c:out></c:if>
+                            <c:if test="${invoiceitem.chargeType eq 'CHARGE'}">
+                              <c:choose>
+                                <c:when test="${not empty invoiceitem.subscription.handle.resourceName}">
+                                  <c:out value="${invoiceitem.subscription.handle.resourceName}"></c:out>
+                                </c:when>
+                                <c:otherwise>
+                                  <c:out value="${invoiceitem.subscription.uuid}"></c:out>
+                                </c:otherwise>
+                              </c:choose>
+                            </c:if>
                           </div>
                         </div>
                         <div class="db_gridbox_columns" style="width:20%;">
@@ -66,8 +75,8 @@
                           <div class="db_gridbox_celltitles"> </div>
                         </div>
                         <div class="db_gridbox_columns" style="width:20%;">
-                         <div class="db_gridbox_celltitles" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 5px;">
-                           <c:out value="${tenant
+                         <div class="db_gridbox_celltitles" style="text-align: center; width: 90%; margin-left: 0px; margin-right: 5px;">
+                           <c:out value="${invoice.tenant
                            .currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${invoiceitem.amount}" minFractionDigits="${minFractionDigits}" />
                          </div>
                        </div>
@@ -90,6 +99,6 @@
                       <div class="db_gridbox_celltitles header more_details_grid"><b><spring:message code="label.usage.billing.invoiceitem.chargetype.NET_TOTAL_CHARGES"/></b></div>
         </div>
         <div class="db_gridbox_columns" style="width:22%;">
-                      <div class="db_gridbox_celltitles header" style="text-align: right; width: 90%; margin-left: 0px; margin-right: 5px;"><b><c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${netInvoiceItem.amount}" minFractionDigits="${minFractionDigits}" /></b></div>
+                      <div class="db_gridbox_celltitles header" style="text-align: center; width: 90%; margin-left: 0px; margin-right: 5px;"><b><c:out value="${invoice.tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  value="${netInvoiceItem.amount}" minFractionDigits="${minFractionDigits}" /></b></div>
         </div>
      </c:if>

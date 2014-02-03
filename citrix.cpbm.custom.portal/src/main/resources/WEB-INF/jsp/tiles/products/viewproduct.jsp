@@ -20,44 +20,38 @@ function retirePrdouct(current){
         "Yes" : function() {
           $(this).dialog("close");
           $(this).dialog("destroy"); 
-          $.ajax({
-            url : productretireurl,
-            dataType : "html",
-            data : {"productId" : $("#productId").val(),
-                    "checkforentitlements" : "true"},
-            async : false,
-            cache : false,
-            success : function(result) {
-              
-              if(result == "success"){
-                initDialog("dialog_retire_product_success", 390);
-                $("#dialog_retire_product_success").dialog("option", "closeOnEscape", false);
-                $("#dialog_retire_product_success").dialog("option", "buttons",
-                  {"Ok": function(){
-                    $(this).dialog("close");
-                    $("#product_tab").click();
-                  }
-                });
-                dialogButtonsLocalizer($("#dialog_retire_product_success"), {'Ok': g_dictionary.dialogOk});
-                $("#dialog_retire_product_success").dialog("open");           
-              } else if (result == "entitlementscheckfailed") {
-                initDialog("dialog_retire_product_yeschosen_fail", 390);
-                $("#dialog_retire_product_yeschosen_fail").dialog("option", "closeOnEscape", false);
-                $("#dialog_retire_product_yeschosen_fail").dialog("option", "buttons",
-                  {"Ok": function(){
-                    $(this).dialog("close");
-                  }
-                });
-                dialogButtonsLocalizer($("#dialog_retire_product_yeschosen_fail"), {'Ok': g_dictionary.dialogOk});
-                $("#dialog_retire_product_yeschosen_fail").dialog("open");                
-              } else {
-                initDialog("dialog_retire_product_failure", 390);
-                $("#dialog_retire_product_failure").dialog("option", "closeOnEscape", false);
-                $("#dialog_retire_product_failure").dialog("option", "buttons",
-                  {"Ok": function(){
-                    $(this).dialog("close");
-                  }
-                });
+          initDialog("dialog_retire_product_nochosen", 390);
+          $("#dialog_retire_product_nochosen").dialog("option", "closeOnEscape", false);
+          $("#dialog_retire_product_nochosen").dialog("option", "buttons",
+            {"Ok": function(){
+              $(this).dialog("close");
+              $.ajax({
+				            url : productretireurl,
+				            dataType : "html",
+				            data : {"productId" : $("#productId").val(),
+				                    "checkforentitlements" : "false"},
+				            async : false,
+				            cache : false,
+				            success : function(result) {
+				              if(result == "success"){
+				                initDialog("dialog_retire_product_success", 390);
+				                $("#dialog_retire_product_success").dialog("option", "closeOnEscape", false);
+				                $("#dialog_retire_product_success").dialog("option", "buttons",
+				                  {"Ok": function(){
+				                    $(this).dialog("close");
+				                    $("#product_tab").click();
+				                  }
+				                });
+				                dialogButtonsLocalizer($("#dialog_retire_product_success"), {'Ok': g_dictionary.dialogOk});
+				                $("#dialog_retire_product_success").dialog("open");           
+				              } else {
+				                initDialog("dialog_retire_product_failure", 390);
+				                $("#dialog_retire_product_failure").dialog("option", "closeOnEscape", false);
+				                $("#dialog_retire_product_failure").dialog("option", "buttons",
+				                  {"Ok": function(){
+				                    $(this).dialog("close");
+				                  }
+				                });
                 dialogButtonsLocalizer($("#dialog_retire_product_failure"), {'Ok': g_dictionary.dialogOk});
                 $("#dialog_retire_product_failure").dialog("open");               
               }             
@@ -74,19 +68,19 @@ function retirePrdouct(current){
               $("#dialog_retire_product_failure").dialog("open");             
             }
           });
+            }
+            });
+          dialogButtonsLocalizer($("#dialog_retire_product_nochosen"), {'Ok': g_dictionary.dialogOk});
+          $("#dialog_retire_product_nochosen").dialog("open");          
         },
         "No" : function() {
           $(this).dialog("close");
-          initDialog("dialog_retire_product_nochosen", 390);
-          $("#dialog_retire_product_nochosen").dialog("option", "closeOnEscape", false);
-          $("#dialog_retire_product_nochosen").dialog("option", "buttons",
-            {"Ok": function(){
-              $(this).dialog("close");
-              $.ajax({
+          $(this).dialog("destroy"); 
+          $.ajax({
                   url : productretireurl,
                   dataType : "html",
                   data : {"productId" : $("#productId").val(),
-                          "checkforentitlements" : "false"},
+                          "checkforentitlements" : "true"},
                   async : false,
                   cache : false,
                   success : function(result) {
@@ -101,7 +95,17 @@ function retirePrdouct(current){
                       });
                       dialogButtonsLocalizer($("#dialog_retire_product_success"), {'Ok': g_dictionary.dialogOk});
                       $("#dialog_retire_product_success").dialog("open");
-                    } else {
+                    } else if (result == "entitlementscheckfailed") {
+                        initDialog("dialog_retire_product_yeschosen_fail", 390);
+                        $("#dialog_retire_product_yeschosen_fail").dialog("option", "closeOnEscape", false);
+                        $("#dialog_retire_product_yeschosen_fail").dialog("option", "buttons",
+                          {"Ok": function(){
+                            $(this).dialog("close");
+                          }
+                        });
+                        dialogButtonsLocalizer($("#dialog_retire_product_yeschosen_fail"), {'Ok': g_dictionary.dialogOk});
+                        $("#dialog_retire_product_yeschosen_fail").dialog("open");                
+                      } else {
                       initDialog("dialog_retire_product_failure", 390);
                       $("#dialog_retire_product_failure").dialog("option", "closeOnEscape", false);
                       $("#dialog_retire_product_failure").dialog("option", "buttons",
@@ -125,10 +129,6 @@ function retirePrdouct(current){
                     $("#dialog_retire_product_failure").dialog("open");
                   }
                 });
-            }
-          });
-          dialogButtonsLocalizer($("#dialog_retire_product_nochosen"), {'Ok': g_dictionary.dialogOk});
-          $("#dialog_retire_product_nochosen").dialog("open");          
         }
       });
   dialogButtonsLocalizer($("#dialog_retire_product"), {'Yes': g_dictionary.yes, 'No': g_dictionary.no});
@@ -162,9 +162,11 @@ function retirePrdouct(current){
                      <li onclick="editProductGet(this)" id="<c:out value="edit${product.id}"/>"><a href="javascript:void(0);"  class="editProduct" >
                         <spring:message code="ui.products.label.view.edit"/></a>
                      </li>
-                     <li onclick="retirePrdouct(this)" id="<c:out value="retire${product.id}"/>"><a href="javascript:void(0);"  class="editProduct" >
-                        <spring:message code="ui.product.retire.label"/></a>
-                     </li>
+                     <c:if test="${product.removed eq null}">
+                       <li onclick="retirePrdouct(this)" id="<c:out value="retire${product.id}"/>"><a href="javascript:void(0);"  class="editProduct" >
+                          <spring:message code="ui.product.retire.label"/></a>
+                       </li>
+                     </c:if>
                    </ul>
                  </div>
                  <div class="widget_actionpopover_bot"></div>
@@ -175,9 +177,16 @@ function retirePrdouct(current){
   </div>
 </div>
 
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 <div class="widget_browser">
     <div id="spinning_wheel" style="display:none">
       <div class="widget_loadingpanel">
@@ -224,10 +233,10 @@ function retirePrdouct(current){
               <div class="thumbnail_defaulticon product">
               <c:choose>
                 <c:when test="${not empty product.imagePath}">
-                <img src="/portal/portal/logo/product/<c:out value="${product.id}"/>" id="productimage<c:out value="${product.id}"/>" style="height:99px;width:97px;" />
+                <img src="/portal/portal/logo/product/<c:out value="${product.id}"/>" id="productimage<c:out value="${product.id}"/>" style="height:99px;width:99px;" />
                 </c:when>
                 <c:otherwise>
-                  <img src="<%=request.getContextPath() %>/images/default_productsicon.png" id="productimage<c:out value="${product.id}"/>" style="height:99px;width:97px;" />
+                  <img src="<%=request.getContextPath() %>/images/default_productsicon.png" id="productimage<c:out value="${product.id}"/>" style="height:99px;width:99px;" />
                 </c:otherwise>
               </c:choose>              
               </div>
@@ -281,6 +290,25 @@ function retirePrdouct(current){
             </div>
         </div>
         
+          <div class="widget_grid details odd">
+             <div class="widget_grid_labels">
+                <span><spring:message code="ui.products.label.create.type"/></span>
+            </div>
+            <div class="widget_grid_description">
+              <c:choose>
+              <c:when test="${product.discrete}">
+              
+                   <span class = "ellipsis" title="<spring:message code="ui.products.label.type"/>" id="descrete"><spring:message code="ui.products.label.discrete"/></span>
+          
+             </c:when>
+            <c:otherwise>
+                  <span class = "ellipsis" title="<spring:message code="ui.products.label.type"/>" id="metered"><spring:message code="ui.products.label.metered"/></span>
+          
+            
+             </c:otherwise>
+            </c:choose>
+            </div>
+        </div>
 
       </div>
     </div>
@@ -350,4 +378,3 @@ function retirePrdouct(current){
      <span class="catalog_datepicker_dialog_titles" style="margin-top: 30px; margin-left: 30px;"><spring:message htmlEscape="false" code="ui.product.retiring.failed"/></span>
   </div>
 </div>
-

@@ -1,13 +1,11 @@
-/*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+/* Copyright (C) 2011 Cloud.com, Inc. All rights reserved. */
 package fragment.web;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,16 +15,24 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import org.codehaus.jackson.map.ObjectMapper;
+import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.multipart.MultipartFile;
 
 import web.WebTestsBase;
 
+import com.citrix.cpbm.platform.spi.CloudConnector;
+import com.citrix.cpbm.platform.spi.DynamicResourceTypeMetadataRegistry;
+import com.citrix.cpbm.platform.spi.ResourceComponent;
 import com.citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
 import com.citrix.cpbm.portal.fragment.controllers.SubscriptionController;
 import com.vmops.internal.service.SubscriptionService;
@@ -34,11 +40,14 @@ import com.vmops.model.Catalog;
 import com.vmops.model.CatalogProductBundle;
 import com.vmops.model.Channel;
 import com.vmops.model.Channel.ChannelType;
+import com.vmops.model.ChargeRecurrenceFrequency;
+import com.vmops.model.CurrencyValue;
 import com.vmops.model.Entitlement;
 import com.vmops.model.Product;
 import com.vmops.model.ProductBundle;
 import com.vmops.model.ProductBundleRevision;
 import com.vmops.model.ProvisioningConstraint;
+import com.vmops.model.ProvisioningConstraint.AssociationType;
 import com.vmops.model.RateCard;
 import com.vmops.model.RateCardCharge;
 import com.vmops.model.RateCardComponent;
@@ -46,6 +55,9 @@ import com.vmops.model.Revision;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceResourceType;
 import com.vmops.model.ServiceResourceType.ResourceConstraint;
+import com.vmops.model.ServiceResourceTypeGroup;
+import com.vmops.model.ServiceResourceTypeGroupComponent;
+import com.vmops.model.Tenant;
 import com.vmops.model.User;
 import com.vmops.persistence.ChargeRecurrenceFrequencyDAO;
 import com.vmops.persistence.RateCardComponentDAO;
@@ -58,13 +70,18 @@ import com.vmops.service.ChannelService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.ProductService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
+import com.vmops.service.exceptions.UnlimitedEntitlementNotAllowedException;
 import com.vmops.utils.DateUtils;
+import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.EntitlementForm;
 import com.vmops.web.forms.ProductBundleForm;
+import com.vmops.web.forms.ProductBundleLogoForm;
 import com.vmops.web.forms.RateCardChargesForm;
 import com.vmops.web.forms.RateCardComponentChargesForm;
 import com.vmops.web.forms.RateCardForm;
+import common.MockCloudInstance;
 
+@SuppressWarnings("unchecked")
 public class AbstractProductBundlesControllerTest extends WebTestsBase {
 
   @Autowired
@@ -120,6 +137,49 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
 
   }
 
+  @Override
+  public void prepareMock() {
+    ResourceComponent resourceComponent = new ResourceComponent("VirtualMachine", "Template", "1");
+    ArrayList<ResourceComponent> resourceComponentList = new ArrayList<ResourceComponent>();
+    resourceComponentList.add(resourceComponent);
+    MockCloudInstance mock = this.getMockCloudInstance();
+    CloudConnector connector = mock.getCloudConnector();
+    List<String> resourceTypes = new ArrayList<String>();
+    resourceTypes.add("resource_type_name");
+    resourceTypes.add("VirtualMachine");
+    resourceTypes.add("Network");
+    resourceTypes.add("dummyResource");
+    resourceTypes.add("MRD_RT1");
+    resourceTypes.add("MRD_RT2");
+    resourceTypes.add("MRD_RT4");
+    resourceTypes.add("PSI_RT1");
+    resourceTypes.add("PSI_RT2");
+    resourceTypes.add("PSI_RT3");
+    resourceTypes.add("PSI_RT4");
+    resourceTypes.add("PSI_RT5");
+    resourceTypes.add("PSI_RT6");
+    resourceTypes.add("PSI_RT7");
+    resourceTypes.add("PSI_RT8");
+    resourceTypes.add("MRD_RT5");
+    resourceTypes.add("PSI_RT41000");
+
+    DynamicResourceTypeMetadataRegistry metadataRegistry = (DynamicResourceTypeMetadataRegistry) mock
+        .getMetadataRegistry();
+    Map<String, String> discriminatorMap = new HashMap<String, String>();
+    EasyMock.expect(metadataRegistry.getDiscriminatorValues(EasyMock.anyObject(String.class)))
+        .andReturn(discriminatorMap).anyTimes();
+    EasyMock.expect(connector.getServiceInstanceUUID()).andReturn("1111111").anyTimes();
+    EasyMock
+        .expect(
+            metadataRegistry.getResourceComponentValues(EasyMock.anyObject(String.class),
+                EasyMock.anyObject(String.class))).andReturn(resourceComponentList).anyTimes();
+    EasyMock
+        .expect(metadataRegistry.getResourceTypes(EasyMock.anyObject(String.class), EasyMock.anyObject(String.class)))
+        .andReturn(resourceTypes).anyTimes();
+    EasyMock.replay(connector, metadataRegistry);
+
+  }
+
   /*
    * Description: Private Test to create Bundles based on the parameters Author: Vinayv
    */
@@ -129,16 +189,18 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
 
     ServiceInstance serviceInstance = serviceInstanceDAO.find(serviceInstanceID);
     ServiceResourceType resourceType = null;
-    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle"))
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
       resourceType = serviceResourceTypeDAO.find(resourceTypeID);
+    }
     List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
     RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode(currencyCode),
         catalogDAO.find(1L), currencyValue, "RateCharge", getRootUser(), getRootUser(),
         channelService.getCurrentRevision(null));
     rateCardChargeList.add(rcc);
     String chargeTypeName = chargeType;
-    if (chargeType.equalsIgnoreCase("Invalid"))
+    if (chargeType.equalsIgnoreCase("Invalid")) {
       chargeTypeName = "NONE";
+    }
     RateCard rateCard = new RateCard("Rate", chargeRecurrenceFrequencyDAO.findByName(chargeTypeName), new Date(),
         getRootUser(), getRootUser());
     String compAssociationJson = jsonString;
@@ -147,22 +209,25 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     bundle.setBusinessConstraint(businessConstraint);
     bundle.setCode(BundleName);
     bundle.setPublish(true);
-    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle"))
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
       bundle.setResourceType(resourceType);
+    }
     bundle.setServiceInstanceId(serviceInstance);
     bundle.setTrialEligibility(trialEligible);
     bundle.setRateCard(rateCard);
 
     ProductBundleForm form = new ProductBundleForm(bundle);
     form.setChargeType(chargeType);
-    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle"))
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
       form.setResourceType(resourceType.getId().toString());
-    else
+    } else {
       form.setResourceType("sb");
+    }
     form.setServiceInstanceUUID(serviceInstance.getUuid());
     form.setBundleOneTimeCharges(rateCardChargeList);
-    if (!chargeType.equalsIgnoreCase("NONE"))
+    if (!chargeType.equalsIgnoreCase("NONE")) {
       form.setBundleRecurringCharges(rateCardChargeList);
+    }
     form.setCompAssociationJson(compAssociationJson);
 
     BindingResult result = validate(form);
@@ -221,8 +286,9 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       createdAt.add(Calendar.DATE, 0 - noOfdays);
       int beforeBundleCount = bundleService.getBundlesCount();
       boolean trialEligible = false;
-      if (i == 1)
+      if (i == 1) {
         trialEligible = true;
+      }
       ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency[i],
           chargeFrequency[i] + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
           ResourceConstraint.PER_USER, trialEligible);
@@ -307,7 +373,7 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
   /*
    * Description: Test to create Compute Bundles with Code As Null Author: Vinayv
    */
-  @Test(expected = Exception.class)
+  @Test(expected = AjaxFormValidationException.class)
   public void testCreateComputeBundleWithNullCode() throws Exception {
 
     ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
@@ -344,12 +410,46 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     Assert.assertEquals(bundle.getCode(), obtainedBundle.getCode());
   }
 
+  @Test
+  public void testCreateComputeBundleWithNullCodeNoFormValidation() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    ServiceResourceType resourceType = serviceResourceTypeDAO.find("1");
+    List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
+    RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode("USD"), catalogDAO.find(1L),
+        BigDecimal.TEN, "RateCharge", getRootUser(), getRootUser(), channelService.getCurrentRevision(null));
+    rateCardChargeList.add(rcc);
+    RateCard rateCard = new RateCard("Rate", chargeRecurrenceFrequencyDAO.findByName("MONTHLY"), new Date(),
+        getRootUser(), getRootUser());
+    String compAssociationJson = "[{association: INCLUDES, compName: ISO, compValues:[ {compName: DOS-ISO, compValueName: 10 } ] }]";
+
+    ProductBundle bundle = new ProductBundle("MonthlyCompute", "MonthlyCompute", "", new Date(), new Date(),
+        getRootUser());
+    bundle.setBusinessConstraint(ResourceConstraint.NONE);
+    bundle.setCode(null);
+    bundle.setPublish(true);
+    bundle.setResourceType(resourceType);
+    bundle.setServiceInstanceId(serviceInstance);
+    bundle.setTrialEligibility(true);
+    bundle.setRateCard(rateCard);
+
+    ProductBundleForm form = new ProductBundleForm(bundle);
+    form.setChargeType("MONTHLY");
+    form.setResourceType(resourceType.getId().toString());
+    form.setServiceInstanceUUID(serviceInstance.getUuid());
+    form.setBundleOneTimeCharges(rateCardChargeList);
+    form.setBundleRecurringCharges(rateCardChargeList);
+    form.setCompAssociationJson(compAssociationJson);
+    BindingResult result = new BeanPropertyBindingResult(form, "validation");
+    ProductBundle obtainedBundle = bundleController.createProductBundle(form, result, map, response);
+    Assert.assertNull(obtainedBundle);
+  }
+
   /*
    * Description: Test to create Compute Bundles with Special Characters in Code Author: Vinayv
    */
-  @Test(expected = Exception.class)
+  @Test(expected = AjaxFormValidationException.class)
   public void testCreateComputeBundleWithSplCharsInCode() throws Exception {
-
     ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
     ServiceResourceType resourceType = serviceResourceTypeDAO.find("1");
     List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
@@ -385,50 +485,9 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
   }
 
   /*
-   * Description: Test to create Compute Bundles with duplicate Bundle Name Author: Vinayv
-   */
-  @Test(expected = Exception.class)
-  public void testCreateComputeBundleWithDuplicateName() throws Exception {
-
-    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
-    ServiceResourceType resourceType = serviceResourceTypeDAO.find("1");
-    ProductBundle existingBundle = bundleService.locateProductBundleById("2");
-    List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
-    RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode("USD"), catalogDAO.find(1L),
-        BigDecimal.TEN, "RateCharge", getRootUser(), getRootUser(), channelService.getCurrentRevision(null));
-    rateCardChargeList.add(rcc);
-    RateCard rateCard = new RateCard("Rate", chargeRecurrenceFrequencyDAO.findByName("MONTHLY"), new Date(),
-        getRootUser(), getRootUser());
-    String compAssociationJson = "[{association: INCLUDES, compName: ISO, compValues:[ {compName: DOS-ISO, compValueName: 10 } ] }]";
-
-    ProductBundle bundle = new ProductBundle(existingBundle.getName(), "MonthlyCompute", "", new Date(), new Date(),
-        getRootUser());
-    bundle.setBusinessConstraint(ResourceConstraint.NONE);
-    bundle.setCode("BundleCode");
-    bundle.setPublish(true);
-    bundle.setResourceType(resourceType);
-    bundle.setServiceInstanceId(serviceInstance);
-    bundle.setTrialEligibility(true);
-    bundle.setRateCard(rateCard);
-
-    ProductBundleForm form = new ProductBundleForm(bundle);
-    form.setChargeType("MONTHLY");
-    form.setResourceType(resourceType.getId().toString());
-    form.setServiceInstanceUUID(serviceInstance.getUuid());
-    form.setBundleOneTimeCharges(rateCardChargeList);
-    form.setBundleRecurringCharges(rateCardChargeList);
-    form.setCompAssociationJson(compAssociationJson);
-
-    BindingResult result = validate(form);
-    ProductBundle obtainedBundle = bundleController.createProductBundle(form, result, map, response);
-    Assert.assertNotNull(obtainedBundle);
-    Assert.assertEquals(existingBundle.getName(), obtainedBundle.getName());
-  }
-
-  /*
    * Description: Test to create Compute Bundles with duplicate Bundle Code Author: Vinayv
    */
-  @Test
+  @Test(expected = AjaxFormValidationException.class)
   public void testCreateComputeBundleWithDuplicateCode() throws Exception {
 
     ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
@@ -461,14 +520,12 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     form.setCompAssociationJson(compAssociationJson);
 
     BindingResult result = validate(form);
-    ProductBundle obtainedBundle = bundleController.createProductBundle(form, result, map, response);
-    Assert.assertNull(obtainedBundle);
+    bundleController.createProductBundle(form, result, map, response);
   }
 
   /*
    * Description: Test to Add Entitlement to a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testAddEntitlement() throws Exception {
 
@@ -513,14 +570,14 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     int afterEntitlementSize = eList1.size();
     Assert.assertEquals(beforeEntitlementSize + 1, afterEntitlementSize);
     for (Entitlement e : eList1) {
-      Assert.assertEquals(entitlement, e);
+      Assert.assertEquals(entitlement.getProduct(), e.getProduct());
+      Assert.assertEquals(entitlement.getIncludedUnits(), e.getIncludedUnits());
     }
   }
 
   /*
    * Description: Test to Add Unlimited Entitlement to a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testAddUnlimitedEntitlement() throws Exception {
 
@@ -534,7 +591,7 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     Assert.assertEquals("bundle.entitlement.list", result1);
     List<Entitlement> eList = (List<Entitlement>) map.get("entitlements");
     int beforeEntitlementSize = eList.size();
-    Product product = productService.locateProductById("2");
+    Product product = productService.locateProductById("11");
     Entitlement entitlement = new Entitlement();
     entitlement.setCreatedAt(createdAt.getTime());
     entitlement.setCreatedBy(getRootUser());
@@ -569,10 +626,39 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     }
   }
 
+  @Test(expected = UnlimitedEntitlementNotAllowedException.class)
+  public void testAddUnlimitedEntitlementNegative() throws Exception {
+
+    int noOfdays = 3;
+    Calendar createdAt = Calendar.getInstance();
+    createdAt.add(Calendar.DATE, 0 - noOfdays);
+    ProductBundle obtainedBundle = bundleService.locateProductBundleById("3");
+    String result1 = bundleController.getFilteredEntitlements(obtainedBundle.getCode(), "planned",
+        new Date().toString(), 1, 100, map, request);
+    Assert.assertNotNull(result1);
+    Assert.assertEquals("bundle.entitlement.list", result1);
+    Product product = productService.locateProductById("2");
+    Entitlement entitlement = new Entitlement();
+    entitlement.setCreatedAt(createdAt.getTime());
+    entitlement.setCreatedBy(getRootUser());
+    entitlement.setIncludedUnits(-1);
+    entitlement.setProduct(product);
+    entitlement.setProductBundle(obtainedBundle);
+    entitlement.setRevision(channelService.getFutureRevision(null));
+    entitlement.setUpdatedBy(getRootUser());
+
+    EntitlementForm entitlementForm = new EntitlementForm();
+    entitlementForm.setProductId(product.getId().toString());
+    entitlementForm.setUnlimitedUsage(true);
+    entitlementForm.setEntitlement(entitlement);
+
+    BindingResult result = validate(entitlementForm);
+    bundleController.createEntitlement(obtainedBundle.getCode(), entitlementForm, result, response, map);
+  }
+
   /*
    * Description: Test to Update valid Entitlement to Unlimited Entitlement for a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testUpdateValidToUnlimitedEntitlement() throws Exception {
 
@@ -605,7 +691,6 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
   /*
    * Description: Test to Update Unlimited Entitlement to Valid Entitlement for a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testUpdateUnlimitedToValidEntitlement() throws Exception {
 
@@ -638,7 +723,6 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
   /*
    * Description: Test to Delete a valid Entitlement from a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testDeleteValidEntitlement() throws Exception {
 
@@ -672,7 +756,6 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
   /*
    * Description: Test to Delete Unlimited Entitlement from a Bundle Author: Vinayv
    */
-  @SuppressWarnings("unchecked")
   @Test
   public void testDeleteUnlimitedEntitlement() throws Exception {
 
@@ -997,8 +1080,9 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       createdAt.add(Calendar.DATE, 0 - noOfdays);
       int beforeBundleCount = bundleService.getBundlesCount();
       boolean trialEligible = false;
-      if (i == 1)
+      if (i == 1) {
         trialEligible = true;
+      }
       ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency[i],
           chargeFrequency[i] + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
           ResourceConstraint.PER_USER, trialEligible);
@@ -1453,9 +1537,6 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
 
     List<Revision> allChannelRevisions = productService.getAllRevisions(channel.getCatalog());
 
-    /*
-     * Revision firstChannelRevision = allChannelRevisions .get(allChannelRevisions.size() - 1);
-     */
     Revision firstChannelRevision = allChannelRevisions.get(0);
 
     CatalogProductBundle catalogProductBundle = new CatalogProductBundle(channel.getCatalog(), productBundle,
@@ -1540,7 +1621,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1569,7 +1651,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(19, count);
+    // TODO Need better asserts
+    Assert.assertEquals(26, count);
   }
 
   /*
@@ -1599,7 +1682,7 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    Assert.assertEquals(2, count);
   }
 
   /*
@@ -1624,7 +1707,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1649,7 +1733,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1699,7 +1784,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1728,7 +1814,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(19, count);
+    // TODO Need better asserts
+    Assert.assertEquals(26, count);
   }
 
   /*
@@ -1758,7 +1845,7 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    Assert.assertEquals(2, count);
   }
 
   /*
@@ -1783,7 +1870,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1808,7 +1896,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1858,7 +1947,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1887,7 +1977,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(19, count);
+    // TODO Need better asserts
+    Assert.assertEquals(26, count);
   }
 
   /*
@@ -1917,7 +2008,7 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(1, count);
+    Assert.assertEquals(2, count);
   }
 
   /*
@@ -1942,7 +2033,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -1967,7 +2059,8 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
       hasNext = (Boolean) map1.get("enableNext");
       page = page + 1;
     }
-    Assert.assertEquals(20, count);
+    // TODO Need better asserts
+    Assert.assertEquals(28, count);
   }
 
   /*
@@ -2047,188 +2140,852 @@ public class AbstractProductBundlesControllerTest extends WebTestsBase {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
   @Test
-  public void testSortProductBundles() {
-    map = new ModelMap();
-    String result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "all", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    List<ProductBundle> productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    int size = productBundleList.size();
-    List<ProductBundleRevision> allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
-    int size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
-      }
-    }
-    Assert.assertEquals(size2, size);
+  public void testlistProductBundlesAsATenant() {
+    try {
+      Boolean found = false;
+      Tenant tenant = tenantDAO.find(4L);
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      request.setAttribute("effectiveTenant", tenant);
+      String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
 
-    map = new ModelMap();
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "publish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+      List<ProductBundleRevision> bundleList = bundleController.listProductBundles(tenant, tenant.getParam(),
+          serviceInstanceDAO.find(1L).getUuid(), "VirtualMachine", "zone=122,Template=56,SO=10, hypervisor=kuchbhi", "PSI_UD1=10", true,
+          "current", channel.getId().toString(), currencyCode, null, null, request);
+      for (ProductBundleRevision pbr : bundleList) {
+        if (bundle.getName().equals(pbr.getProductBundle().getName())) {
+          found = true;
+        }
       }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    map = new ModelMap();
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "current", null, "unpublish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getCurrentRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && !productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testlistProductBundlesAsRoot() {
+    try {
+      Boolean found = false;
+      Tenant tenant = tenantService.getSystemTenant();
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      request.setAttribute("effectiveTenant", tenant);
+      String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+
+      List<ProductBundleRevision> bundleList = bundleController.listProductBundles(tenant, tenant.getParam(),
+          serviceInstanceDAO.find(1L).getUuid(), "VirtualMachine", "zone=122,Template=56,SO=10, hypervisor=kuchbhi", "PSI_UD1=10", true,
+          "current", channel.getId().toString(), currencyCode, null, null, request);
+      for (ProductBundleRevision pbr : bundleList) {
+        if (bundle.getName().equals(pbr.getProductBundle().getName())) {
+          found = true;
+        }
       }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "all", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testlistProductBundlesHistory() {
+    try {
+      Boolean found = false;
+      Tenant tenant = tenantService.getSystemTenant();
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      request.setAttribute("effectiveTenant", tenant);
+      String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+
+      List<ProductBundleRevision> bundleList = bundleController.listProductBundles(tenant, tenant.getParam(),
+          serviceInstanceDAO.find(1L).getUuid(), "VirtualMachine", "zone=122,Template=56,SO=10, hypervisor=kuchbhi", "PSI_UD1=10", true,
+          "history", channel.getId().toString(), currencyCode, "04/30/2012 00:00:00", "MM/dd/yyyy HH:mm:ss", request);
+      for (ProductBundleRevision pbr : bundleList) {
+        Assert.assertEquals(bundle.getName(), pbr.getProductBundle().getName());
+        found = true;
       }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "publish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testlistProductBundlesForAnonymousCatalog() {
+    try {
+      Boolean found = false;
+      Channel channel = channelDAO.find(4L);
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      request.setAttribute("effectiveTenant", null);
+      String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+
+      asAnonymous();
+      List<ProductBundleRevision> bundleList = bundleController.listProductBundles(null, null,
+          serviceInstanceDAO.find(1L).getUuid(), "VirtualMachine", "zone=122,Template=56,SO=10, hypervisor=kuchbhi", "PSI_UD1=10", true,
+          "current", channel.getId().toString(), currencyCode, null, null, request);
+      for (ProductBundleRevision pbr : bundleList) {
+        if (bundle.getName().equals(pbr.getProductBundle().getName())) {
+          found = true;
+        }
       }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", null, "unpublish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && !productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testListValidSubscriptionsForATenantAsRoot() {
+    try {
+      Tenant tenant = tenantDAO.find(3L);
+      request.setAttribute("effectiveTenant", tenant);
+      request.setAttribute("isSurrogatedTenant", true);
+      ProductBundle bundle = bundleService.getProductBundleById(13L);
+
+      Map<Long, ProductBundleRevision> subscriptionMap = bundleController.listValidSubscriptions(tenant,
+          tenant.getParam(), serviceInstanceDAO.find(1L).getUuid(), "VirtualMachine", "zone=122,Template=200,SO=10, hypervisor=kuchbhi",
+          "PSI_UD1=10", request);
+      Assert.assertEquals(bundle.getName(), subscriptionMap.get(41L).getProductBundle().getName());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testGetBundleRevisionBySubscription() {
+    try {
+      Tenant tenant = tenantDAO.find(3L);
+      request.setAttribute("effectiveTenant", tenant);
+      request.setAttribute("isSurrogatedTenant", true);
+      ProductBundle bundle = bundleService.getProductBundleById(13L);
+
+      Map<String, Object> subscriptionMap = bundleController
+          .getBundleRevisionBySubscription(tenant, "41", tenant.getParam(), serviceInstanceDAO.find(1L).getUuid(),
+              "zone=122,Template=56,SO=10", "PSI_UD1=10", request);
+
+      ProductBundleRevision productBundleRevision = (ProductBundleRevision) subscriptionMap.get("bundleRevision");
+      Assert.assertEquals(bundle.getName(), productBundleRevision.getProductBundle().getName());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testShowBundles() {
+    try {
+
+      bundleController.showBundles(map, "current", "");
+      Assert.assertEquals(getRootUser().getTenant(), map.get("tenant"));
+      Assert.assertEquals(Page.PRODUCTS_BUNDLES, map.get("page"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testSearchByName() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      String namePattern = bundle.getName().substring(0, 3);
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+
+      bundleController.searchByName(instance.getService().getUuid(), instance.getUuid(), "1", null, namePattern,
+          "current", null, null, map);
+
+      List<ProductBundle> bundleList = (List<ProductBundle>) map.get("productBundlesList");
+      for (ProductBundle productbundle : bundleList) {
+        Assert.assertEquals(namePattern, productbundle.getName().substring(0, 3));
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "all", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testListProductBundlesByCatalog() {
+    try {
+      Boolean found = false;
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      ProductBundle bundle2 = bundleService.getProductBundleById(4L);
+      Channel channel = channelDAO.find(4L);
+
+      bundleController.listProductBundlesByCatalog(channel.getCatalog().getId().toString(), map);
+      Assert.assertEquals(Page.PRODUCTS_CATALOGS, map.get("page"));
+      Assert.assertEquals(channel.getCatalog(), map.get("catalog"));
+
+      List<ProductBundleRevision> productBundlesList = (List<ProductBundleRevision>) map.get("productBundlesList");
+      for (ProductBundleRevision bundleRevision : productBundlesList) {
+        if (bundleRevision.getProductBundle().getCode().equalsIgnoreCase(bundle.getCode())) {
+          found = true;
+        }
+        if (bundleRevision.getProductBundle().getCode().equalsIgnoreCase(bundle2.getCode())) {
+          Assert.fail("Bundle with id 4 is not attached to this catalog");
+        }
       }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "publish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testGetServiceResourceComponents() {
+    try {
+      String[] componentArray = {
+          "Template", "hypervisor", "SO"
+      };
+      ServiceResourceType resourceType = serviceResourceTypeDAO.find(1L);
+
+      Map<String, List<String>> componentsMap = bundleController.getServiceResourceComponents(resourceType.getId());
+      List<String> components = componentsMap.get("components");
+      Assert.assertEquals(componentArray.length, components.size());
+
+      Assert.assertEquals(Arrays.asList("zone"), componentsMap.get("filters"));
+      for (int i = 0; i < componentArray.length; i++) {
+        Assert.assertTrue(components.contains(componentArray[i]));
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
-    result = bundleController.sortBundles("003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null, "unpublish", map);
-    Assert.assertNotNull(result);
-    Assert.assertEquals("bundles.sort", result);
-    Assert.assertNotNull(map.get("bundlesList"));
-    productBundleList = (List<ProductBundle>) map.get("bundlesList");
-    Assert.assertNotNull(productBundleList);
-    size = productBundleList.size();
-    allProductBundleRevisions = channelService.getChannelRevision(null,
-        channelService.getFutureRevision(null).getStartDate(), false).getProductBundleRevisions();
-    size2 = 0;
-    for (ProductBundleRevision productBundleRevision : allProductBundleRevisions) {
-      if (productBundleRevision.getProductBundle().getServiceInstanceId().getUuid().toString()
-          .equals("003fa8ee-fba3-467f-a517-fd806dae8a80")
-          && !productBundleRevision.getProductBundle().getPublish()) {
-        Assert.assertTrue(productBundleList.contains(productBundleRevision.getProductBundle()));
-        size2++;
+  @Test
+  public void testGetServiceResourceComponentValues() {
+    try {
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      String componentName = "SO";
+
+      Collection<ResourceComponent> componentValues = bundleController.getServiceResourceComponentValues(instance
+          .getUuid().toString(), instance.getService().getServiceResourceTypes().get(0).getId(), componentName);
+      for (ResourceComponent component : componentValues) {
+        Assert.assertEquals("VirtualMachine", component.getResourceType());
+        Assert.assertEquals("Template", component.getName());
+        Assert.assertEquals("1", component.getValue());
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
     }
-    Assert.assertEquals(size2, size);
+  }
 
+  @Test
+  public void testGetServiceResources() {
+    try {
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      List<ServiceResourceType> resourcesList = instance.getService().getServiceResourceTypes();
+
+      Collection<ServiceResourceType> resourcesTypes = bundleController.getServiceResources(instance.getUuid()
+          .toString());
+
+      Assert.assertEquals(resourcesList.size(), resourcesTypes.size());
+
+      for (ServiceResourceType resourceType : resourcesTypes) {
+        Assert.assertTrue(resourcesList.contains(resourceType));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testGetAssociationTypes() {
+    try {
+      String[] associationList = {
+          "INCLUDES", "EXCLUDES"
+      };
+      int index = 0;
+
+      Collection<AssociationType> associationTypeList = bundleController.getAssociationTypes();
+
+      for (AssociationType type : associationTypeList) {
+        Assert.assertEquals(associationList[index], type.getName());
+        index++;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testGetApplicableBusinessConstraints() {
+    try {
+      int index = 0;
+      String[] constraintsArray = {
+          "NONE", "PER_USER", "ACCOUNT", "SINGLETON"
+      };
+
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      ServiceResourceType resourceType = instance.getService().getServiceResourceTypes().get(0);
+
+      Collection<ResourceConstraint> constraintsList = bundleController.getApplicableBusinessConstraints(resourceType
+          .getId().toString());
+
+      for (ResourceConstraint constraint : constraintsList) {
+        Assert.assertEquals(constraintsArray[index], constraint.getName());
+        index++;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreateProductBundle() {
+    try {
+      String[] frequencyArray = {
+          "None", "Monthly", "Quarterly", "Annual"
+      };
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      ServiceResourceType resourceType = serviceResourceTypeDAO.find(1L);
+      ServiceResourceTypeGroup group = resourceType.getServiceResourceGroups().get(0);
+
+      bundleController.createProductBundle(instance.getUuid().toString(), map);
+
+      ProductBundleForm productBundleForm = (ProductBundleForm) map.get("productBundleForm");
+      List<ChargeRecurrenceFrequency> chargeFrequencyList = productBundleForm.getChargeRecurrenceFrequencyList();
+      for (int i = 0; i < chargeFrequencyList.size(); i++) {
+        Assert.assertEquals(frequencyArray[i], chargeFrequencyList.get(i).getDisplayName());
+      }
+
+      int size = currencyValueService.listActiveCurrencies().size();
+      Assert.assertEquals(size, productBundleForm.getBundleOneTimeCharges().size());
+
+      Assert.assertEquals(instance.getService().getServiceName(), map.get("serviceName"));
+
+      Map<String, Set<String>> serviceResourceTypesAndComponentsMap = (Map<String, Set<String>>) map
+          .get("serviceResourceTypesAndComponentsMap");
+      for (ServiceResourceTypeGroupComponent component : group.getServiceResourceGroupComponents()) {
+        Assert.assertTrue(serviceResourceTypesAndComponentsMap.get(resourceType.getResourceTypeName()).contains(
+            component.getResourceComponentName()));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewProductBundle() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      bundleController.viewProductBundle(bundle.getId().toString(), "current", map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+      Assert.assertEquals("current", map.get("whichPlan"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditProductBundleGet() {
+    try {
+      String[] frequencyArray = {
+          "None", "Monthly", "Quarterly", "Annual"
+      };
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      ServiceResourceType resourceType = serviceResourceTypeDAO.find(1L);
+      ServiceResourceTypeGroup group = resourceType.getServiceResourceGroups().get(0);
+
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.editProductBundle(bundle.getId().toString(), map);
+
+      ProductBundleForm productBundleForm = (ProductBundleForm) map.get("productBundleForm");
+      List<ChargeRecurrenceFrequency> chargeFrequencyList = productBundleForm.getChargeRecurrenceFrequencyList();
+      for (int i = 0; i < chargeFrequencyList.size(); i++) {
+        Assert.assertEquals(frequencyArray[i], chargeFrequencyList.get(i).getDisplayName());
+      }
+
+      Assert.assertEquals(instance.getService().getServiceName(), map.get("serviceName"));
+
+      Map<String, Set<String>> serviceResourceTypesAndComponentsMap = (Map<String, Set<String>>) map
+          .get("serviceResourceTypesAndComponentsMap");
+      for (ServiceResourceTypeGroupComponent component : group.getServiceResourceGroupComponents()) {
+        Assert.assertTrue(serviceResourceTypesAndComponentsMap.get(resourceType.getResourceTypeName()).contains(
+            component.getResourceComponentName()));
+      }
+
+      String jsonProvisionalConstraints = (String) map.get("jsonProvisionalConstraints");
+
+      ObjectMapper mapper = new ObjectMapper();
+      ProvisioningConstraint[] array = mapper.readValue(jsonProvisionalConstraints, ProvisioningConstraint[].class);
+      Assert.assertEquals("SO", array[0].getComponentName());
+      Assert.assertEquals("INCLUDES", array[0].getAssociation().toString());
+      Assert.assertEquals("10", array[0].getValue());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditBundleLogoGet() {
+    try {
+      ProductBundle bundle = bundleService.locateProductBundleById("2");
+      bundleController.editBundleLogo(bundle.getId().toString(), map);
+      Assert.assertEquals(Page.PRODUCTS_BUNDLES, map.get("page"));
+      ProductBundleLogoForm bundleLogoForm = (ProductBundleLogoForm) map.get("bundleLogoForm");
+      Assert.assertEquals(bundle, bundleLogoForm.getBundle());
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditBundleLogoPost() {
+    try {
+      ProductBundle bundle = bundleService.locateProductBundleById("2");
+      ProductBundleLogoForm form = new ProductBundleLogoForm(bundle);
+      MultipartFile logo = new MockMultipartFile("ProductBundle.jpeg", "ProductBundle.jpeg", "bytes",
+          "ProductBundleLogo".getBytes());
+      form.setLogo(logo);
+      BindingResult result = validate(form);
+      String resultString = bundleController.editBundleLogo(form, result, request, map);
+      Assert.assertNotNull(resultString);
+      Assert.assertTrue(resultString.contains("\"id\":" + bundle.getId() + ",\"name\":\"" + bundle.getName()
+          + "\",\"description\":\"" + bundle.getDescription() + "\""));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testSortBundlesGet() {
+    try {
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      bundleController.sortBundles(instance.getUuid(), "planned", null, null, map);
+
+      List<ProductBundle> bundlesList = (List<ProductBundle>) map.get("bundlesList");
+
+      ProductBundle productBundle = bundleService.getProductBundleById(14L);
+      Assert.assertEquals(productBundle, bundlesList.get(0));
+
+      for (ProductBundle bundle : bundlesList) {
+        Assert.assertTrue(bundle.getServiceInstanceId().getId().equals(instance.getId()));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testSortBundlesGetCurrent() {
+    try {
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      bundleController.sortBundles(instance.getUuid(), "current", null, null, map);
+
+      ProductBundle productBundle = bundleService.getProductBundleById(14L);
+
+      List<ProductBundle> bundlesList = (List<ProductBundle>) map.get("bundlesList");
+
+      Assert.assertEquals(productBundle, bundlesList.get(0));
+
+      for (ProductBundle bundle : bundlesList) {
+        Assert.assertTrue(bundle.getServiceInstanceId().getId().equals(instance.getId()));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testSortBundlesGetHistory() {
+    try {
+      ServiceInstance instance = serviceInstanceDAO.find(1L);
+      bundleController.sortBundles(instance.getUuid(), "history", "04/30/2012 00:00:00", null, map);
+
+      ProductBundle productBundle = bundleService.getProductBundleById(2L);
+
+      List<ProductBundle> bundlesList = (List<ProductBundle>) map.get("bundlesList");
+
+      Assert.assertEquals(productBundle, bundlesList.get(0));
+
+      for (ProductBundle bundle : bundlesList) {
+        Assert.assertTrue(bundle.getServiceInstanceId().getId().equals(instance.getId()));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewBundleCurrentCharges() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.viewBundleCurrentCharges(bundle.getCode(), map, "3");
+
+      RateCardChargesForm rateCardChargesForm = (RateCardChargesForm) map.get("rateCardChargesForm");
+
+      List<RateCardComponentChargesForm> nonRecurringChargesForm = rateCardChargesForm
+          .getNonRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : nonRecurringChargesForm) {
+        Assert.assertEquals("13", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("EUR")) {
+            Assert.assertEquals("100.0000", charge.getPrice().toString());
+          }
+        }
+      }
+
+      List<RateCardComponentChargesForm> recurringChargesForm = rateCardChargesForm
+          .getRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : recurringChargesForm) {
+        Assert.assertEquals("12", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("EUR")) {
+            Assert.assertEquals("1000.0000", charge.getPrice().toString());
+          }
+        }
+      }
+      Assert.assertEquals(bundle, rateCardChargesForm.getBundle());
+      Assert.assertEquals("3", map.get("currenciesToDisplay"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewBundleChannelPricing() {
+    try {
+      Boolean found = false;
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      Channel channel = channelDAO.find(3L);
+
+      bundleController.viewBundleChannelPricing(bundle.getCode(), "1", "2", "3", null, "current", null, map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+      Assert.assertEquals("True", map.get("enable_next"));
+
+      Map<Channel, List<CurrencyValue>> channelCurrencyMap = (Map<Channel, List<CurrencyValue>>) map
+          .get("channelCurrencyMap");
+
+      List<CurrencyValue> currencyList = channelCurrencyMap.get(channel);
+      for (CurrencyValue currency : currencyList) {
+        if (currency.getCurrencyCode().equals("INR")) {
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+
+      Map<Channel, RateCardChargesForm> channelRateCardChargesFormMap = (Map<Channel, RateCardChargesForm>) map
+          .get("channelRateCardChargesFormMap");
+      RateCardChargesForm rateCardChargesForm = channelRateCardChargesFormMap.get(channel);
+
+      List<RateCardComponentChargesForm> nonRecurringChargesForm = rateCardChargesForm
+          .getNonRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : nonRecurringChargesForm) {
+        Assert.assertEquals("13", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            Assert.assertEquals("1500.0000", charge.getPrice().toString());
+          }
+        }
+      }
+
+      List<RateCardComponentChargesForm> recurringChargesForm = rateCardChargesForm
+          .getRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : recurringChargesForm) {
+        Assert.assertEquals("12", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            System.err.println(form.getCharges());
+            Assert.assertEquals("1000.0000", charge.getPrice().toString());
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewBundleChannelPricingPlanned() {
+    try {
+      Boolean found = false;
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      Channel channel = channelDAO.find(3L);
+
+      bundleController.viewBundleChannelPricing(bundle.getCode(), "1", "2", "3", null, "planned", null, map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+      Assert.assertEquals("True", map.get("enable_next"));
+
+      Map<Channel, List<CurrencyValue>> channelCurrencyMap = (Map<Channel, List<CurrencyValue>>) map
+          .get("channelCurrencyMap");
+
+      List<CurrencyValue> currencyList = channelCurrencyMap.get(channel);
+      for (CurrencyValue currency : currencyList) {
+        if (currency.getCurrencyCode().equals("INR")) {
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+
+      Map<Channel, RateCardChargesForm> channelRateCardChargesFormMap = (Map<Channel, RateCardChargesForm>) map
+          .get("channelRateCardChargesFormMap");
+      RateCardChargesForm rateCardChargesForm = channelRateCardChargesFormMap.get(channel);
+
+      List<RateCardComponentChargesForm> nonRecurringChargesForm = rateCardChargesForm
+          .getNonRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : nonRecurringChargesForm) {
+        Assert.assertEquals("13", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            Assert.assertEquals("1500.0000", charge.getPrice().toString());
+          }
+        }
+      }
+
+      List<RateCardComponentChargesForm> recurringChargesForm = rateCardChargesForm
+          .getRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : recurringChargesForm) {
+        Assert.assertEquals("12", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            Assert.assertEquals("1000.0000", charge.getPrice().toString());
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewBundleChannelPricingHistory() {
+    try {
+      Boolean found = false;
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+      Channel channel = channelDAO.find(3L);
+
+      bundleController.viewBundleChannelPricing(bundle.getCode(), "1", "2", "3", null, "history",
+          "04/30/2012 00:00:00", map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+      Assert.assertEquals("True", map.get("enable_next"));
+
+      Map<Channel, List<CurrencyValue>> channelCurrencyMap = (Map<Channel, List<CurrencyValue>>) map
+          .get("channelCurrencyMap");
+
+      List<CurrencyValue> currencyList = channelCurrencyMap.get(channel);
+      for (CurrencyValue currency : currencyList) {
+        if (currency.getCurrencyCode().equals("INR")) {
+          found = true;
+        }
+      }
+      Assert.assertTrue(found);
+
+      Map<Channel, RateCardChargesForm> channelRateCardChargesFormMap = (Map<Channel, RateCardChargesForm>) map
+          .get("channelRateCardChargesFormMap");
+      RateCardChargesForm rateCardChargesForm = channelRateCardChargesFormMap.get(channel);
+
+      List<RateCardComponentChargesForm> nonRecurringChargesForm = rateCardChargesForm
+          .getNonRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : nonRecurringChargesForm) {
+        Assert.assertEquals("13", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            Assert.assertEquals("1500.0000", charge.getPrice().toString());
+          }
+        }
+      }
+
+      List<RateCardComponentChargesForm> recurringChargesForm = rateCardChargesForm
+          .getRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : recurringChargesForm) {
+        Assert.assertEquals("12", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("USD")) {
+            Assert.assertEquals("1000.0000", charge.getPrice().toString());
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewProvisioningConstraintsCurrent() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.viewProvisioningConstraints(bundle.getCode(), "current", null, map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+
+      List<ProvisioningConstraint> constrainstList = (List<ProvisioningConstraint>) map.get("constraints");
+
+      for (ProvisioningConstraint constraint : constrainstList) {
+        Assert.assertEquals("SO", constraint.getComponentName());
+        Assert.assertEquals("INCLUDES", constraint.getAssociation().toString());
+        Assert.assertEquals("10", constraint.getValue());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewProvisioningConstraintsPlanned() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.viewProvisioningConstraints(bundle.getCode(), "planned", null, map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+
+      List<ProvisioningConstraint> constrainstList = (List<ProvisioningConstraint>) map.get("constraints");
+
+      for (ProvisioningConstraint constraint : constrainstList) {
+        Assert.assertEquals("SO", constraint.getComponentName());
+        Assert.assertEquals("INCLUDES", constraint.getAssociation().toString());
+        Assert.assertEquals("10", constraint.getValue());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewProvisioningConstraintsHistory() {
+    try {
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.viewProvisioningConstraints(bundle.getCode(), "history", "30/04/2012 00:00:00", map);
+      Assert.assertEquals(bundle, map.get("productBundle"));
+
+      List<ProvisioningConstraint> constrainstList = (List<ProvisioningConstraint>) map.get("constraints");
+
+      for (ProvisioningConstraint constraint : constrainstList) {
+        Assert.assertEquals("SO", constraint.getComponentName());
+        Assert.assertEquals("INCLUDES", constraint.getAssociation().toString());
+        Assert.assertEquals("10", constraint.getValue());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewPlannedCharges() {
+    try {
+      Boolean found = false;
+      bundleController.viewPlannedCharges(map);
+
+      RateCardForm rateCardForm = (RateCardForm) map.get("rateCardForm");
+      Assert.assertEquals(channelService.getFutureRevision(null).getStartDate(), rateCardForm.getStartDate());
+
+      List<RateCardChargesForm> chargeList = rateCardForm.getRateCardChargesList();
+      for (RateCardChargesForm form : chargeList) {
+        List<RateCardComponentChargesForm> nonRecurringChargesForm = form.getNonRecurringRateCardChargesFormList();
+        for (RateCardComponentChargesForm nonRecurringCharges : nonRecurringChargesForm) {
+          if (nonRecurringCharges.getRcc().getId().toString().equalsIgnoreCase("13")) {
+            found = true;
+          }
+        }
+      }
+      Assert.assertTrue(found);
+      found = false;
+      for (RateCardChargesForm form : chargeList) {
+        List<RateCardComponentChargesForm> recurringChargesForm = form.getRecurringRateCardChargesFormList();
+        for (RateCardComponentChargesForm recurringCharges : recurringChargesForm) {
+          if (recurringCharges.getRcc().getId().toString().equalsIgnoreCase("12")) {
+            found = true;
+          }
+        }
+      }
+      Assert.assertTrue(found);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testEditPlannedCharges() {
+    try {
+
+      ProductBundle bundle = bundleService.getProductBundleById(2L);
+
+      bundleController.editPlannedCharges(map);
+
+      RateCardForm rateCardForm = (RateCardForm) map.get("rateCardForm");
+      Assert.assertNotNull(rateCardForm.getStartDate());
+
+      Map<ProductBundle, Map<RateCardComponent, List<RateCardCharge>>> plannedBundleChargesMap = rateCardForm
+          .getCurrentBundleChargesMap();
+      List<RateCardCharge> rccList = plannedBundleChargesMap.get(bundle).get(
+          bundle.getRateCard().getRateCardComponents().get(0));
+
+      for (RateCardCharge rateCardCharge : rccList) {
+        Assert.assertEquals("12", rateCardCharge.getRateCardComponent().getId().toString());
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  @Test
+  public void testViewBundleChargesHistoryData() {
+    ProductBundle bundle = bundleService.getProductBundleById(2L);
+    try {
+      bundleController.viewBundleChargesHistoryData(bundle.getCode(), "04/30/2012 00:00:00", map, "3");
+
+      RateCardChargesForm rateCardChargesForm = (RateCardChargesForm) map.get("rateCardChargesForm");
+      Assert.assertEquals(bundle, rateCardChargesForm.getBundle());
+
+      List<RateCardComponentChargesForm> nonReccuringList = rateCardChargesForm
+          .getNonRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : nonReccuringList) {
+        Assert.assertEquals("13", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("EUR")) {
+            Assert.assertEquals("100.0000", charge.getPrice().toString());
+          }
+        }
+      }
+
+      List<RateCardComponentChargesForm> reccuringList = rateCardChargesForm.getRecurringRateCardChargesFormList();
+      for (RateCardComponentChargesForm form : reccuringList) {
+        Assert.assertEquals("12", form.getRcc().getId().toString());
+        for (RateCardCharge charge : form.getCharges()) {
+          if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("EUR")) {
+            Assert.assertEquals("1000.0000", charge.getPrice().toString());
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
   }
 }

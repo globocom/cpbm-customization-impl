@@ -54,8 +54,16 @@ $(document).ready(function(){
     </div>
   </div>
 </div>
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
 <div class="widget_browser">
   <div class="widget_browsermaster">
     <div class="widget_browser_contentarea">
@@ -102,9 +110,11 @@ $(document).ready(function(){
       <li class="widgets_detailstab active" id="details_tab">
          <spring:message code="label.details"/>
       </li>
-      <li class="widgets_detailstab nonactive" id="preview_tab">
-            <spring:message code="ui.email.templates.preview"/>
-      </li>        
+      <c:if test="${template.category != 'INCLUDES'}">
+        <li class="widgets_detailstab nonactive" id="preview_tab">
+              <spring:message code="ui.email.templates.preview"/>
+        </li>        
+      </c:if>
     </ul>
     <div id="details_div">
       <div class="widget_details_actionbox">
@@ -127,6 +137,7 @@ $(document).ready(function(){
         </div>
       </div>
     </div>
+    <c:if test="${template.category != 'INCLUDES'}">
     <div id="preview_div" style="display:none;">
       <div class="widget_details_actionbox">
         <ul class="widget_detail_actionpanel">
@@ -150,6 +161,7 @@ $(document).ready(function(){
       </div>
       </div>
     </div>
+    </c:if>
   </div>
 </div>
 

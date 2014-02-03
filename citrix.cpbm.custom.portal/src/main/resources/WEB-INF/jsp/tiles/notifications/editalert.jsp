@@ -8,7 +8,7 @@
 <script type="text/javascript">
 var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
 
-$("#subscriptionForm").validate( {
+$("#editSubscriptionForm").validate( {
   // debug : true,
   success : "valid",
   ignoreTitle : true,
@@ -38,7 +38,7 @@ $("#subscriptionForm").validate( {
 <div class="dialog_formcontent">
 	<!-- Title -->
      
-    <form:form commandName="subscriptionForm" id="subscriptionForm">
+    <form:form commandName="subscriptionForm" id="editSubscriptionForm">
       <ol>
         <li>
           <form:label path="tenantPercentage" style="width:150px;"><spring:message code="label.listalerts.edit.alert.spend.reaches"/></form:label>

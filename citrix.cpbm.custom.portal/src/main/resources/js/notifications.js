@@ -1,5 +1,5 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
@@ -110,13 +110,19 @@ $(document).ready(function() {
         dataType: 'json',
         success: function(data) {
           addAlertDelivOpt(function() {
-            $("#emailSuccessMessage").html(i18n.confirm.addsecAlert.verificationEmail.replace("{0}", email));
-            $("#additional_emailError").html("");
-            $("#emailSuccessMessage").show();
-          });
-        },
+                $("#emailSuccessMessage").hide();
+                $("#emailErrorMessage").hide();
+                $("#emailSuccessMessage").html(i18n.confirm.addsecAlert.verificationEmail.replace("{0}", email));
+                $("#additional_emailError").html("");
+                $("#emailSuccessMessage").show();
+            });
+      },
         error: function(request) {
-          displayAjaxFormError(request, "userAlertEmailForm", "emailErrorMessage");
+          $("#emailSuccessMessage").hide();
+          $("#emailErrorMessage").hide();
+          var errorMessage = jQuery.parseJSON(request.responseText);
+          $("#emailErrorMessage").html(errorMessage.Error.email.Message);
+          $("#emailErrorMessage").show();
         }
       });
     }
@@ -177,16 +183,34 @@ $(document).ready(function() {
           'param': tenantParam,
           'userParam': effectiveuserparam
         },
-        dataType: 'text',
+        dataType: "json",
         success: function(data) {
-          if (data != "failure") {
+        
+          if (data["status"] != "failure") {
             $("#emailSuccessMessage").html(i18n.confirm.addsecAlert.makePrimary);
             $("#additional_emailError").html("");
             $("#emailSuccessMessage").show();
-            $("#email-" + id).text(data);
+            $("#email-" + id).text(data["email"]);
+            var $divId = $("#div" + id); 
+            $divId.find("#emailVerifiedIconDiv").hide();
+            $divId.find("#emailVerifiedIconDivTemplate").show();
+            if(data["isVerified"] == "true"){
+              $divId.find("#unverifyIcon").hide();
+              $divId.find("#unverifyText").hide();
+              $divId.find("#verifyIcon").show();
+              $divId.find("#verifyText").show();
+              $divId.find("#makePrimaryDiv").show();
+            } else {
+              $divId.find("#unverifyIcon").show();
+              $divId.find("#unverifyText").show();
+              $divId.find("#verifyIcon").hide();
+              $divId.find("#verifyText").hide();
+              $divId.find("#makePrimaryDiv").hide();
+            
+            }
             $("#addEmailTextDiv").show();
             $("#addsecalert").show();
-            $("#PrimaryEmailDivId").html(data);
+            $("#PrimaryEmailDivId").html(data["email"]);
           } else {
             $("#emailErrorMessage").html(i18n.errors.addsecAlert.failMakePrimary);
             $("#emailErrorMessage").show();
@@ -194,7 +218,7 @@ $(document).ready(function() {
         },
 
         error: function(request) {
-          alert(i18n.errors.addsecAlert.failMakePrimary);
+          popUpDialogForAlerts("dialog_info", i18n.errors.addsecAlert.failMakePrimary);
         }
       });
     };
@@ -235,7 +259,7 @@ $(document).ready(function() {
         },
 
         error: function(request) {
-          alert(i18n.errors.addsecAlert.failVerifyEmail);
+          popUpDialogForAlerts("dialog_info", i18n.errors.addsecAlert.failVerifyEmail);
         }
       });
     };
@@ -404,17 +428,6 @@ function onNotificationMouseover(current) {
 
 function onNotificationMouseout(current) {
   $(current).find("#info_bubble").hide();
-  return false;
-}
-
-function onNotificationDetailMouseover(current) {
-
-  document.getElementById("info_bubble2_" + current).style.display = '';
-  return false;
-}
-
-function onNotificationDetailMouseout(current) {
-  document.getElementById("info_bubble2_" + current).style.display = 'none';
   return false;
 }
 

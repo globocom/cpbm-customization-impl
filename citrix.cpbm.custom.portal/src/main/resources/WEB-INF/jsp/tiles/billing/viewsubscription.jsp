@@ -6,6 +6,13 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
+<style>
+  .popover {
+    max-width:400px;
+    word-wrap: break-word;
+  }
+</style>
+
  <div class="widget_actionbar">
   <div class="widget_actionarea" id="top_actions">
     <div id="spinning_wheel" style="display:none">
@@ -23,30 +30,54 @@
               <div class="widget_actionpopover_top"></div>
                 <div class="widget_actionpopover_mid">
                   <ul class="widget_actionpoplist">
+              <c:choose>
+                <c:when test="${subscription.state=='ACTIVE' or subscription.state=='NEW'}">
+                  <c:set var="hasActions" value="False" />
+                  <c:if test="${allowTermination && hasCloudAccess && cloudStackCallFailed == false}">
+                    <li class="terminatesubscription_link"
+                      id="<c:out value="term_subscription_1_${subscription.param}"/>"
+                      title='<spring:message code="label.subscription.details.terminate"/>'><spring:message
+                        code="label.subscription.details.terminate" /></li>
+                     <c:set var="hasActions" value="True" />
+                  </c:if>
+                  <c:if test="${!allowTermination}">
+                    <li class="cancelsubscription_link"
+                      id="<c:out value="cancel_subscription_1_${subscription.param}"/>"
+                      title='<spring:message code="label.subscription.details.cancel"/>'><spring:message
+                        code="label.subscription.details.cancel" /></li>
+                    <c:set var="hasActions" value="True" />
+                  </c:if>
+                  <c:if test="${!isPayAsYouGoChosen && subscription.resourceType != null}">
                     <c:choose>
-                      <c:when test="${subscription.state=='ACTIVE' or subscription.state=='NEW'}">
-                        <c:if test="${allowTermination && hasCloudAccess && cloudStackCallFailed == false}">
-                        <li class="terminatesubscription_link" id="<c:out value="term_subscription_1_${subscription.param}"/>" title='<spring:message code="label.subscription.details.terminate"/>'><spring:message code="label.subscription.details.terminate"/></li>
-                       </c:if>
-                       <c:if test="${subscription.state=='NEW'}">
-                        <li class="cancelsubscription_link" id="<c:out value="cancel_subscription_1_${subscription.param}"/>" title='<spring:message code="label.subscription.details.cancel"/>'><spring:message code="label.subscription.details.cancel"/></li>
-                        </c:if>
-                        <c:if test="${!isPayAsYouGoChosen}">
-                          <c:choose>
-                            <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and toProvision}">
-                              <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.provision.resource"/>'><spring:message code="ui.label.provision.resource"/></li>
-                            </c:when>
-                            <c:when test="${subscription.state=='ACTIVE' and subscription.resourceType != null and !toProvision}">
-                              <li class="provision_subscription_link" onclick="provisionSubscription(<c:out value="${subscription.id}"/>);" id="provision_subscription_1_<c:out value="${subscription.param}"/>" title='<spring:message code="ui.label.edit.resource"/>'><spring:message code="ui.label.edit.resource"/></li>
-                            </c:when>
-                          </c:choose>
-                        </c:if>
+                      <c:when test="${toProvision}">
+                        <li class="provision_subscription_link"
+                          onclick="provisionSubscription(<c:out value="${subscription.id}"/>);"
+                          id="provision_subscription_1_<c:out value="${subscription.param}"/>"
+                          title='<spring:message code="ui.label.provision.resource"/>'><spring:message
+                            code="ui.label.provision.resource" /></li>
+                        <c:set var="hasActions" value="True" />
                       </c:when>
-                      <c:otherwise>
-                              <li id="no_actions_available_volume" title='<spring:message code="label.no.actions.available"/>'><spring:message code="label.no.actions.available"/></li>
-                      </c:otherwise>
+                      <c:when test="${toReconfigure}">
+                        <li class="provision_subscription_link"
+                          onclick="provisionSubscription(<c:out value="${subscription.id}"/>);"
+                          id="provision_subscription_1_<c:out value="${subscription.param}"/>"
+                          title='<spring:message code="ui.label.edit.resource"/>'><spring:message
+                            code="ui.label.edit.resource" /></li>
+                        <c:set var="hasActions" value="True" />
+                      </c:when>
                     </c:choose>
-                    </ul>
+                  </c:if>
+                  <c:if test="${hasActions=='False'}">
+                    <li id="no_actions_available_volume" title='<spring:message code="label.no.actions.available"/>'><spring:message
+                      code="label.no.actions.available" /></li>  
+                  </c:if>
+                </c:when>
+                <c:otherwise>
+                  <li id="no_actions_available_volume" title='<spring:message code="label.no.actions.available"/>'><spring:message
+                      code="label.no.actions.available" /></li>
+                </c:otherwise>
+              </c:choose>
+            </ul>
                 </div>
                 <div class="widget_actionpopover_bot"></div>
             </div>
@@ -57,8 +88,27 @@
   </div>
   
    
-<div id="top_message_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
-<div id="action_result_panel" class="common_messagebox widget" style="display:none;"><span id="status_icon"></span><p id="msg"></p></div>
+<div class="top_notifications">
+  <c:choose>
+  <c:when test="${cloudStackCallFailed}">
+      <div style="" class="common_messagebox widget error" id="top_message_panel">
+      <button class="close js_close_parent" type="button">×</button>
+        <span id="status_icon"></span><p id="msg"><c:out value="${cloudServiceErrorMessage}" /></p>
+      </div>
+  </c:when>
+  <c:otherwise>
+    <div id="top_message_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+    </div>
+  </c:otherwise>
+  </c:choose>
+
+  <div id="action_result_panel" class="common_messagebox widget" style="display:none;">
+    <button type="button" class="close js_close_parent" >&times;</button>
+    <span id="status_icon"></span><p id="msg"></p>
+  </div>
+</div>
   
   <div class="widget_browser">
     <div id="spinning_wheel" style="display:none">
@@ -101,7 +151,7 @@
                 
                 <div class="widget_grid master even">
                     <div class="widget_grid_labels">
-                        <span><spring:message code="ui.label.serviceinstance"/></span>
+                        <span><spring:message code="ui.label.service"/></span>
                     </div>
                     <c:if test="${(not empty subscription || subscription != null)&& current_page != 1}">
                    	 <div class="widget_grid_description">
@@ -112,18 +162,43 @@
                <c:if test="${(not empty subscription || subscription != null)&& current_page != 1}"> 
                	<div class="widget_grid master even">
                     <div class="widget_grid_labels">
-                        <span><spring:message code="label.state"/></span>
+                        <span>
+                          <spring:message code="label.state"/>
+                        </span>
                     </div>  
-                    <div class="widget_grid_description">
+                    <div class="widget_grid_description" style="width:265px;">
                       
-                      <span id="subscriptionState"><spring:message code="${subscription.state.code}" />
-                      <c:if test="${toProvision and subscription.resourceType!=null}"> ( <spring:message code="label.no.active.subscription.handle"/> ) </c:if>
-                      <c:if test="${not empty workflowUuid }">
-                      	<a href="javascript:void(0);" id="workflowdetails${workflowUuid}" class="workflowDetailsPopup sub_wf"><spring:message code="message.view.workflow" /></a>
+                      <c:set var="isResourceProvisioning" value="false" scope="request" />
+                      <c:if test="${(subscription.state == 'NEW' || subscription.state == 'ACTIVE') && subscription.handle.state == 'PROVISIONING'}">
+                        <c:set var="isResourceProvisioning" value="true" scope="request" />
                       </c:if>
+                      
+                      <span id="subscriptionState" style="max-width:210px;width:auto;"><spring:message code="${subscription.state.code}" />
+                        <c:choose>
+                          <c:when test="${isResourceProvisioning}">
+                              &nbsp;(<spring:message code="handle.label.state"/> : <spring:message code="subscriptionHandle.state.provisioning"/>)
+                          </c:when>
+                          <c:when test="${subscription.state == 'NEW' && subscription.handle == null && (not empty workflowUuid)}">
+                              &nbsp;(<a href="javascript:void(0);" style="float:none;" id="workflowdetails${workflowUuid}" class="workflowDetailsPopup sub_wf"><spring:message code="message.view.workflow" /></a>)
+                          </c:when>
+                          <c:when test="${subscription.state == 'NEW' && subscription.handle.state == 'ERROR'}">
+                          
+                              &nbsp;(<spring:message code="handle.label.state"/> : <div id="js_resource_error" class="subscription_resource_error" data-content="&nbsp;<spring:message javaScriptEscape="true" text="${subscription.handle.data}"/>" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-container="body"><spring:message code="subscriptionHandle.state.error"/></div>)
+                              <!-- Added a prefix space(&nbsp;) in "data-content" so that it act as a "string" even for type "object". This is a temporary fix to resolve issue where Bootstrap's popover doesn't render if data-content is of "object" type.-->
+                          </c:when>
+                          <c:when test="${toProvision and subscription.resourceType!=null}">
+                              &nbsp;(<spring:message code="label.no.active.subscription.handle"/>)
+                          </c:when>
+                        </c:choose>
                       </span>
+                      <c:if test="${isResourceProvisioning}">
+                         <div class="maindetails_footer_loadingicon" style="margin-top:10px;"></div>
+                      </c:if>
                     </div>
                 </div>
+                
+              
+                
               </c:if>  
             </div>
             <div class="widget_masterbigicons subscription">
@@ -131,19 +206,29 @@
         </div>
     </div>
     
+    <c:set var="showResourceDetails" value="false" scope="request" />
+    <c:set var="js_class" value="active" scope="request" />
+    <c:if test="${subscription.resourceType != null && hasCloudAccess && cloudStackCallFailed == false}">
+        <c:set var="showResourceDetails" value="true" scope="request" />
+        <c:set var="js_class" value="nonactive" scope="request" />
+    </c:if>
+    
     <div class="widget_browser_contentarea">
       <ul class="widgets_detailstab">
-          <li class="widgets_detailstab active" id="details_tab">
+            <c:if test="${showResourceDetails}">
+             <li class="widgets_detailstab active" id="resource_details_tab">
+               <spring:message code="ui.label.resource.details" />
+             </li>
+           </c:if>
+          <li class="widgets_detailstab ${js_class}" id="details_tab">
             <spring:message code="usage.billing.subscription.title.subscription.charges" />
           </li>
          
            <li class="widgets_detailstab nonactive" id="entitlements_tab">
              <spring:message code="usage.billing.view.subscription.entitlement.utility.rate.title" />
            </li>
-            <c:if test="${subscription.resourceType != null && hasCloudAccess && cloudStackCallFailed == false}">
-           <li class="widgets_detailstab nonactive" id="resource_details_tab">
-             <spring:message code="ui.label.resource.details" />
-           </li>
+            
+           <c:if test="${showResourceDetails}">
            <li class="widgets_detailstab nonactive" id="configurations_tab">
              <spring:message code="label.configuration.data" />
            </li>
@@ -159,7 +244,7 @@
           </ul>
         </div>
         
-        <div class="widget_browsergrid_wrapper fixed" id="subscription_charges">
+        <div class="widget_browsergrid_wrapper fixed" id="subscription_charges" <c:if test="${showResourceDetails}">style="display:none;"</c:if>>
          
             <div class="widget_grid details header">
               <div class="widget_grid_cell" style="padding:1px;width:60%;">
@@ -171,7 +256,7 @@
               
             </div>
              <c:if test="${not empty subscription}">
-                <div class="<c:out value="grid_rows odd"/>">                   
+                <div class="<c:out value="grid_rows even"/>">                   
                   <div class="grid_row_cell" style="padding:1px;width:60%;">              
                     <div class="row_celltitles"> <spring:message code="label.one.time"></spring:message></div>
                   </div>               
@@ -184,12 +269,14 @@
                   <c:if test="${subscription.productBundle == null}">
                     <fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="0" />
                   </c:if>
-                  </div>
-                  </div>     
+                  
+                       
+                 </div>
+                 </div>
                  </div>
               <c:choose>
                 <c:when test="${subscription.productBundle.rateCard.chargeType.frequencyInMonths != 0 }">
-                  <div class="<c:out value="grid_rows even"/>">                   
+                  <div class="<c:out value="grid_rows odd"/>">                   
                 <div class="grid_row_cell" style="padding:1px;width:60%;">              
                   <div class="row_celltitles"><spring:message code="label.recurring">&nbsp;:&nbsp;</spring:message>
                  	 <c:if test="${current_page != 1 && subscription.productBundle !=null}">
@@ -211,7 +298,7 @@
               </div>
                 </c:when>
                 <c:otherwise>
-                <div class="<c:out value="grid_rows even"/>">                   
+                <div class="<c:out value="grid_rows odd"/>">                   
                 <div class="grid_row_cell" style="padding:1px;width:60%;">              
                   <div class="row_celltitles"><spring:message code="label.recurring"></spring:message>&nbsp;:&nbsp;<spring:message code="ui.label.na"/></div>
                 </div>               
@@ -292,7 +379,7 @@
                
                 
               </div>
-
+                <c:if test="${showResourceDetails}">
                 <div class="widget_browsergrid_wrapper fixed" id="configurations" style="display:none;">
                   <div class="widget_grid details header">
                     <div class="widget_grid_cell" style="padding: 1px; width: 40%;">
@@ -307,7 +394,7 @@
                     </div>
                   </div>
 
-                  <c:forEach items="${subscription.configurationMap}" var="entry" varStatus="configurationCounter">
+                  <c:forEach items="${configurationProperties}" var="entry" varStatus="configurationCounter">
                     <c:choose>
                       <c:when test="${configurationCounter.count % 2 == 0}">
                         <c:set var="rowClass" value="odd"/>
@@ -340,68 +427,132 @@
                     </div>
                   </c:forEach>
                 </div>
-
-                <div class="widget_browsergrid_wrapper fixed" id="resource_details" style="display:none;">
+                
+                <div class="widget_browsergrid_wrapper fixed" id="resource_details">
                   <div class="widget_grid details header">
                     <div class="widget_grid_cell" style="padding: 1px; width: 40%;">
                       <span class="header">
                         <spring:message code="label.name"/>
                       </span>
                     </div>                
-                    <div class="widget_grid_cell" style="padding: 1px; width: 30%;">
+                    <div class="widget_grid_cell" style="padding: 1px; width: 55%;">
                       <span class="header">
                         <spring:message code="label.value"/>
                       </span>
                     </div>
                   </div>
 
-                  <div class="<c:out value="grid_rows even"/>">
+                    <div class="<c:out value="grid_rows even"/>">
+                    <div class="grid_row_cell" style="padding: 1px;width: 40%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <spring:message code="ui.label.service"/>
+                      </div>
+                    </div>
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <c:out value="${subscription.serviceInstance.name}"></c:out>
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <div class="<c:out value="grid_rows odd"/>">
                     <div class="grid_row_cell" style="padding: 1px;width: 40%;">
                       <div class="row_celltitles" style="padding: 1px;">
                         <spring:message code="label.resource.type"/>
                       </div>
                     </div>
-                    <div class="grid_row_cell"  style="padding:1px;width: 30%;">
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
                       <div class="row_celltitles" style="padding: 1px;">
                         <spring:message code="${subscription.serviceInstance.service.serviceName}.ResourceType.${subscription.resourceType.resourceTypeName}.name"/>
                       </div>
                     </div>
                   </div>
 
-                  <div class="<c:out value="grid_rows odd"/>">
+                  <div class="<c:out value="grid_rows even"/>">
                     <div class="grid_row_cell" style="padding: 1px;width: 40%;">
                       <div class="row_celltitles" style="padding: 1px;">
                         <spring:message code="label.resource.handle"/>
                       </div>
                     </div>
-                    <div class="grid_row_cell"  style="padding:1px;width: 30%;">
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
                       <div class="row_celltitles" title="<c:out value='${subscription.handle.resourceHandle}'></c:out>" style="padding: 1px;">
                         <c:out value="${subscription.handle.resourceHandle}"></c:out>
                       </div>
                     </div>
                   </div>
-
-                  <div class="<c:out value="grid_rows even"/>">
+                  
+                  <div class="<c:out value="grid_rows odd"/>">
                     <div class="grid_row_cell" style="padding: 1px;width: 40%;">
                       <div class="row_celltitles" style="padding: 1px;">
-                        <spring:message code="ui.label.serviceinstance"/>
+                        <spring:message code="label.resource.name"/>
                       </div>
                     </div>
-                    <div class="grid_row_cell"  style="padding:1px;width: 30%;">
-                      <div class="row_celltitles" style="padding: 1px;">
-                        <c:out value="${subscription.serviceInstance.name}"></c:out>
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
+                      <div class="row_celltitles" title="<c:out value='${subscription.handle.resourceName}'></c:out>" style="padding: 1px;">
+                        <c:out value="${subscription.handle.resourceName}"></c:out>
                       </div>
                     </div>
                   </div>
                   
+                   <div class="<c:out value="grid_rows even"/>">
+                    <div class="grid_row_cell" style="padding: 1px;width: 40%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <spring:message code="handle.label.state"/>
+                      </div>
+                    </div>
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <spring:message code='${subscription.handle.state.code}' />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="<c:out value="grid_rows odd"/>">
+                    <div class="grid_row_cell" style="padding: 1px;width: 40%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <spring:message code="handle.label.substate"/>
+                      </div>
+                    </div>
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
+                      <c:if test="${subscription.handle.subState != null}">
+                        <div class="row_celltitles" style="padding: 1px;">
+                          <c:out value="${subscription.handle.subState}"></c:out>
+                        </div>
+                      </c:if>
+                    </div>
+                  </div>
+                <c:if test="${subscription.handle.state == 'ERROR'}">
+                  <div class="<c:out value="grid_rows even"/>">
+                    <div class="grid_row_cell" style="padding: 1px;width: 40%;">
+                      <div class="row_celltitles" style="padding: 1px;">
+                        <spring:message code="handle.label.data"/>
+                      </div>
+                    </div>
+                    <div class="grid_row_cell"  style="padding:1px;width: 55%;">
+                      <c:if test="${subscription.handle.data != null}">
+                        <div class="row_celltitles" title="<c:out value='${subscription.handle.data}'></c:out>" style="padding: 1px;">
+                          <c:out value="${subscription.handle.data}"></c:out>
+                        </div>
+                      </c:if>
+                    </div>
+                  </div>
+                 </c:if> 
                 </div>
+                </c:if>
     </div>
 </div>
 <input type="hidden" id="current_subscription_param"  value="<c:out value="${subscription.param}"/>"/>
+<input type="hidden" name="subscription_state" id="subscription_state" value="${subscription.state}" />
+<c:if test="${subscription.handle != null}">
+  <input type="hidden" name="subscription_handle_state" id="subscription_handle_state"
+    value="${subscription.handle.state}" />
+</c:if>
 <c:if test="${!(toProvision and subscription.productBundle.resourceType != null)}">
 	<input type="hidden" id="vmId"  value="<c:out value="${vmId}"/>"/>
 	<input type="hidden" id="vmDisplayName"  value="<c:out value="${vmDisplayName}"/>"/>
 	<input type="hidden" id="vmGroupName"  value="<c:out value="${vmGroupName}"/>"/>
+  <input type="hidden" id="endDate"  value="<c:if test="${endDate != null}"><fmt:formatDate value="${endDate}" pattern="dd MMM yyyy" timeZone="${currentUser.timeZone}"/></c:if>"/>
 </c:if>
 
 <div class="workflow_details_popup" title="<spring:message code="dialogue.title.workflow" />" style="display:none"></div>

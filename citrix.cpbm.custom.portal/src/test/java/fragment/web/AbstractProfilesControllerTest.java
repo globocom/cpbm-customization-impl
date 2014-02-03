@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package fragment.web;
 
 import java.util.List;
@@ -12,7 +11,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.ModelMap;
 
-import web.WebTestsBase;
 import web.WebTestsBaseWithMockConnectors;
 
 import com.citrix.cpbm.portal.fragment.controllers.ProfilesController;
@@ -109,6 +107,7 @@ public class AbstractProfilesControllerTest extends WebTestsBaseWithMockConnecto
     List<Profile> tenantProfileList = (List<Profile>) profileService.listAllProfilesOfClass(Scope.TENANT);
     List<ProfileForm> nonOpsProfileList = (List<ProfileForm>) map.get("nonOpsProfileList");
     Assert.assertEquals(tenantProfileList.size(), nonOpsProfileList.size());
+    Assert.assertTrue(map.containsAttribute("systemProfileName"));
   }
 
   /**

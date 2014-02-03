@@ -26,8 +26,8 @@
                                 <c:when test="${dashboardItem.itemValue ne null}">
                                   <c:choose>
                                       <c:when test="${dashboardItem.itemValueType ne null && dashboardItem.itemValueType=='currency'}">
-                                          <span class="percentage ellipsis" style="font-size:21px;" title='<c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${minFractionDigits}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue}" />'>
-                                              <c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${minFractionDigits}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue}" />
+                                          <span class="percentage ellipsis" style="font-size:21px;" title='<c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${currencyFractionalDigitsLimit}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue}" />'>
+                                              <c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${currencyFractionalDigitsLimit}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue}" />
                                           </span>
                                       </c:when>
                                       <c:otherwise>
@@ -74,7 +74,7 @@
                                </c:if>
                                <c:choose>
                                    <c:when test="${dashboardItem.itemValue2Type ne null && dashboardItem.itemValue2Type=='currency'}">
-                                       <c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${minFractionDigits}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue2}" />
+                                       <c:out value="${effectiveTenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" maxFractionDigits="${currencyFractionalDigitsLimit}" minFractionDigits="${minFractionDigits}" value="${dashboardItem.itemValue2}" />
                                    </c:when>
                                
                                    <c:otherwise>
