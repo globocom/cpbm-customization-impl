@@ -6,12 +6,12 @@
 	<version>2.1.2</version>
 	<packaging>pom</packaging>
 	
-<!--        <modules>
+        <modules>
          <module>../citrix.cpbm.custom.model</module>
          <module>../citrix.cpbm.custom.common</module>
          <module>../citrix.cpbm.custom.portal</module>
          </modules>
--->
+
          <properties>
 		<maven.jar.plugin.version-core>2.3.2</maven.jar.plugin.version-core>
 		<wro4j.core.version>1.5.0</wro4j.core.version>
