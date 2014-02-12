@@ -8,7 +8,10 @@
    unsupportedDictionary = {    
     header: '<spring:message javaScriptEscape="true" code="browser.unsupported.header"/>',
     paragraph1: '<spring:message javaScriptEscape="true" code="browser.unsupported.paragraph1"/>',
-    paragraph2: '<spring:message javaScriptEscape="true" code="browser.unsupported.paragraph2"/>'
+    paragraph2: '<spring:message javaScriptEscape="true" code="browser.unsupported.paragraph2"/>',
+    ie7RejectParagraph1: '<spring:message javaScriptEscape="true" code="browser.unsupported.paragraph1.for.ie7.compat.view"/>',
+    ie7RejectHeader:'<spring:message javaScriptEscape="true" code="browser.unsupported.header.for.ie7.compat.view"/>'
+    
    };
    </script>
    <script type="text/javascript" src="/portal/js/appIE6reject.js"></script>

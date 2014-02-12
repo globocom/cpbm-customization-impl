@@ -127,7 +127,7 @@
         <span style="padding:5px 0 0 0;margin-left:10px;"> |</span>
          </p> 
        <p>
-       <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/productBundles/${catalog.id}/editurc"/>"/>
+       <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/productBundles/${catalog.id}/editurc"/>"/>
        <input tabindex="210"   class="commonbutton submitmsg" rel="<spring:message code="ui.products.label.edit.saving"/>" type="submit" value="<spring:message code="ui.products.label.edit.save"/>"/> </p>
        <div class="main_addnew_formbox_errormsg" id="miscFormErrors" style="margin:5px 0 0 10px"></div>
     </div>    

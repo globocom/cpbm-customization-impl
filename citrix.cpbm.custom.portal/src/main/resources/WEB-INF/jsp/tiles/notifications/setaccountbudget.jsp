@@ -83,7 +83,7 @@ $("#tenantForm").validate( {
                         
                     </ol>
          
-                <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/tenants/set_account_budget"/>"/>
+                <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/tenants/set_account_budget"/>"/>
             	
          </form:form>
 

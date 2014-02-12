@@ -316,7 +316,7 @@ $("#createTicketCommentForm").validate( {
                          </div>
                  </div>                            
              </div>
-        <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/support/tickets/edit"/>"/>
+        <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/support/tickets/edit"/>"/>
             <input type="hidden"  id="statusFilter" name="statusFilter" value="<c:out value="${statusFilter}"/>"/>
             <input type="hidden" id="tenant" name="tenant" value="<c:out value="${tenant.param}"/>"/>
             <input type="hidden"  id="sortType" name="sortType" value="<c:out value="${sortType}"/>"/>

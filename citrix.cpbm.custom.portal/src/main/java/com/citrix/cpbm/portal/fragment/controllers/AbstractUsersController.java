@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright ¬© 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.io.UnsupportedEncodingException;
@@ -583,7 +582,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return View
    */
   @RequestMapping(value = {
-      "/{userParam}/myprofile"
+    "/{userParam}/myprofile"
   }, method = RequestMethod.GET)
   public String edit(@RequestParam(value = "activeTab", required = false) String currentTab,
       @PathVariable String userParam, HttpServletRequest request, ModelMap map) {
@@ -800,7 +799,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
    * @return
    */
   @RequestMapping(value = {
-      "/{userParam}/myprofile"
+    "/{userParam}/myprofile"
   }, method = RequestMethod.POST)
   public String edit(@PathVariable String userParam, @Valid @ModelAttribute("user") UserForm form,
       BindingResult result, HttpServletRequest request, ModelMap map, SessionStatus status) {
@@ -880,7 +879,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       user.setEmail(userClone.getEmail());
       user.setEmailVerified(true);
     }
-    user = userService.save(user, result);
+    userService.update(user, result);
     form.setUser(user);
     map.addAttribute("user", form);
     setPage(map, Page.USER_PERSONAL_PROFILE);
@@ -1085,7 +1084,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       if (locale == null) {
         user.setLocale(null);
       }
-      user = userService.save(user, result);
+      userService.update(user, result);
       User savedUser = userService.getUserByParam("username", user.getUsername(), false);
       form.setUser((com.citrix.cpbm.access.User) CustomProxy.newInstance(savedUser));
       map.addAttribute("user", form);

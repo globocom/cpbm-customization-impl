@@ -9,7 +9,7 @@
 	<properties>
 		<org.springframework.version>3.0.7.RELEASE</org.springframework.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<cpbm.version>2.1.1</cpbm.version>
+		<cpbm.version>2.1.2</cpbm.version>
 		<log4j.version>1.2.16</log4j.version>
 		<log4j-extra.version>1.0</log4j-extra.version>
 		<wiser.version>1.2</wiser.version>
@@ -20,7 +20,7 @@
 	  <dependency>
       <groupId>citrix</groupId>
       <artifactId>cloud.apachecloudstack</artifactId>
-      <version>1.1.0</version>
+      <version>1.1.1</version>
       <scope>compile</scope>
     </dependency>
 		<dependency>

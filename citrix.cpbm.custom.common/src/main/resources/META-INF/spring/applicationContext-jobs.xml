@@ -97,12 +97,12 @@
     <property name="volatility" value="false" />
   </bean>
 
-  <bean id="workflowJobTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+  <bean id="workflowJobTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
     <property name="jobDetail" ref="workflowJob" /> 
     <property name="startDelay" value="10000" />
-    <property name="repeatInterval" value="5000" />
+    <property name="cronExpression" value="0/5 * * * * ?" />
     <property name="volatility" value="false" /> 
-    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_RESCHEDULE_NEXT_WITH_EXISTING_COUNT"></property>
+    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_DO_NOTHING"></property>
   </bean>
   
   <bean name="subscriptionValidationJob" class="org.springframework.scheduling.quartz.JobDetailBean">
@@ -111,12 +111,12 @@
     <property name="volatility" value="false" />
   </bean>
 
-  <bean id="subscriptionValidationJobTrigger" class="org.springframework.scheduling.quartz.SimpleTriggerBean">
+  <bean id="subscriptionValidationJobTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
     <property name="jobDetail" ref="subscriptionValidationJob" /> 
     <property name="startDelay" value="10000" />
-    <property name="repeatInterval" value="3600000" />
+    <property name="cronExpression" value="0 0 0/1 1/1 * ? *"/>
     <property name="volatility" value="false" /> 
-    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_RESCHEDULE_NEXT_WITH_EXISTING_COUNT"></property>
+    <property name="misfireInstructionName" value="MISFIRE_INSTRUCTION_DO_NOTHING"></property>
   </bean>
   
    <bean name="billingExportJob" class="org.springframework.scheduling.quartz.JobDetailBean">

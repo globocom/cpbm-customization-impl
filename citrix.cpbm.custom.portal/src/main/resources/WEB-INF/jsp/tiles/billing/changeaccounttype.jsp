@@ -283,7 +283,7 @@
             <p>
               <a href="#"  tabindex="115" id="changeAccountTypeCancelLink"><spring:message code="label.cancel"/></a>
             </p>
-            <input type="hidden" name="<csrf:token-name/>" value="<csrf:token-value uri="portal/billing/changeaccounttype"/>"/>
+            <input type="hidden" name="<csrf:tokenname/>" value="<csrf:tokenvalue uri="portal/billing/changeaccounttype"/>"/>
             <input tabindex="114" type="submit" rel="<spring:message code="label.saving"/>" class="commonbutton submitmsg" value="<spring:message code="label.save"/>"/>
           </div>
         </div>
