@@ -746,8 +746,9 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
         currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
       map.addAttribute("selectedCurrency", currency);
-      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode()).getDefaultFractionDigits());
-      
+      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode())
+          .getDefaultFractionDigits());
+
       final Tenant tenant = tenantService.getSystemTenant();
       final Channel finalChannel = channel;
       Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {
@@ -799,29 +800,40 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     Map<String, String> responseMap = new HashMap<String, String>();
     if (!resourceType.equals(SERVICEBUNDLE)) {
       Service service = connectorConfigurationManager.getInstance(serviceInstaceUuid).getService();
-      for (ServiceResourceType serviceResourceType : service.getServiceResourceTypes()) {
-        if (serviceResourceType.getResourceTypeName().equals(resourceType)) {
-          for (ServiceResourceTypeProperty serviceResourceTypeProperty : serviceResourceType
-              .getServiceResourceTypeProperty()) {
-            JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(configurationData);
-            String fieldValue = (String) jsonObject.get(serviceResourceTypeProperty.getName());
-            String validationResult = CssdkConstants.FAILURE;
-            try {
-              String propertyName = service.getServiceName() + ".ResourceType." + resourceType + "."
-                  + serviceResourceTypeProperty.getName() + ".name";
-              validationResult = ValidationUtil.valid(serviceResourceTypeProperty.getValidation(),
-                  messageSource.getMessage(propertyName, null, getSessionLocale(request)), fieldValue, messageSource);
-            } catch (Exception e) {
-              logger.error(e);
-            }
-            if (!CssdkConstants.SUCCESS.equals(validationResult)) {
-              responseMap.put("validationResult", validationResult);
-              response.setStatus(AJAX_FORM_VALIDATION_FAILED_CODE);
-              return responseMap;
-            }
+      Subscription currentSubscription = null;
+      if (StringUtils.isNotBlank(subscriptionId)) {
+        try {
+          currentSubscription = subscriptionService.locateSubscriptionById(Long.parseLong(subscriptionId));
+        } catch (NumberFormatException e) {
+          throw new SubscriptionServiceException("Invalid Subscription Id:" + subscriptionId);
+        }
+      }
 
+      if (currentSubscription == null || currentSubscription.getActiveHandle() == null) {
+        for (ServiceResourceType serviceResourceType : service.getServiceResourceTypes()) {
+          if (serviceResourceType.getResourceTypeName().equals(resourceType)) {
+            JSONObject jsonObject = (JSONObject) JSONSerializer.toJSON(configurationData);
+            for (ServiceResourceTypeProperty serviceResourceTypeProperty : serviceResourceType
+                .getServiceResourceTypeProperty()) {
+              String fieldValue = (String) jsonObject.get(serviceResourceTypeProperty.getName());
+              String validationResult = CssdkConstants.FAILURE;
+              try {
+                String propertyName = service.getServiceName() + ".ResourceType." + resourceType + "."
+                    + serviceResourceTypeProperty.getName() + ".name";
+                validationResult = ValidationUtil.valid(serviceResourceTypeProperty.getValidation(),
+                    messageSource.getMessage(propertyName, null, getSessionLocale(request)), fieldValue, messageSource);
+              } catch (Exception e) {
+                logger.error(e);
+              }
+              if (!CssdkConstants.SUCCESS.equals(validationResult)) {
+                responseMap.put("validationResult", validationResult);
+                response.setStatus(AJAX_FORM_VALIDATION_FAILED_CODE);
+                return responseMap;
+              }
+
+            }
+            break;
           }
-          break;
         }
       }
     }

@@ -58,6 +58,8 @@ function initCreateSubscription() {
   var isReconfigure = isNotBlank($("#isReconfigure").val());
   var isReprovision = isNotBlank(subscriptionId) && !isReconfigure;
 
+  var selectedSubscriptionId = null;
+  
   // This is the id used to keep track of the selected tab out of 'New Subscriptions' or 'Unprovisioned subscriptions'
   var selectedBundleTab = isNotBlank(subscriptionId) ? "view_subscriptions_tab" : "view_bundles_tab";
 
@@ -588,12 +590,10 @@ function initCreateSubscription() {
       $("#one_time_charges_content_area").show();
       $("#recurring_charges_content_area").show();
 
-      if (subscriptionId) {
-        newSubscriptionId = subscriptionId;
-        if (isReconfigure) {
-          for (var i = 0; i < resourceProperties.length; i++) {
-            $("input[name='prop_" + resourceProperties[i] + "']").prop('disabled', true);
-          }
+      newSubscriptionId = selectedSubscriptionId;
+      if (isReconfigure) {
+        for (var i = 0; i < resourceProperties.length; i++) {
+          $("input[name='prop_" + resourceProperties[i] + "']").prop('disabled', true);
         }
       }
 
@@ -606,8 +606,6 @@ function initCreateSubscription() {
       }
 
       update_price_summary();
-
-      subscriptionId = $("#subscriptionId").val();
 
       if (isReconfigure) {
         $("#componentsSectionProvisionPage").find('input:radio').each(function() {
@@ -720,7 +718,7 @@ function initCreateSubscription() {
 
     var bundleRevisionObj = $(currentBundleTemplate).data("bundleRevisionObj");
     bundleObj = bundleRevisionObj.productBundle;
-    subscriptionId = $(currentBundleTemplate).data("subscriptionId");
+    selectedSubscriptionId = $(currentBundleTemplate).data("subscriptionId");
     bundleObj_id = bundleRevisionObj.pbid;
 
     populateRCsAndFiltersStep2();
