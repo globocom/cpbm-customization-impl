@@ -22,12 +22,6 @@
     <portal.appresources.version>2.2.0</portal.appresources.version>
 
 	</properties>
-   <modules>
-    <module>../citrix.cpbm.custom.model</module>
-    <module>../citrix.cpbm.custom.common</module>
-    <module>../citrix.cpbm.custom.portal</module>
-   </modules>
-
 	<build>
 		<pluginManagement>
 			<plugins>
