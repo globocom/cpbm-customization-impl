@@ -36,8 +36,8 @@ import web.WebTestsBase;
 
 import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
-import com.citrix.cpbm.platform.spi.BaseMetadataRegistry;
 import com.citrix.cpbm.platform.spi.CloudConnector;
+import com.citrix.cpbm.platform.spi.MetadataRegistry;
 import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
 import com.vmops.model.Category;
 import com.vmops.model.Channel;
@@ -145,7 +145,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
   public void prepareMock() {
     MockCloudInstance mock = this.getMockCloudInstance();
     CloudConnector connector = mock.getCloudConnector();
-    BaseMetadataRegistry metadataRegistry = mock.getMetadataRegistry();
+    MetadataRegistry metadataRegistry = mock.getMetadataRegistry();
     Map<String, String> discriminatorMap = new HashMap<String, String>();
     EasyMock.expect(metadataRegistry.getDiscriminatorValues(EasyMock.anyObject(String.class)))
         .andReturn(discriminatorMap).anyTimes();
