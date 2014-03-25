@@ -22,6 +22,9 @@
    <c:when test="${invoiceType eq 'CloseOut'}">
      <jsp:include page="closeout_invoice_details.jsp"></jsp:include>
    </c:when>
+   <c:when test="${invoiceType eq 'Adjustment'}">
+      <jsp:include page="adjustment_invoice_details.jsp"></jsp:include>
+   </c:when>
    <c:otherwise>
         <jsp:include page="other_invoice_details.jsp"></jsp:include>
    </c:otherwise>

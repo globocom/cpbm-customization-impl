@@ -7,7 +7,7 @@
 
 <spring:message code="dateonly.format" var="date_format"/> 
 <script type="text/javascript">
-  var effective_date_str = '<spring:message javaScriptEscape="true" code="label.catalog.utilityrate.effective.date"/> <fmt:formatDate value="${startDate}" pattern="${date_format}" timeZone="${currentUser.timeZone}"/>';
+  var effective_date_str = '<fmt:formatDate value="${startDate}" pattern="${date_format}" timeZone="${currentUser.timeZone}"/>';
 </script>
 <c:if test="${isDialog eq 'true' }">
   <div class="utilityrates_dialog_header">

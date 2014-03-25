@@ -1096,7 +1096,7 @@ public abstract class AbstractUsersController extends AbstractAuthenticatedContr
       returnMap.put("localeChange", "true");
     }
     map.addAttribute("userLocale", this.getLocaleDisplayName(user.getLocale()));
-    returnMap.put("timeZone", timeZone);
+    returnMap.put("timeZone", user.getTimeZone());
     returnMap.put("locale", this.getLocaleDisplayName(user.getLocale()));
     if (timeZone != null) {
       returnMap.put("lastLogin", ""

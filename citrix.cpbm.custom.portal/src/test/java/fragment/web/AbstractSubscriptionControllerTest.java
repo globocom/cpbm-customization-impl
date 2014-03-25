@@ -198,7 +198,7 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
       };
 
       controller.utilityrates_table(tenant.getParam(), instance.getUuid(), "VirtualMachine", "PSI_UD1=10", "USD",
-          "false", map, request);
+          "false", null, null, null, null, map, request);
 
       Assert.assertEquals(channelService.getCurrentRevision(channel).getStartDate(), map.get("startDate"));
       int i = 0;
@@ -240,7 +240,7 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
 
       request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
       controller.utilityrates_table(tenant.getParam(), instance.getUuid(), "VirtualMachine", "PSI_UD1=10", "JPY",
-          "false", map, request);
+          "false", null, null, null, null, map, request);
 
       Assert.assertEquals(channelService.getCurrentRevision(channel).getStartDate(), map.get("startDate"));
       int i = 0;

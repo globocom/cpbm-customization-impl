@@ -3702,7 +3702,7 @@ public class AbstractProductsControllerTest extends WebTestsBase {
       String contextString = "PSI_UD1=10";
       request.setAttribute("effectiveTenant", tenantDAO.find(3L));
       List<ProductCharge> productCharges = productsController.listProducts(serviceInstanceDAO.find(1L).getUuid(),
-          "PSI_RT1", contextString, false, null, null, false, request);
+          "PSI_RT1", contextString, false, null, null, false, null, null, null, null, request);
 
       boolean productFound = false;
       for (ProductCharge c : productCharges) {

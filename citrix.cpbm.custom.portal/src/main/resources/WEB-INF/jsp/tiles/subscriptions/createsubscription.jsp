@@ -54,6 +54,7 @@ var subscriptionButtonVisiblity = true;
         label_back_to_catalog:'<spring:message javaScriptEscape="true" code="label.subscribe.backtocatalog" />',
         msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />',
         msg_any_required_component:'<spring:message javaScriptEscape="true" code="message.catalog.any.resource.component" />',
+        eff_date_not_yet_set:'<spring:message javaScriptEscape="true" code="ui.label.plan.date.not.yet.set" />',
         cloud_service_down:'<spring:message javaScriptEscape="true" code="cloud.service.down" />'
     };
 

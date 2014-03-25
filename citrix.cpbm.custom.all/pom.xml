@@ -5,8 +5,10 @@
 	<artifactId>citrix.cpbm.custom.all</artifactId>
 	<version>2.2.0</version>
 	<packaging>pom</packaging>
-          
-        <modules>
+
+
+
+         <modules>
          <module>../citrix.cpbm.custom.model</module>
          <module>../citrix.cpbm.custom.common</module>
          <module>../citrix.cpbm.custom.portal</module>

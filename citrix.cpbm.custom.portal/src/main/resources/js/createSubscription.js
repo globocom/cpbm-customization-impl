@@ -337,9 +337,11 @@ function initCreateSubscription() {
     $("#SECTION_2").hide();
     $("#SECTION_3").hide();
     $("#SECTION_4").hide();
-    $("#effective_date_box").text('');
     populateUtilityRatesTable($("#tenantParam").val(), $("#serviceInstanceUuid").val());
-    $("#effective_date_box").text(effective_date_str);
+    $("#effective_date_box").append(effective_date_str);
+    if(isBlank(effective_date_str)) {
+      $("#effective_date_box").append(dictionary.eff_date_not_yet_set);  
+    }
     $("#pay_as_you_go_action_container_2").show();
   }
 
@@ -465,7 +467,7 @@ function initCreateSubscription() {
       type: "GET",
       async: true,
       cache: false,
-      url: "/portal/portal/products/listProductsForSelectedContext",
+      url: appendChannelAndRevision("/portal/portal/products/listProductsForSelectedContext"),
       data: {
         serviceInstanceUuid: $("#serviceInstanceUuid").val(),
         resourceType: resourceTypeSelection,
@@ -686,8 +688,8 @@ function initCreateSubscription() {
   }
 
   function viewUtilityPricing() {
-    var utility_url = "/portal/portal/subscription/utilityrates_table?tenant=" + tenantParam + "&currencyCode=" + $(
-      "#selectedcurrencytext").text();
+    var utility_url = appendChannelAndRevision("/portal/portal/subscription/utilityrates_table");
+    utility_url += "&tenant=" + tenantParam + "&currencyCode=" + $("#selectedcurrencytext").text();
     if (serviceInstaceUuid != null) {
       var filterString = getSelectedFilterString();
       var contextString = getContextString();
@@ -1769,13 +1771,21 @@ function initCreateSubscription() {
     }
   }
 
-  function populateUtilityRatesTable(tenant, serviceInstanceUuid) {
+  function appendChannelAndRevision(url) {
+    var channelId = $("#channelId").length == 0 ? "" : $("#channelId").val();
+    var revision = $("#revision").length == 0 ? "" : $("#revision").val();
+    var dateFormat = $("#dateFormat").length == 0 ? "" : $("#dateFormat").val();
+    var revisionDate = $("#revisionDate").length == 0 ? "" : $("#revisionDate").val();
+    return url += "?revision=" + revision + "&channelParam=" + channelId + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat;
+  }
+  
+  function populateUtilityRatesTable(tenant, serviceInstanceUuid, revision) {
     var currencyCode = $("#selectedcurrencytext").text();
     var returnHtml = null;
     $.ajax({
       type: "GET",
       async: false,
-      url: "/portal/portal/subscription/utilityrates_table",
+      url: appendChannelAndRevision("/portal/portal/subscription/utilityrates_table"),
       data: {
         tenant: tenant,
         serviceInstanceUuid: serviceInstanceUuid,

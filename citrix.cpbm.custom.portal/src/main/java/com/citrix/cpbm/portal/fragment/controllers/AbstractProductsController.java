@@ -7,6 +7,8 @@ package com.citrix.cpbm.portal.fragment.controllers;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.PrivilegedAction;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1364,21 +1366,45 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
       @RequestParam(value = "filters", required = false) final String filters,
       @RequestParam(value = "currencyCode", required = false) String currencyCode,
       @RequestParam(value = "listAll", required = false, defaultValue = "false") final boolean listAll,
+      @RequestParam(value = "channelParam", required = false) String channelParam,
+      @RequestParam(value = "revision", required = false) String timeline,
+      @RequestParam(value = "revisionDate", required = false) String revisionDateString,
+      @RequestParam(value = "dateFormat", required = false) String dateFormat,
       HttpServletRequest request) throws ConnectorManagementServiceException {
+
     Tenant tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
     Channel channel = null;
     CurrencyValue currency = null;
-    if (tenant == null) {
-      channel = channelService.getDefaultServiceProviderChannel();
+
+    if (StringUtils.isNotBlank(channelParam) && StringUtils.isNotBlank(currencyCode)) {
+      channel = channelService.getChannelById(channelParam);
       currency = currencyValueService.locateBYCurrencyCode(currencyCode);
     } else {
-      channel = tenant.getSourceChannel();
-      currency = tenant.getCurrency();
+      if (tenant == null) {
+        channel = channelService.getDefaultServiceProviderChannel();
+        currency = currencyValueService.locateBYCurrencyCode(currencyCode);
+      } else {
+        channel = tenant.getSourceChannel();
+        currency = tenant.getCurrency();
+      }
     }
+
     if (channel == null) {
       channel = channelService.getDefaultServiceProviderChannel();
       if (currencyCode != null && !currencyCode.equals("")) {
         currency = currencyValueService.locateBYCurrencyCode(currencyCode);
+      }
+    }
+
+    Date revisionDate = null;
+
+    if (StringUtils.isNotBlank(dateFormat) && !dateFormat.equals("undefined")) {
+      SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+      try {
+        revisionDate = sdf.parse(revisionDateString);
+      } catch (ParseException e) {
+        logger.info("Incorrect date passed in revision date : " + revisionDateString + " for date format " + dateFormat
+            + ". Skipping...");
       }
     }
 
@@ -1396,9 +1422,8 @@ public abstract class AbstractProductsController extends AbstractAuthenticatedCo
         }
       }
       if (listAll) {
-
-        if (tenant == null) {
-          Revision revision = channelService.getCurrentRevision(channel);
+        if (tenant == null || tenant.equals(tenantService.getSystemTenant())) {
+          Revision revision = channelService.getRevision(channel, timeline, revisionDate);
           ChannelRevision channelRevision = channelService.getChannelRevision(revision, currency, channel);
           productRevisions = channelRevision.getProductRevisions();
         } else {
