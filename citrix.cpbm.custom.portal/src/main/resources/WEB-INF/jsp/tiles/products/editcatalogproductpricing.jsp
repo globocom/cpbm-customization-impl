@@ -65,15 +65,19 @@
                 <c:forEach var="currency" items="${supportedCurrencies}">
                   <div class="widget_grid_cell" style="width:108px;">
                     <span class="celltext">
+                    <c:set var="previousValue" value="${product.value[currency]['catalog'].price}" />
+                    <c:if test="${empty previousValue }">
+                      <fmt:formatNumber var="previousValue" pattern="${currencyFormat}" minFractionDigits="${4}" value="0" />
+                    </c:if>
                        <div class="mandatory_wrapper" style="margin:0px 0px 0px -5px;">
                           <input style="margin: 0px 0px 0px 10px; width: 80px; height: 16px;" id="currencyValsWeNeed<c:out value='${currency.currencyCode}${product.key.name} }'/>"
 				                         class="text priceRequired j_pricerequired"
-				                         value='<c:out value="${fullProductPricingMap[product.key][currency]['catalog'].price}" />'
-                                 previousvalue='<c:out value="${fullProductPricingMap[product.key][currency]['catalog'].price}" />'
+				                         value='${previousValue}'
+                                 previousvalue='${previousValue}'
 				                         currencyId='<c:out value="${currency.id}" />'
 				                         currencycode='<c:out value="${currency.currencyCode}" />'
 				                         productId='<c:out value="${product.key.id}" />' />
-				                   <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${fullProductPricingMap[product.key][currency]['rpb'].price}"/>)</span>
+				                   <span style="height:auto; margin: 0px 0px 0px 10px; width: 80px; height: 16px; font-style:italic; color:#666;" title="<spring:message code='label.reference.price'/>">(<fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}" value="${product.value[currency]['rpb'].price}"/>)</span>
                        </div>
                   </span>
                  </div>

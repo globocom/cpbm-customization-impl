@@ -322,9 +322,11 @@ function initCreateSubscription() {
     $("#SECTION_2").hide();
     $("#SECTION_3").hide();
     $("#SECTION_4").hide();
-    $("#effective_date_box").text('');
     populateUtilityRatesTable($("#tenantParam").val(), $("#serviceInstanceUuid").val());
-    $("#effective_date_box").text(effective_date_str);
+    $("#effective_date_box").append(effective_date_str);
+    if(isBlank(effective_date_str)) {
+      $("#effective_date_box").append(dictionary.eff_date_not_yet_set);  
+    }
     $("#pay_as_you_go_action_container_2").show();
   }
 
@@ -450,7 +452,7 @@ function initCreateSubscription() {
       type: "GET",
       async: true,
       cache: false,
-      url: "/portal/portal/products/listProductsForSelectedContext",
+      url: appendChannelAndRevision("/portal/portal/products/listProductsForSelectedContext"),
       data: {
         serviceInstanceUuid: $("#serviceInstanceUuid").val(),
         resourceType: resourceTypeSelection,
@@ -727,8 +729,8 @@ function initCreateSubscription() {
   }
 
   function viewUtilityPricing() {
-    var utility_url = "/portal/portal/subscription/utilityrates_table?tenant=" + tenantParam + "&currencyCode=" + $(
-      "#selectedcurrencytext").text();
+    var utility_url = appendChannelAndRevision("/portal/portal/subscription/utilityrates_table");
+    utility_url += "&tenant=" + tenantParam + "&currencyCode=" + $("#selectedcurrencytext").text();
     if (serviceInstaceUuid != null) {
       var filterString = getSelectedFilterString();
       var contextString = getContextString();
@@ -1457,7 +1459,7 @@ function initCreateSubscription() {
   function prepareSelectedCategory() {
 
     var refreshPage = function rePopulateCreateSubscription(serviceInstanceUuid, tenantParam) {
-      window.location = getPrefixedLocation($("#resourceType").val());
+      window.location = getPrefixedLocation($("#resourceType").val(), serviceInstanceUuid, tenantParam);
     };
 
     var selectedCategory = $("#selectedCategory").val();
@@ -1695,7 +1697,7 @@ function initCreateSubscription() {
   }
 
   function changeResourceType(selectedResourceType) {
-    window.location = getPrefixedLocation(selectedResourceType);
+    window.location = getPrefixedLocation(selectedResourceType, $("#serviceInstanceUuid").val(), $("#tenantParam").val());
   }
 
   function callBackAfterPromiseStep1() {
@@ -1739,13 +1741,21 @@ function initCreateSubscription() {
     }
   }
 
-  function populateUtilityRatesTable(tenant, serviceInstanceUuid) {
+  function appendChannelAndRevision(url) {
+    var channelId = $("#channelId").length == 0 ? "" : $("#channelId").val();
+    var revision = $("#revision").length == 0 ? "" : $("#revision").val();
+    var dateFormat = $("#dateFormat").length == 0 ? "" : $("#dateFormat").val();
+    var revisionDate = $("#revisionDate").length == 0 ? "" : $("#revisionDate").val();
+    return url += "?revision=" + revision + "&channelParam=" + channelId + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat;
+  }
+  
+  function populateUtilityRatesTable(tenant, serviceInstanceUuid, revision) {
     var currencyCode = $("#selectedcurrencytext").text();
     var returnHtml = null;
     $.ajax({
       type: "GET",
       async: false,
-      url: "/portal/portal/subscription/utilityrates_table",
+      url: appendChannelAndRevision("/portal/portal/subscription/utilityrates_table"),
       data: {
         tenant: tenant,
         serviceInstanceUuid: serviceInstanceUuid,
@@ -2193,8 +2203,8 @@ function enableProvisionButton(enable, msg) {
   }
 }
 
-function getPrefixedLocation(selectedResourceType) {
-  var locationPrefix = "/portal/portal/subscription/createsubscription";
+function getPrefixedLocation(selectedResourceType, serviceInstanceUuid, tenantParam) {
+  var locationPrefix = "";
   if ($("#anonymousBrowsing").val() == 'true') {
     locationPrefix = "/portal/portal/catalog/browse_catalog";
     var currencyCode = $("#selectedcurrencytext").html();
@@ -2211,18 +2221,17 @@ function getPrefixedLocation(selectedResourceType) {
     var revisionDate = $("#revisionDate").val();
     var currencyCode = $("#selectedcurrencytext").html();
     locationPrefix = locationPrefix + "?viewCatalog=true&revision=" + revision + "&channelParam=" + channelId +
-      "&currencyCode=" + currencyCode + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat
-    locationPrefix = locationPrefix + "&tenant=" + $("#tenantParam").val()
+      "&currencyCode=" + currencyCode + "&revisionDate=" + revisionDate + "&dateFormat=" + dateFormat;
+    locationPrefix = locationPrefix + "&tenant=" + tenantParam;
   } else {
-    locationPrefix = locationPrefix + "?tenant=" + $("#tenantParam").val()
-    if (isPayAsYouGoChosen) {
-      locationPrefix += "&isPayAsYouGoChosen=true";
-    }
+    locationPrefix = "/portal/portal/subscription/createsubscription?tenant=" + tenantParam;
   }
-  if (selectedResourceType != null) {
+  if (selectedResourceType != null && serviceInstanceUuid == $("#serviceInstanceUuid").val()) {
+    // Reset the selected resource type in case service instance is changed (either of same category or different category)
+    // Because its not necessary that the new service instance has the resource type selected previously
     locationPrefix = locationPrefix + "&resourceType=" + selectedResourceType;
   }
-  locationPrefix = locationPrefix + "&serviceInstanceUUID=" + $("#serviceInstanceUuid").val()
+  locationPrefix = locationPrefix + "&serviceInstanceUUID=" + serviceInstanceUuid;
 
   return locationPrefix;
 }

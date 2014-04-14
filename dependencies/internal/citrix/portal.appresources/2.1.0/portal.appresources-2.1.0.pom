@@ -74,7 +74,7 @@
             <Bundle-Vendor></Bundle-Vendor>
             <Export-Package></Export-Package>
             <Import-Package></Import-Package>
-            <Application-ResourceVersion>1.9.2</Application-ResourceVersion>
+            <Application-ResourceVersion>1.9.3</Application-ResourceVersion>
             <Bundle-ClassPath>patch.jar,.</Bundle-ClassPath>
           </instructions>
         </configuration> 

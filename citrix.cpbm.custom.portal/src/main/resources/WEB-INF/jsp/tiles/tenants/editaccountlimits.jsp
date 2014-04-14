@@ -55,7 +55,7 @@ $("#submitbutton").unbind("click").bind("click", function(event) {
 									<c:choose>
 										<c:when test="${account_control_property.type=='Boolean'}">
 											<c:choose>
-											<c:when test="${resLimitMap[account_control_property.name]} eq true}">
+											<c:when test="${resLimitMap[account_control_property.name] eq true}">
 												<span style="padding-left: 6px;" />
 											<span>
 												<input type="radio" disabled='disabled' id="configbooleantrue<c:out value="${account_control_property.id}"/>"

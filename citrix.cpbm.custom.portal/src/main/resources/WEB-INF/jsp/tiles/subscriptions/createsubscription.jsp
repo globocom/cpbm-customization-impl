@@ -53,7 +53,8 @@
         error_select_required_rcs:'<spring:message javaScriptEscape="true" code="error.catalog.Select.missing.components" />',
         label_configure:'<spring:message javaScriptEscape="true" code="label.configure" />',
         label_back_to_catalog:'<spring:message javaScriptEscape="true" code="label.subscribe.backtocatalog" />',
-        msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />'
+        msg_no_values_for_required_components:'<spring:message javaScriptEscape="true" code="message.no.values.for.required.components" />',
+        eff_date_not_yet_set:'<spring:message javaScriptEscape="true" code="ui.label.plan.date.not.yet.set" />'
     };
 
     var l10dict = new Array();

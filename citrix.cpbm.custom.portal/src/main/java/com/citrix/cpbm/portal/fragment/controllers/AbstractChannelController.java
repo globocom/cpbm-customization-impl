@@ -583,11 +583,13 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
     try {
       Channel channel = channelService.getChannelById(channelId);
       JSONArray jsonArray = new JSONArray(selectedProductBundles);
+      List<ProductBundle> productBundlesToAttach = new ArrayList<ProductBundle>();
       for (int index = 0; index < jsonArray.length(); index++) {
         String bundleId = jsonArray.getString(index);
         ProductBundle productBundle = productBundleService.getProductBundleById(Long.parseLong(bundleId));
-        productBundleService.addBundleToChannel(channel, productBundle);
+        productBundlesToAttach.add(productBundle);
       }
+      productBundleService.addBundlesToChannel(channel, productBundlesToAttach);
       status = true;
     } catch (ServiceException ex) {
       throw new InvalidAjaxRequestException(ex.getMessage());
@@ -625,21 +627,25 @@ public class AbstractChannelController extends AbstractAuthenticatedController {
 
     try {
       Channel channel = channelService.getChannelById(channelId);
-      Revision futureRevision = channelService.getFutureRevision(channel);
       JSONArray jsonArray = new JSONArray(currencyValData);
+      List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
       for (int index = 0; index < jsonArray.length(); index++) {
         JSONObject jsonObj = jsonArray.getJSONObject(index);
         BigDecimal previousVal = new BigDecimal(jsonObj.get("previousvalue").toString());
         BigDecimal newVal = new BigDecimal(jsonObj.get("value").toString());
         String currencyCode = jsonObj.get("currencycode").toString();
         String productId = jsonObj.get("productId").toString();
-
         if (!previousVal.equals(newVal)) {
           Product product = productService.locateProductById(productId);
           CurrencyValue currencyValue = currencyValueService.locateBYCurrencyCode(currencyCode);
-          productService.updatePriceForProduct(product, channel, currencyValue, newVal, futureRevision);
+          ProductCharge productCharge = new ProductCharge();
+          productCharge.setProduct(product);
+          productCharge.setCurrencyValue(currencyValue);
+          productCharge.setPrice(newVal);
+          productCharges.add(productCharge);
         }
       }
+      productService.updatePricesForProducts(productCharges, channel);
       status = true;
 
     } catch (ServiceException ex) {

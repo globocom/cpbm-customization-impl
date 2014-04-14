@@ -22,23 +22,21 @@
     $(current).find('.j_entitlements_action_menu').hide();
   }
 
-$(document).ready(function() {
 	
   var entitlementsPages = $('#entitlementsPages').val();
   var entitlementsCurrentPage = $('#entitlementsCurrentPage').val();
 
   if(entitlementsCurrentPage > 1) {
-    $("#entitlements_click_previous").removeClass("nonactive");
+    $("#entitlements_click_previous").removeClass("nonactive").addClass("active");
   } else {
-    $("#entitlements_click_previous").addClass("nonactive");
+    $("#entitlements_click_previous").addClass("nonactive").removeClass("active");
   }
 
   if(entitlementsCurrentPage == entitlementsPages) {
-    $("#entitlements_click_next").addClass("nonactive");
+    $("#entitlements_click_next").addClass("nonactive").removeClass("active");
   } else {
-    $("#entitlements_click_next").removeClass("nonactive");
+    $("#entitlements_click_next").removeClass("nonactive").addClass("active");
   }
-});
 
 </script>
 

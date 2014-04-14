@@ -46,6 +46,7 @@
     <intercept-url pattern="/portal/subscription/getFilterComponents" access="permitAll" />
     <intercept-url pattern="/portal/productBundles/list.json" access="permitAll" />
     <intercept-url pattern="/portal/verify_user" access="permitAll" />
+    <intercept-url pattern="/portal/verifyUser" access="permitAll" />
     <intercept-url pattern="/portal/verify_email" access="permitAll"/>
     <intercept-url pattern="/portal/setpassword" access="permitAll" />
     <intercept-url pattern="/portal/verify_additional_email" access="permitAll" />
