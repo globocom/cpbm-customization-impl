@@ -14,7 +14,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.security.PrivilegedAction;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -199,33 +202,62 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       @RequestParam(value = "resourceTypeName", required = false) String resourceTypeName,
       @RequestParam(value = "contextString", required = false) String contextString,
       @RequestParam(value = "currencyCode", required = false) String currencyCode,
-      @RequestParam(value = "isDialog", required = false) String isDialog, ModelMap map, HttpServletRequest request) {
+      @RequestParam(value = "isDialog", required = false) String isDialog,
+      @RequestParam(value = "channelParam", required = false) String channelParam,
+      @RequestParam(value = "revision", required = false) String timeline,
+      @RequestParam(value = "revisionDate", required = false) String revisionDateString,
+      @RequestParam(value = "dateFormat", required = false) String dateFormat, ModelMap map, HttpServletRequest request) {
     logger.debug("### utilityrates_table method starting...(GET)");
     Tenant tenant = (Tenant) request.getAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY);
     Channel channel = null;
     CurrencyValue currency = null;
-    if (tenant == null) {
-      channel = channelService.getDefaultServiceProviderChannel();
+
+    if (StringUtils.isNotBlank(channelParam) && StringUtils.isNotBlank(currencyCode)) {
+      channel = channelService.getChannelById(channelParam);
       currency = currencyValueService.locateBYCurrencyCode(currencyCode);
     } else {
-      channel = tenant.getSourceChannel();
-      currency = tenant.getCurrency();
+      if (tenant == null) {
+        // Public Browse Catalog Case:
+        // Use the default channel
+        channel = channelService.getDefaultServiceProviderChannel();
+        // Use currency selected in the drop down
+        currency = currencyValueService.locateBYCurrencyCode(currencyCode);
+      } else {
+        channel = tenant.getSourceChannel();
+        currency = tenant.getCurrency();
+      }
     }
+
     if (channel == null) {
       channel = channelService.getDefaultServiceProviderChannel();
       if (currencyCode != null && !currencyCode.equals("")) {
         currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
     }
+
+    Date revisionDate = null;
+
+    if (StringUtils.isNotBlank(dateFormat) && !dateFormat.equals("undefined")) {
+      SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+      try {
+        revisionDate = sdf.parse(revisionDateString);
+      } catch (ParseException e) {
+        logger.info("Incorrect date passed in revision date : " + revisionDateString + " for date format " + dateFormat
+            + ". Skipping...");
+      }
+    }
     List<ServiceResourceTypeGeneratedUsage> generatedUsageListForServiceResourceType = null;
-    Date startDate = productService.getCurrentRevision(channel.getCatalog()).getStartDate();
+
+    Date startDate = channelService.getRevision(channel, timeline, revisionDate).getStartDate();
+
     ServiceResourceType serviceResourceType = connectorConfigurationManager.getServiceResourceType(serviceInstanceUuid,
         resourceTypeName);
     if (serviceResourceType != null) {
       generatedUsageListForServiceResourceType = serviceResourceType.getServiceResourceGenerate();
     }
-    Map<Object, Object> retMap = productService.getCurrentUtilityChargesMap(channel, currency, serviceInstanceUuid,
-        null);
+
+    Map<Object, Object> retMap = productService.getUtilityChargesMap(channel, currency, serviceInstanceUuid, null,
+        timeline, revisionDate);
     map.addAttribute("retMap", retMap);
     map.addAttribute("startDate", startDate);
     map.addAttribute("generatedUsageListForServiceResourceType", generatedUsageListForServiceResourceType);
@@ -740,13 +772,13 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       map.addAttribute("channel", channel);
       map.addAttribute("currencies", currencies);
       map.addAttribute("anonymousBrowsing", true);
+      CurrencyValue currency = currencies.get(0);
       if (StringUtils.isNotBlank(currencyCode)) {
-        CurrencyValue currency = currencyValueService.locateBYCurrencyCode(currencyCode);
-        map.addAttribute("selectedCurrency", currency);
-      } else {
-        map.addAttribute("selectedCurrency", currencies.get(0));
+        currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
-
+      map.addAttribute("selectedCurrency", currency);
+      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode()).getDefaultFractionDigits());
+      
       final Tenant tenant = tenantService.getSystemTenant();
       final Channel finalChannel = channel;
       Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {

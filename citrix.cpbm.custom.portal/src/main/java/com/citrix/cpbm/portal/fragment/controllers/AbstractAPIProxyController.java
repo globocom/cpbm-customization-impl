@@ -98,9 +98,12 @@ public class AbstractAPIProxyController extends AbstractAuthenticatedController 
     OutputStream outputStream = null;
     try {
       outputStream = httpResponse.getOutputStream();
-      byte[] bytes = apiResponseObject.getResponseBody().getBytes();
-      httpResponse.setContentLength(bytes.length);
-      outputStream.write(bytes);
+      String responseBody = apiResponseObject.getResponseBody();
+      if (responseBody != null) {
+        byte[] bytes = responseBody.getBytes();
+        httpResponse.setContentLength(bytes.length);
+        outputStream.write(bytes);
+      }
     } catch (IOException e) {
       logger.error("Error: IO exception in writing to output stream: " + e.getMessage(), e);
     } finally {

@@ -11,7 +11,7 @@
     <h3>
       <spring:message code="label.catalog.utilityrate.title" />
     </h3>
-    <span id="effective_date_box" class="sub_title"></span>
+    <span id="effective_date_box" class="sub_title"><spring:message code="label.catalog.utilityrate.effective.date"/> </span>
   </div>
   <div class="page_heading_description">
     <p>
