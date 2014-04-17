@@ -1,10 +1,10 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
+*  Copyright ï¿½ 2013 Citrix Systems, Inc.
 *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
 *  Citrix Systems, Inc.
 */
 $(document).ready(function() {
-  
+
   activateThirdMenuItem("l3_subscriptions_tab");
 
   // Decide how to show 'List All' link and bind unbind accordingly
@@ -34,6 +34,10 @@ $(document).ready(function() {
   });
 
   $("#advSrchCancel").click(function() {
+	$("#dropdownfilter_users").val($('#useruuid').val());
+	$("#dropdownfilter_states").val($('#stateSelected').val());
+	$("#dropdownfilter_instances").val($('#instanceuuid').val());
+	$("#dropdownfilter_bundles").val($('#productBundleID').val());
     $("#advanceSearchDropdownDiv").hide(); 
   });
   
@@ -52,11 +56,11 @@ $(document).ready(function() {
   
   $("#advSrchSubmit").click(function() {
     
-    var useruuid = $("#dropdownfilter_users option:selected").val();
-    var state = $("#dropdownfilter_states option:selected").val();
-    var instanceParam = $("#dropdownfilter_instances option:selected").val();
-    var bundleId = $("#dropdownfilter_bundles option:selected").val();
-    
+	  var useruuid = $("#dropdownfilter_users option:selected").val();
+	  var state = $("#dropdownfilter_states option:selected").val();
+	  var instanceParam = $("#dropdownfilter_instances option:selected").val();
+	  var bundleId = $("#dropdownfilter_bundles option:selected").val();
+	  
     var $currentPage = 1;
     
     if ("true" == $("#usage_billing_my_usage").val()) {
@@ -99,6 +103,16 @@ $(document).ready(function() {
         $("#subscriptionState").html(resultObj.state);
         refreshGridRow(resultObj, $("li[id^='sub'].selected.subscriptions"));
         viewSubscription($("li[id^='sub'].selected.subscriptions"));
+      },
+      afterActionFailureFn : function(xhr, status) {
+        if(isNotBlank(xhr.responseText)) {
+          return dictionary.cloudServiceException + " : " + xhr.responseText;
+        }
+        return null;
+      },
+      afterActionCompleteFn: function(jqXHR, textStatus){
+        // adding this to override global ajaxSetup complete event handler
+        return;
       }
     },
     cancelsubscription: {
@@ -110,6 +124,10 @@ $(document).ready(function() {
         $("#subscriptionState").html(resultObj.state);
         refreshGridRow(resultObj, $("li[id^='sub'].selected.subscriptions"));
         viewSubscription($("li[id^='sub'].selected.subscriptions"));
+      },
+      afterActionCompleteFn: function(jqXHR, textStatus){
+        // adding this to override global ajaxSetup complete event handler
+        return;
       }
     }
   };
@@ -254,7 +272,7 @@ function viewSubscription(current) {
   $(current).addClass("selected active");
   var url = billingPath + "subscriptions/showDetails?tenant=" + $("#tenantParam").val();
   $.ajax({
-    type: "GET",
+    type: "POST",
     url: url,
     async: false,
     data: {

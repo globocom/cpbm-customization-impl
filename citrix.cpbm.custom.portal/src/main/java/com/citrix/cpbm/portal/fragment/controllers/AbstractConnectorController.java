@@ -146,6 +146,7 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
       setPage(map, Page.CRM_SERVICES);
       map.addAttribute("showUserProfile", true);
       uiView = "company_setup.connector_cs_admin";
+      map.addAttribute("spUserHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(user));
       user = tenant.getOwner();
     } else {
       setPage(map, Page.COMPANY_CONNECTORS_CS);
@@ -265,11 +266,6 @@ public abstract class AbstractConnectorController extends AbstractAuthenticatedC
         boolean isSystemActive = false; // get from RegistrationController
         map.addAttribute("isSystemActive", isSystemActive);
       }
-      Map<String, Boolean> isAliveMap = new HashMap<String, Boolean>();
-      for (Service service : services) {
-        getConnectorStatusMap(new ArrayList<ServiceInstance>(service.getServiceInstances()), isAliveMap);
-      }
-      map.addAttribute("isAliveMap", isAliveMap);
       view = isOss ? "main.home_connector_oss" : "main.home_connector_cs_admin";
     }
     map.addAttribute("userHasCloudServiceAccount", userService.isUserHasAnyActiveCloudService(getCurrentUser()));

@@ -363,7 +363,7 @@
                 </div>
               </div>
       <div class="widgetwizard_nextprevpanel sixstepswizard" id="buttons">
-        <input class="widgetwizard_nextprevpanel prevbutton" type="button" onclick="goToPreviousStepForTenant(this)" value="<spring:message code="label.previous.step"/>" name="<spring:message code="label.previous.step"/>" >
+        <input class="widgetwizard_nextprevpanel prevbutton" type="button" id="prevButtonEnableServiceStep" onclick="goToPreviousStepForTenant(this)" value="<spring:message code="label.previous.step"/>" name="<spring:message code="label.previous.step"/>" >
         <input class="widgetwizard_nextprevpanel nextbutton" type="button" id="enableServiceButton" uuid="${service.uuid}" action="save"  data-primary onclick="goToNextStepForTenant(this)" value="<spring:message code="label.enable"/>" name="<spring:message code="label.enable"/>" >
         <a href="javascript:void(0);" class="cancel close_enable_service_user_wizard" ><spring:message code="label.cancel" /></a>
       </div>

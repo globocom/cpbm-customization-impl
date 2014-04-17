@@ -404,6 +404,11 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       @Override
       public User run() {
         User user = userService.get(userParam);
+        Locale locale = user.getLocale();
+        if(locale!=null){
+          WebUtils.setSessionAttribute(request, SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME, locale);
+        }
+        
         return user;
       }
 
@@ -1469,8 +1474,8 @@ public abstract class AbstractRegistrationController extends AbstractBaseControl
       generatedUsageListForServiceResourceType = serviceResourceType.getServiceResourceGenerate();
     }
     map.addAttribute("generatedUsageListForServiceResourceType", generatedUsageListForServiceResourceType);
-    Map<Object, Object> retMap = productService.getCurrentUtilityChargesMap(channel, currency, serviceInstanceUuid,
-        null);
+    Map<Object, Object> retMap = productService.getUtilityChargesMap(channel, currency, serviceInstanceUuid,
+        null, null, null);
     map.addAttribute("retMap", retMap);
     map.addAttribute("currency", currency);
     map.addAttribute("startDate", productService.getCurrentRevision(channel.getCatalog()).getStartDate());

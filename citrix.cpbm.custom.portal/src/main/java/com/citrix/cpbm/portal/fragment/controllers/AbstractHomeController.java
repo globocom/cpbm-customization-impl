@@ -591,7 +591,8 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
 
     Map<String, Object> dashboardItem2 = new HashMap<String, Object>();
 
-    dashboardItem2.put("itemName", messageSource.getMessage("label.total.spend", null, getSessionLocale(request)));
+    dashboardItem2.put("itemName",
+        messageSource.getMessage("label.usage.billing.net.balance", null, getSessionLocale(request)));
     dashboardItem2.put("itemValue", spendToDate);
     dashboardItem2.put("itemValueType", "currency");
     dashboardItem2.put("itemImage", "dashboard_total_spend");
@@ -755,8 +756,7 @@ public abstract class AbstractHomeController extends AbstractAuthenticatedContro
       }
 
       Map<String, Object> dashboardItem2 = new HashMap<String, Object>();
-      dashboardItem2.put("itemName",
-          messageSource.getMessage("label.usage.billing.net.balance", null, getSessionLocale(request)));
+      dashboardItem2.put("itemName", messageSource.getMessage("label.total.spend", null, getSessionLocale(request)));
       dashboardItem2.put("itemValue", totalSpendByTenantByInstance);
       dashboardItem2.put("itemValueType", "currency");
       dashboardItem2.put("itemImage", "dashboard_total_spend");

@@ -309,7 +309,7 @@ public abstract class AbstractBillingController extends AbstractAuthenticatedCon
     return "billing.showSubscriptions";
   }
 
-  @RequestMapping(value = "/subscriptions/showDetails", method = RequestMethod.GET)
+  @RequestMapping(value = "/subscriptions/showDetails", method = RequestMethod.POST)
   public String showSubscriptionDetails(@RequestParam(value = "id", required = true) String uuid,
       @RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
     logger.debug("Entry ShowSubscriptionDetails with Id:" + uuid);

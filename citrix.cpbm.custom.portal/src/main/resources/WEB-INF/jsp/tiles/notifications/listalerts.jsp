@@ -25,7 +25,7 @@ var dictionary = {
     alertHighchartYAxisTitle: '<spring:message javaScriptEscape="true" code="all.alerts.chart.y.axis.name"/>',
     alertHighchartCategory1: '<spring:message javaScriptEscape="true" code="all.alerts.chart.category.1"/>',
     alertHighchartSeriesName1: '<spring:message javaScriptEscape="true" code="all.alerts.chart.label.spend.level"/>',
-    alertHighchartCriteriaTooltip:"<spring:message javaScriptEscape="true" code="all.alerts.chart.criteria.tooltip"/>",
+    alertHighchartCriteriaTooltip:'<spring:message javaScriptEscape="true" htmlEscape="false" code="all.alerts.chart.criteria.tooltip"/>',
     alertHighchartCriteriaTooltipPercentage: '<spring:message javaScriptEscape="true" code="all.alerts.chart.criteria.tooltip.percentage" arguments="${subscription.percentage}"/>',
     alertHighchartCriteriaTooltipEmail: '<spring:message javaScriptEscape="true" code="all.alerts.chart.criteria.tooltip.lable.email"/>',
     alertHighchartCriteriaTooltipPhone: '<spring:message javaScriptEscape="true" code="all.alerts.chart.criteria.tooltip.lable.phone"/>',
@@ -61,7 +61,7 @@ var dictionary = {
         	  <spring:message code="label.alert.page.budget"/> :
             </span> 
         	<span id="tenantBudgetNotSet" style="<c:out value="${tenantBudgetNotSet}"/>"><spring:message code="label.alert.page.budget.not.set"/></span>	
-        	<span id="tenantBudgetSet" style="<c:out value="${tenantBudgetSet}"/>;float: left; max-width: 90px;" class="ellipsis"><c:out value="${tenant.currency.sign}" /><span id="budgetValue"><fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${tenant.spendBudget}"/></span>	</span>
+        	<span id="tenantBudgetSet" style="<c:out value="${tenantBudgetSet}"/>;float: left; max-width: 90px;" class="ellipsis"><c:out value="${tenant.currency.sign}" /><span id="budgetValue"><fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" maxFractionDigits="${currencyFractionalDigitsLimit}" value="${tenant.spendBudget}"/></span>	</span>
         	| <a id="set_account_budget_link" href="javascript:void(0);"><spring:message code="label.set.budget"/></a>
       	</sec:authorize>      	
       </div>

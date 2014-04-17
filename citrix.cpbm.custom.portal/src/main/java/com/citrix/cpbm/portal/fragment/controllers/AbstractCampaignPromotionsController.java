@@ -237,7 +237,7 @@ public abstract class AbstractCampaignPromotionsController extends AbstractAuthe
     logger.debug("### edit method starting...");
 
     CampaignPromotion promotion = form.getCampaignPromotion();
-    promotion.setCode(form.getPromoCode());
+    promotion.setPromoCode(form.getPromoCode());
     
     List<String> channelIds = new ArrayList<String>();
     List<String> formChannelIds = form.getChannelIdLst();

@@ -81,7 +81,6 @@ import com.vmops.service.UserService.Handle;
 import com.vmops.service.billing.BillingAdminService;
 import com.vmops.service.exceptions.AjaxFormValidationException;
 import com.vmops.service.exceptions.CloudServiceException;
-import com.vmops.service.exceptions.ProvisionResourceFailedException;
 import com.vmops.service.exceptions.SubscriptionServiceException;
 import com.vmops.web.controllers.AbstractAuthenticatedController;
 import com.vmops.web.controllers.menu.Page;
@@ -181,12 +180,12 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
     }
     CurrencyValue currency = tenant.getCurrency();
     Channel channel = tenant.getSourceChannel();
-    Map<Object, Object> retMap = productService.getCurrentUtilityChargesMap(channel, currency, serviceInstanceUuid,
-        null);
+    Map<Object, Object> retMap = productService.getUtilityChargesMap(channel, currency, serviceInstanceUuid, null,
+        null, null);
     Map<Object, Object> topReturnMap = null;
     if (productRevisions != null && productRevisions.size() > 0) {
-      topReturnMap = productService.getCurrentUtilityChargesMap(channel, currency, serviceInstanceUuid,
-          productRevisions);
+      topReturnMap = productService.getUtilityChargesMap(channel, currency, serviceInstanceUuid, productRevisions,
+          null, null);
     }
     map.addAttribute("retMap", retMap);
     map.addAttribute("startDate", startDate);
@@ -236,6 +235,15 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
       if (currencyCode != null && !currencyCode.equals("")) {
         currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
+    }
+
+    if (tenant == null) {
+      // Public Browse Catalog Case:
+      // Put minimal fraction digits and currency formant for selected currency as UCI will not fill that in this case
+      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode())
+          .getDefaultFractionDigits());
+      UserContextInterceptor.putCurrencyPrecisionAndFormat(map,
+          config.getValue(Names.com_citrix_cpbm_portal_appearance_currency_format));
     }
 
     Date revisionDate = null;
@@ -826,8 +834,9 @@ public abstract class AbstractSubscriptionController extends AbstractAuthenticat
         currency = currencyValueService.locateBYCurrencyCode(currencyCode);
       }
       map.addAttribute("selectedCurrency", currency);
-      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode()).getDefaultFractionDigits());
-      
+      map.addAttribute(UserContextInterceptor.MIN_FRACTION_DIGITS, Currency.getInstance(currency.getCurrencyCode())
+          .getDefaultFractionDigits());
+
       final Tenant tenant = tenantService.getSystemTenant();
       final Channel finalChannel = channel;
       Map<String, Object> finalMap = privilegeService.runAsPortal(new PrivilegedAction<Map<String, Object>>() {

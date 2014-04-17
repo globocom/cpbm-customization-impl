@@ -509,6 +509,8 @@
                                        name="productCharges[<c:out value='${priceStatus.index}' />].price"
                                        class="text priceRequired j_pricerequired">
                               </div>
+                              <div id="productCharges.<c:out value='${priceStatus.index}' />Error">
+                              </div>
                             </div>
                           </c:forEach>
                         </div>

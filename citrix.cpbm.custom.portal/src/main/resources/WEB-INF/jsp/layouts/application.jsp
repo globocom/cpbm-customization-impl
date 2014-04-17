@@ -187,7 +187,8 @@ var g_dictionary = {
   dialogInvalidFactor: '<spring:message javaScriptEscape="true" code="label.invalidFactor"/>',
   dialogInvalidFactorValue : '<spring:message javaScriptEscape="true" code="label.invalidValueForFactor"/>',
   dialogNumberLessThanZero : '<spring:message javaScriptEscape="true" code="js.errors.priceRequired"/>',
-  error_single_sign_on: '<spring:message javaScriptEscape="true" code="error.single.signon.failure"/>'
+  error_single_sign_on: '<spring:message javaScriptEscape="true" code="error.single.signon.failure"/>',
+  error_cloud_service_down: '<spring:message javaScriptEscape="true" code="cloud.service.down"/>'
 };
 var fusion_chart_localized_strings={
 		ChartNoDataText:'<spring:message javaScriptEscape="true" code="message.fusioncharts.no.data.to.show"/>',
@@ -259,7 +260,7 @@ var i18nMonthNames = [
     		</div>
     	</div>
         <div id="manage_resources_container" class="manage_resources_container" style="display:none;">
-          <div id="iframe_spinning_wheel" style="display: none;">
+          <div id="iframe_spinning_wheel" class="iframe_spinner" style="display: none;">
             <div class="widget_blackoverlay iframe_loader"></div>
             <div class="widget_loadingbox iframe_loader_text">
               <div class="widget_loaderbox">

@@ -305,7 +305,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     CampaignPromotion obtainedCampaign = campaignController.edit(cpform, cpresult, map);
 
     Assert.assertNotNull(obtainedCampaign);
-    Assert.assertNotSame("New_Code", obtainedCampaign.getCode());
+    Assert.assertEquals("New_Code", obtainedCampaign.getCode());
     Assert.assertNotSame("New_Promocode", obtainedCampaign.getPromoCode());
     Assert.assertEquals(2, obtainedCampaign.getMaxAccounts());
     Assert.assertEquals("ACTIVE", cp.getState().toString());
@@ -701,7 +701,7 @@ public class AbstractCampaignPromotionsControllerTest extends WebTestsBase {
     }
   }
 
-  @Test(expected = Exception.class)
+  @Test(expected = InvalidAjaxRequestException.class)
   public void testEditScheduledStateCampaignWitNullPromocode() throws Exception {
 
     CampaignPromotion campaignPromotion = generateCampaignPromotion(-2, true, false, false);

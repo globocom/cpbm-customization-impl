@@ -175,9 +175,6 @@ var i18nAccountTypeDictionary = {
 };
 </script>  
 
-<div id="advancedSearch" style="display: none;">
- <jsp:include page="search.jsp"></jsp:include>
-</div>
 
 <div class="widget_box">
     <div class="widget_leftpanel">

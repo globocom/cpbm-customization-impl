@@ -284,9 +284,14 @@ var viewtenantDictionary = {
         </div>
         <div class="widget_grid_description" >
           <span>
-            <c:if test="${tenant.spendLimit != null}">
-              <c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}"  value="${tenant.spendLimit}"  />
-            </c:if>
+           <c:choose>
+				<c:when test="${tenant.spendLimit != null}">
+					<c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}" minFractionDigits="${minFractionDigits}"  value="${tenant.spendLimit}"  />
+				</c:when>
+				<c:otherwise>
+					<spring:message code="label.alert.page.budget.not.set"/>
+				</c:otherwise>
+		   </c:choose>
           </span>
         </div>
       </div>

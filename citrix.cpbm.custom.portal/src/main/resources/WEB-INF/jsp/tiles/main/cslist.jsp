@@ -124,16 +124,9 @@ var dictionary = {
             </c:if>
             <li id="service_instances" style="${borderwidth}" serviceid="${instance.uuid}">
               <div class="gridcell" style="width: 5%;">
-                <c:choose>
-                  <c:when test="${isAliveMap[instance.uuid]}">
-                    <span id="instance_icon" class="running_listicon"></span>
-                  </c:when>
-                  <c:otherwise>
-                    <span id="instance_icon" class="stopped_listicon"></span>
-                  </c:otherwise>
-                </c:choose>
+              	<span id="instance_icon"></span>
                 <div class="widget_loaderbox" style="display: none;position:relative;top:-42px;left:-10px">
-                  <span class="bigloader"></span>
+                  <span class="bigloader cs_instance"></span>
                 </div>
               </div>
               <div class="gridcell" style="width: 45%;">

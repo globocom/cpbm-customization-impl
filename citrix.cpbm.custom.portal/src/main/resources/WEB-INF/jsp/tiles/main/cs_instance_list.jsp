@@ -77,10 +77,6 @@ var dictionary = {
 <sec:authorize  access="hasRole('ROLE_ACCOUNT_ADMIN')">
     <c:set var="is_admin" value="true"/>
 </sec:authorize>
-<c:set var="has_cloudRole" value="false"/>
-<sec:authorize  access="hasAnyRole('CS_ROLE_ACCOUNT_CLOUD_MANAGEMENT', 'CS_ROLE_USER_CLOUD_MANAGEMENT', 'ROLE_ACCOUNT_CLOUD_MANAGEMENT', 'ROLE_USER_CLOUD_MANAGEMENT')">
-    <c:set var="has_cloudRole" value="true"/>
-</sec:authorize>
 <c:set var="auth_enable_service" value="false"/>
 <sec:authorize  access="hasAnyRole('ROLE_ACCOUNT_MGMT','ROLE_ACCOUNT_USER_CRUD')">
     <c:set var="auth_enable_service" value="true"/>
@@ -88,7 +84,7 @@ var dictionary = {
 <c:set var="apostropy" value="'"/>
 <c:set var="escapedeapostropy" value="\\'"/>
 <c:choose>
-    <c:when test="${((is_admin && has_cloudRole) || userHasCloudServiceAccount) && !iframe_view && not empty serviceInstanceMap}">
+    <c:when test="${(is_admin || spUserHasCloudServiceAccount || userHasCloudServiceAccount) && !iframe_view && not empty serviceInstanceMap}">
     <div id="manage_services_info">
         <div class="page_heading">
             <h3><spring:message code="message.myservices.header"/></h3>
@@ -297,7 +293,7 @@ var dictionary = {
     
     </div>
     </c:when>
-    <c:when test="${(is_admin || userHasCloudServiceAccount) && iframe_view}">
+    <c:when test="${(is_admin || spUserHasCloudServiceAccount || userHasCloudServiceAccount) && iframe_view}">
       <script type="text/javascript">
         var iframe_view = true;
         var service_instance_uuid_for_iframe = '<c:out value="${serviceInstanceUUID}"/>';

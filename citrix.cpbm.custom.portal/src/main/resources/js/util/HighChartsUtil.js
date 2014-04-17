@@ -110,6 +110,9 @@ HighChartsUtil.renderChart = function(containerId, series, categories, options){
 		}
 	});
   
+  var legendItemClick = options['legendItemClick'] || function(){};
+  var itemStyle = options['itemStyle'] || {};
+  
 	var chartOptions = {
     chart: {
       renderTo: containerId,
@@ -121,7 +124,8 @@ HighChartsUtil.renderChart = function(containerId, series, categories, options){
       backgroundColor: backgroundColor
     },
     legend: {
-      enabled: showLegend
+      enabled: showLegend,
+      itemStyle: itemStyle
     },
     xAxis: {
       categories: categories,
@@ -181,10 +185,16 @@ HighChartsUtil.renderChart = function(containerId, series, categories, options){
     },
     plotOptions: {
       bar: {
-        stacking: 'normal'
+        stacking: 'normal',
+        events: {
+          legendItemClick: legendItemClick
+        }
       },
-		  column: {
-        stacking: stacking
+      column: {
+        stacking: stacking,
+        events: {
+          legendItemClick: legendItemClick
+        }
       }
     },
     title: {

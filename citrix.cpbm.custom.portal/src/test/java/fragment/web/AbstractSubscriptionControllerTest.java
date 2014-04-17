@@ -227,6 +227,20 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
     }
   }
 
+  @Test
+  public void testUtilityrates_tableForPublicCatalog() {
+    ModelMap anonymousMap = new ModelMap();
+    ServiceInstance instance = serviceInstanceDAO.find(1L);
+
+    controller.utilityrates_table(null, instance.getUuid(), "VirtualMachine", "PSI_UD1=10", "USD", "false", null, null,
+        null, null, anonymousMap, request);
+
+    Assert.assertNotNull(anonymousMap.get(UserContextInterceptor.MIN_FRACTION_DIGITS));
+    Assert.assertNotNull(anonymousMap.get(UserContextInterceptor.CURRENCY_PRECISION));
+    Assert.assertNotNull(anonymousMap.get(UserContextInterceptor.CURRENCY_FORMAT));
+
+  }
+
   @SuppressWarnings("unchecked")
   @Test
   public void testUtilityrates_tableForATenant() {
@@ -766,8 +780,9 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
       Assert.assertEquals(currencyValueService.locateBYCurrencyCode("JPY"), map.get("selectedCurrency"));
 
       Assert.assertTrue(map.containsKey(UserContextInterceptor.MIN_FRACTION_DIGITS));
-      Assert.assertEquals(Currency.getInstance("JPY").getDefaultFractionDigits(), map.get(UserContextInterceptor.MIN_FRACTION_DIGITS));
-      
+      Assert.assertEquals(Currency.getInstance("JPY").getDefaultFractionDigits(),
+          map.get(UserContextInterceptor.MIN_FRACTION_DIGITS));
+
       i = 0;
       @SuppressWarnings("unchecked")
       List<ChargeRecurrenceFrequency> frequencyList = (List<ChargeRecurrenceFrequency>) map
@@ -817,9 +832,8 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
       asUser(tenant.getOwner());
       Map<String, String> responseMap = controller.provisionOrReconfigureSubscription(form, result, tenant.getParam(),
           bundle.getId().toString(), false, configurationData,
-          "{\"zone_name\":\"Advanced-Zone\", \"TemplateId_name\":\"Dos\"}", instance
-              .getUuid().toString(), "VirtualMachine", "zone=122", "TemplateId=56", subscription.getId().toString(),
-          null, map, response, request);
+          "{\"zone_name\":\"Advanced-Zone\", \"TemplateId_name\":\"Dos\"}", instance.getUuid().toString(),
+          "VirtualMachine", "zone=122", "TemplateId=56", subscription.getId().toString(), null, map, response, request);
 
       Assert.assertEquals(subscriptionListBefore.size() + 1, subscriptionDAO.findByTenant(tenant, null, null).size());
       Assert.assertEquals("RECONFIGURED", responseMap.get("subscriptionResultMessage"));
@@ -861,9 +875,8 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
 
       asUser(tenant.getOwner());
       Map<String, String> responseMap = controller.provisionOrReconfigureSubscription(form, result, tenant.getParam(),
-          null, false, configurationData, "{\"zone_name\":\"Advanced-Zone\", \"TemplateId_name\":\"Dos\"}",
-          instance.getUuid().toString(), "VirtualMachine", "zone=122",
-          "TemplateId=56", null, null, map, response, request);
+          null, false, configurationData, "{\"zone_name\":\"Advanced-Zone\", \"TemplateId_name\":\"Dos\"}", instance
+              .getUuid().toString(), "VirtualMachine", "zone=122", "TemplateId=56", null, null, map, response, request);
 
       Assert.assertEquals("NEWLY_CREATED", responseMap.get("subscriptionResultMessage"));
 
@@ -877,10 +890,10 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
       Assert.fail(e.getMessage());
     }
   }
-  
+
   @Test
   @ExpectedException(NoSuchDefinitionException.class)
-  public void testAnonymousCatalogFail(){
+  public void testAnonymousCatalogFail() {
     controller.anonymousCatalog(map, null, "JPY", null, null, request);
   }
 

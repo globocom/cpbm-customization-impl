@@ -22,7 +22,8 @@
       cancellingSubscription:'<spring:message javaScriptEscape="true" code="message.cancelling.subscription"/>',
       showingdetails: '<spring:message javaScriptEscape="true" code="message.showing.details"/>',
       notApplicable:'<spring:message javaScriptEscape="true" code="ui.label.na"/>',
-      subscriptionEndDate:'<spring:message code="label.usage.billing.subscription.charge.service.end"/>'
+      subscriptionEndDate:'<spring:message code="label.usage.billing.subscription.charge.service.end"/>',
+      cloudServiceException:'<spring:message code="exception.cloud.service"/>'
   };
 
   
@@ -123,7 +124,7 @@
               </c:otherwise>
             </c:choose> 
             
-          <li class='<c:out value="widget_navigationlist ${selected} subscriptions"/>' id="sub<c:out value="${subscription.uuid}" />" onclick="timerFunction(this)" onmouseover="showInfoBubble(this)" onmouseout="hideInfoBubble(this)">
+          <li class='<c:out value="widget_navigationlist ${selected} subscriptions"/>' id="sub<c:out value="${subscription.uuid}" />" onclick="timerFunction($(this))" onmouseover="showInfoBubble(this)" onmouseout="hideInfoBubble(this)">
                             <span class="navicon subscription" id="nav_icon"></span>
                             <div class="widget_navtitlebox">
                               <span class="title">
@@ -287,6 +288,10 @@
 </div>
 
 <input type="hidden" id="filtersApplied"  value="<c:out value="${filtersApplied}"/>"/>
+<input type="hidden" id="useruuid"  value="<c:out value="${useruuid}"/>"/>
+<input type="hidden" id="instanceuuid"  value="<c:out value="${instanceuuid}"/>"/>
+<input type="hidden" id="productBundleID"  value="<c:out value="${productBundleID}"/>"/>
+<input type="hidden" id="stateSelected"  value="<c:out value="${stateSelected}"/>"/>
 <input type="hidden" id="current_page"  value="<c:out value="${current_page}"/>"/>
 <input type="hidden" id="selected_subs_for_details"  value="<c:out value="${idForDetails}"/>"/>
 <input type="hidden" id="tenantParam"  value="<c:out value="${tenant.param}"/>"/>

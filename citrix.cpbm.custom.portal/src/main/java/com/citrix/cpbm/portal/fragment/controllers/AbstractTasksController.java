@@ -83,20 +83,14 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
 
     Map<Task, String> tasksMap = taskService.getTasksMap(tenant, user, taskStates, page, perPage);
 
+    int totalCount = taskService.getTasksCount(tenant, user, taskStates);
+    setPaginationValues(map, perPage , page, totalCount, null);
+    
     map.addAttribute("tasksMap", tasksMap);
     map.addAttribute("tenant", tenant);
 
     map.addAttribute("taskfilters", Arrays.asList("ALL", "PENDING", "COMPLETED"));
     map.addAttribute("currentFilter", filter);
-
-    if (tasksMap.entrySet().size() == perPage) {
-      // if tasks map size is equal to perpage, next page may or may not exist
-      map.addAttribute("nextPage", page + 1);
-    }
-    if (page > 1) {
-      // if the current page is > 1, assuming a previous page exists
-      map.addAttribute("prevPage", page - 1);
-    }
 
     logger.debug("###Exiting in getTasks(filter) method @GET");
     return "tasks.all";

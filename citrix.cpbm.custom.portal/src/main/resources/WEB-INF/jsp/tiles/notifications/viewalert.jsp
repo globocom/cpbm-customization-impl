@@ -15,6 +15,10 @@
 var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
 
 </script>
+<c:set var="hasWriteOnAlertsUser" value="false"/>
+<sec:accesscontrollist hasPermission="WRITE" domainObject="${subscription.user}">
+		<c:set var="hasWriteOnAlertsUser" value="true"/>
+</sec:accesscontrollist>
 <div class="widget_actionbar">
   <c:if test="${subscription.id != null}">
   <div class="widget_actionarea" id="top_actions">
@@ -35,7 +39,7 @@ var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
                 <div class="widget_actionpopover_mid">
                   <ul class="widget_actionpoplist">
 <c:choose>
-  <c:when test="${allowEdit}">
+  <c:when test="${allowEdit && hasWriteOnAlertsUser}">
                     <li class="editalert_link" id="<c:out value="edit${subscription.id}"/>" title='<spring:message code="label.edit"/>'><spring:message code="label.edit"/></li>
                     <li class="removealert_link" id="<c:out value="remove${subscription.id}"/>" title='<spring:message code="label.remove"/>'><spring:message code="label.remove"/></li>
   </c:when>
@@ -93,7 +97,7 @@ var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
                       <span>
                         <c:if test="${subscription.percentage != null}">
                         <label id="spendBudgetPercentageDiv"><spring:message code="ui.alerts.details.spendbudget.label" arguments="${subscription.percentage}"/></label>
-                        <label id="spendBudgetCurrencyDiv">&nbsp;(<c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" value="${spendbudget}"/>)</label>
+                        <label id="spendBudgetCurrencyDiv">&nbsp;(<c:out value="${tenant.currency.sign}" /><fmt:formatNumber pattern="${currencyFormat}"  minFractionDigits="${minFractionDigits}" maxFractionDigits="${currencyFractionalDigitsLimit}" value="${spendbudget}"/>)</label>
                         </c:if>
                       </span>
                     </div>
@@ -143,6 +147,7 @@ var alertsUrl = "<%=request.getContextPath() %>/portal/tenants/";
 
 <input id="spend_cap" type="hidden" value='<c:out value="${spend_budget_alert_cap}" escapeXml="false"/>'/>
 <input id="total_budget" type="hidden" value='<c:out value="${spendbudget}" escapeXml="false"/>'/>
+<input id="minFractionDigits" type="hidden" value='<c:out value="${currencyFractionalDigitsLimit}" escapeXml="false"/>'/>
 <input id="user_email" type="hidden" value='<c:out value="${user_email}"/>'/>
 <input id="user_phone" type="hidden" value='<c:out value="${user_phone}"/>'/>
 <input id="criteria_percent" type="hidden" value='<c:out value="${subscription.percentage}"/>'/>

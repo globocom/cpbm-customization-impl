@@ -68,7 +68,7 @@ $(document).ready(function() {
     if (serviceInstanceUUID == "all_services") {
       window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam;
     } else {
-      showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
+      launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID);
     }
   });
   if (typeof iframe_view != "undefined" && iframe_view && typeof service_instance_uuid_for_iframe != "undefined") {
@@ -143,7 +143,20 @@ $(document).ready(function() {
 
   $(".cloud_button.active").bind("click", function(event) {
     var id = $(this).attr('id');
-    $('div.servicelist_extended[serviceid=' + id + ']').toggle();
+    var targetDiv = $('div.servicelist_extended[serviceid=' + id + ']');
+    targetDiv.toggle();
+    var statusLoadedForService = targetDiv.attr("statusLoadedForService");
+    if(statusLoadedForService == null){
+      statusLoadedForService = false;
+    } else {
+      statusLoadedForService = true;
+    }
+    if(targetDiv.css("display") != "none" && !statusLoadedForService){
+      targetDiv.find("#service_instance_list li.reload").each(function(){
+        reloadStatus($(this));
+      });
+      targetDiv.attr("statusLoadedForService", "true");
+    }
   });
 
   $("a.filters").bind("click", function(event) {
@@ -221,29 +234,8 @@ $(document).ready(function() {
     uploadServiceInstanceImageGet(id);
   });
 
-
-
   $("li.reload").live("click", function(event) {
-    var id = $(this).parents('li').attr('serviceid');
-    var $currentRow = $(this).parents('li');
-    $currentRow.find(".widget_loaderbox").show();
-    $.ajax({
-      type: "GET",
-      url: connectorPath + "/status?id=" + id,
-      async: false,
-      dataType: 'json',
-      success: function(running) {
-        if (running) {
-          $currentRow.find("#instance_icon").removeClass('stopped_listicon').addClass('running_listicon'); //remove existing class
-        } else {
-          $currentRow.find("#instance_icon").removeClass('running_listicon').addClass('stopped_listicon');
-        }
-        $currentRow.find(".widget_loaderbox").hide();
-      },
-      error: function(error) {
-        $currentRow.find(".widget_loaderbox").hide();
-      }
-    });
+      reloadStatus($(this));
   });
 
   $("li.edit").live("click", function(event) {
@@ -395,7 +387,7 @@ $(document).ready(function() {
     if(!isDelinquent){
       var serviceInstanceUUID = $(this).attr('id').substr(10);
       window.location = "/portal/portal/subscription/createsubscription?tenant=" + effectiveTenantParam +
-        "&serviceInstanceUUID=" + serviceInstanceUUID;
+      "&serviceInstanceUUID=" + serviceInstanceUUID;
     } else {
       if (showMakePaymentMessage != "") {
         popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
@@ -481,6 +473,37 @@ $(document).ready(function() {
     });
   }
 });
+
+function reloadStatus(reloadLink){
+  var id = reloadLink.parents('li').attr('serviceid');
+  var $currentRow = reloadLink.parents('li');
+  $currentRow.find(".widget_loaderbox").show();
+  $currentRow.find("#instance_icon").hide();
+  $.ajax({
+    type: "GET",
+    url: connectorPath + "/status?id=" + id,
+    async: true,
+    dataType: 'json',
+    global: false,
+    success: function(running) {
+      if (running) {
+        $currentRow.find("#instance_icon").removeClass('stopped_listicon').addClass('running_listicon'); //remove existing class
+      } else {
+        $currentRow.find("#instance_icon").removeClass('running_listicon').addClass('stopped_listicon');
+      }
+      $currentRow.find(".widget_loaderbox").hide();
+      $currentRow.find("#instance_icon").show();
+    },
+    error: function(error) {
+      $currentRow.find("#instance_icon").removeClass('running_listicon').addClass('stopped_listicon');
+      $currentRow.find("#instance_icon").show();
+      $currentRow.find(".widget_loaderbox").hide();
+    },
+    complete: function(){
+      //do nothing
+    }
+  });
+}
 
 var refreshUploadedLogoCallback = function refreshUploadedLogo(){
 	location.reload();
@@ -662,6 +685,9 @@ function goToNextStepForTenant(current) {
     var propObject = new Object();
     $("#enableServiceButton").prop("disabled",true);
     $("#enableServiceButton").addClass("disabled");
+    $("#prevButtonEnableServiceStep").prop("disabled",true);
+    $("#prevButtonEnableServiceStep").addClass("disabled");
+    
     var service_account_config_properties_list = $("#service_account_config_properties_list").val();
     var propNames = service_account_config_properties_list.split(',');
     for(var propIndex in propNames){
@@ -681,6 +707,7 @@ function goToNextStepForTenant(current) {
      var propConfigs = JSON.stringify(propObject);
      $("#stepOfReviewAndConfirm").find("#spinning_wheel").show();
       var $resultDisplayBanner = $("#validationError");
+      
       var ajaxUrl = "/portal/portal/tenants/enable_service";
       $.ajax({
         type : "POST",
@@ -700,6 +727,8 @@ function goToNextStepForTenant(current) {
           else{
             $("#enableServiceButton").prop("disabled",false);
             $("#enableServiceButton").removeClass("disabled");
+            $("#prevButtonEnableServiceStep").prop("disabled",false);
+            $("#prevButtonEnableServiceStep").removeClass("disabled");
             $resultDisplayBanner.text(data.message);
             $resultDisplayBanner.parent("#serviceEnableError").show();
           }
@@ -708,6 +737,8 @@ function goToNextStepForTenant(current) {
           $("#stepOfReviewAndConfirm").find("#spinning_wheel").hide();
           $("#enableServiceButton").prop("disabled",false);
           $("#enableServiceButton").removeClass("disabled");
+          $("#prevButtonEnableServiceStep").prop("disabled",false);
+          $("#prevButtonEnableServiceStep").removeClass("disabled");
           $resultDisplayBanner.text(error.message);
           $resultDisplayBanner.text(i18n.errors.connector.createfailed);
           $resultDisplayBanner.parent("#serviceEnableError").show();
@@ -839,27 +870,38 @@ function resolveViewForSettingFromServiceInstance2(instanceUuid) {
     }
     return;
   }
-  $("#manage_services_info").hide();
-  $("#myServicesDiv").hide();
-  $(".left_filtermenu").hide();
-  $("#userSubscribedServiceDetails").show();
   var $iframe_tab = $("#iframe_tab_" + instanceUuid);
   var actionurl = "/portal/portal/users/resolve_view_for_Settings?instanceUuid=" + instanceUuid;
   $("#full_page_spinning_wheel").show();
+  
+  var failureHandler = function(XMLHttpResponse) {
+    $("#full_page_spinning_wheel").hide();
+    popUpDialogForAlerts("dialog_info", g_dictionary.error_cloud_service_down);
+  };
+  
   $.ajax({
     type: "GET",
     url: actionurl,
     dataType: "json",
     success: function(json) {
-      $("#full_page_spinning_wheel").hide();
-      if (json != null && json.url != null) {
-        $(".js_iframe_tabs").removeClass("on");
-        $iframe_tab.addClass("on");
-        $("#userOrAccountSettingsViewFrame").attr("src", json.url);
-      }
+      getStatus(instanceUuid, function() {
+        $("#manage_services_info").hide();
+        $("#myServicesDiv").hide();
+        $(".left_filtermenu").hide();
+        $("#userSubscribedServiceDetails").show();
+        $("#full_page_spinning_wheel").hide();
+        if (json != null && json.url != null) {
+          $(".js_iframe_tabs").removeClass("on");
+          $iframe_tab.addClass("on");
+          $("#userOrAccountSettingsViewFrame").attr("src", json.url);
+        }
+      }, failureHandler);
     },
     error: function(e) {
-      $("#full_page_spinning_wheel").hide();
+      failureHandler(e);
+    },
+    complete: function() {
+      
     }
   });
 }

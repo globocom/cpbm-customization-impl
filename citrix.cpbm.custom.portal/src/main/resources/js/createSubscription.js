@@ -408,7 +408,8 @@ function initCreateSubscription() {
         contextString: "",
         filters: "",
         listAll: "true",
-        currencyCode: $("#selectedcurrencytext").text()
+        currencyCode: $("#selectedcurrencytext").text(),
+        tenant: tenantParam
       },
       dataType: "json",
       success: function(productCharges) {
@@ -474,7 +475,8 @@ function initCreateSubscription() {
         contextString: "",
         filters: "",
         listAll: "true",
-        currencyCode: $("#selectedcurrencytext").text()
+        currencyCode: $("#selectedcurrencytext").text(),
+        tenant: tenantParam
       },
       dataType: "json",
       success: function(productCharges) {
@@ -540,7 +542,8 @@ function initCreateSubscription() {
         resourceType: resourceTypeSelection,
         contextString: getContextStringOverrideEffective(),
         filters: getSelectedFilterString(),
-        currencyCode: $("#selectedcurrencytext").text()
+        currencyCode: $("#selectedcurrencytext").text(),
+        tenant: tenantParam
       },
       dataType: "json",
       success: function(productCharges) {
@@ -1516,6 +1519,7 @@ function initCreateSubscription() {
       $listBox.attr("name", serviceFilterNames[i]);
       var serviceFilterValues = getValuesForFilter(serviceFilterNames[i]);
       if (serviceFilterValues == false) {
+        handleConnectorError();
         return false;
       }
       for (j = 0; j < serviceFilterValues.length; j++) {

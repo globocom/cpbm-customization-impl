@@ -388,15 +388,16 @@ $(document).ready(function() {
 });
 
 function showAlertHighChart(spend_cap, criteria_percentage) {
-  var total_budget = parseFloat($('#total_budget').val());
+  var total_budget = parseFloat($('#total_budget').val()).toFixed(parseInt($('#minFractionDigits').val()));
   if (total_budget <= 0)
     return;
   var currencySymbol = $('#currency_sign').val();
 
   if (spend_cap == null)
-    var spend_cap = parseFloat($('#spend_cap').val());
+    var spend_cap = parseFloat($('#spend_cap').val()).toFixed(parseInt($('#minFractionDigits').val()));
   if (criteria_percentage == null)
-    var criteria_percentage = $('#criteria_percent').val();
+    //while adding alert percentage, UI is allowing only upto 2 decimal places
+    var criteria_percentage = parseFloat($('#criteria_percent').val()).toFixed(2);;
   var extra_budget = total_budget - spend_cap;
   var chartTitle = dictionary.alertHighchartTitle;
   var yAxisTitle = dictionary.alertHighchartYAxisTitle + ' (' + currencySymbol + ')';
@@ -448,7 +449,7 @@ function showAlertHighChart(spend_cap, criteria_percentage) {
       var pointName = typeof(this.point.name) == 'undefined' ? ': ' : '<br>' + this.point.name;
 
       var name = '<b>' + dictionary.alertHighchartCriteriaToolstart + ': ' + criteria_percentage + '% (' +
-        currencySymbol + spend_cap + ')</b>' + pointName + currencySymbol + this.y + '.<br>' + dictionary.alertHighchartCriteriaTooltipEmail +
+        currencySymbol + spend_cap + ')</b>' + pointName + currencySymbol + this.y + '<br>' + dictionary.alertHighchartCriteriaTooltipEmail +
         ':<span style="color:#086A87;"> ' + user_email + '</span><br>' + dictionary.alertHighchartCriteriaTooltipPhone +
         ': <span style="color:#086A87;">' + user_phone + '</span>';
       return '<div style="width:290px;word-wrap:break-word;white-space: pre-wrap;">' + name + '</div>';
@@ -465,7 +466,14 @@ function showAlertHighChart(spend_cap, criteria_percentage) {
     },
     "chartSpacingRight": 100,
     "chartSpacingLeft": 25,
-    "rotateYAxisLabels": true
+    "rotateYAxisLabels": true,
+    "legendItemClick": function(){
+      return false;
+    },
+    "itemStyle" : {
+      cursor: 'default',
+      color: '#000'
+    }
   };
 
   HighChartsUtil.renderChart('spendvsbudgetChart', series, categories, options);

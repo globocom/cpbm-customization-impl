@@ -1459,7 +1459,8 @@ function doActionButton(actionMapItem, apiCommand) {
           if (actionMapItem.afterActionFailureFn != null) {
             actionMapItem.afterActionFailureFn(label + " " + g_dictionary.actionFailed);
           }
-        }
+        },
+        complete: actionMapItem.afterActionCompleteFn
       });
   }
   // Async job (end) *****
@@ -1486,21 +1487,20 @@ function doActionButton(actionMapItem, apiCommand) {
             "success").show();
         }
       },
-      error: function(XMLHttpResponse) {
+      error: function(XMLHttpResponse, status) {
         $spinningWheel.hide();
-        $("#top_message_panel").find("#msg").text(
-          label + " " + g_dictionary.actionFailed);
-        $("#top_message_panel").find("#status_icon").removeClass(
-          "successicon").addClass("erroricon");
-        $("#top_message_panel").removeClass("success")
-          .addClass("error").show();
+        $("#top_message_panel").find("#status_icon").removeClass("successicon").addClass("erroricon");
+        $("#top_message_panel").removeClass("success").addClass("error").show();
+        var msg = label + " " + g_dictionary.actionFailed;
         if (actionMapItem.afterActionFailureFn != null) {
-          actionMapItem.afterActionFailureFn(label + " " + g_dictionary.actionFailed);
+          var exceptionMsg = actionMapItem.afterActionFailureFn(XMLHttpResponse, status);
+          if(isNotBlank(exceptionMsg)) {
+            msg += " " + exceptionMsg;
+          }
         }
-        if (actionMapItem.processXMLHttpResponse != null) {
-          actionMapItem.processXMLHttpResponse(XMLHttpResponse);
-        }
-      }
+        $("#top_message_panel").find("#msg").html(msg);
+      },
+      complete: actionMapItem.afterActionCompleteFn
     });
   }
   // Sync job (end) *****
@@ -3311,7 +3311,6 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
 
   
   var $iframe_tab = $("#iframe_tab_" + serviceInstanceUUID);
-  $iframe_tab.find(".js_loading").show();
   
   $.ajax({
     url: "/portal/portal/manage_resource/get_resource_views",
@@ -3325,7 +3324,6 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
     cache: false,
     success: function(json) {
       singleSignOn(effectiveTenantParam, serviceInstanceUUID);
-      $iframe_tab.find(".js_loading").hide();
       
       if (json[0].mode == "WINDOW") {
         window.open(json[0].url,'_blank');
@@ -3345,8 +3343,11 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
       }
     },
     error: function(XMLHttpResponse) {
-      $iframe_tab.find(".js_loading").hide();
       handleError(XMLHttpResponse);
+      popUpDialogForAlerts("dialog_info", XMLHttpResponse.responseText);
+    },
+    complete: function() {
+      
     }
   });
 }
@@ -3354,7 +3355,7 @@ var showResourcesIFrameWithServiceInstanceUUID = function(serviceInstanceUUID) {
 var showResourcesIFrame = function(event) {
   if(!isDelinquent){
     var serviceInstanceUUID = $(this).attr("id");
-    showResourcesIFrameWithServiceInstanceUUID(serviceInstanceUUID);
+    launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID);
   } else {
     if (showMakePaymentMessage != "") {
       popUpDialogForAlerts("dialog_info", showMakePaymentMessage);
@@ -3384,6 +3385,16 @@ $(".doc_help_link").unbind("click").bind("click", function(e) {
 function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID, reload_current_page_to_url) {
 	
   if (serviceInstanceUUID != null) {
+    
+    var failureHandler = function(XMLHttpResponse) {
+      popUpDialogForAlerts("dialog_info", g_dictionary.error_cloud_service_down);
+    };
+    
+    var successHandler = function() {
+      window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam +
+      "&showIframe=true&serviceInstanceUUID=" + serviceInstanceUUID;
+    };
+    
     $.ajax({
       url: "/portal/portal/manage_resource/get_resource_views",
       dataType: "json",
@@ -3402,12 +3413,15 @@ function launchMyResourcesWithServiceInstanceUUID(serviceInstanceUUID, reload_cu
         	  window.location = reload_current_page_to_url;
           }
         } else if (json[0].mode == "IFRAME") {
-          window.location = "/portal/portal/connector/csinstances?tenant=" + effectiveTenantParam +
-            "&showIframe=true&serviceInstanceUUID=" + serviceInstanceUUID;
+          getStatus(serviceInstanceUUID, successHandler, failureHandler);
         }
       },
       error: function(XMLHttpResponse) {
         handleError(XMLHttpResponse);
+        failureHandler(XMLHttpResponse);
+      },
+      complete: function() {
+        
       }
     });
 
@@ -3436,4 +3450,31 @@ $(".js_close_parent").live("click",function(e){
 
 function hide_iframe_loading(){
   $("#iframe_spinning_wheel").hide();
+}
+
+function getStatus(serviceInstanceUuid, successCallBack, failureCallBack, completeCallBack) {
+  
+  if(typeof(completeCallBack) != "function") {
+    completeCallBack = function() {};
+  }
+  
+  $.ajax({
+    type : "GET",
+    url : "/portal/portal/connector/status?id=" + serviceInstanceUuid,
+    async : true,
+    dataType : 'json',
+    success : function(isActive) {
+      if (isActive && typeof (successCallBack) == "function") {
+        successCallBack();
+      } else if(typeof (failureCallBack) == "function") {
+        failureCallBack();
+      }
+    },
+    error : function(error) {
+      if (typeof (failureCallBack) == "function") {
+        failureCallBack(error);
+      }
+    },
+    complete : completeCallBack
+  });
 }

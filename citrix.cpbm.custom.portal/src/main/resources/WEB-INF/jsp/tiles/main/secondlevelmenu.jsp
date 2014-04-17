@@ -19,7 +19,7 @@
          	</spring:url>
 			<a class="secondlevel_menutabs <c:out value="${Dashboard}"/>"href="<c:out value="${dashboard_path}" escapeXml="false" />"><spring:message code="page.level2.dashboard"/></a>
       
-      <c:if test="${(showUserProfile && currentTenant.id == 1 && userHasCloudServiceAccount)}">
+      <c:if test="${(showUserProfile && currentTenant.id == 1 && (userHasCloudServiceAccount || tenant.state eq 'ACTIVE'))}">
         	<spring:url value="/portal/connector/csinstances" var="connectors_list">
             <spring:param name="tenant"><c:out value="${tenant.param}"/></spring:param>
           </spring:url>

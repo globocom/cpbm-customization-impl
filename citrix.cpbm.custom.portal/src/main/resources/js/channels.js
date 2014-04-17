@@ -376,35 +376,38 @@ function validate_channeldesc(event, input) {
 // Checks if the value is a valid non-negative number
 
 function isValidNonNegativeNo(value) {
-  return value != "" && isNaN(value) == false && Number(value) >= 0 && Number(value) <= 99999999.9999;
+  return value != "" && !isNaN(value) && Number(value) >= 0 && Number(value) <= 99999999.9999;
 }
 
 function isValidCurrencyPrecision(value) {
- 
-  if (!/^(?:\d*\.\d*\|\d+)$/.test(value)) {
-    var sval=value;
-    var sdecimalDigit=sval.split(".");
-    if(sdecimalDigit.length==2){// have decimal
-       if(sdecimalDigit[1].length>currPrecision){
-          // more characters allowed precision
-         return false;
-       }
-       return true;
-       }else if(sdecimalDigit.length>2) {
-    //more then one decimals   
+
+  var pattern = new RegExp("/^(?:\\d*\\.\\d*\\|\\d+)$/");
+
+  if (!pattern.test(value)) {
+    var sval = value;
+    var sdecimalDigit = sval.split(".");
+    if (sdecimalDigit.length == 2) {
+      // have one decimal
+      if (sdecimalDigit[1].length > currPrecision) {
+        // more characters allowed precision
         return false;
-   } 
-       // without decimal
-        return true;     
-              
-  }else{//not a valid digit pattern
-     return false;
-    } 
+      }
+      return true;
+    } else if (sdecimalDigit.length > 2) {
+      // more then one decimals
+      return false;
+    }
+    // without decimal
+    return true;
+  } else {
+    // not a valid digit pattern
+    return false;
+  }
   return true;
-  
 }
 
-// Edit the bundle charges, as in over-riding bundle charges at the catalog level
+// Edit the bundle charges, as in over-riding bundle charges at the catalog
+// level
 
 function editBundleCharges(event, current) {
   initDialog("dialog_edit_bundle_charges", 850, 200);
@@ -431,7 +434,8 @@ function editBundleCharges(event, current) {
           var currencyVals = new Array();
           var inError = false;
           $('input[id^="currencyValsWeNeed"][class^="text"]').each(function() {
-            if (!isValidNonNegativeNo($(this).attr("value").trim())) {
+            var currencyNumberValue = formatFromCurrency($(this).attr("value").trim(), g_dictionary.thousandsSep, g_dictionary.decPoint);
+            if (!isValidNonNegativeNo(currencyNumberValue)) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.validPriceRequired);
               $(this).addClass("error");
@@ -440,7 +444,7 @@ function editBundleCharges(event, current) {
               inError = true;
               return;
             }
-            if (!isValidCurrencyPrecision($(this).attr("value").trim())) {
+            if (!isValidCurrencyPrecision(currencyNumberValue)) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.max_four_decimal_value);
               $(this).addClass("error");
@@ -451,7 +455,7 @@ function editBundleCharges(event, current) {
             }
             var currencyObj = new Object();
             currencyObj.previousvalue = $(this).attr("previousvalue");
-            currencyObj.value = $(this).attr("value");
+            currencyObj.value = currencyNumberValue;
             currencyObj.currencycode = $(this).attr("currencycode");
             currencyObj.currencyId = $(this).attr("currencyId");
             currencyObj.isRecurring = $(this).attr("isRecurring");
@@ -766,7 +770,8 @@ function editCatalogProductCharges() {
           var currencyVals = new Array();
           var inError = false;
           $('input[id^="currencyValsWeNeed"][class^="text"]').each(function() {
-            if (!isValidNonNegativeNo($(this).attr("value").trim())) {
+            var currencyNumberValue = formatFromCurrency($(this).attr("value").trim(), g_dictionary.thousandsSep, g_dictionary.decPoint);
+            if (!isValidNonNegativeNo(currencyNumberValue)) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.validPriceRequired);
               $(this).addClass("error");
@@ -775,7 +780,7 @@ function editCatalogProductCharges() {
               inError = true;
               return;
             }
-            if (!isValidCurrencyPrecision($(this).attr("value").trim())) {
+            if (!isValidCurrencyPrecision(currencyNumberValue)) {
               $thisDialog.find("#error_div").show();
               $thisDialog.find("#priceError").html(i18n.errors.channels.max_four_decimal_value);
               $(this).addClass("error");
@@ -786,7 +791,7 @@ function editCatalogProductCharges() {
             }
             var currencyObj = new Object();
             currencyObj.previousvalue = $(this).attr("previousvalue");
-            currencyObj.value = $(this).attr("value");
+            currencyObj.value = currencyNumberValue;
             currencyObj.currencycode = $(this).attr("currencycode");
             currencyObj.currencyId = $(this).attr("currencyId");
             currencyObj.productId = $(this).attr("productId");
@@ -1714,4 +1719,12 @@ function saveChannelServiceSettings(){
 		    	console.log(textStatus,'..fail',errorThrown);
 		    }
 	});
+}
+
+function formatFromCurrency(value, thouSeparator, decSeparator) {
+  var decSeparator = decSeparator == undefined ? "." : decSeparator;
+  var thouSeparator = thouSeparator == undefined ? "," : thouSeparator;
+  value = value.split(thouSeparator).join("");
+  value = value.split(decSeparator).join(".");
+  return value;
 }

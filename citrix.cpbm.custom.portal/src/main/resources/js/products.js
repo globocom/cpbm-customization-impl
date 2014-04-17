@@ -83,6 +83,7 @@ $(document).ready(function() {
 
 
   $.validator.addClassRules("priceRequired", {
+    number: true,
     twoDecimal: true,
     maxcurrencyPrecision: true
   });
@@ -322,18 +323,10 @@ $("#productForm").validate({
     if (nameAttr == 'product.productType') {
       name = nameAttr;
     }
-    if (element.hasClass('j_pricerequired')) {
-      if ($("#priceRequiredError").html().trim() == "") {
-        error.appendTo("#priceRequiredError");
-        $(".common_messagebox").show();
-      }
-    } else {
-      name = ReplaceAll(name, ".", "\\.");
-      if (name != "") {
+    name = ReplaceAll(name, ".", "\\.");
+    if (name != "") {
         error.appendTo("#" + name + "Error");
-      }
     }
-
   }
 });
 

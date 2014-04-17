@@ -300,6 +300,7 @@ public class AuthenticationControllerTest extends WebTestsBase {
     String view = controller.loggedout(user.getUuid(), map, session, response,request);
     Cookie cookie = response.getCookie("JforumSSO");
     Assert.assertEquals(cookie.getValue(), "");
+    Assert.assertTrue(session.isInvalid());
     if (config.getAuthenticationService().compareToIgnoreCase("cas") == 0) {
       Assert.assertEquals(
           "redirect:" + config.getCasLogoutUrl() + "?service=" + URLEncoder.encode(config.getCasServiceUrl(), "UTF-8"),

@@ -6,16 +6,18 @@
 <script language="javascript">
 $(document).ready(function(){
   $("#advSrchCancel").click(function() {
-    
-    $("#advanceSearchDropdownDiv").hide(); 
+
+    $("#advanceSearchDropdownDiv").hide();  
   });
   
   $("form[id^='searchForm']").find("#name").focus();
   
 });
 function cancelSearch(){
-  
-  $("#advanceSearchDropdownDiv").hide();
+  $('#searchCompanyName').val($('#compName').val());
+  $('#searchMasterUser').val($('#masterUser').val());
+  $('#searchAccountId').val($('#accId').val());
+	$("#advanceSearchDropdownDiv").hide();
 }
 function getResults(event,form){
   var valid = false;
@@ -45,15 +47,15 @@ function getResults(event,form){
         <ul class="widget_actionpoplist advancesearchdropdown">
           <li>
             <span class="label"><spring:message code="ui.label.search.companyName"/>:</span>
-            <form:input cssClass="text" tabindex="1" path="name" value="${name}" />
+            <form:input id="searchCompanyName" cssClass="text" tabindex="1" path="name" value="${name}" />
           </li>
            <li>
             <span class="label"><spring:message code="ui.label.search.masterUser"/>:</span>
-            <form:input cssClass="text" tabindex="2" path="fieldName" value="${fieldName}" />
+            <form:input id="searchMasterUser" cssClass="text" tabindex="2" path="fieldName" value="${fieldName}" />
           </li>
          <li>
             <span class="label"><spring:message code="ui.label.search.accountId"/>:</span>
-            <form:input cssClass="text" tabindex="3" path="accountId" value="${accountId}" />
+            <form:input id="searchAccountId" cssClass="text" tabindex="3" path="accountId" value="${accountId}" />
           </li>
           <c:if test="${customFieldList != null}">
             <c:forEach items="${customFieldList}"  varStatus="status">
@@ -76,6 +78,9 @@ function getResults(event,form){
       </ul>
       <input type="hidden" name="accountType" id="accountType" value="<c:out value="${selectedAccountType}"/>" />
       <input type="hidden" name="filterBy" id="filterBy" value="<c:out value="${filterBy}"/>" />
+      <input type="hidden" name="compName" id="compName" value="<c:out value="${name}"/>" />
+      <input type="hidden" name="masterUser" id="masterUser" value="<c:out value="${fieldName}"/>" />
+      <input type="hidden" name="accId" id="accId" value="<c:out value="${accountId}"/>" />
       <input id="advSrchSubmit" class="submitbutton" tabindex="4" rel="<spring:message code="ui.label.search.rel.Searching"/>" type="submit" value="<spring:message code="ui.label.search.go"/>" />
       <input id="advSrchCancel" class="submitbutton" tabindex="5" onClick="javascript:cancelSearch();" type="button" value="<spring:message code="ui.label.search.cancel"/>" />
       

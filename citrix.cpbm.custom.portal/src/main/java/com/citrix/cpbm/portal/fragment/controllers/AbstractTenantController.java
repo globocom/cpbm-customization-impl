@@ -316,7 +316,10 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     } else {
       map.addAttribute("showMessagePendingConversion", false);
     }
-    if (proxyTenant.getAccountType().isDepositRequired()) {
+    if (proxyTenant.getAccountType().isDepositRequired()
+        && !(((PaymentGatewayService) connectorManagementService
+            .getOssServiceInstancebycategory(ConnectorType.PAYMENT_GATEWAY)).isAccountExistInPaymentGateway(proxyTenant
+            .getObject()))) {
       DepositRecord depositRecord = tenantService.getDepositRecordByTenant(proxyTenant.getObject());
       if (depositRecord == null
           && proxyTenant.getAccountType().getInitialDeposit(proxyTenant.getObject().getCurrency().getCurrencyCode())
@@ -1268,8 +1271,8 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     }
     if (size == null || size.equals("")) {
       if (hasStaticCriteria) {
-        sizeInt = tenantService.listTenants(0, 0, null, null, false, stateString, null, null,
-            null, null, searchKeyMap, null, null).size();
+        sizeInt = tenantService.listTenants(0, 0, null, null, false, stateString, null, null, null, null, searchKeyMap,
+            null, null).size();
       } else {
         sizeInt = tenantService.listTenants(0, 0, null, null, false, stateString, null,
             (accountTypeObj != null ? accountTypeObj.getId().toString() : null), null, null, null, null, null).size();
@@ -2390,10 +2393,10 @@ public class AbstractTenantController extends AbstractAuthenticatedController {
     if (promotion == null) {
       return Boolean.FALSE.toString();
     }
-    AccountType targetAccountType = null; 
-    if(StringUtils.isNotBlank(accountTypeId)){
+    AccountType targetAccountType = null;
+    if (StringUtils.isNotBlank(accountTypeId)) {
       targetAccountType = accountTypeService.locateAccountTypeById(accountTypeId);
-      if(!targetAccountType.isTrial() && promotion.isTrial()){
+      if (!targetAccountType.isTrial() && promotion.isTrial()) {
         return Boolean.FALSE.toString();
       }
     }

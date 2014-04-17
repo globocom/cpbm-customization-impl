@@ -10,7 +10,6 @@
   var nextPage='<c:out value="${nextPage}"/>';
   var prevPage='<c:out value="${prevPage}"/>';
 </script>
-
 <spring:message code="dateonly.format" var="dateonly_format"/>
 <div class="widget_box" id="all_tasks">
     <div class="widget_leftpanel">
@@ -124,10 +123,10 @@
               </c:choose>
           </ul>
         </div>
-        <c:if test="${empty nextPage}">
+        <c:if test="${!enableNext}">
           <c:set var="nextButton" value="nonactive"/>
         </c:if>
-        <c:if test="${empty prevPage}">
+        <c:if test="${!enablePrevious}">
           <c:set var="prevButton" value="nonactive"/>
         </c:if>
         <div class="widget_panelnext">
