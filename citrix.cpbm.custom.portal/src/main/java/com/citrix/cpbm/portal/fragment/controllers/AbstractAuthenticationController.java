@@ -323,6 +323,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
       eventService.createEvent(new Date(), user, message, messageArgs, Source.PORTAL, Scope.USER, Category.ACCOUNT,
           Severity.INFORMATION, true);
     }
+    session.invalidate();
     if (config.getAuthenticationService().compareToIgnoreCase(CAS) == 0) {
       try {
         redirect = StringUtils.isEmpty(config.getCasLogoutUrl()) ? null : config.getCasLogoutUrl() + "?service="
@@ -334,7 +335,7 @@ public abstract class AbstractAuthenticationController extends AbstractBaseContr
         throw new InternalError("CAS authentication required, but login url not set");
       }
     }
-    session.invalidate();
+    
     SecurityContextHolder.getContext().setAuthentication(null);
     // ends
     logger.debug("###Exiting loggedout(response) method");
