@@ -65,7 +65,7 @@ var perPageValue = "<c:out value="${perPage}"/>";
                             <spring:message var="i18nJobName" code="batch.jobName.${batch.jobName}" text=""/>
                             <c:choose>
                               <c:when test="${not empty i18nJobName}">
-                                <c:out value="${i18nJobName}"/>
+                                <spring:message code="batch.jobName.${batch.jobName}"/>
                               </c:when>
                               <c:otherwise>
                                 <c:set var="jobName" value="${batch.jobName}"/>

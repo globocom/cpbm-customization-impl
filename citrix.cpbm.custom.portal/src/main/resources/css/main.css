@@ -7689,6 +7689,11 @@ div#recaptcha_image>img {
 #editCurrentTenant li label {
   width: 100px;
 }
+
+#editCurrentTenant li label.error {
+  width: auto;
+}
+
 #editCurrentTenant div.commonboxes_formbox_panels {
   width: 48%;
 }
@@ -22386,7 +22391,8 @@ a.error{
 	color: red;
 }
 .login_formbox label.error{
-  color:#FF0000;
+  color:#C10101;
+  font-size: 10px;
 }
 .btn-group>.btn.btn-info.custom_font{
   font-size:14px;

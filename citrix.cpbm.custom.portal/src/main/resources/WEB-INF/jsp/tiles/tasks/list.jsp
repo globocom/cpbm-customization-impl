@@ -39,7 +39,7 @@
         <div class="widget_navigation">
           <ul class="widget_navigationlist" id="grid_row_container">
               <c:choose>
-                <c:when test="${empty tasksMap || tasksMap == null}">
+                <c:when test="${empty tasks || tasks == null}">
                   <c:set var="tasksLen" value="0"/>
                   <!--look when there is no list starts here-->
                   <li class="widget_navigationlist nonlist" id="non_list">
@@ -55,11 +55,11 @@
                   <!--look when there is no list ends here-->
                 </c:when>
                 <c:otherwise> 
-                  <c:forEach items="${tasksMap}" var="currentTaskMap" varStatus="taskStatus">                           
+                  <c:forEach items="${tasks}" var="currentTask" varStatus="taskStatus">                           
                       <c:choose>
                         <c:when test="${taskStatus.index == 0}">
-                          <c:set var="task" value="${currentTaskMap.key}" scope="request"/>
-                          <c:set var="taskUrl" value="${currentTaskMap.value}" scope="request"/>
+                          <c:set var="task" value="${currentTask}" scope="request"/>
+                          <c:set var="taskUrl" value="${tasksUrlMap.get(currentTask.uuid)}" scope="request"/>
                           <c:set var="selected" value="selected"/>
                           <c:set var="active" value="active"/>
                         </c:when>
@@ -68,14 +68,14 @@
                             <c:set var="active" value=""/>
                         </c:otherwise>
                       </c:choose> 
-                      <li class="<c:out value="widget_navigationlist ${selected} ${active} "/>" id="row${currentTaskMap.key.uuid }">
+                      <li class="<c:out value="widget_navigationlist ${selected} ${active} "/>" id="row${currentTask.uuid}">
                         <span id="nav_icon" class="navicon notifications"></span>
                         <div class="widget_navtitlebox db_gridbox_rows">
                           <span class="title">
-                            <spring:message code="ui.task.type.${currentTaskMap.key.type}.name" />
+                            <spring:message code="ui.task.type.${currentTask.type}.name" />
                           </span>
                           <span class="subtitle">
-                            <spring:message code="ui.task.createdAt" /> : <fmt:formatDate value="${currentTaskMap.key.createdAt}" pattern="${dateonly_format}" type="date" dateStyle="MEDIUM" timeZone="${currentUser.timeZone}"/>
+                            <spring:message code="ui.task.createdAt" /> : <fmt:formatDate value="${currentTask.createdAt}" pattern="${dateonly_format}" type="date" dateStyle="MEDIUM" timeZone="${currentUser.timeZone}"/>
                           </span>
                         </div>
                         <div class="widget_statusicon">
@@ -96,7 +96,7 @@
                                 </div>
                                 <div class="raw_contents_value">
                                   <span>
-                                    ${currentTaskMap.key.tenant.name}
+                                    ${currentTask.tenant.name}
                                   </span>
                                 </div>
                                </div>
@@ -108,7 +108,7 @@
                                 </div>
                                 <div class="raw_contents_value">
                                   <span>
-                                    <spring:message code="ui.task.state.${currentTaskMap.key.state}" />
+                                    <spring:message code="ui.task.state.${currentTask.state}" />
                                   </span>
                                 </div>
                                  </div>

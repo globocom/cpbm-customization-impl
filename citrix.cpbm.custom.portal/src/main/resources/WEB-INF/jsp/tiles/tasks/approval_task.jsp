@@ -122,8 +122,8 @@
 			</c:set>
 			<div class="widgetwizard_successbox tasks">
 				<div class="widget_resulticon success"></div>
-				<p class="hidden j_approved"><spring:message code="ui.widget.task.approved" arguments="${taskMessage},${transactionMessage}" /></p>
-				<p class="hidden j_rejected"><spring:message code="ui.widget.task.rejected" arguments="${taskMessage},${transactionMessage}" /></p>
+				<p class="hidden j_approved"><spring:message code="ui.widget.task.approved" arguments="${taskMessage},${transactionMessage}" htmlEscape="false"/></p>
+				<p class="hidden j_rejected"><spring:message code="ui.widget.task.rejected" arguments="${taskMessage},${transactionMessage}" htmlEscape="false"/></p>
 			</div>      
 	    </div>
 		</div>

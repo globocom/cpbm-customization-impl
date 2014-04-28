@@ -5,6 +5,8 @@
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -81,12 +83,17 @@ public abstract class AbstractTasksController extends AbstractAuthenticatedContr
       };
     }
 
-    Map<Task, String> tasksMap = taskService.getTasksMap(tenant, user, taskStates, page, perPage);
+    List<Task> tasks = taskService.getTasks(tenant, user, taskStates, page, perPage);
+    Map<String, String> taskUrlMap = new HashMap<String, String>();
+    for (Task task : tasks) {
+      taskUrlMap.put(task.getUuid(), taskService.getActionUrl(task));
+    }
 
     int totalCount = taskService.getTasksCount(tenant, user, taskStates);
     setPaginationValues(map, perPage , page, totalCount, null);
     
-    map.addAttribute("tasksMap", tasksMap);
+    map.addAttribute("tasks", tasks);
+    map.addAttribute("tasksUrlMap", taskUrlMap);
     map.addAttribute("tenant", tenant);
 
     map.addAttribute("taskfilters", Arrays.asList("ALL", "PENDING", "COMPLETED"));

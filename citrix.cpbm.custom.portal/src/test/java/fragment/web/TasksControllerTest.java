@@ -1,8 +1,7 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/
+ * Copyright © 2013 Citrix Systems, Inc. You may not use, copy, or modify this file except pursuant to a valid license
+ * agreement from Citrix Systems, Inc.
+ */
 /**
  * 
  */
@@ -13,7 +12,6 @@ import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -114,8 +112,9 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     request.setAttribute("isSurrogatedTenant", false);
     String tilesDef = tasksController.getTasks(getSystemTenant(), null, "ALL", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
-    Assert.assertTrue(map.containsKey("tasksMap"));
-    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertTrue(map.containsKey("tasks"));
+    Assert.assertTrue(map.containsKey("tasksUrlMap"));
+    List<String> tasksMap = (List<String>) map.get("tasks");
     Assert.assertEquals(6, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
     List<String> filters = (List<String>) map.get("taskfilters");
@@ -135,8 +134,8 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     request.setAttribute("isSurrogatedTenant", false);
     String tilesDef = tasksController.getTasks(getSystemTenant(), null, "PENDING", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
-    Assert.assertTrue(map.containsKey("tasksMap"));
-    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertTrue(map.containsKey("tasks"));
+    List<String> tasksMap = (List<String>) map.get("tasks");
     Assert.assertEquals(4, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
     List<String> filters = (List<String>) map.get("taskfilters");
@@ -156,8 +155,8 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     request.setAttribute("isSurrogatedTenant", false);
     String tilesDef = tasksController.getTasks(getSystemTenant(), null, "COMPLETED", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
-    Assert.assertTrue(map.containsKey("tasksMap"));
-    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertTrue(map.containsKey("tasks"));
+    List<String> tasksMap = (List<String>) map.get("tasks");
     Assert.assertEquals(2, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
     List<String> filters = (List<String>) map.get("taskfilters");
@@ -180,8 +179,8 @@ public class TasksControllerTest extends WebTestsBaseWithMockConnectors {
     request.setAttribute(UserContextInterceptor.EFFECTIVE_TENANT_KEY, tenant);
     String tilesDef = tasksController.getTasks(getSystemTenant(), tenantParam, "PENDING", 1, map, request);
     Assert.assertEquals("correct tiles def is not returned", "tasks.all", tilesDef);
-    Assert.assertTrue(map.containsKey("tasksMap"));
-    Map<Task, String> tasksMap = (Map<Task, String>) map.get("tasksMap");
+    Assert.assertTrue(map.containsKey("tasks"));
+    List<String> tasksMap = (List<String>) map.get("tasks");
     Assert.assertEquals(1, tasksMap.size());
     Assert.assertTrue(map.containsKey("taskfilters"));
     List<String> filters = (List<String>) map.get("taskfilters");

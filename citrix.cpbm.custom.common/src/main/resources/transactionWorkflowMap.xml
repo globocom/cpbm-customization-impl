@@ -10,6 +10,10 @@
   <Match type="tenantStateChange" workflow="manual-account-activation">
     <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE' and  #transaction.tenant.accountType.manualActivation == true}</Rule>
   </Match>
+
+  <Match type="tenantStateChange" workflow="default-account-activation">
+    <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE'}</Rule>
+  </Match>
   
   <Match type="tenantAccountTypeConversion" workflow="account-conversion-to-manual-activation-type">
     <Rule>{#transaction.accountType.manualActivation == true}</Rule>

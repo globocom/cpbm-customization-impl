@@ -246,13 +246,13 @@
                         </div>
                       </div>
                     </div> 
-                    <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.stateError" style="padding-left:110px;"></div>                    
+                    <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.stateError"></div>                    
                </li>  
                <li class="commonboxes_formbox equalwidth ellipsis" style="width: 430px;">
                   <form:label path="tenant.address.street1"><spring:message code="label.editcurrent.address1"/></form:label>
                   <div class="commonboxes_formbox_withouttextbox read ellipsis" id="address1_readvalue" style="max-width: 70%" title='<c:out value="${tenantForm.tenant.address.street1}"></c:out>'><c:out value="${tenantForm.tenant.address.street1}"></c:out></div> 
                   <div class="mandatory_wrapper write" ><form:input  cssClass="text" path="tenant.address.street1" tabindex="3"></form:input></div>
-                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.street1Error" style="padding-left:110px;"></div>
+                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.street1Error"></div>
                 </li>     
                 <li class="commonboxes_formbox equalwidth ellipsis" style="width: 430px;">
                   <form:label path="tenant.address.street2"><spring:message code="label.editcurrent.address2"/></form:label> 
@@ -263,13 +263,13 @@
                   <form:label path="tenant.address.city"><spring:message code="label.editcurrent.city"/></form:label>
                   <div class="commonboxes_formbox_withouttextbox read ellipsis" id="city_readvalue" style="max-width: 70%" title='<c:out value="${tenantForm.tenant.address.city}"></c:out>'><c:out value="${tenantForm.tenant.address.city}"></c:out></div> 
                   <div class="mandatory_wrapper write" ><form:input  cssClass="text" path="tenant.address.city" tabindex="5"></form:input></div>
-                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.cityError" style="padding-left:110px;"></div>
+                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.cityError"></div>
                 </li>
                 <li class="commonboxes_formbox equalwidth last" style="width: 430px;">
                   <form:label path="tenant.address.postalCode"><spring:message code="label.editcurrent.zip"/></form:label>
                   <div class="commonboxes_formbox_withouttextbox read" id="postalcode_readvalue"><c:out value="${tenantForm.tenant.address.postalCode}"></c:out></div>
                   <div class="mandatory_wrapper write" ><form:input cssClass="text" path="tenant.address.postalCode" maxLength="25" tabindex="6"></form:input></div>
-                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.postalCodeError" style="padding-left:110px;"></div>
+                  <div class="main_addnew_formbox_myprofile_errormsg" id="tenant.address.postalCodeError"></div>
                 </li>    
                  </ul>
                  </div>

@@ -198,7 +198,7 @@
               <div class="row highlighted" id="usageTypeAdd">
                 <input type="hidden" id="uom" name="uom" />
                 <div class="gridcell" style="width: 26%;">
-                  <select class="text expandable-select" tabindex="116" id="usagetype" onchange="changeUom(this)">
+                  <select class="select1 expandable-select2" tabindex="116" id="usagetype" onchange="changeUom(this)">
                   </select>
                 </div>
                 <div class="gridcell" style="width: 40%;">

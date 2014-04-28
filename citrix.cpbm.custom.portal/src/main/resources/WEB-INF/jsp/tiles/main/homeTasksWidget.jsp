@@ -97,7 +97,7 @@
 								<a href="javascript:void(0);" class="taskPopup taskname"
 									id="taskPopup<c:out value='${pendingChange.key.uuid}'/>"> <spring:message
 										code="ui.widget.task.approval"
-										arguments="${taskMessage},${transactionMessage}" />
+										arguments="${taskMessage},${transactionMessage}" htmlEscape="false"/>
 								</a>
 							</c:when>
 							<c:otherwise>

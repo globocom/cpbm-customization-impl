@@ -138,11 +138,9 @@ var subscriptionButtonVisiblity = true;
 <!--catalog list will starts here-->
 <c:choose>
   <c:when test="${not empty cloudServiceException && cloudServiceException}">
-    <c:if test="${not empty cloudServiceExceptionStr}">
       <div style="width: 95%;float:left;" class="alert alert-error">
-        <c:out value="${cloudServiceExceptionStr}" />
+        <spring:message code="cloud.service.down" />
       </div>
-    </c:if>
   </c:when>
   <c:otherwise>
     <div id="catalog_content_area" class="widgetcatalog_contentarea">

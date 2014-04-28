@@ -101,6 +101,9 @@
   width: auto;
   position: absolute;
 }
+.expandable-select2:focus {
+  width: auto;
+}
 
 </style>
 <![endif]-->

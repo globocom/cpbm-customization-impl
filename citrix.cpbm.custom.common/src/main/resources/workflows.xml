@@ -28,6 +28,15 @@
     </Bucket>     
   </Workflow>
   
+  <Workflow name="default-account-activation">
+    <Bucket name="identity-verification" order="1">
+      <Activity name="verifyMasterUserEmailActivity" ref="verifyMasterUserEmailActivity" />
+    </Bucket>
+    <Bucket name="accounts-creation" order="2">
+      <Activity name="createOSSAccountActivity" ref="createOSSAccountActivity" />
+    </Bucket>     
+  </Workflow>
+
   <Workflow name="account-conversion-to-manual-activation-type">
     <Bucket order="1">
       <Activity name="financeInternalApprovalActivity" ref="financeInternalApprovalActivity" />
