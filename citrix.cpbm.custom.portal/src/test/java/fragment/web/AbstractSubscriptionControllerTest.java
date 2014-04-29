@@ -5,8 +5,11 @@
 package fragment.web;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Currency;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +30,16 @@ import org.springframework.validation.BindingResult;
 import web.WebTestsBase;
 
 import com.citrix.cpbm.access.proxy.CustomProxy;
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.platform.admin.service.exceptions.ConnectorManagementServiceException;
 import com.citrix.cpbm.platform.spi.CloudConnector;
 import com.citrix.cpbm.platform.spi.DynamicResourceTypeMetadataRegistry;
 import com.citrix.cpbm.platform.spi.FilterComponent;
 import com.citrix.cpbm.platform.spi.ResourceComponent;
 import com.citrix.cpbm.portal.forms.SubscriptionForm;
+import com.citrix.cpbm.portal.fragment.controllers.ChannelController;
+import com.citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
+import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
 import com.citrix.cpbm.portal.fragment.controllers.SubscriptionController;
 import com.vmops.internal.service.SubscriptionService;
 import com.vmops.model.Channel;
@@ -41,9 +48,15 @@ import com.vmops.model.ChargeRecurrenceFrequency;
 import com.vmops.model.Configuration;
 import com.vmops.model.Product;
 import com.vmops.model.ProductBundle;
+import com.vmops.model.ProductBundleRevision;
 import com.vmops.model.ProductCharge;
+import com.vmops.model.ProvisioningConstraint;
+import com.vmops.model.ProvisioningConstraint.AssociationType;
+import com.vmops.model.RateCard;
+import com.vmops.model.RateCardCharge;
 import com.vmops.model.ServiceInstance;
 import com.vmops.model.ServiceResourceType;
+import com.vmops.model.ServiceResourceType.ResourceConstraint;
 import com.vmops.model.ServiceResourceTypeGeneratedUsage;
 import com.vmops.model.Subscription;
 import com.vmops.model.Tenant;
@@ -55,6 +68,8 @@ import com.vmops.service.ChannelService;
 import com.vmops.service.ConfigurationService;
 import com.vmops.service.ProductBundleService;
 import com.vmops.service.TenantService;
+import com.vmops.web.forms.ProductBundleForm;
+import com.vmops.web.forms.ProductForm;
 import com.vmops.web.interceptors.UserContextInterceptor;
 import common.MockCloudInstance;
 
@@ -62,6 +77,18 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
 
   @Autowired
   SubscriptionController controller;
+
+  @Autowired
+  private ProductBundlesController bundleController;
+
+  @Autowired
+  private ChannelController channelController;
+
+  @Autowired
+  private ProductsController productsController;
+
+  @Autowired
+  private ConnectorConfigurationManager connectorConfigurationManager;
 
   @Autowired
   TenantService service;
@@ -895,6 +922,1215 @@ public class AbstractSubscriptionControllerTest extends WebTestsBase {
   @ExpectedException(NoSuchDefinitionException.class)
   public void testAnonymousCatalogFail() {
     controller.anonymousCatalog(map, null, "JPY", null, null, request);
+  }
+
+  private ServiceInstance getServiceInstanceByID(Long id) {
+    ServiceInstance serviceInstance = null;
+    List<ServiceInstance> serviceInstancesList = this.serviceInstanceDAO.getAllServiceInstances();
+    for (ServiceInstance si : serviceInstancesList) {
+      if (si.getId() == id) {
+        serviceInstance = si;
+        break;
+      }
+    }
+    return serviceInstance;
+  }
+
+  /**
+   * Description : To Test bundles with zone as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testBundleSubscriptionAsZoneIncludes() throws Exception {
+
+    Tenant tenant = tenantService.getTenantByParam("id", "20", false);
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "zone");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "123");
+    pcmap1.put("displayName", "zone");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=123,Template=56,SO=10, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // the bundle should be listed
+    Assert.assertTrue("Bundle is not listing with a valid selection of zone, which is included in the bundle ",
+        bundleListingStatus);
+
+  }
+
+  private String updateBundleConstraints(long bundleID, String channelID,
+      List<Map<String, Object>> provisioningConstraints) throws Exception {
+
+    ProductBundle bundle = bundleservice.getProductBundleById(bundleID);
+    bundle.setBusinessConstraint(ResourceConstraint.NONE);
+    bundleservice.updateProductBundle(bundle, true);
+
+    // Get the Channel
+    Channel channel = channelService.getChannelById(channelID);
+
+    if (provisioningConstraints != null)
+      for (Map<String, Object> pcmap : provisioningConstraints) {
+        ProvisioningConstraint pc = new ProvisioningConstraint(pcmap.get("componentName").toString(),
+            (AssociationType) pcmap.get("associationType"), pcmap.get("componentValue").toString(), bundle);
+        pc.setRevision(channelService.getCurrentRevision(channel));
+        pc.setComponentValueDisplayName(pcmap.get("displayName").toString());
+        channelDAO.saveGenericEntity(pc);
+      }
+
+    // Sync channel with reference price book
+    String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+
+    return syncStatus;
+
+  }
+
+  /**
+   * Description : To Test bundles with zone as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page with a invalid selection of zone which is not given in the bundle
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsZoneIncludesAndInvalidSelection() throws Exception {
+
+    Tenant tenant = tenantService.getTenantByParam("id", "20", false);
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "zone");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "123");
+    pcmap1.put("displayName", "zone");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=124,Template=56,SO=10, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // the bundle should not be listed
+    Assert.assertFalse("Bundle is listed for a an invalid selection of zone, which is not included in the bundle",
+        bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with zone as provisional constraint excluded , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsZoneExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "zone");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "123");
+    pcmap1.put("displayName", "zone");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=123,Template=56,SO=10, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle listed for an excluded zone filter in the bundle ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsSOIncludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), null);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=10, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should be listed
+    Assert.assertTrue("Bundle is not listing for SO id, which is included in the bundle", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page, with invalid selection of SO which is not included in the bundle
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsSOIncludesAndInvalidSelection() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), null);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=11, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // the should not be listed
+    Assert.assertFalse("Bundle is listing for SO id, which is not included in the bundle", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Excluded , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsSOExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(13L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("3");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "SO");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "SO");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle listed for the SO which is excluded in the bundle ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Template as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsTemplateExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "Template");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "14");
+    pcmap1.put("displayName", "Template");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=14,SO=10,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle is listed for the template which is excluded in the bundle", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsTemplateIncludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "Template");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "Template");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=20,SO=10,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should be listed
+    Assert.assertTrue("Bundle is not be listed for the SO which is included in the bundle", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Template as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page with invalid Template selection which is not included in the bundle
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsTemplateIncludesAndInvalidSelection() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "Template");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "Template");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=21,SO=10,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // the bundle should not be listed
+    Assert.assertFalse("Bundle is listed for template, which is not included in the bundle ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Hypervisor as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorIncludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "hypervisor");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "KVM");
+    pcmap1.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=10,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // the bundle should be listed
+    Assert.assertTrue("Bundle is not listed  ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Hypervisor as provisional constraint Included , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorIncludesAndInvalidSelection() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "hypervisor");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "KVM");
+    pcmap1.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=10,hypervisor=XenServer",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle listed for hypervisor, which is not included in the bundle ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with hypervisor as provisional constraint excluded , will be filtered as per the
+   * Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "hypervisor");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "KVM");
+    pcmap1.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=10,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle listed for hypervisor excluded from the bundle", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Hypervisor as provisional constraint Included and SO as provisional constraint
+   * Included but will be selected a different SO, will be filtered as per the Provisional constraint given on catalog
+   * page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorIncludesSOIncludesAndInvalidSelection() throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "hypervisor");
+    pcmap1.put("associationType", AssociationType.INCLUDES);
+    pcmap1.put("componentValue", "KVM");
+    pcmap1.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=11,hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should not be listed
+    Assert.assertFalse("Bundle should not be listed, but listing for a invalid selection ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included and Hypervisor excluded and invalid
+   * selection of hypervisor, will be filtered as per the Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorExcludesSOIncludeAndInvalidHypervisorSelection()
+      throws Exception {
+
+    Tenant tenant = tenantDAO.find("20");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(2L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("5");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "hypervisor");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "KVM");
+    pcmap1.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap1);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=56,SO=10,hypervisor=XenServer",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    // bundle should be available
+    Assert.assertTrue("Bundle should be listed ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Hypervisor as provisional constraint excluded and SO included and invalid
+   * selection of SO , will be filtered as per the Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorIncludeSOExcludesAndInvalidSOSelection() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(13L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("3");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "SO");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "SO");
+    provisioningConstraints.add(pcmap1);
+
+    Map<String, Object> pcmap2 = new HashMap<String, Object>();
+    pcmap2.put("componentName", "hypervisor");
+    pcmap2.put("associationType", AssociationType.INCLUDES);
+    pcmap2.put("componentValue", "KVM");
+    pcmap2.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap2);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=21, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    Assert.assertTrue("Bundle should be listed ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with Hypervisor as provisional constraint Included and SO Excluded, will be filtered
+   * as per the Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorIncludeSOExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(13L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("3");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "SO");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "SO");
+    provisioningConstraints.add(pcmap1);
+
+    Map<String, Object> pcmap2 = new HashMap<String, Object>();
+    pcmap2.put("componentName", "hypervisor");
+    pcmap2.put("associationType", AssociationType.INCLUDES);
+    pcmap2.put("componentValue", "KVM");
+    pcmap2.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap2);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    Assert.assertFalse("Bundle should not be listed ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Excludes and Hypervisor Excludes , will be filtered
+   * as per the Provisional constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionAsHypervisorExcludeSOExcludes() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+
+    ProductBundle bundle = bundleservice.getProductBundleById(13L);
+    String bundleName = bundle.getName();
+    Channel channel = channelService.getChannelById("3");
+
+    List<Map<String, Object>> provisioningConstraints = new ArrayList<Map<String, Object>>();
+    Map<String, Object> pcmap1 = new HashMap<String, Object>();
+    pcmap1.put("componentName", "SO");
+    pcmap1.put("associationType", AssociationType.EXCLUDES);
+    pcmap1.put("componentValue", "20");
+    pcmap1.put("displayName", "SO");
+    provisioningConstraints.add(pcmap1);
+
+    Map<String, Object> pcmap2 = new HashMap<String, Object>();
+    pcmap2.put("componentName", "hypervisor");
+    pcmap2.put("associationType", AssociationType.EXCLUDES);
+    pcmap2.put("componentValue", "KVM");
+    pcmap2.put("displayName", "hypervisor");
+    provisioningConstraints.add(pcmap2);
+
+    String status = updateBundleConstraints(bundle.getId(), channel.getId().toString(), provisioningConstraints);
+    Assert.assertNotNull("syncChannel returned null", status);
+    Assert.assertEquals("after doing syncChannel, the expected return value is success ", "success", status);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(bundleName)) {
+        bundleListingStatus = true;
+      }
+    }
+
+    Assert.assertFalse("Bundle should not be listed ", bundleListingStatus);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionWithNoprovisionConstraints() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+    Channel channel = channelDAO.find("3");
+    ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+    String chargeFrequency = "MONTHLY";
+    String compAssociationJson = "[]";
+    int noOfdays = 3;
+    Calendar createdAt = Calendar.getInstance();
+    createdAt.add(Calendar.DATE, 0 - noOfdays);
+    int beforeBundleCount = bundleservice.getBundlesCount();
+    boolean trialEligible = false;
+
+    // Create a Bundle
+    ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency,
+        chargeFrequency + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+        ResourceConstraint.NONE, trialEligible);
+    Assert.assertNotNull("The bundle is null ", obtainedBundle);
+    Assert.assertEquals("the expected bundle name and the actual bundle name is not matching", chargeFrequency
+        + "Compute", obtainedBundle.getName());
+    Assert.assertEquals("Bundle resource type is not matching", resourceType, obtainedBundle.getResourceType());
+
+    int afterBundleCount = bundleservice.getBundlesCount();
+    Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 1,
+        afterBundleCount);
+
+    // Schedule Activating the Bundle
+    int noOfdays1 = 0;
+    Calendar scheduleActivatedAt = Calendar.getInstance();
+    scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+    ProductForm postForm = new ProductForm();
+    postForm.setStartDate(new Date());
+    BindingResult result = validate(postForm);
+    String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+    Assert.assertNotNull(" scheduleActivationStatus is null ", scheduleActivationStatus);
+    Assert.assertEquals("scheduleActivationStatus status is not success", "success", scheduleActivationStatus);
+
+    // Sync channel with reference price book
+    String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+    Assert.assertNotNull(" syncStatus is null ", syncStatus);
+    Assert.assertEquals("sync status is not success", "success", syncStatus);
+
+    // Attaching product bundle to the channel
+    String selectedProductBundles = "[" + obtainedBundle.getId().toString() + "]";
+    String result1 = channelController.attachProductBundles(channel.getId().toString(), selectedProductBundles, map);
+    Assert.assertNotNull(" attachProductBundles returned null ", result1);
+    Assert.assertEquals("attachProductBundles status is not success", "success", result1);
+
+    // Schedule Activating the channel
+    SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+    String currentdate = sdf.format(new Date());
+    String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy", map);
+    Assert.assertNotNull("changePlanDate returned null", cres);
+    Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus1 = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(obtainedBundle.getName())) {
+        bundleListingStatus1 = true;
+      }
+    }
+
+    Assert.assertTrue("Bundle should be listed ", bundleListingStatus1);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionWithNoprovisionConstraintsUnPublished() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+    Channel channel = channelDAO.find("3");
+    ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+    String chargeFrequency = "MONTHLY";
+    String compAssociationJson = "[]";
+    int noOfdays = 3;
+    Calendar createdAt = Calendar.getInstance();
+    createdAt.add(Calendar.DATE, 0 - noOfdays);
+    int beforeBundleCount = bundleservice.getBundlesCount();
+    boolean trialEligible = false;
+
+    // Create a Bundle
+    ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency,
+        chargeFrequency + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+        ResourceConstraint.NONE, trialEligible);
+    Assert.assertNotNull("The bundle is null ", obtainedBundle);
+    Assert.assertEquals("the expected bundle name and the actual bundle name is not matching", chargeFrequency
+        + "Compute", obtainedBundle.getName());
+    Assert.assertEquals("Bundle resource type is not matching", resourceType, obtainedBundle.getResourceType());
+
+    int afterBundleCount = bundleservice.getBundlesCount();
+    Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 1,
+        afterBundleCount);
+
+    // Schedule Activating the Bundle
+    int noOfdays1 = 0;
+    Calendar scheduleActivatedAt = Calendar.getInstance();
+    scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+    ProductForm postForm = new ProductForm();
+    postForm.setStartDate(new Date());
+    BindingResult result = validate(postForm);
+    String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+    Assert.assertNotNull(" scheduleActivationStatus is null ", scheduleActivationStatus);
+    Assert.assertEquals("scheduleActivationStatus status is not success", "success", scheduleActivationStatus);
+
+    // Sync channel with reference price book
+    String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+    Assert.assertNotNull(" syncStatus is null ", syncStatus);
+    Assert.assertEquals("sync status is not success", "success", syncStatus);
+
+    // Attaching product bundle to the channel
+    String selectedProductBundles = "[" + obtainedBundle.getId().toString() + "]";
+    String result1 = channelController.attachProductBundles(channel.getId().toString(), selectedProductBundles, map);
+    Assert.assertNotNull(" attachProductBundles returned null ", result1);
+    Assert.assertEquals("attachProductBundles status is not success", "success", result1);
+
+    // unpublish the bundle
+    obtainedBundle.setPublish(false);
+    bundleservice.updateProductBundle(obtainedBundle, false);
+
+    // Schedule Activating the channel
+    SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+    String currentdate = sdf.format(new Date());
+    String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy", map);
+    Assert.assertNotNull("changePlanDate returned null", cres);
+    Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus1 = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(obtainedBundle.getName())) {
+        bundleListingStatus1 = true;
+      }
+    }
+
+    Assert.assertFalse("Bundle should not be listed ", bundleListingStatus1);
+
+  }
+
+  /**
+   * Description : To Test bundles with SO as provisional constraint Included , will be filtered as per the Provisional
+   * constraint given on catalog page
+   * 
+   * @author nageswarap
+   * @throws Exception
+   */
+  @Test
+  public void testResourceBundleSubscriptionWithNoprovisionConstraintsUnAttached() throws Exception {
+
+    Tenant tenant = tenantDAO.find("9");
+    Channel channel = channelDAO.find("3");
+    ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+    String chargeFrequency = "MONTHLY";
+    String compAssociationJson = "[]";
+    int noOfdays = 3;
+    Calendar createdAt = Calendar.getInstance();
+    createdAt.add(Calendar.DATE, 0 - noOfdays);
+    int beforeBundleCount = bundleservice.getBundlesCount();
+    boolean trialEligible = false;
+
+    // Create a Bundle
+    ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency,
+        chargeFrequency + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+        ResourceConstraint.NONE, trialEligible);
+    Assert.assertNotNull("The bundle is null ", obtainedBundle);
+    Assert.assertEquals("the expected bundle name and the actual bundle name is not matching", chargeFrequency
+        + "Compute", obtainedBundle.getName());
+    Assert.assertEquals("Bundle resource type is not matching", resourceType, obtainedBundle.getResourceType());
+
+    int afterBundleCount = bundleservice.getBundlesCount();
+    Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 1,
+        afterBundleCount);
+
+    // Schedule Activating the Bundle
+    int noOfdays1 = 0;
+    Calendar scheduleActivatedAt = Calendar.getInstance();
+    scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+    ProductForm postForm = new ProductForm();
+    postForm.setStartDate(new Date());
+    BindingResult result = validate(postForm);
+    String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+    Assert.assertNotNull(" scheduleActivationStatus is null ", scheduleActivationStatus);
+    Assert.assertEquals("scheduleActivationStatus status is not success", "success", scheduleActivationStatus);
+
+    // Sync channel with reference price book
+    String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+    Assert.assertNotNull(" syncStatus is null ", syncStatus);
+    Assert.assertEquals("sync status is not success", "success", syncStatus);
+
+    // Schedule Activating the channel
+    SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+    String currentdate = sdf.format(new Date());
+    String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy", map);
+    Assert.assertNotNull("changePlanDate returned null", cres);
+    Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+    // Checking as Master User
+    asUser(tenant.getOwner());
+
+    // Getting the list of bundles on catalog page
+    request.setAttribute("effectiveTenant", tenant);
+    String currencyCode = channelService.listCurrencies(channel.getParam()).get(0).getCurrencyCode();
+    List<ProductBundleRevision> pbrlist = bundleController.listProductBundles(tenant, tenant.getParam(),
+        getServiceInstanceByID(1L).getUuid(), "VirtualMachine", "zone=121,Template=200,SO=20, hypervisor=KVM",
+        "PSI_UD1=10", true, "current", channel.getId().toString(), currencyCode, null, null, request);
+
+    // Verify the Bundle is not available for the channel to add
+    boolean bundleListingStatus1 = false;
+    for (ProductBundleRevision pbr : pbrlist) {
+      if (pbr.getProductBundle().getName().equalsIgnoreCase(obtainedBundle.getName())) {
+        bundleListingStatus1 = true;
+      }
+    }
+
+    Assert.assertFalse("Bundle should not be listed ", bundleListingStatus1);
+
+  }
+
+  /*
+   * Description: Private Test to create Bundles based on the parameters Author: Vinayv
+   */
+  private ProductBundle testCreateProductBundle(String serviceInstanceID, String resourceTypeID, String chargeType,
+      String bundleName, String currencyCode, BigDecimal currencyValue, Date startDate, String jsonString,
+      ResourceConstraint businessConstraint, boolean trialEligible) throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find(serviceInstanceID);
+    ServiceResourceType resourceType = null;
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      resourceType = connectorConfigurationManager.getServiceResourceTypeById(Long.parseLong(resourceTypeID));
+    }
+    List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
+    RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode(currencyCode), null,
+        currencyValue, "RateCharge", getRootUser(), getRootUser(), channelService.getFutureRevision(null));
+    rateCardChargeList.add(rcc);
+    String chargeTypeName = chargeType;
+    if (chargeType.equalsIgnoreCase("Invalid")) {
+      chargeTypeName = "NONE";
+    }
+    RateCard rateCard = new RateCard("Rate", bundleservice.getChargeRecurrencyFrequencyByName(chargeTypeName),
+        new Date(), getRootUser(), getRootUser());
+    String compAssociationJson = jsonString;
+
+    ProductBundle bundle = new ProductBundle(bundleName, bundleName, "", startDate, startDate, getRootUser());
+    bundle.setBusinessConstraint(businessConstraint);
+    bundle.setCode(bundleName);
+    bundle.setPublish(true);
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      bundle.setResourceType(resourceType);
+    }
+    bundle.setServiceInstanceId(serviceInstance);
+    bundle.setTrialEligibility(trialEligible);
+    bundle.setRateCard(rateCard);
+
+    ProductBundleForm form = new ProductBundleForm(bundle);
+    form.setChargeType(chargeType);
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      form.setResourceType(resourceType.getId().toString());
+    } else {
+      form.setResourceType("sb");
+    }
+    form.setServiceInstanceUUID(serviceInstance.getUuid());
+    form.setBundleOneTimeCharges(rateCardChargeList);
+    if (!chargeType.equalsIgnoreCase("NONE")) {
+      form.setBundleRecurringCharges(rateCardChargeList);
+    }
+    form.setCompAssociationJson(compAssociationJson);
+
+    BindingResult result = validate(form);
+    ProductBundle obtainedBundle = bundleController.createProductBundle(form, result, map, response);
+
+    return obtainedBundle;
   }
 
 }

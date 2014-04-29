@@ -8,9 +8,11 @@ import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,11 +37,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import web.WebTestsBase;
 
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
 import com.citrix.cpbm.portal.fragment.controllers.ChannelController;
 import com.citrix.cpbm.portal.fragment.controllers.ProductBundlesController;
 import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
 import com.vmops.model.AccountType;
 import com.vmops.model.Address;
+import com.vmops.model.Catalog;
 import com.vmops.model.Channel;
 import com.vmops.model.ChannelRevision;
 import com.vmops.model.Configuration;
@@ -48,8 +53,12 @@ import com.vmops.model.ProductBundle;
 import com.vmops.model.ProductBundleRevision;
 import com.vmops.model.ProductCharge;
 import com.vmops.model.ProductRevision;
+import com.vmops.model.RateCard;
 import com.vmops.model.RateCardCharge;
 import com.vmops.model.Revision;
+import com.vmops.model.ServiceInstance;
+import com.vmops.model.ServiceResourceType;
+import com.vmops.model.ServiceResourceType.ResourceConstraint;
 import com.vmops.model.SupportedCurrency;
 import com.vmops.model.Tenant;
 import com.vmops.model.User;
@@ -57,6 +66,7 @@ import com.vmops.persistence.CatalogProductBundleDAO;
 import com.vmops.persistence.ChannelDAO;
 import com.vmops.persistence.ChargeRecurrenceFrequencyDAO;
 import com.vmops.persistence.RateCardComponentDAO;
+import com.vmops.persistence.RevisionDAO;
 import com.vmops.persistence.ServiceConfigurationMetaDataDAO;
 import com.vmops.persistence.ServiceInstanceDao;
 import com.vmops.persistence.ServiceResourceTypeDAO;
@@ -72,6 +82,8 @@ import com.vmops.web.controllers.menu.Page;
 import com.vmops.web.forms.ChannelLogoForm;
 import com.vmops.web.forms.ChannelServiceSetting;
 import com.vmops.web.forms.ChannelServiceSettingsForm;
+import com.vmops.web.forms.ProductBundleForm;
+import com.vmops.web.forms.ProductForm;
 import com.vmops.web.forms.RateCardChargesForm;
 import com.vmops.web.forms.RateCardComponentChargesForm;
 
@@ -85,6 +97,9 @@ public class ChannelControllerTest extends WebTestsBase {
   private HttpServletResponse response;
 
   private HttpServletRequest request;
+
+  @Autowired
+  private ConnectorConfigurationManager connectorConfigurationManager;
 
   @Autowired
   private ChannelService channelService;
@@ -109,6 +124,12 @@ public class ChannelControllerTest extends WebTestsBase {
 
   @Autowired
   ChannelDAO channelDAO;
+
+  @Autowired
+  RevisionDAO revisionDAO;
+
+  @Autowired
+  private ProductBundlesController bundleController;
 
   @Autowired
   ProductBundlesController productBundlesController;
@@ -1531,4 +1552,589 @@ public class ChannelControllerTest extends WebTestsBase {
     Assert.assertEquals(beforeCount, afterCount);
     logger.info("Exiting testCreateChannelWithDuplicateCode test");
   }
+
+  /**
+   * Description : Test to verify the product bundles in channels current revision/ current tab
+   * 
+   * @author nageswarap
+   */
+  @Ignore
+  @Test
+  public void testViewBundlesInCatalogCurrentRevision() {
+    try {
+
+      String expectedChannelName = "Veera" + random;
+
+      // Creating a Channel
+      String[] currencyValueList = {
+        "USD"
+      };
+
+      Channel channel = channelController.createChannel(expectedChannelName, "Veera", "Veera", currencyValueList, map,
+          response);
+      Assert.assertNotNull("createChannel returned null", channel);
+      Assert.assertEquals("The Channnle not created with the given name", expectedChannelName, channel.getName());
+
+      ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+      String chargeFrequency = "MONTHLY";
+      String compAssociationJson = "[]";
+      int noOfdays = 3;
+      Calendar createdAt = Calendar.getInstance();
+      createdAt.add(Calendar.DATE, 0 - noOfdays);
+      int beforeBundleCount = bundleService.getBundlesCount();
+      boolean trialEligible = false;
+
+      // Create a Bundle
+      ProductBundle obtainedBundle = testCreateProductBundle("1", resourceType.getId().toString(), chargeFrequency,
+          chargeFrequency + "Compute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+          ResourceConstraint.NONE, trialEligible);
+      Assert.assertNotNull("The bundle is null ", obtainedBundle);
+      Assert.assertEquals("the expected bundle name and the actual bundle name is not matching", chargeFrequency
+          + "Compute", obtainedBundle.getName());
+      Assert.assertEquals("Bundle resource type is not matching", resourceType, obtainedBundle.getResourceType());
+
+      int afterBundleCount = bundleService.getBundlesCount();
+      Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 1,
+          afterBundleCount);
+
+      // Schedule Activating the Bundle
+      int noOfdays1 = 0;
+      Calendar scheduleActivatedAt = Calendar.getInstance();
+      scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+      ProductForm postForm = new ProductForm();
+      postForm.setStartDate(new Date());
+      BindingResult result = validate(postForm);
+      String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+      Assert.assertNotNull(" scheduleActivationStatus is null ", scheduleActivationStatus);
+      Assert.assertEquals("scheduleActivationStatus status is not success", "success", scheduleActivationStatus);
+
+      // Sync channel with reference price book
+      String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+      Assert.assertNotNull(" syncStatus is null ", syncStatus);
+      Assert.assertEquals("sync status is not success", "success", syncStatus);
+
+      // Attaching product bundle to the channel
+      String selectedProductBundles = "[" + obtainedBundle.getId().toString() + "]";
+      String attachBundleStatus = channelController.attachProductBundles(channel.getId().toString(),
+          selectedProductBundles, map);
+      Assert.assertNotNull(" attachBundleStatus is null ", attachBundleStatus);
+      Assert.assertEquals("attachBundleStatus status is not success", "success", attachBundleStatus);
+
+      // Schedule Activate Channel
+      SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+      String currentdate = sdf.format(new Date());
+      String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy", map);
+      Assert.assertNotNull("changePlanDate returned null", cres);
+      Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+      channelController.viewCatalogCurrent(channel.getId().toString(), "1", "10", map);
+
+      boolean found = false;
+      List<ProductBundleRevision> productBundleRevisions = (List<ProductBundleRevision>) map
+          .get("productBundleRevisions");
+      for (ProductBundleRevision productbundleRevision : productBundleRevisions) {
+        if (productbundleRevision.getProductBundle().getName().equalsIgnoreCase(obtainedBundle.getName())) {
+          found = true;
+        }
+      }
+
+      Assert.assertTrue("The Given bundle not found in viewCatalogCurrent", found);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Description : Test to verify the product bundles in channels planned revision/ planned tab
+   * 
+   * @author nageswarap
+   */
+  @Test
+  public void testViewBundlesInCatalogPlannedRevision() {
+    try {
+
+      String expectedChannelName = "Veera";
+
+      // Creating a Channel
+      String[] currencyValueList = {
+        "USD"
+      };
+
+      Channel channel = channelController.createChannel(expectedChannelName, "Veera", "Veera", currencyValueList, map,
+          response);
+      Assert.assertNotNull("createChannel returned null", channel);
+      Assert.assertEquals("The Channnle not created with the given name", expectedChannelName, channel.getName());
+
+      ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+      String chargeFrequency = "MONTHLY";
+      String compAssociationJson = "[]";
+      int noOfdays = 3;
+      Calendar createdAt = Calendar.getInstance();
+      createdAt.add(Calendar.DATE, 0 - noOfdays);
+      int beforeBundleCount = bundleService.getBundlesCount();
+      boolean trialEligible = false;
+
+      // Create a Bundle
+      ProductBundle obtainedBundlecurrent = testCreateProductBundle("1", resourceType.getId().toString(),
+          chargeFrequency, "CurrentCompute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+          ResourceConstraint.NONE, trialEligible);
+      Assert.assertNotNull("The bundle is null ", obtainedBundlecurrent);
+
+      ProductBundle obtainedBundleplanned = testCreateProductBundle("1", resourceType.getId().toString(),
+          chargeFrequency, "PlannedCompute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+          ResourceConstraint.NONE, trialEligible);
+      Assert.assertNotNull("The bundle is null ", obtainedBundleplanned);
+
+      int afterBundleCount = bundleService.getBundlesCount();
+      Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 2,
+          afterBundleCount);
+
+      // Schedule Activating the Bundle
+      int noOfdays1 = 0;
+      Calendar scheduleActivatedAt = Calendar.getInstance();
+      scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+      ProductForm postForm = new ProductForm();
+      postForm.setStartDate(new Date());
+      BindingResult result = validate(postForm);
+      String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+      Assert.assertNotNull(" scheduleActivationStatus is null ", scheduleActivationStatus);
+      Assert.assertEquals("scheduleActivationStatus is not success", "success", scheduleActivationStatus);
+
+      // Sync channel with reference price book
+      String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+      Assert.assertNotNull(" syncStatus is null ", syncStatus);
+      Assert.assertEquals("sync status is not success", "success", syncStatus);
+
+      // Attaching product bundle to the channel
+      String selectedProductBundles = "[" + obtainedBundlecurrent.getId().toString() + "]";
+      String attachBundleStatus = channelController.attachProductBundles(channel.getId().toString(),
+          selectedProductBundles, map);
+      Assert.assertNotNull(" attachBundleStatus is null ", attachBundleStatus);
+      Assert.assertEquals("attachBundleStatus is not success", "success", attachBundleStatus);
+
+      // schedule activating the channel
+      SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+      String currentdate = sdf.format(new Date());
+      String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy", map);
+      Assert.assertNotNull("changePlanDate returned null", cres);
+      Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+      channelController.viewCatalogCurrent(channel.getId().toString(), "1", "10", map);
+
+      boolean currentFound = false;
+      boolean plannedFound = false;
+
+      List<ProductBundleRevision> productBundleRevisions = (List<ProductBundleRevision>) map
+          .get("productBundleRevisions");
+      for (ProductBundleRevision productbundleRevision : productBundleRevisions) {
+        ProductBundle productBundle = productbundleRevision.getProductBundle();
+        if (productBundle.getId() == obtainedBundlecurrent.getId()) {
+          currentFound = true;
+        }
+        if (productBundle.getId() == obtainedBundleplanned.getId()) {
+          plannedFound = true;
+        }
+
+      }
+
+      Assert.assertTrue("current product bundle not found in current tab", currentFound);
+      Assert.assertFalse("planned product bundle found in current tab", plannedFound);
+
+      // Sync channel with reference price book
+      String syncStatus1 = channelController.syncChannel(channel.getId().toString(), map);
+      Assert.assertNotNull(" syncStatus is null ", syncStatus1);
+      Assert.assertEquals("sync status is not success", "success", syncStatus1);
+
+      // Attaching product bundle to the channel
+      String selectedProductBundles1 = "[" + obtainedBundleplanned.getId().toString() + "]";
+      String result11 = channelController
+          .attachProductBundles(channel.getId().toString(), selectedProductBundles1, map);
+      Assert.assertNotNull(" attachProductBundles is null ", result11);
+      Assert.assertEquals("attachProductBundles status is not success", "success", result11);
+
+      // schedule activating channel to future date
+      int noOfdays11 = 3;
+      Calendar createdAt11 = Calendar.getInstance();
+      createdAt11.add(Calendar.DATE, noOfdays11);
+      SimpleDateFormat sdf1 = new SimpleDateFormat("MM/dd/yyyy");
+      String currentdate1 = sdf1.format(createdAt11.getTime());
+      String cres1 = channelController.changePlanDate(channel.getId().toString(), currentdate1, "MM/dd/yyyy", map);
+      Assert.assertNotNull("changePlanDate returned null", cres1);
+      Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres1);
+
+      channelController.viewCatalogPlanned(channel.getId().toString(), "1", "10", "true", map);
+
+      currentFound = false;
+      plannedFound = false;
+
+      productBundleRevisions = (List<ProductBundleRevision>) map.get("productBundleRevisions");
+      for (ProductBundleRevision productbundleRevision : productBundleRevisions) {
+        ProductBundle productBundle = productbundleRevision.getProductBundle();
+        if (productBundle.getId() == obtainedBundlecurrent.getId()) {
+          currentFound = true;
+        }
+        if (productBundle.getId() == obtainedBundleplanned.getId()) {
+          plannedFound = true;
+        }
+
+      }
+
+      Assert.assertTrue("current product bundle not found in planned tab", currentFound);
+      Assert.assertTrue("planned product bundle not found in planned tab", plannedFound);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Description : Test to verify the product bundles in channels history revision/ history tab
+   * 
+   * @author nageswarap
+   */
+
+  @Test
+  public void testViewBundlesInCatalogHistory() {
+    try {
+
+      String expectedChannelName = "Veera";
+
+      // Creating a Channel
+      String[] currencyValueList = {
+        "USD"
+      };
+
+      Channel channel = channelController.createChannel(expectedChannelName, "Veera", "Veera", currencyValueList, map,
+          response);
+      Assert.assertNotNull("createChannel returned null", channel);
+      Assert.assertEquals("The Channnle not created with the given name", expectedChannelName, channel.getName());
+
+      ServiceResourceType resourceType = connectorConfigurationManager.getServiceResourceTypeById(1L);
+      String chargeFrequency = "MONTHLY";
+      String compAssociationJson = "[]";
+      int noOfdays = 3;
+      Calendar createdAt = Calendar.getInstance();
+      createdAt.add(Calendar.DATE, 0 - noOfdays);
+      int beforeBundleCount = bundleService.getBundlesCount();
+      boolean trialEligible = false;
+
+      // Create a Bundle
+
+      ProductBundle obtainedBundlehistory = testCreateProductBundle("1", resourceType.getId().toString(),
+          chargeFrequency, "HistoryCompute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+          ResourceConstraint.NONE, trialEligible);
+      Assert.assertNotNull("The bundle is null ", obtainedBundlehistory);
+
+      ProductBundle obtainedBundlecurrent = testCreateProductBundle("1", resourceType.getId().toString(),
+          chargeFrequency, "CurrentCompute", "USD", BigDecimal.valueOf(100), createdAt.getTime(), compAssociationJson,
+          ResourceConstraint.NONE, trialEligible);
+      Assert.assertNotNull("The bundle is null ", obtainedBundlecurrent);
+
+      int afterBundleCount = bundleService.getBundlesCount();
+      Assert.assertEquals("bundle count not incremented after creating the bundle", beforeBundleCount + 2,
+          afterBundleCount);
+
+      // Schedule Activating the Bundle
+      int noOfdays1 = 0;
+      Calendar scheduleActivatedAt = Calendar.getInstance();
+      scheduleActivatedAt.add(Calendar.DATE, 0 - noOfdays1);
+      ProductForm postForm = new ProductForm();
+      postForm.setStartDate(new Date());
+      BindingResult result = validate(postForm);
+      String scheduleActivationStatus = productsController.setPlanDate(postForm, result, map);
+
+      // Sync channel with reference price book
+      String syncStatus = channelController.syncChannel(channel.getId().toString(), map);
+      Assert.assertNotNull(" syncStatus is null ", syncStatus);
+      Assert.assertEquals("sync status is success", "success", syncStatus);
+
+      // Attaching product bundle to the channel
+      String selectedProductBundles = "[" + obtainedBundlehistory.getId().toString() + "]";
+      String result1 = channelController.attachProductBundles(channel.getId().toString(), selectedProductBundles, map);
+
+      // schedule activating channel
+      SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+      String currentdate = sdf.format(new Date());
+      String cres = channelController.changePlanDate(channel.getId().toString(), currentdate, "MM/dd/yyyy HH:mm:ss",
+          map);
+      Assert.assertNotNull("changePlanDate returned null", cres);
+      Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres);
+
+      ArrayList<Revision> revisions = (ArrayList<Revision>) revisionDAO.locateAllCatalogRevisions(channel.getCatalog());
+      for (Revision r : revisions) {
+        System.out.println("start date" + r.getStartDate());
+      }
+      Date currentRevisionStartDate = channelService.getCurrentRevision(channel).getStartDate();
+      System.out.println("Current revi" + currentRevisionStartDate);
+      Thread.sleep(2000);
+
+      // Sync channel with reference price book
+      String syncStatus1 = channelController.syncChannel(channel.getId().toString(), map);
+      Assert.assertNotNull(" syncStatus is null ", syncStatus1);
+      Assert.assertEquals("sync status is success", "success", syncStatus1);
+
+      // Attaching product bundle to the channel
+      String selectedProductBundles1 = "[" + obtainedBundlecurrent.getId().toString() + "]";
+      String result11 = channelController
+          .attachProductBundles(channel.getId().toString(), selectedProductBundles1, map);
+
+      String currentdate1 = sdf.format(new Date());
+      String cres1 = channelController.changePlanDate(channel.getId().toString(), currentdate1, "MM/dd/yyyy HH:mm:ss",
+          map);
+      channelDAO.refresh(channel);
+      catalogDAO.refresh(channel.getCatalog());
+      Assert.assertNotNull("changePlanDate returned null", cres1);
+      Assert.assertEquals("checking status of schudeactivation for a channel", "success", cres1);
+      Thread.sleep(2000);
+      revisions = (ArrayList<Revision>) revisionDAO.locateAllCatalogRevisions(channel.getCatalog());
+      for (Revision r : revisions) {
+        System.out.println("start date" + r.getStartDate());
+      }
+      Catalog catalog = channel.getCatalog();
+      currentRevisionStartDate = channelService.getCurrentRevision(catalog.getChannel()).getStartDate();
+      System.out.println("Current revi exact" + currentRevisionStartDate);
+
+      channelController
+          .viewCatalogHistory(channel.getId().toString(), currentdate, "MM/dd/yyyy HH:mm:ss", "false", map);
+
+      Date currentRevisionStartDate1 = channelService.getCurrentRevision(channel).getStartDate();
+      System.out.println("Current revi1" + currentRevisionStartDate1);
+      boolean historyFound = false;
+      boolean currentFound = false;
+
+      Set<ProductBundleRevision> productBundleRevisions = (Set<ProductBundleRevision>) map
+          .get("productBundleRevisions");
+      for (ProductBundleRevision productbundleRevision : productBundleRevisions) {
+        ProductBundle productBundle = productbundleRevision.getProductBundle();
+        if (productBundle.getId() == obtainedBundlecurrent.getId()) {
+          currentFound = true;
+        }
+        if (productBundle.getId() == obtainedBundlehistory.getId()) {
+          historyFound = true;
+        }
+
+      }
+
+      Assert.assertTrue("history product bundle not found in history tab", historyFound);
+      Assert.assertFalse("current product bundle found in history tab", currentFound);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Description : Test to verify that editing the product price in catalog will effect the product pricing
+   * 
+   * @author nageswarap
+   */
+
+  @Test
+  public void testEditCatalogProductPricingnotEffectProductPricing() {
+
+    Channel channel = channelDAO.find(4L);
+    Product product = productDAO.find(4L);
+
+    List<ProductCharge> pcharges = productService.getProductCharges(product, new Date());
+    BigDecimal previousCharge = BigDecimal.ZERO;
+    BigDecimal expectedNewCharge = BigDecimal.valueOf(200.0000);
+
+    for (ProductCharge pcharge : pcharges) {
+      if (pcharge.getCurrencyValue().getCurrencyCode().equals("JPY")) {
+        if (pcharge.getProduct().getId() == 4L) {
+          previousCharge = pcharge.getPrice();
+        }
+      }
+
+    }
+
+    try {
+
+      String currencyValData = "[{'previousvalue':'" + previousCharge + "','value':'" + expectedNewCharge
+          + "','currencycode':'JPY','currencyId':'71','productId':'4'}]";
+      channelController.editCatalogProductPricing(channel.getId().toString(), currencyValData, map);
+
+      boolean productChargeSet = false;
+      List<ProductCharge> prodCharges = productService.getCatalogPlannedChargesForAllProducts(channel.getCatalog());
+
+      for (ProductCharge productCharge : prodCharges) {
+        if (productCharge.getProduct().equals(product)
+            && productCharge.getCurrencyValue().getCurrencyCode().equals("JPY")) {
+          Assert.assertEquals("Product price is not set in catalog", expectedNewCharge, productCharge.getPrice());
+          productChargeSet = true;
+        }
+      }
+      Assert.assertTrue("Product price is not set in catalog", productChargeSet);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+
+    List<ProductCharge> pcharges1 = productService.getProductCharges(product, new Date());
+
+    for (ProductCharge pcharge : pcharges1) {
+      if (pcharge.getCurrencyValue().getCurrencyCode().equals("JPY")) {
+        if (pcharge.getProduct().getId() == 4L) {
+          Assert.assertEquals("Product price changed after editing in catalog", previousCharge, pcharge.getPrice());
+        }
+      }
+
+    }
+
+  }
+
+  /**
+   * Description : Test to verify that editing the product price in catalog can be done when channel caching is enabled
+   * 
+   * @author nageswarap
+   */
+
+  @Test
+  public void testEditCatalogProductPricingEnableCashing() {
+
+    Channel channel = channelDAO.find(4L);
+    Product product = productDAO.find(4L);
+    BigDecimal expectedCharge = BigDecimal.valueOf(200.0000);
+
+    Configuration conf = configurationService.locateConfigurationByName("com.citrix.cpbm.channel.enable.caching");
+    if (conf.getValue().equalsIgnoreCase("FALSE")) {
+      conf.setValue("TRUE");
+      configurationService.update(conf);
+    }
+    Assert.assertEquals("com.citrix.cpbm.channel.enable.caching configuration is false", "TRUE", conf.getValue());
+
+    try {
+
+      String currencyValData = "[{'previousvalue':'14.0000','value':'" + expectedCharge
+          + "','currencycode':'JPY','currencyId':'71','productId':'4'}]";
+      channelController.editCatalogProductPricing(channel.getId().toString(), currencyValData, map);
+
+      boolean productChargeSet = false;
+      List<ProductCharge> prodCharges = productService.getCatalogPlannedChargesForAllProducts(channel.getCatalog());
+
+      System.out.println("prodCharges list size : " + prodCharges.size());
+      for (ProductCharge productCharge : prodCharges) {
+        if (productCharge.getProduct().equals(product)
+            && productCharge.getCurrencyValue().getCurrencyCode().equals("JPY")) {
+          Assert.assertEquals("Product price is not set in catalog", expectedCharge, productCharge.getPrice());
+          productChargeSet = true;
+        }
+      }
+      Assert.assertTrue("Product price is not set in catalog", productChargeSet);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.getMessage());
+    }
+  }
+
+  /**
+   * Description : Test to verify that editing the product bundle in catalog can be done when channel caching is enabled
+   * 
+   * @author nageswarap
+   */
+
+  @Test
+  public void testEditCatalogProductBundlePricingWithenablecashing() throws JSONException {
+
+    Channel obtainedChannel = channelDAO.find(4L);
+
+    Configuration conf = configurationService.locateConfigurationByName("com.citrix.cpbm.channel.enable.caching");
+    if (conf.getValue().equalsIgnoreCase("FALSE")) {
+      conf.setValue("TRUE");
+      configurationService.update(conf);
+    }
+    Assert.assertEquals("com.citrix.cpbm.channel.enable.caching configuration is false", "TRUE", conf.getValue());
+
+    String currencyValData = "[{\"previousvalue\":\"0.0000\",\"value\":\"5000\",\"currencycode\":\"EUR\",\"currencyId\":\"44\",\"isRecurring\":\"0\"}]";
+    channelController.editCatalogProductBundlePricing(obtainedChannel.getId().toString(), "2", currencyValData, map);
+    channelController.getFullChargeListing(obtainedChannel.getId().toString(), "planned", "2", null,
+        DateUtils.getSimpleDateString(new java.util.Date()), map);
+    Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> fullBundlePricingMap = (Map<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>>) map
+        .get("fullBundlePricingMap");
+
+    Assert.assertNotNull(map.get("productBundleRevision"));
+    for (Map.Entry<ProductBundleRevision, Map<CurrencyValue, Map<String, RateCardCharge>>> map1 : fullBundlePricingMap
+        .entrySet()) {
+      for (Map.Entry<CurrencyValue, Map<String, RateCardCharge>> map2 : map1.getValue().entrySet()) {
+        CurrencyValue cv = map2.getKey();
+        if (cv.getCurrencyCode().equalsIgnoreCase("EUR")) {
+          for (Map.Entry<String, RateCardCharge> map3 : map2.getValue().entrySet()) {
+            String str = map3.getKey();
+            RateCardCharge rcc = map3.getValue();
+            if (str.equalsIgnoreCase("catalog-onetime")) {
+              Assert.assertEquals(BigDecimal.valueOf(5000), rcc.getPrice());
+            }
+          }
+        }
+      }
+    }
+
+  }
+
+  /*
+   * Description: Private Test to create Bundles based on the parameters Author: Vinayv
+   */
+  private ProductBundle testCreateProductBundle(String serviceInstanceID, String resourceTypeID, String chargeType,
+      String bundleName, String currencyCode, BigDecimal currencyValue, Date startDate, String jsonString,
+      ResourceConstraint businessConstraint, boolean trialEligible) throws Exception {
+
+    ServiceInstance serviceInstance = null;
+    List<ServiceInstance> serviceInstanceList = connectorConfigurationManager.getAllServiceInstances();
+    for (ServiceInstance si : serviceInstanceList) {
+      if (si.getId().toString().equalsIgnoreCase(serviceInstanceID)) {
+        serviceInstance = si;
+      }
+    }
+
+    ServiceResourceType resourceType = null;
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      resourceType = connectorConfigurationManager.getServiceResourceTypeById(Long.parseLong(resourceTypeID));
+    }
+    List<RateCardCharge> rateCardChargeList = new ArrayList<RateCardCharge>();
+    RateCardCharge rcc = new RateCardCharge(currencyValueService.locateBYCurrencyCode(currencyCode), null,
+        currencyValue, "RateCharge", getRootUser(), getRootUser(), channelService.getFutureRevision(null));
+    rateCardChargeList.add(rcc);
+    String chargeTypeName = chargeType;
+    if (chargeType.equalsIgnoreCase("Invalid")) {
+      chargeTypeName = "NONE";
+    }
+    RateCard rateCard = new RateCard("Rate", bundleService.getChargeRecurrencyFrequencyByName(chargeTypeName),
+        new Date(), getRootUser(), getRootUser());
+    String compAssociationJson = jsonString;
+
+    ProductBundle bundle = new ProductBundle(bundleName, bundleName, "", startDate, startDate, getRootUser());
+    bundle.setBusinessConstraint(businessConstraint);
+    bundle.setCode(bundleName);
+    bundle.setPublish(true);
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      bundle.setResourceType(resourceType);
+    }
+    bundle.setServiceInstanceId(serviceInstance);
+    bundle.setTrialEligibility(trialEligible);
+    bundle.setRateCard(rateCard);
+
+    ProductBundleForm form = new ProductBundleForm(bundle);
+    form.setChargeType(chargeType);
+    if (!resourceTypeID.equalsIgnoreCase("ServiceBundle")) {
+      form.setResourceType(resourceType.getId().toString());
+    } else {
+      form.setResourceType("sb");
+    }
+    form.setServiceInstanceUUID(serviceInstance.getUuid());
+    form.setBundleOneTimeCharges(rateCardChargeList);
+    if (!chargeType.equalsIgnoreCase("NONE")) {
+      form.setBundleRecurringCharges(rateCardChargeList);
+    }
+    form.setCompAssociationJson(compAssociationJson);
+
+    BindingResult result = validate(form);
+    ProductBundle obtainedBundle = bundleController.createProductBundle(form, result, map, response);
+
+    return obtainedBundle;
+  }
+
 }
