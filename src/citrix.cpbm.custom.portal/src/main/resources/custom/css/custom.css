@@ -1,0 +1,7 @@
+/* Copyright (C) 2011 Cloud.com, Inc.  All rights reserved. */
+@charset "UTF-8";
+
+/* Custom CSS Document */
+
+/* Hide subscription edit link*/
+.provision_subscription_link {display: none;}

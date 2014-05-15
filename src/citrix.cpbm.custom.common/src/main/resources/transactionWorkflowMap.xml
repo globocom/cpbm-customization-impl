@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
+<TransactionWorkflowMap>
+  <Match type="tenantStateChange" workflow="credit-card-account-activation">
+    <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE' and  #transaction.tenant.accountType.paymentModes == 2}</Rule>
+  </Match>
+  <Match type="tenantStateChange" workflow="trial-account-activation">
+    <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE' and  #transaction.tenant.accountType.trial == true}</Rule>
+  </Match>
+  <Match type="tenantStateChange" workflow="manual-account-activation">
+    <Rule>{#transaction.tenantInitialState.name == 'NEW' and #transaction.tenantTargetState.name == 'ACTIVE' and  #transaction.tenant.accountType.manualActivation == true}</Rule>
+  </Match>
+  
+  <Match type="tenantAccountTypeConversion" workflow="account-conversion-to-manual-activation-type">
+    <Rule>{#transaction.accountType.manualActivation == true}</Rule>
+  </Match>
+  <Match type="tenantAccountTypeConversion" workflow="account-conversion-to-credit-card-payment">
+    <Rule>{#transaction.accountType.paymentModes == 2}</Rule>
+  </Match>
+  
+  <Match type="subscriptionActivation" workflow="pre-auth-required-subscription-activation">
+    <Rule>{#transaction.subscriptionInitialState.name == 'NEW' and #transaction.subscriptionTargetState.name == 'ACTIVE' and #transaction.tenant.accountType.preAuthRequired == true}</Rule>
+  </Match>
+
+  <Match type="paymentInfoChange" workflow="manual-activiation-type-payment-info-change">
+    <Rule>{#transaction.tenant.accountType.manualActivation == true}</Rule>
+  </Match>
+</TransactionWorkflowMap>

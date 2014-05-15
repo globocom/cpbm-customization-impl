@@ -1,0 +1,3737 @@
+/*
+*  Copyright © 2013 Citrix Systems, Inc.
+*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+*  Citrix Systems, Inc.
+*/
+package fragment.web;
+
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import junit.framework.Assert;
+
+import org.apache.commons.io.FilenameUtils;
+import org.easymock.EasyMock;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.multipart.MultipartFile;
+
+import web.WebTestsBase;
+
+import com.citrix.cpbm.platform.admin.service.ConnectorConfigurationManager;
+import com.citrix.cpbm.platform.admin.service.ConnectorManagementService;
+import com.citrix.cpbm.platform.spi.CloudConnector;
+import com.citrix.cpbm.platform.spi.MetadataRegistry;
+import com.citrix.cpbm.portal.fragment.controllers.ProductsController;
+import com.vmops.model.Category;
+import com.vmops.model.Channel;
+import com.vmops.model.Configuration;
+import com.vmops.model.CurrencyValue;
+import com.vmops.model.Entitlement;
+import com.vmops.model.MediationRule;
+import com.vmops.model.MediationRuleDiscriminator;
+import com.vmops.model.Product;
+import com.vmops.model.ProductBundle;
+import com.vmops.model.ProductCharge;
+import com.vmops.model.ProductRevision;
+import com.vmops.model.Revision;
+import com.vmops.model.Service;
+import com.vmops.model.ServiceDiscriminator;
+import com.vmops.model.ServiceInstance;
+import com.vmops.model.ServiceUsageType;
+import com.vmops.model.ServiceUsageTypeDiscriminator;
+import com.vmops.model.ServiceUsageTypeUom;
+import com.vmops.model.ServiceUsageTypeUomScale;
+import com.vmops.model.User;
+import com.vmops.persistence.EntitlementDAO;
+import com.vmops.persistence.MediationRuleDAO;
+import com.vmops.persistence.ProductBundleDAO;
+import com.vmops.persistence.RevisionDAO;
+import com.vmops.persistence.ServiceDAO;
+import com.vmops.persistence.ServiceInstanceDao;
+import com.vmops.persistence.ServiceUsageTypeDAO;
+import com.vmops.portal.config.Configuration.Names;
+import com.vmops.service.ChannelService;
+import com.vmops.service.ConfigurationService;
+import com.vmops.service.ProductService;
+import com.vmops.utils.DateUtils;
+import com.vmops.utils.JSONUtils;
+import com.vmops.web.forms.ProductForm;
+import com.vmops.web.forms.ProductLogoForm;
+import common.MockCloudInstance;
+
+@SuppressWarnings("unchecked")
+public class AbstractProductsControllerTest extends WebTestsBase {
+
+  @Autowired
+  ServiceUsageTypeDAO serviceUsageTypeDAO;
+
+  @Autowired
+  ProductService productService;
+
+  @Autowired
+  ProductsController productsController;
+
+  @Autowired
+  ProductService productsService;
+
+  @Autowired
+  ServiceInstanceDao serviceInstanceDao;
+
+  @Autowired
+  ChannelService channelService;
+
+  @Autowired
+  private EntitlementDAO entitlementDAO;
+
+  @Autowired
+  ServiceInstanceDao serviceInstanceDAO;
+
+  @Autowired
+  ServiceDAO serviceDAO;
+
+  @Autowired
+  RevisionDAO revisionDAO;
+
+  @Autowired
+  MediationRuleDAO mediationRuleDAO;
+
+  @Autowired
+  ConfigurationService configurationService;
+
+  @Autowired
+  ConnectorManagementService connectorManagementService;
+
+  @Autowired
+  ConnectorConfigurationManager connectorConfigurationManager;
+
+  @Autowired
+  ProductBundleDAO productBundleDAO;
+
+  private ModelMap map;
+
+  private MockHttpServletResponse response;
+
+  private MockHttpServletRequest request;
+
+  @Before
+  public void init() throws Exception {
+
+    map = new ModelMap();
+    request = new MockHttpServletRequest();
+    response = new MockHttpServletResponse();
+  }
+
+  @Override
+  public void prepareMock() {
+    MockCloudInstance mock = this.getMockCloudInstance();
+    CloudConnector connector = mock.getCloudConnector();
+    MetadataRegistry metadataRegistry = mock.getMetadataRegistry();
+    Map<String, String> discriminatorMap = new HashMap<String, String>();
+    EasyMock.expect(metadataRegistry.getDiscriminatorValues(EasyMock.anyObject(String.class)))
+        .andReturn(discriminatorMap).anyTimes();
+    EasyMock.replay(connector, metadataRegistry);
+  }
+
+  /*
+   * Description: Test to create a product with the set of mediation rules passed and returns the newly created product
+   * Author: Vinayv
+   */
+  private Product productCreation(String productCode, boolean hasCharges, Long serviceUsageTypeID,
+      Long serviceInstanceId, String conversionFactor, boolean hasDiscriminator, String discriminator,
+      String discriminatorDisplayName) throws Exception {
+
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode(productCode);
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstanceId));
+    product.setUom("Hours");
+
+    Category category = productsService.getAllCategories().get(0);
+    product.setCategory(category);
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(serviceDAO.find(6000L).getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1");
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    if (hasCharges) {
+      ProductCharge productCharge = new ProductCharge();
+      productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+      productCharge.setCatalog(null);
+      productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+      productCharge.setPrice(BigDecimal.valueOf(100));
+      productCharge.setCreatedAt(new Date());
+      productCharge.setCreatedBy(getRootUser());
+      productCharge.setUpdatedBy(getRootUser());
+      productsService.saveProductCharge(productCharge);
+      productCharges.add(productCharge);
+    }
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find(serviceInstanceId);
+    Service service = serviceInstance.getService();
+    Set<ServiceUsageTypeDiscriminator> sutdSet = service.getServiceUsageTypeDiscriminator();
+    Long discriminatorId = 1L;
+    for (ServiceUsageTypeDiscriminator sutd : sutdSet) {
+      if (sutd.getDiscriminatorName().equalsIgnoreCase(discriminator)) {
+        discriminatorId = sutd.getId();
+        break;
+      }
+    }
+    String jsonString = "{conversionFactor: " + conversionFactor + ", operator: COMBINE, usageTypeId: "
+        + serviceUsageTypeID;
+    if (hasDiscriminator) {
+      jsonString = jsonString + ", discriminatorVals: [ {discriminatorId: " + discriminatorId
+          + ", discriminatorValue: 125, operator: EQUAL_TO, discriminatorValueName: " + discriminatorDisplayName
+          + " } ]";
+    }
+    jsonString = jsonString + " }";
+    org.json.JSONObject mediationJason = new org.json.JSONObject(jsonString);
+    String productMediationRules = "[" + mediationJason.toString() + "]";
+    form.setProductMediationRules(productMediationRules);
+
+    BindingResult result = validate(form);
+    Product obtainedProduct = productsController.createProduct(form, result, map, response, request);
+    Assert.assertNotNull(obtainedProduct);
+    Assert.assertEquals(obtainedProduct.getName(), product.getName());
+    return obtainedProduct;
+  }
+
+  /*
+   * Description: Test to create Discriminator under specific usage type Author: Vinay
+   */
+  private ServiceUsageType createDiscriminator(ServiceInstance serviceInstance, String usageType, String discriminator) {
+
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType sut : sutlist) {
+      if (sut.getUsageTypeName().equalsIgnoreCase(usageType)) {
+        serviceUsageType = sut;
+        break;
+      }
+    }
+    Service service = serviceInstance.getService();
+    Set<ServiceUsageTypeDiscriminator> serviceUsageTypeDiscriminator = service.getServiceUsageTypeDiscriminator();
+    ServiceUsageTypeDiscriminator e = new ServiceUsageTypeDiscriminator(discriminator, serviceUsageType);
+    e.setTargetServiceId(service);
+    serviceUsageTypeDiscriminator.add(e);
+    serviceDAO.save(service);
+    serviceDAO.flush();
+    return serviceUsageType;
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(Running_VM usage type) and
+   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID, HypervisorType, RamSize, Speed, GuestOSName) as
+   * ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithRunningVM() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "RUNNING_VM", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(Allocated VM usage type) and
+   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID, HypervisorType, RamSize, Speed, GuestOSName) as
+   * ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithAllocatedVM() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID", "HypervisorType", "RAMSize", "Speed", "GuestOSName"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "ALLOCATED_VM", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(NETWORK_BYTES_SENT usage type) and
+   * Discriminators(NetworkOfferingUUID, isRedundantRouterServiceEnabled, isVlanEnabled) as ProductManager Author:
+   * Vinayv
+   */
+  @Test
+  public void testCreatProductWithNetworkBytesSent() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "NetworkOfferingUUID", "isRedundantRouterServiceEnabled", "isVlanEnabled"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "NETWORK_BYTES_OUT", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(NETWORK_BYTES_RECEIVED usage type) and
+   * Discriminators(NetworkOfferingUUID, isRedundantRouterServiceEnabled, isVlanEnabled) as ProductManager Author:
+   * Vinayv
+   */
+  @Test
+  public void testCreatProductWithNetworkBytesReceived() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "NetworkOfferingUUID", "isRedundantRouterServiceEnabled", "isVlanEnabled"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "NETWORK_BYTES_IN", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(VOLUME usage type) and Discriminators(diskOfferingUuid,
+   * volumeType, poolType, size, volumeTags) as ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithVolume() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "diskOfferingUuid", "volumeType", "poolType", "size", "volumeTags"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "VOLUME", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(TEMPLATE usage type) and Discriminators(isPublic,
+   * isFeatured, isSshKeyEnabled, isCrossZonesEnabled) as ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithTemplate() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "isPublic", "isFeatured", "isSshKeyEnabled", "isCrossZonesEnabled"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "TEMPLATE", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(SNAPSHOT usage type) and
+   * Discriminator's(diskOfferingUuid, poolType, snapshotSize) as ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithSnapshot() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] discriminators = {
+        "diskOfferingUuid", "poolType", "snapshotSize"
+    };
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType sut = new ServiceUsageType(service, "SNAPSHOT",
+        new ServiceUsageTypeUom("GB-Months", service, true));
+    service.getServiceUsageTypes().add(sut);
+    serviceDAO.save(service);
+    serviceDAO.flush();
+    for (int i = 0; i < discriminators.length; i++) {
+
+      serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "SNAPSHOT", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Usage Types having no discriminator's (IP_ADDRESS, ISO, SECURITY_GROUP,
+   * LOAD_BALANCER_POLICY, PORT_FORWARDING_RULE, VPN_USERS usage type having No discriminator's) as ProductManager
+   * Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithUsageTypesHavingNoDiscriminators() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] usageTypes = {
+        "IP_ADDRESS", "ISO", "SECURITY_GROUP", "LOAD_BALANCER_POLICY", "PORT_FORWARDING_RULE", "VPN_USERS"
+    };
+    for (int i = 0; i < usageTypes.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      Service service = serviceInstance.getService();
+      ServiceUsageType serviceUsageType = new ServiceUsageType(service, usageTypes[i], new ServiceUsageTypeUom(
+          "GB-Months", service, true));
+      service.getServiceUsageTypes().add(serviceUsageType);
+      serviceDAO.save(service);
+      serviceDAO.flush();
+      List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+      for (ServiceUsageType sut : sutlist) {
+        if (sut.getUsageTypeName().equalsIgnoreCase(usageTypes[i])) {
+          serviceUsageType = sut;
+          break;
+        }
+      }
+      List<ServiceUsageTypeDiscriminator> sutdlist = serviceUsageType.getServiceUsageTypeDiscriminators();
+      Assert.assertEquals(0, sutdlist.size());
+
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", false, "", "");
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          Assert.assertEquals(0, mrdset.size());
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Multiple Usage Types as ProductManager Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithMultipleUsageTypes() throws Exception {
+
+    User user = userDAO.find("3");
+    user.setProfile(profileDAO.find("7"));
+    userDAO.save(user);
+    asUser(user);
+    String[] usageTypes = {
+        "VOLUME", "TEMPLATE", "ISO", "SECURITY_GROUP", "VPN_USERS"
+    };
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    for (int i = 0; i < usageTypes.length; i++) {
+
+      serviceInstance = serviceInstanceDAO.find("1");
+      service = serviceInstance.getService();
+      serviceUsageType = new ServiceUsageType(service, usageTypes[i], new ServiceUsageTypeUom("GB-Months", service,
+          true));
+      service.getServiceUsageTypes().add(serviceUsageType);
+      serviceDAO.save(service);
+      serviceDAO.flush();
+    }
+    int beforeProductsCount = productsService.getProductsCount();
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode("New_Prod_Code");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+
+    Category category = productsService.getCategory(1L);
+    product.setCategory(category);
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1");
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(100));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    String jsonString = "";
+    String operator = "COMBINE";
+    for (int i = 0; i < usageTypes.length; i++) {
+
+      List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+      for (ServiceUsageType sut : sutlist) {
+        if (sut.getUsageTypeName().equalsIgnoreCase(usageTypes[i])) {
+          serviceUsageType = sut;
+          break;
+        }
+      }
+      if (i == 2)
+        operator = "EXCLUDE";
+      else
+        operator = "COMBINE";
+      jsonString = "{conversionFactor: 1.00, operator: " + operator + ", usageTypeId: " + serviceUsageType.getId()
+          + "}";
+      jsonString = jsonString + ",";
+    }
+    jsonString = jsonString.substring(0, jsonString.length() - 1);
+    String productMediationRules = "[" + jsonString + "]";
+    form.setProductMediationRules(productMediationRules);
+    BindingResult result = validate(form);
+    Product obtainedProduct = productsController.createProduct(form, result, map, response, request);
+    Assert.assertNotNull(obtainedProduct);
+    Assert.assertEquals(obtainedProduct.getName(), product.getName());
+    int afterProductCount = productsService.getProductsCount();
+    Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+    List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+        obtainedProduct.getCreatedAt());
+    for (ProductCharge pc : obtainedProductCharges) {
+      Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+      Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+    }
+    Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+        .getCurrentRevision(null));
+    boolean cond = false;
+    for (int i = 0; i < usageTypes.length; i++) {
+      List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+      for (ServiceUsageType sut : sutlist) {
+        if (sut.getUsageTypeName().equalsIgnoreCase(usageTypes[i])) {
+          serviceUsageType = sut;
+          break;
+        }
+      }
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      if (prodlist != null && !prodlist.isEmpty() && prodlist.contains(obtainedProduct)) {
+        cond = true;
+      }
+    }
+    Assert.assertTrue(cond);
+  }
+
+  /*
+   * Description: Test to create a product with Mediation Rule(Running_VM usage type) and
+   * Discriminators(ServiceOfferingUUID, TemplateUUID, IsoUUID) as Root Author: Vinayv
+   */
+  @Test
+  public void testCreatProductAsRoot() throws Exception {
+
+    String[] discriminators = {
+        "ServiceOfferingUUID", "TemplateUUID", "IsoUUID"
+    };
+    for (int i = 0; i < discriminators.length; i++) {
+
+      ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+      ServiceUsageType serviceUsageType = createDiscriminator(serviceInstance, "RUNNING_VM", discriminators[i]);
+      int beforeProductsCount = productsService.getProductsCount();
+      Product obtainedProduct = productCreation("Code" + i, true, serviceUsageType.getId(), 1L, "1.00", true,
+          discriminators[i], "Test_Discri" + i);
+      Assert.assertNotNull(obtainedProduct);
+      Assert.assertEquals(obtainedProduct.getName(), "New_Prod");
+      int afterProductCount = productsService.getProductsCount();
+      Assert.assertEquals(beforeProductsCount + 1, afterProductCount);
+      List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+          obtainedProduct.getCreatedAt());
+      for (ProductCharge pc : obtainedProductCharges) {
+        Assert.assertEquals(BigDecimal.valueOf(100), pc.getPrice());
+        Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+      }
+      Map<ServiceUsageType, List<Product>> productUsageMap = productsService.getProductsByUsageType(revisionDAO
+          .getCurrentRevision(null));
+      List<Product> prodlist = productUsageMap.get(serviceUsageType);
+      Assert.assertEquals(true, prodlist.contains(obtainedProduct));
+      List<MediationRule> mrlist = mediationRuleDAO.findAllMediationRules(serviceUsageType, serviceInstance,
+          revisionDAO.getCurrentRevision(null));
+      for (MediationRule mr : mrlist) {
+        if (mr.getProduct().equals(obtainedProduct)) {
+          Set<MediationRuleDiscriminator> mrdset = mr.getMediationRuleDiscriminators();
+          for (MediationRuleDiscriminator mrd : mrdset) {
+            Assert.assertEquals("Test_Discri" + i, mrd.getDiscriminatorValueDisplayName());
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Product Name as Null Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithNameAsNull() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType sut : sutlist) {
+      if (sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+        serviceUsageType = sut;
+        break;
+      }
+    }
+    Product product = new Product("New", null, "New_Prod", "", getRootUser());
+    product.setCode("New_Prod_Code");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+    Category category = productsService.getCategory(1L);
+    product.setCategory(category);
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1.0");
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(100));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+        + "} ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+    try {
+      productsController.createProduct(form, result, map, response, request);
+    } catch (Exception e) {
+      Assert.assertTrue(e.getMessage().contains(
+          "not-null property references a null or transient value: com.vmops.model.Product.name"));
+    }
+  }
+
+  /*
+   * Description: Test to create a product with Product Code as Null. Author: Vinayv
+   */
+  @Test(expected = Exception.class)
+  public void testCreatProductWithCodeAsNull() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType sut : sutlist) {
+      if (sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+        serviceUsageType = sut;
+        break;
+      }
+    }
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode(null);
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(100));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+        + "} ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+    productsController.createProduct(form, result, map, response, request);
+  }
+
+  /*
+   * Description: Test to create a product with Product Code containing special characters. Author: Vinayv
+   */
+  @Test(expected = Exception.class)
+  public void testCreatProductWithCodeHavingSplCharacters() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType sut : sutlist) {
+      if (sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+        serviceUsageType = sut;
+        break;
+      }
+    }
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode("@Code<>");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(100));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+        + "} ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+    productsController.createProduct(form, result, map, response, request);
+  }
+
+  /*
+   * Description: Test to create a product with Charges as Zero. Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithChargesAsZero() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType sut : sutlist) {
+      if (sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+        serviceUsageType = sut;
+        break;
+      }
+    }
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode("New_Prod_Code");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+    Category category = productsService.getCategory(1L);
+    product.setCategory(category);
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1");
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(0.00));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+    String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+        + "} ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+    Product obtainedProduct = productsController.createProduct(form, result, map, response, request);
+    Assert.assertNotNull(obtainedProduct);
+    List<ProductCharge> obtainedProductCharges = productsService.getProductCharges(obtainedProduct,
+        obtainedProduct.getCreatedAt());
+    for (ProductCharge pc : obtainedProductCharges) {
+      Assert.assertEquals(BigDecimal.valueOf(0.00), pc.getPrice());
+      Assert.assertEquals(currencyValueDAO.find(1L), pc.getCurrencyValue());
+    }
+  }
+
+  /*
+   * Description: Test to create a product without specifying Usage Type. Author: Vinayv
+   */
+  @Test
+  public void testCreatProductWithoutUsageTypes() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode("New_Prod_Code");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+    Category category = productsService.getCategory(1L);
+    product.setCategory(category);
+
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1");
+
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(0.00));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+    String jsonString = "[ { } ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+    try {
+      productsController.createProduct(form, result, map, response, request);
+    } catch (Exception e) {
+      Assert.assertEquals("JSONObject[\"usageTypeId\"] not found.", e.getMessage());
+    }
+  }
+
+  /*
+   * Description: Test to add an image to a product. Author: Vinayv
+   */
+  @Test
+  public void testEditProductLogoValid() throws Exception {
+
+    Product product = productDAO.find(1L);
+    ProductLogoForm form = new ProductLogoForm(product);
+    MultipartFile logo = new MockMultipartFile("Product.jpeg", "Product.jpeg", "bytes", "ProductLogo".getBytes());
+    form.setLogo(logo);
+    BindingResult result = validate(form);
+    String resultString = productsController.editProductLogo(form, result, request, map);
+    Assert.assertNotNull(resultString);
+    Assert.assertTrue(resultString.contains("\"id\":" + product.getId() + ",\"name\":\"" + product.getName()
+        + "\",\"code\":\"" + product.getCode() + "\""));
+  }
+
+  /*
+   * Description: Test to edit Product Logo form passing Invalid Logo. Author: Vinayv
+   */
+  @Test
+  public void testEditProductLogoInValid() throws Exception {
+
+    Product product = productDAO.find(1L);
+    ProductLogoForm form = new ProductLogoForm(product);
+    MultipartFile logo = new MockMultipartFile("Product.jpe", "Product.jpe", "bytes", "ProductLogo".getBytes());
+    form.setLogo(logo);
+    BindingResult result = validate(form);
+    String resultString = productsController.editProductLogo(form, result, request, map);
+    Assert.assertNotNull(resultString);
+    Assert.assertEquals("File should have either .jpeg/.jpg/.png/.gif/.bmp extension", resultString);
+  }
+
+  /*
+   * Description: Test to change Product's sort Order. Author: Vinayv
+   */
+  @Test
+  public void testChangeProductSortOrder() throws Exception {
+
+    Product product1 = productDAO.find(1L);
+    Product product2 = productDAO.find(2L);
+    Long beforeSortP1 = product1.getSortOrder();
+    Long beforeSortP2 = product2.getSortOrder();
+    String productOrderData = product2.getId() + "," + product1.getId();
+    String result = productsController.editproductsorder(productOrderData, map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("success", result);
+    Long afterSortP1 = product1.getSortOrder();
+    Long afterSortP2 = product2.getSortOrder();
+    Assert.assertEquals(beforeSortP1, afterSortP2);
+    Assert.assertEquals(beforeSortP2, afterSortP1);
+  }
+
+  /*
+   * Description: Test to create a product and edit charges Author: Vinayv
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testEditProductCharges() throws Exception {
+
+    Product product = productsService.locateProductById("1");
+    String viewResult = productsController.viewProductPlannedCharges(product.getCode(), map);
+    Assert.assertNotNull(viewResult);
+    Assert.assertEquals("view.product.planned.charges", viewResult);
+    List<ProductCharge> productChargesOriginal = (List<ProductCharge>) map.get("productChargesList");
+    List<ProductCharge> productChargesEdited = (List<ProductCharge>) map.get("productChargesList");
+    List<CurrencyValue> currenciesList = new ArrayList<CurrencyValue>();
+    for (ProductCharge pc : productChargesEdited) {
+      // pc.setPrice(BigDecimal.valueOf(500.00));
+      pc.setPrice(BigDecimal.valueOf(500.00).setScale(4, BigDecimal.ROUND_HALF_UP));
+      currenciesList.add(pc.getCurrencyValue());
+    }
+    ProductForm form = new ProductForm(product);
+    Map<Product, List<ProductCharge>> currentProductChargesMap = new HashMap<Product, List<ProductCharge>>();
+    currentProductChargesMap.put(product, productChargesOriginal);
+    form.setCurrentProductChargesMap(currentProductChargesMap);
+    form.updateProductChargesFormList(product, productChargesEdited, currenciesList,
+        channelService.getFutureRevision(null), false);
+    BindingResult result = validate(form);
+    String editResult = productsController.editPlannedCharges(form, result, map);
+    Assert.assertNotNull(editResult);
+    Assert.assertEquals("success", editResult);
+
+    String viewResult1 = productsController.viewProductPlannedCharges(product.getCode(), map);
+    Assert.assertNotNull(viewResult1);
+    Assert.assertEquals("view.product.planned.charges", viewResult1);
+    List<ProductCharge> productChargesafter = (List<ProductCharge>) map.get("productChargesList");
+    for (ProductCharge pc : productChargesafter) {
+      Assert.assertEquals(BigDecimal.valueOf(500.00).setScale(4, BigDecimal.ROUND_HALF_UP), pc.getPrice());
+    }
+  }
+
+  /*
+   * Description: Test to View Product Planned charges for future dates Author: Vinayv
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testViewProductPlannedChargesForFuture() throws Exception {
+
+    Product product = productsService.locateProductById("1");
+    List<ProductCharge> productChargesList = productsService.getProductCharges(product, channelService
+        .getFutureRevision(null).getStartDate());
+    String viewResult = productsController.viewProductPlannedCharges(product.getCode(), map);
+    Assert.assertNotNull(viewResult);
+    Assert.assertEquals("view.product.planned.charges", viewResult);
+    List<ProductCharge> productCharges = (List<ProductCharge>) map.get("productChargesList");
+    Assert.assertEquals(productChargesList.size(), productCharges.size());
+  }
+
+  /*
+   * Description: Test to edit Product with duplicate code Author: Vinayv
+   * @Test public void testEditProduct() throws Exception{ ServiceInstance serviceInstance =
+   * serviceInstanceDAO.find("1"); Service service = serviceInstance.getService(); ServiceUsageType serviceUsageType =
+   * null; List<ServiceUsageType> sutlist = serviceInstance.getService().getServiceUsageTypes(); for(ServiceUsageType
+   * sut : sutlist){ if(sut.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")){ serviceUsageType = sut; break; } }
+   * Product product = productsService.locateProductById("1");
+   * product.setCode(productsService.locateProductById("2").getCode());
+   * System.out.println("CODE1----------------"+product.getCode()); ProductForm form = new ProductForm(product); String
+   * jsonString ="[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: "+serviceUsageType.getId()+"} ]";
+   * form.setProductMediationRules(jsonString); BindingResult result = validate(form);
+   * System.out.println("CODE----------------"+form.getProduct().getCode()); Product editedProduct =
+   * productsController.editProduct(form, result, map); }
+   */
+
+  /*
+   * Description: Test to search Product Author: Vinayv
+   */
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testSearchProduct() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    String productName = productsService.locateProductById("1").getName();
+    String result = productsController.searchListByName(serviceInstance.getUuid(), "1", "100", productName, "current",
+        new Date().toString(), "All", "All", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("products.search.list", result);
+    List<Product> obtainedProductList = (List<Product>) map.get("productsList");
+    boolean flag = false;
+    for (Product p : obtainedProductList) {
+      if ((p.getName().equalsIgnoreCase(productName)) && (p.getId() == 1L)) {
+        flag = true;
+        break;
+      }
+    }
+    Assert.assertEquals(true, flag);
+
+    productName = productsService.locateProductById("1").getName();
+    result = productsController.searchListByName(serviceInstance.getUuid(), "1", "100", productName.substring(0, 3),
+        "current", new Date().toString(), "All", "All", map);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("products.search.list", result);
+    obtainedProductList = (List<Product>) map.get("productsList");
+    flag = false;
+    for (Product p : obtainedProductList) {
+      if ((p.getName().equalsIgnoreCase(productName)) && (p.getId() == 1L)) {
+        flag = true;
+        break;
+      }
+    }
+    Assert.assertEquals(true, flag);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "All" for view current tab
+   */
+  @Test
+  public void testAllFilterWithAllCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "All", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category value for view current tab
+   */
+
+  @Test
+  public void testAllFilterWithSelectedCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "All", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Null" for view current tab
+   */
+
+  @Test
+  public void testAllFilterWithNullCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "All", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Empty" for view current tab
+   */
+
+  @Test
+  public void testAllFilterWithEmptyCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "All", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is Invalid for view current tab
+   */
+
+  @Test
+  public void testAllFilterWithInvalidCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "All", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter Null link and select Category is Null for view current tab
+   */
+
+  @Test
+  public void testNullFilterWithInvalidCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, null, null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "All" for view History tab
+   */
+
+  @Test
+  public void testAllFilterWithAllCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "All", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category value for view History tab
+   */
+
+  @Test
+  public void testAllFilterWithSelectedCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "All", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Null" for view History tab
+   */
+
+  @Test
+  public void testAllFilterWithNullCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "All", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Empty" for view History tab
+   */
+
+  @Test
+  public void testAllFilterWithEmptyCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "All", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is Invalid for view History tab
+   */
+
+  @Test
+  public void testAllFilterWithInvalidCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "All", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is Invalid for view History tab
+   */
+
+  @Test
+  public void testNullFilterWithInvalidCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, null, null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "All" for view planned tab
+   */
+
+  @Test
+  public void testAllFilterWithAllCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "All", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category value for view planned tab
+   */
+
+  @Test
+  public void testAllFilterWithSelectedCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "All", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Null" for view planned tab
+   */
+
+  @Test
+  public void testAllFilterWithNullCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "All", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is "Empty" for view planned tab
+   */
+
+  @Test
+  public void testAllFilterWithEmptyCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "All", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "All" link and select Category is Invalid for view planned tab
+   */
+
+  @Test
+  public void testAllFilterWithInvalidCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "All", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Null" link and select Category is Invalid for view planned tab
+   */
+
+  @Test
+  public void testNullFilterWithInvalidCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, null, null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "All" for view current tab
+   */
+
+  @Test
+  public void testActiveFilterWithAllCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Active", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category value for view current tab
+   */
+
+  @Test
+  public void testActiveFilterWithSelectedCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Active", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Null" for view current tab
+   */
+
+  @Test
+  public void testActiveFilterWithNullCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Active", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Empty" for view current tab
+   */
+
+  @Test
+  public void testActiveFilterWithEmptyCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Active", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is Invalid for view current tab
+   */
+
+  @Test
+  public void testActiveFilterWithInvalidCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Active", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "All" for view history tab
+   */
+
+  @Test
+  public void testActiveFilterWithAllCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Active", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category value for view history tab
+   */
+
+  @Test
+  public void testActiveFilterWithSelectedCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Active", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Null" for view history tab
+   */
+
+  @Test
+  public void testActiveFilterWithNullCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Active", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Empty" for view history tab
+   */
+
+  @Test
+  public void testActiveFilterWithEmptyCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Active", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is Invalid for view history tab
+   */
+
+  @Test
+  public void testActiveFilterWithInvalidCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Active", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "All" for view planned tab
+   */
+
+  @Test
+  public void testActiveFilterWithAllCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Active", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category value for view planned tab
+   */
+
+  @Test
+  public void testActiveFilterWithSelectedCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Active", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(2, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Null" for view planned tab
+   */
+
+  @Test
+  public void testActiveFilterWithNullCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Active", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is "Empty" for view planned tab
+   */
+
+  @Test
+  public void testActiveFilterWithEmptyCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Active", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(35, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Active" link and select Category is Invalid for view planned tab
+   */
+
+  @Test
+  public void testActiveFilterWithInvalidCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Active", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "All" for view current tab
+   */
+
+  @Test
+  public void testRetireFilterWithAllCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category value for view current tab but product is
+   * not Retire
+   */
+
+  @Test
+  public void testRetireFilterWithSelectedCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Null" for view current tab
+   */
+
+  @Test
+  public void testRetireFilterWithNullCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Empty" for view current tab
+   */
+
+  @Test
+  public void testRetireFilterWithEmptyCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is Invalid for view current tab
+   */
+
+  @Test
+  public void testRetireFilterWithInvalidCategoryInCurrentViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "All" for view history tab
+   */
+
+  @Test
+  public void testRetireFilterWithAllCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category value for view history tab but product is
+   * not Retire
+   */
+
+  @Test
+  public void testRetireFilterWithSelectedCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Null" for view history tab
+   */
+
+  @Test
+  public void testRetireFilterWithNullCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Empty" for view history tab
+   */
+
+  @Test
+  public void testRetireFilterWithEmptyCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is Invalid for view history tab
+   */
+
+  @Test
+  public void testRetireFilterWithInvalidCategoryInHistoryViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "All" for view planned tab
+   */
+
+  @Test
+  public void testRetireFilterWithAllCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "All", map);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category value for view planned tab but product is
+   * not Retire
+   */
+
+  @Test
+  public void testRetireFilterWithSelectedCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "Categorized1", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Null" for view planned tab
+   */
+
+  @Test
+  public void testRetireFilterWithNullCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", null, map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is "Empty" for view planned tab
+   */
+
+  @Test
+  public void testRetireFilterWithEmptyCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products filter "Retire" link and select Category is Invalid for view planned tab
+   */
+
+  @Test
+  public void testRetireFilterWithInvalidCategoryInPlanNextViewForProducts() {
+
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "Invalid", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view current tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithAllCategoryInCurrentViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "All", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(1, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view History tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithAllCategoryInHistoryViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "All", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(1, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view planned tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithAllCategoryInPlannedViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "All", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view current tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithSelectedCategoryInCurrentViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "current", null, "Retire", "Categorized4", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(1, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view History tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithSelectedCategoryInHistoryViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "history", null, "Retire", "Categorized4", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(1, count);
+  }
+
+  /*
+   * @author Abhaik
+   * @description : Verify Products is Retired filter "Retire" link and select Category is All for view planned tab
+   */
+
+  @Test
+  public void testRetiredProductRetireFilterWithSelectedCategoryInPlannedViewForProducts() {
+
+    String product = productsController.retireProduct("11", "false", map);
+    Assert.assertNotNull(product);
+    Assert.assertEquals("success", product);
+    int count = 0;
+    boolean hasNext = true;
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    while (hasNext) {
+      String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+          null, null, "planned", null, "Retire", "Categorized4", map1);
+      Assert.assertNotNull(result);
+      Assert.assertEquals("products.list", result);
+      List<Product> productList = (List<Product>) map1.get("productsList");
+      count = count + productList.size();
+      hasNext = (Boolean) map1.get("enableNext");
+      page = page + 1;
+    }
+    Assert.assertEquals(0, count);
+  }
+
+  @Test
+  public void testProductOrderBasedOnSameCategory() {
+    int page = 1;
+    ModelMap map1 = new ModelMap();
+    String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+        null, null, "current", null, "All", "Categorized4", map1);
+    Assert.assertNotNull(result);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("products.list", result);
+    List<Product> productList = (List<Product>) map1.get("productsList");
+    Assert.assertEquals(2, productList.size());
+    long diff = productList.get(1).getSortOrder() - productList.get(0).getSortOrder();
+    Assert.assertTrue(diff > 0);
+  }
+
+  @Test
+  public void testProductOrderBasedOnDifferentCategory() {
+    int page = 3;
+    ModelMap map1 = new ModelMap();
+    String result = productsController.listProducts("003fa8ee-fba3-467f-a517-fd806dae8a80", Integer.toString(page),
+        null, null, "current", null, "All", "All", map1);
+    Assert.assertNotNull(result);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("products.list", result);
+    List<Product> productList = (List<Product>) map1.get("productsList");
+    Assert.assertEquals(7, productList.size());
+    Assert.assertTrue(productList.get(0).getSortOrder() < productList.get(1).getSortOrder());
+    Assert.assertTrue(productList.get(3).getSortOrder() < productList.get(4).getSortOrder());
+  }
+
+  @Test
+  public void testViewPlannedCharges() {
+
+    Map<Product, List<ProductCharge>> plannedCharges = getPlanChargesofActiveProducts();
+
+    List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
+
+    String result = productsController.viewPlannedCharges(map);
+
+    Assert.assertEquals("view.planned.charges", result);
+    Assert.assertEquals(activeCurrencies, map.get("currencieslist"));
+    Assert.assertEquals(activeCurrencies.size(), map.get("currencieslistsize"));
+    Assert.assertEquals(plannedCharges, map.get("plannedCharges"));
+    Assert.assertEquals(channelService.getFutureRevision(null).getStartDate(), map.get("date"));
+  }
+
+  private Map<Product, List<ProductCharge>> getPlanChargesofActiveProducts() {
+    Map<Product, List<ProductCharge>> plannedCharges = new HashMap<Product, List<ProductCharge>>();
+    for (ProductRevision productRevision : channelService.getFutureChannelRevision(null, false).getProductRevisions()) {
+      if (productRevision.getProduct().getRemoved() == null) {
+        plannedCharges.put(productRevision.getProduct(), productRevision.getProductCharges());
+      }
+    }
+    return plannedCharges;
+  }
+
+  private Map<Product, List<ProductCharge>> getPlanChargesofActiveProducts(String serviceInstanceUUID) {
+    Map<Product, List<ProductCharge>> plannedCharges = new HashMap<Product, List<ProductCharge>>();
+    for (ProductRevision productRevision : channelService.getFutureChannelRevision(null, false).getProductRevisions()) {
+      if (productRevision.getProduct().getRemoved() == null
+          && (productRevision.getProduct().getServiceInstance() != null && productRevision.getProduct()
+              .getServiceInstance().getUuid().equals(serviceInstanceUUID))) {
+        plannedCharges.put(productRevision.getProduct(), productRevision.getProductCharges());
+      }
+    }
+    return plannedCharges;
+  }
+
+  @Test
+  public void testAddProductCurrentCharges() {
+
+    List<CurrencyValue> currencyValueList = currencyValueService.listActiveCurrencies();
+
+    productsController.addProductCurrentCharges(productDAO.find(1L).getCode(), map);
+    Assert.assertNotNull(map.get("productForm"));
+
+    ProductForm form = (ProductForm) map.get("productForm");
+    Assert.assertEquals(currencyValueList.size(), form.getProductCharges().size());
+  }
+
+  @Test
+  public void testEditPlanCharges() {
+    try {
+      Revision futureRevision = channelService.getFutureRevision(null);
+      List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
+      Map<Product, List<ProductCharge>> plannedCharges = getPlanChargesofActiveProducts(serviceInstanceDAO.find(1L)
+          .getUuid());
+
+      productsController.editPlannedCharges(serviceInstanceDAO.find(1L).getUuid(), map);
+      Assert.assertEquals(activeCurrencies, map.get("currencieslist"));
+      Assert.assertEquals(activeCurrencies.size(), map.get("currencieslistsize"));
+
+      ProductForm form = (ProductForm) map.get("productForm");
+      Assert.assertEquals(futureRevision.getStartDate(), form.getStartDate());
+      Assert.assertEquals(plannedCharges.size(), form.getCurrentProductChargesMap().size());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testSortProducts() {
+    try {
+
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "current", null, null, null, map);
+      List<Product> productsList = (List<Product>) map.get("productsList");
+      int size = getProductListSize("current", null);
+      Assert.assertEquals(size, productsList.size());
+
+      for (int i = 1; i < size; i++) {
+        Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+          Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+      }
+
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "planned", null, null, null, map);
+      productsList = (List<Product>) map.get("productsList");
+      size = getProductListSize("planned", null);
+      Assert.assertEquals(size, productsList.size());
+      for (int i = 1; i < size; i++) {
+        Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+          Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+      }
+
+      Date date = productService.getReferencePriceBookHistoryRevisions().get(0).getStartDate();
+      productsController.sortProducts(serviceInstanceDAO.find(1L).getUuid(), "history", null, null, null, map);
+      productsList = (List<Product>) map.get("productsList");
+      size = getProductListSize("history", date);
+      Assert.assertEquals(size, productsList.size());
+      for (int i = 1; i < size; i++) {
+        Assert.assertTrue(productsList.get(i).getCategory().getId() >= productsList.get(i - 1).getCategory().getId());
+        if (productsList.get(i).getCategory().getId() == productsList.get(i - 1).getCategory().getId())
+          Assert.assertTrue(productsList.get(i).getSortOrder() > productsList.get(i - 1).getSortOrder());
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  private int getProductListSize(String plan, Date date) {
+
+    Revision effectiveRevision = null;
+
+    if (plan.equals("planned")) {
+      effectiveRevision = channelService.getFutureRevision(null);
+    } else if (plan.equals("current")) {
+      effectiveRevision = channelService.getCurrentRevision(null);
+    } else if (plan.equals("history")) {
+      effectiveRevision = channelService.getRevisionForTheDateGiven(date, null);
+    }
+    List<Product> products = productService.listProducts(effectiveRevision);
+
+    int size = 0;
+
+    for (Product product : products) {
+      if ((product.getRemoved() == null || (product.getRemoved() != null && effectiveRevision != null && product
+          .getRemovedInRevision().getId() > effectiveRevision.getId()))
+          && (product.getServiceInstance() != null && product.getServiceInstance().getUuid().toString()
+              .equals(serviceInstanceDAO.find(1L).getUuid().trim()))) {
+        size++;
+      }
+    }
+    return size;
+  }
+
+  @Test
+  public void testViewProductChargesHistory() {
+    try {
+      DateFormat formatter;
+      formatter = new SimpleDateFormat("MM/dd/yyyy");
+      String str_date = "01/01/2012 00:00:00";
+      Date historyDate = formatter.parse(str_date);
+      Product product = productDAO.find(1L);
+
+      List<ProductCharge> productChargesList = productService.getProductCharges(product, historyDate);
+
+      productsController.viewProductChargesHistory(product.getCode(), str_date, map);
+
+      List<ProductCharge> actualProductChargesList = (List<ProductCharge>) map.get("productChargesList");
+      Assert.assertEquals(productChargesList.size(), actualProductChargesList.size());
+
+      CurrencyValue currency = productChargesList.get(0).getCurrencyValue();
+
+      for (ProductCharge charge : actualProductChargesList) {
+        if (charge.getCurrencyValue().equals(currency))
+          Assert.assertEquals(productChargesList.get(0).getPrice(), charge.getPrice());
+      }
+
+      Assert.assertEquals(historyDate, map.get("historyDate"));
+
+      // when date is null
+      Date date = productService.getReferencePriceBookHistoryRevisions().get(0).getStartDate();
+      productChargesList = productService.getProductCharges(product, date);
+
+      productsController.viewProductChargesHistory(product.getCode(), null, map);
+
+      actualProductChargesList = (List<ProductCharge>) map.get("productChargesList");
+      Assert.assertEquals(productChargesList.size(), actualProductChargesList.size());
+      historyDate = (Date) map.get("historyDate");
+      Assert.assertTrue(DateUtils.isSameDay(historyDate, date));
+
+      currency = productChargesList.get(0).getCurrencyValue();
+
+      for (ProductCharge charge : actualProductChargesList) {
+        if (charge.getCurrencyValue().equals(currency))
+          Assert.assertEquals(productChargesList.get(0).getPrice(), charge.getPrice());
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testSetPlanDateWithFutureDate() {
+    try {
+      // Case: Future Revision starts after today
+      Date futureDate = DateUtils.addDays(new Date(), 3);
+
+      ProductForm postForm = new ProductForm();
+      postForm.setStartDate(futureDate);
+      BindingResult result = validate(postForm);
+      // http post call
+      productsController.setPlanDate(postForm, result, map);
+
+      productsController.setPlanDate(map);
+      Assert.assertEquals(true, map.get("isPlanDateThere"));
+      Assert.assertEquals(true, map.get("isTodayAllowed"));
+      Date date = (Date) map.get("date_today");
+      Assert.assertTrue(DateUtils.isSameDay(new Date(), date));
+
+      ProductForm form = (ProductForm) map.get("planDateForm");
+      Assert.assertTrue(DateUtils.isSameDay(futureDate, (Date) form.getStartDate()));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testSetPlanDateNegativeTest() {
+    try {
+      // date same as start date
+      ProductForm form = new ProductForm();
+      Date date = DateUtils.minusOneDay(new Date());
+
+      form.setStartDate(date);
+      BindingResult result = validate(form);
+      String response = productsController.setPlanDate(form, result, map);
+      Assert.assertEquals("plan_date_should_be_greater_to_today", response);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testSetPlanDateforFutureDate() {
+    try {
+      // Activating today
+      ProductForm form = new ProductForm();
+      Date date = DateUtils.truncate(DateUtils.addDays(new Date(), 1));
+
+      form.setStartDate(date);
+      BindingResult result = validate(form);
+      productsController.setPlanDate(form, result, map);
+      Assert.assertEquals(date, channelService.getFutureRevision(null).getStartDate());
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testSetPlanDateforToday() {
+    try {
+      // Activating today
+      ProductForm form = new ProductForm();
+      Date date = new Date();
+
+      form.setStartDate(date);
+      BindingResult result = validate(form);
+      productsController.setPlanDate(form, result, map);
+      Assert.assertTrue(DateUtils.isSameDay(date, channelService.getCurrentRevision(null).getStartDate()));
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  /*
+   * Description: Test Current History Applicable For RPB. Author: Avinash ReviewedBy: Atulb
+   */
+
+  @Test
+  public void testIsCurrentHistoryApplicableForRPB() {
+
+    ModelMap map = new ModelMap();
+    Map<String, String> result = productsController.isCurrentAndHistoryApplicableForRPB();
+    Assert.assertNotNull(result);
+    Assert.assertNotNull(result.get("current"));
+    Assert.assertEquals("true", result.get("current"));
+    Assert.assertEquals("true", result.get("history"));
+  }
+
+  /*
+   * Description: Test Get Service Catagories. Author: Avinash ReviewedBy:Atulb
+   */
+
+  @Test
+  public void testGetServiceCatagoriesPlanned() {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.getServiceCategories(map, "planned", "");
+    Assert.assertEquals(new String("products.service.categories.show"), result);
+    Assert.assertNotNull(map);
+    Assert.assertEquals(null, map.get("futurePlanDate"));
+    Assert.assertEquals(null, map.get("revisionDate"));
+    Assert.assertEquals("IAAS", map.get("selectedCategory"));
+    Assert.assertEquals("NORMAL", map.get("top_nav_health_status"));
+    Assert.assertEquals(null, map.get("historyDates"));
+
+  }
+
+  @Test
+  public void testGetServiceCatagoriesHistory() {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.getServiceCategories(map, "history", "");
+    Assert.assertEquals(new String("products.service.categories.show"), result);
+    Assert.assertNotNull(map);
+    Assert.assertEquals(null, map.get("futurePlanDate"));
+    Assert.assertEquals("2012-05-28 00:00:00.0", map.get("revisionDate").toString());
+    Assert.assertEquals("IAAS", map.get("selectedCategory"));
+    Assert.assertEquals("NORMAL", map.get("top_nav_health_status"));
+    Assert.assertEquals("[2012-05-28 00:00:00.0, 2012-05-01 00:00:00.0, 2001-01-01 00:00:00.0]", map
+        .get("historyDates").toString());
+  }
+
+  @Test
+  public void testGetServiceCatagoriesRevisionDate() {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.getServiceCategories(map, "revisionDate", "");
+    Assert.assertEquals(new String("products.service.categories.show"), result);
+    Assert.assertNotNull(map);
+    Assert.assertEquals(null, map.get("futurePlanDate"));
+    Assert.assertEquals(null, map.get("revisionDate"));
+    Assert.assertEquals("IAAS", map.get("selectedCategory"));
+    Assert.assertEquals("NORMAL", map.get("top_nav_health_status"));
+    Assert.assertEquals(null, map.get("historyDates"));
+  }
+
+  /*
+   * Description: Test Get Service Instances. Author: Avinash ReviewedBy:Atulb
+   */
+
+  @Test
+  public void testGetServiceInstancesPlanned() {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.getServiceInstances(map, "003fa8ee-fba3-467f-a517-fd806dae8a80", "planned", "");
+    Assert.assertNotNull(map);
+    List<Service> serviceCategoryList = (List<Service>) map.get("serviceCategoryList");
+    Assert.assertNotNull(map.get("serviceCategoryList"));
+    Assert.assertEquals(4, serviceCategoryList.size());
+    ;
+    Assert.assertEquals(null, map.get("futurePlanDate"));
+    Assert.assertEquals(null, map.get("revisionDate"));
+    Assert.assertEquals(null, map.get("historyDates"));
+    Assert.assertEquals("fc3c6f30-a44a-4754-a8cc-9cea97e0a129", serviceCategoryList.get(0).getUuid());
+    Assert.assertEquals("6", serviceCategoryList.get(0).getId().toString());
+    Assert.assertEquals("IAAS", serviceCategoryList.get(0).getCategory());
+    Assert.assertEquals("CloudPlatform", serviceCategoryList.get(0).getServiceName());
+    Assert.assertEquals("Citrix", serviceCategoryList.get(0).getVendor());
+    Assert.assertEquals(false, serviceCategoryList.get(0).getSingleton());
+    Assert.assertEquals(false, serviceCategoryList.contains(serviceCategoryList));
+    Assert.assertEquals(result, new String("products.instances.show"));
+
+  }
+
+  /*
+   * Description: Test Get Service Instances. Author: Avinash ReviewedBy:Atulb
+   */
+
+  @Test
+  public void testGetServiceInstancesHistory() {
+
+    ModelMap map = new ModelMap();
+
+    String result = productsController
+        .getServiceInstances(map, "003fa8ee-fba3-467f-a517-fd806dae8a80", "history", null);
+    Assert.assertNotNull(map);
+    List<Service> serviceCategoryList = (List<Service>) map.get("serviceCategoryList");
+    Assert.assertNotNull(map.get("serviceCategoryList"));
+    Assert.assertEquals(4, serviceCategoryList.size());
+    ;
+    Assert.assertEquals(null, map.get("futurePlanDate"));
+    Assert.assertEquals(null, map.get("revisionDate"));
+    Assert.assertEquals("[2012-05-28 00:00:00.0, 2012-05-01 00:00:00.0, 2001-01-01 00:00:00.0]", map
+        .get("historyDates").toString());
+    Assert.assertEquals("fc3c6f30-a44a-4754-a8cc-9cea97e0a129", serviceCategoryList.get(0).getUuid());
+    Assert.assertEquals("6", serviceCategoryList.get(0).getId().toString());
+    Assert.assertEquals("IAAS", serviceCategoryList.get(0).getCategory());
+    Assert.assertEquals("CloudPlatform", serviceCategoryList.get(0).getServiceName());
+    Assert.assertEquals("Citrix", serviceCategoryList.get(0).getVendor());
+    Assert.assertEquals(false, serviceCategoryList.get(0).getSingleton());
+    Assert.assertEquals(false, serviceCategoryList.contains(serviceCategoryList));
+    Assert.assertEquals(result, new String("products.instances.show"));
+
+  }
+
+  /*
+   * Description: Test View Product Current Charges" for the selected product. Author: Avinash ReviewedBy : Atulb
+   */
+
+  @Test
+  public void testViewProductCurrentCharges() throws Exception {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.viewProductCurrentCharges("SYSTEM_VOLUME", map);
+    Assert.assertNotNull(map);
+    List<ProductCharge> returnedCharges = (List<ProductCharge>) map.get("productChargesList");
+    Assert.assertNotNull(returnedCharges);
+    Assert.assertEquals(6, returnedCharges.size());
+    ProductCharge euroCharge = returnedCharges.get(0);
+    Assert.assertEquals(44, euroCharge.getCurrencyValue().getId().intValue());
+    Assert.assertEquals(10, euroCharge.getPrice().intValue());
+    ProductCharge usdCharges = returnedCharges.get(1);
+    Assert.assertEquals(149, usdCharges.getCurrencyValue().getId().intValue());
+    Assert.assertEquals(10, usdCharges.getPrice().intValue());
+    boolean noChargesYetSet = (Boolean) map.get("noChargesSetYet");
+    Assert.assertEquals(false, noChargesYetSet);
+    boolean hasHistoricalRevisions = (Boolean) map.get("hasHistoricalRevisions");
+    Assert.assertEquals(true, hasHistoricalRevisions);
+    String result1 = productsController.viewProductCurrentCharges("RVM", map);
+    Assert.assertNotNull(map);
+    returnedCharges = (List<ProductCharge>) map.get("productChargesList");
+    Assert.assertNotNull(returnedCharges);
+    Assert.assertEquals(0, returnedCharges.size());
+    boolean noChargesYetSetRVM = (Boolean) map.get("noChargesSetYet");
+    Assert.assertEquals(true, noChargesYetSetRVM);
+    boolean hasHistoricalRevisionsRVM = (Boolean) map.get("hasHistoricalRevisions");
+    Assert.assertEquals(true, hasHistoricalRevisionsRVM);
+  }
+
+  /*
+   * Description: Test create new product Author: Avinash ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testCreateProductHasPlannedChargesTrue() throws Exception {
+
+    ModelMap map = new ModelMap();
+    int beforeCreationProductLength = productsService.getProductsCount();
+    String result = productsController.createProduct(serviceInstanceDAO.find(1L).getUuid().toString(), map);
+    int afterCreationProductLength = productsService.getProductsCount();
+    Assert.assertEquals(beforeCreationProductLength + 0, afterCreationProductLength);
+    Assert.assertNotNull(map);
+
+    ProductForm productForm = (ProductForm) map.get("productForm");
+    // Assert.assertEquals("com.vmops.web.forms.ProductForm@6ebe20a", map.get("productForm").toString());
+
+    Assert.assertTrue(map.get("hasplannedcharges").toString(), true);
+    Revision currentRevision = productsService.getCurrentRevision(null);
+    Assert.assertEquals("2013-01-09 00:00:00.0", map.get("date").toString());
+    List<CurrencyValue> activeCurrencies = currencyValueService.listActiveCurrencies();
+    Assert.assertEquals(6, activeCurrencies.size());
+    List<Category> categories = productsService.getAllCategories();
+    Assert.assertEquals(5, categories.size());
+    Assert.assertEquals(result, new String("products.new"));
+    Assert.assertEquals("com.company1.service1", map.get("serviceName").toString());
+    Assert.assertEquals("b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6", map.get("serviceUuid").toString());
+    Set<String> serviceUsageTypeNames = (Set<String>) map.get("serviceUsageTypeNames");
+    Assert.assertEquals(27, serviceUsageTypeNames.size());
+    Set<String> discrimintaorNames = (Set<String>) map.get("discrimintaorNames");
+    Assert.assertEquals(9, discrimintaorNames.size());
+  }
+
+  /*
+   * Description: Test list usage for the specific product. Author: Avinash ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testlistUsage() throws Exception {
+
+    ModelMap map = new ModelMap();
+    List<ServiceUsageType> result = productsController.listUsageTypes(serviceInstanceDAO.find(1L).getUuid().toString());
+    ServiceInstance serviceInstance = serviceInstanceDAO.getServiceInstance("003fa8ee-fba3-467f-a517-fd806dae8a80");
+    Service service = serviceInstance.getService();
+    List<ServiceUsageType> serviceUsageTypeList = service.getServiceUsageTypes();
+    Assert.assertNotNull(result);
+    Assert.assertEquals(serviceUsageTypeList, result);
+    Assert.assertEquals(28, result.size());
+    Assert.assertEquals("RUNNING_VM", serviceUsageTypeList.get(0).getUsageTypeName().toString());
+    Assert.assertEquals("com.company1.service1", service.getServiceName());
+    Assert.assertEquals(false, service.getSingleton());
+    Assert.assertEquals("IAAS", service.getCategory());
+    Assert.assertEquals("CLOUD", service.getType());
+    Assert.assertEquals("b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6", service.getUuid());
+    Assert.assertEquals(28, service.getServiceUsageTypes().size());
+    Assert.assertEquals("TEMPLATE", serviceUsageTypeList.get(1).getUsageTypeName().toString());
+    Assert.assertEquals("HYPERVISOR", serviceUsageTypeList.get(2).getUsageTypeName().toString());
+    Assert.assertEquals("VOLUME", serviceUsageTypeList.get(3).getUsageTypeName().toString());
+    Assert.assertEquals("ALLOCATED_VM", serviceUsageTypeList.get(4).getUsageTypeName().toString());
+    Assert.assertEquals("NETWORK_BYTES_IN", serviceUsageTypeList.get(5).getUsageTypeName().toString());
+    Assert.assertEquals("NETWORK_BYTES_OUT", serviceUsageTypeList.get(6).getUsageTypeName().toString());
+    Assert.assertEquals("MRD_UT1", serviceUsageTypeList.get(7).getUsageTypeName().toString());
+    Assert.assertEquals("MRD_UT2", serviceUsageTypeList.get(8).getUsageTypeName().toString());
+
+  }
+
+  /*
+   * Description: Test View Product product. Author: Avinash ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testViewProduct() throws Exception {
+
+    ModelMap map = new ModelMap();
+    String result = productsController.viewProduct("1", "planned", map);
+    Product product = productsService.locateProduct("1", true);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("products.view", result);
+    Assert.assertNotNull(map);
+    Assert.assertEquals(product, map.get("product"));
+    Assert.assertEquals("planned", map.get("whichPlan"));
+    Assert.assertEquals("Volume", product.getName());
+    Assert.assertEquals("SYSTEM_VOLUME", product.getCode());
+
+  }
+
+  /*
+   * Description: Test View Product Channel Pricing Details History "planned" for the selected product. Author: Avinash
+   * ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testViewProductChannelPricingDetailsPlanned() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Channel channel = channelDAO.find(1L);
+    String result = productsController.viewProductChannelPricingDetails("SYSTEM_VOLUME", map, "USD", "planned", null);
+    Assert.assertNotNull(map);
+    Revision channelRevision = channelService.getFutureRevision(null);
+
+    Map<Channel, List<ProductCharge>> productChannelChargesMap = (Map<Channel, List<ProductCharge>>) map
+        .get("productChannelChargesMap");
+    List<CurrencyValue> activeCurrencies = (List<CurrencyValue>) map.get("currencieslist");
+
+    boolean found = false;
+    for (CurrencyValue currencyValue : activeCurrencies) {
+      if (currencyValue.getCurrencyCode().equals("USD")) {
+        Assert.assertEquals("US Dollar", currencyValue.getCurrencyName());
+        Assert.assertEquals(2, currencyValue.getRank());
+        found = true;
+        break;
+      }
+    }
+    Assert.assertTrue(found);
+
+    found = false;
+    for (ProductCharge productCharge : productChannelChargesMap.get(channel)) {
+      if (productCharge.getProduct().equals(productDAO.find(1L))) {
+        Assert.assertEquals("20.0000", productCharge.getPrice().toString());
+        found = true;
+      }
+    }
+    Assert.assertTrue(found);
+
+    Assert.assertEquals("USD", map.get("currenciesToDisplay"));
+    Assert.assertNotNull(productChannelChargesMap);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("product.view.channelpricing", result);
+
+    if (channelRevision != null) {
+      Assert.assertEquals(channelRevision.getStartDate(), map.get("date"));
+    } else {
+      Assert.assertEquals(null, map.get("date"));
+    }
+  }
+
+  /*
+   * Description: Test View Product Channel Pricing Details History "current" for the selected product. Author: Avinash
+   * ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testViewProductChannelPricingDetailsCurrent() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Channel channel = channelDAO.find(1L);
+    String result = productsController.viewProductChannelPricingDetails("CODEsmallRunningVm2", map, "USD", "current",
+        null);
+    Assert.assertNotNull(map);
+    Revision channelRevision = channelService.getFutureRevision(null);
+
+    Map<Channel, List<ProductCharge>> productChannelChargesMap = (Map<Channel, List<ProductCharge>>) map
+        .get("productChannelChargesMap");
+    List<CurrencyValue> activeCurrencies = (List<CurrencyValue>) map.get("currencieslist");
+
+    boolean found = true;
+    for (CurrencyValue currencyValue : activeCurrencies) {
+      if (currencyValue.getCurrencyCode().equals("USD")) {
+        Assert.assertEquals("US Dollar", currencyValue.getCurrencyName());
+        Assert.assertEquals(2, currencyValue.getRank());
+        found = true;
+        break;
+      }
+    }
+    Assert.assertTrue(found);
+
+    found = true;
+    for (ProductCharge productCharge : productChannelChargesMap.get(channel)) {
+      if (productCharge.getProduct().equals(productDAO.find(1L))) {
+        Assert.assertEquals("20.0000", productCharge.getPrice().toString());
+        found = true;
+      }
+    }
+    Assert.assertTrue(found);
+
+    Assert.assertEquals("USD", map.get("currenciesToDisplay"));
+    Assert.assertNotNull(productChannelChargesMap);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("product.view.channelpricing", result);
+
+    if (channelRevision != null) {
+      Assert.assertEquals("2012-05-05 00:00:00.0", map.get("date").toString());
+    } else {
+      Assert.assertEquals(null, map.get("date"));
+    }
+  }
+
+  /*
+   * Description: Test View Product Channel Pricing Details History "history" for the selected product. Author: Avinash
+   * ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testViewProductChannelPricingDetailsHistory() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Channel channel = channelDAO.find(1L);
+    String result = productsController.viewProductChannelPricingDetails("CODEsmallRunningVm2", map, "USD", "history",
+        null);
+    Assert.assertNotNull(map);
+    Assert.assertNotNull(map);
+    Revision channelRevision = channelService.getFutureRevision(null);
+
+    Map<Channel, List<ProductCharge>> productChannelChargesMap = (Map<Channel, List<ProductCharge>>) map
+        .get("productChannelChargesMap");
+    List<CurrencyValue> activeCurrencies = (List<CurrencyValue>) map.get("currencieslist");
+
+    boolean found = true;
+    for (CurrencyValue currencyValue : activeCurrencies) {
+      if (currencyValue.getCurrencyCode().equals("USD")) {
+        Assert.assertEquals("US Dollar", currencyValue.getCurrencyName());
+        Assert.assertEquals(2, currencyValue.getRank());
+        found = true;
+        break;
+      }
+    }
+    Assert.assertTrue(found);
+
+    found = true;
+    for (ProductCharge productCharge : productChannelChargesMap.get(channel)) {
+      if (productCharge.getProduct().equals(productDAO.find(1L))) {
+        Assert.assertEquals("20.0000", productCharge.getPrice().toString());
+        found = true;
+      }
+    }
+    Assert.assertTrue(found);
+
+    Assert.assertEquals("USD", map.get("currenciesToDisplay"));
+    Assert.assertNotNull(productChannelChargesMap);
+    Assert.assertNotNull(result);
+    Assert.assertEquals("product.view.channelpricing", result);
+
+    if (channelRevision != null) {
+      Assert.assertEquals("Mon May 28 00:00:00 GMT 2012", map.get("date").toString());
+    } else {
+      Assert.assertEquals(null, map.get("date"));
+    }
+  }
+
+  /*
+   * Description: Test view mediation rule "current" for the selected product. Author: Avinash ReviewedBy::Ankit
+   */
+  @Test
+  public void testViewMediationRulesPlanned() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Product product = productsService.locateProductByCode("CODEsmallRunningVm2");
+    String result = productsController.viewMediationRules("CODEsmallRunningVm2", map, "current", "");
+    Assert.assertNotNull(map);
+    List<MediationRule> mediationRules = new ArrayList<MediationRule>();
+    mediationRules = productsService.getProductRevision(product,
+        channelService.getCurrentRevision(null).getStartDate(), null).getMediationRules();
+    Assert.assertEquals(mediationRules, map.get("mediationRules"));
+    Assert.assertEquals("view.product.mediation.rules", result);
+  }
+
+  /*
+   * Description: Test view mediation rule "History" for the selected product. Author: Avinash ReviewedBy::Ankit
+   */
+
+  @Test
+  public void testViewMediationRulesHistory() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Product product = productsService.locateProductByCode("CODEsmallRunningVm2");
+    String result = productsController.viewMediationRules("CODEsmallRunningVm2", map, "history", "");
+    Assert.assertNotNull(map);
+    List<Revision> revisions = productsService.getReferencePriceBookHistoryRevisions();
+    String historyDate = DateUtils.getStringForCalendar(revisions.get(0).getStartDate(),
+        DateUtils.getDateFormatter("MM/dd/yyyy HH:mm:ss"));
+    Date date = DateUtils.truncate(DateUtils.getCalendarForDate(historyDate.toString(),
+        DateUtils.getDateFormatter("MM/dd/yyyy HH:mm:ss")).getTime());
+    List<MediationRule> mediationRules = new ArrayList<MediationRule>();
+    mediationRules = productsService.getProductRevision(product, date, null).getMediationRules();
+    Assert.assertEquals(mediationRules, map.get("mediationRules"));
+    Assert.assertEquals("view.product.mediation.rules", result);
+  }
+
+  /*
+   * Description: Test view mediation rule "planned" for the selected product. Author: Avinash ReviewedBy:Ankit
+   */
+
+  @Test
+  public void testViewMediationRulesCurrent() throws Exception {
+
+    ModelMap map = new ModelMap();
+    Product product = productsService.locateProductByCode("CODEsmallRunningVm2");
+    String result = productsController.viewMediationRules("CODEsmallRunningVm2", map, "planned", "");
+    Assert.assertNotNull(map);
+    List<MediationRule> mediationRules = new ArrayList<MediationRule>();
+    mediationRules = productsService.getProductRevision(product, channelService.getFutureRevision(null).getStartDate(),
+        null).getMediationRules();
+    Assert.assertEquals(mediationRules, map.get("mediationRules"));
+    Assert.assertEquals("view.product.mediation.rules", result);
+  }
+
+  /*
+   * Description: Test edit product logo Author: Avinash ReviewedBy:Ankit
+   */
+  @Test
+  public void testEditProductLogo() throws Exception {
+
+    Product product = productDAO.find(1L);
+    ProductLogoForm form = new ProductLogoForm(product);
+    MultipartFile logo = new MockMultipartFile("Product.jpeg", "Product.jpeg", "bytes", "ProductLogo".getBytes());
+    form.setLogo(logo);
+    BindingResult result = validate(form);
+    Assert.assertNotNull(result);
+    String resultString = productsController.editProductLogo("1", map);
+    Assert.assertNotNull(resultString);
+  }
+
+  /*
+   * Description: Test edit existing product product Author: Avinash ReviewedBy:Ankit
+   */
+
+  @Test
+  public void testEditProductModel() throws Exception {
+
+    ServiceInstance serviceInstance = serviceInstanceDAO.find("1");
+    Service service = serviceInstance.getService();
+    ServiceUsageType serviceUsageType = null;
+    List<ServiceUsageType> serviceUsagetypelist = serviceInstance.getService().getServiceUsageTypes();
+    for (ServiceUsageType serviceUsageType1 : serviceUsagetypelist) {
+      if (serviceUsageType1.getUsageTypeName().equalsIgnoreCase("RUNNING_VM")) {
+        serviceUsageType = serviceUsageType1;
+        break;
+      }
+    }
+
+    Product product = new Product("New", "New_Prod", "New_Prod", "", getRootUser());
+    product.setCode("New");
+    product.setServiceInstance(serviceInstanceDAO.find(serviceInstance.getId()));
+    product.setUom("Hours");
+    Category category = productsService.getCategory(1L);
+    product.setCategory(category);
+    ProductForm form = new ProductForm(product);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDAO.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    List<ProductCharge> productCharges = new ArrayList<ProductCharge>();
+    ProductCharge productCharge = new ProductCharge();
+    productCharge.setRevision(revisionDAO.getCurrentRevision(null));
+    productCharge.setCatalog(null);
+    productCharge.setCurrencyValue(currencyValueDAO.find(1L));
+    productCharge.setPrice(BigDecimal.valueOf(100));
+    productCharge.setCreatedAt(new Date());
+    productCharge.setCreatedBy(getRootUser());
+    productCharge.setUpdatedBy(getRootUser());
+    productsService.saveProductCharge(productCharge);
+    productCharges.add(productCharge);
+
+    form.setProductCharges(productCharges);
+    form.setIsReplacementProduct(false);
+
+    String jsonString = "[ {conversionFactor: 1.00, operator: COMBINE, usageTypeId: " + serviceUsageType.getId()
+        + "} ]";
+    form.setProductMediationRules(jsonString);
+    BindingResult result = validate(form);
+
+    ModelMap map = new ModelMap();
+    BindingResult bindingResult = validate(form);
+    Product result1 = productsController.editProduct(form, bindingResult, map);
+    Assert.assertEquals(product, result1);
+    Assert.assertEquals("RUNNING_VM", serviceUsagetypelist.get(0).getUsageTypeName());
+    Assert.assertEquals(false, serviceUsagetypelist.get(0).getService().getSingleton());
+    Assert.assertEquals("IAAS", serviceUsagetypelist.get(0).getService().getCategory());
+    Assert.assertEquals("b1c9fbb0-8dab-42dc-ae0a-ce1384a1e6", serviceUsagetypelist.get(0).getService().getUuid());
+    Assert.assertEquals("Company1", serviceUsagetypelist.get(0).getService().getVendor());
+    Assert.assertEquals("1.2.1", serviceUsagetypelist.get(0).getService().getVendorVersion());
+    Assert.assertEquals("CLOUD", serviceUsagetypelist.get(0).getService().getType());
+  }
+
+  /*
+   * Description: Test list Discriminator. Author: Avinash
+   */
+
+  @Test
+  public void testDiscriminators() throws Exception {
+    Long usageTypeId = serviceUsageTypeDAO.find(1L).getId();
+
+    String serviceInstanceUUID = serviceInstanceDAO.find(1L).getUuid().toString();
+    asPortal();
+    Set<ServiceDiscriminator> serviceDiscriminators = new HashSet<ServiceDiscriminator>();
+    ServiceInstance serviceInstance = serviceInstanceDAO.getServiceInstance(serviceInstanceUUID);
+    for (ServiceUsageType serviceUsageType : serviceInstance.getService().getServiceUsageTypes()) {
+      if (serviceUsageType.getId().equals(usageTypeId)) {
+        serviceDiscriminators = serviceInstance.getService().getServiceUsageTypeDiscriminator(serviceUsageType);
+        break;
+      }
+    }
+    Map<String, Object> finalMap = new HashMap<String, Object>();
+    for (ServiceDiscriminator serviceDiscriminator : serviceDiscriminators) {
+      String discriminatorName = serviceDiscriminator.getDiscriminatorName();
+      Map<String, String> discriminatorValuesMap = new HashMap<String, String>();
+      discriminatorValuesMap = ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstanceUUID))
+          .getMetadataRegistry().getDiscriminatorValues(discriminatorName);
+      Map<String, Object> discriminatorValMap = new HashMap<String, Object>();
+      discriminatorValMap.put("name", discriminatorName);
+      discriminatorValMap.put("discriminatorValues", discriminatorValuesMap);
+      finalMap.put(serviceDiscriminator.getId().toString(), discriminatorValMap);
+    }
+    ModelMap map = new ModelMap();
+    Map<String, Object> result = productsController.listDiscriminators(usageTypeId, serviceInstanceUUID);
+    Assert.assertEquals(finalMap, result);
+    Assert.assertEquals(9, serviceDiscriminators.size());
+
+  }
+
+  /*
+   * Description: Test edit selected product. Author: Avinash
+   */
+
+  @Test
+  public void testEditProduct() throws Exception {
+    Product product = productsService.locateProductById("1");
+    ModelMap map = new ModelMap();
+    String result = productsController.editProduct("1", map);
+    Assert.assertNotNull(map);
+    ProductForm productForm = new ProductForm(product);
+    productForm.setCategoryID(product.getCategory().getId().toString());
+    ProductForm pf = (ProductForm) map.get("productForm");
+    Assert.assertEquals(productForm.getProduct(), pf.getProduct());
+
+    Set<String> serviceUsageTypeNames = new HashSet<String>();
+    Set<String> discrimintaorNames = new HashSet<String>();
+    for (ServiceUsageType serviceUsageType : product.getServiceInstance().getService().getServiceUsageTypes()) {
+      serviceUsageTypeNames.add(serviceUsageType.getUsageTypeName());
+      for (ServiceDiscriminator serviceDiscriminator : product.getServiceInstance().getService()
+          .getServiceUsageTypeDiscriminator(serviceUsageType)) {
+        discrimintaorNames.add(serviceDiscriminator.getDiscriminatorName());
+      }
+    }
+
+    Assert.assertEquals(product.getServiceInstance().getService().getServiceName(), map.get("serviceName"));
+    Assert.assertEquals(serviceUsageTypeNames, map.get("serviceUsageTypeNames"));
+    Assert.assertEquals(discrimintaorNames, map.get("discrimintaorNames"));
+    ProductRevision productRevision = productsService.getProductRevision(product, channelService
+        .getFutureRevision(null).getStartDate(), null);
+    List<MediationRule> mediationRules = productRevision.getMediationRules();
+    List<Category> categories = productsService.getAllCategories();
+    Assert.assertEquals(productsService.getAllCategories(), map.get("categories"));
+
+    Map<String, Object> mediationRuleMap = new HashMap<String, Object>();
+    Map<String, Object> usageTypeDiscMap = new HashMap<String, Object>();
+
+    for (final MediationRule mediationRule : mediationRules) {
+      Map<String, Object> mediationRuleEntitiesMap = new HashMap<String, Object>();
+      mediationRuleEntitiesMap.put("usageType", mediationRule.getServiceUsageType().getUsageTypeName());
+      mediationRuleEntitiesMap.put("conversionFactor",
+          productsService.getConversionFactor(mediationRule.getConversionFactor(), mediationRule.isMonthly()));
+      mediationRuleEntitiesMap.put("operator", mediationRule.getOperator().toString().toLowerCase());
+      mediationRuleEntitiesMap.put("uom", mediationRule.getServiceUsageType().getServiceUsageTypeUom().getName());
+      mediationRuleEntitiesMap.put("productUom", product.getUom());
+      mediationRuleEntitiesMap.put("usageTypeId", mediationRule.getServiceUsageType().getId());
+
+      Map<String, Object> medDiscsMap = new HashMap<String, Object>();
+      for (MediationRuleDiscriminator mediationRuleDiscriminator : mediationRule.getMediationRuleDiscriminators()) {
+        Map<String, Object> medRuleDisEntitiesMap = new HashMap<String, Object>();
+        medRuleDisEntitiesMap.put("discriminatorType", mediationRuleDiscriminator.getServiceDiscriminator()
+            .getDiscriminatorName());
+        medRuleDisEntitiesMap.put("discrimniatorValue", mediationRuleDiscriminator.getDiscriminatorValue());
+        medRuleDisEntitiesMap.put("operator", mediationRuleDiscriminator.getOperator().toString().toLowerCase());
+        medRuleDisEntitiesMap.put("discriminatorTypeId", mediationRuleDiscriminator.getServiceDiscriminator().getId());
+
+        medDiscsMap.put(mediationRuleDiscriminator.getId().toString(), medRuleDisEntitiesMap);
+      }
+
+      mediationRuleEntitiesMap.put("discriminators", medDiscsMap);
+      mediationRuleMap.put(mediationRule.getId().toString(), mediationRuleEntitiesMap);
+
+      if (medDiscsMap.size() > 0) {
+        try {
+          final ServiceInstance serviceInstance = product.getServiceInstance();
+          final ServiceUsageType serviceUsageType = mediationRule.getServiceUsageType();
+          asPortal();
+          Map<String, Object> discValueMap = new HashMap<String, Object>();
+          Set<ServiceDiscriminator> usageTypeDiscriminators = serviceInstance.getService()
+              .getServiceUsageTypeDiscriminator(serviceUsageType);
+          for (ServiceDiscriminator usageTypeDiscriminator : usageTypeDiscriminators) {
+            Map<String, String> discriminatorValMap = new HashMap<String, String>();
+            discriminatorValMap = ((CloudConnector) connectorManagementService.getServiceInstance(serviceInstance
+                .getUuid())).getMetadataRegistry()
+                .getDiscriminatorValues(usageTypeDiscriminator.getDiscriminatorName());
+            // Create map of discriminator to its values
+            Map<String, Object> discVals = new HashMap<String, Object>();
+            discVals.put("name", usageTypeDiscriminator.getDiscriminatorName());
+            discVals.put("discriminatorValues", discriminatorValMap);
+            discValueMap.put(usageTypeDiscriminator.getId().toString(), discVals);
+          }
+
+          // Add entries to the service Usage type map
+          Map<String, Object> usageTypeMap = new HashMap<String, Object>();
+          usageTypeMap.put("name", serviceUsageType.getUsageTypeName());
+          usageTypeMap.put("discriminators", discValueMap);
+          usageTypeDiscMap.put(serviceUsageType.getId().toString(), usageTypeMap);
+        } catch (Exception e) {
+          logger.error("Error in creating the usage discriminator map...", e);
+        }
+      } else {
+        usageTypeDiscMap.put(mediationRule.getServiceUsageType().getId().toString(), new HashMap<String, Object>());
+      }
+    }
+
+    String jsonUsageTypeDiscriminatorMap = JSONUtils.toJSONString(usageTypeDiscMap);
+    String jsonMediationRuleMap = JSONUtils.toJSONString(mediationRuleMap);
+    Assert.assertEquals(jsonUsageTypeDiscriminatorMap, map.get("jsonUsageTypeDiscriminatorMap"));
+    Assert.assertEquals(jsonMediationRuleMap, map.get("jsonMediationRuleMap"));
+
+  }
+
+  /*
+   * Description: Test Validate product Code Author: Avinash ReviewedBy:Ankit
+   */
+  @Test
+  public void testValidateProductCode() throws Exception {
+
+    ModelMap map = new ModelMap();
+    // boolean result = productsController.validateProductCode("SYSTEM_VOLUME", "", "compute_1", "trial_camp",
+// "trial_camp", "default", "SERVICE11003fa8ee");
+    boolean result = productsController.validateProductCode("CODEsmallRunningVm2Unique", "", "", "", "", "", "");
+    Assert.assertTrue(result);
+    Assert.assertTrue(result);
+    boolean result1 = productsController.validateProductCode("", "UniqueCode1", "", "", "", "", "");
+    Assert.assertTrue(result1);
+    Assert.assertTrue(result);
+    boolean result2 = productsController.validateProductCode("", "", "UniqueCode2", "", "", "", "");
+    Assert.assertTrue(result2);
+    Assert.assertTrue(result);
+    boolean result3 = productsController.validateProductCode("", "", "", "UniqueCode3", "", "", "");
+    Assert.assertTrue(result3);
+    Assert.assertTrue(result);
+    boolean result4 = productsController.validateProductCode("", "", "", "", "UniqueCode4", "", "");
+    Assert.assertTrue(result4);
+    Assert.assertTrue(result);
+    boolean result5 = productsController.validateProductCode("", "", "", "", "", "UniqueCode5", "");
+    Assert.assertTrue(result5);
+    Assert.assertTrue(result);
+    boolean result6 = productsController.validateProductCode("", "", "", "", "", "", "UniqueCode6");
+    Assert.assertTrue(result6);
+
+  }
+
+  @Test
+  public void testListProducts() {
+    try {
+
+      Product product = productDAO.findByCode("SYSTEM_VOLUME");
+      BigDecimal productCharge = null;
+      List<ProductCharge> productChargesList = productService.getProductCharges(product, new Date());
+      for (ProductCharge charge : productChargesList) {
+        if (charge.getCurrencyValue().getCurrencyCode().equalsIgnoreCase("SGD"))
+          productCharge = charge.getPrice();
+      }
+
+      String contextString = "PSI_UD1=10";
+      request.setAttribute("effectiveTenant", tenantDAO.find(3L));
+      List<ProductCharge> productCharges = productsController.listProducts(serviceInstanceDAO.find(1L).getUuid(),
+          "PSI_RT1", contextString, false, null, null, false, request);
+
+      boolean productFound = false;
+      for (ProductCharge c : productCharges) {
+        if (c.getProduct().equals(product)) {
+          productFound = true;
+          if (productChargesList.get(0).getCurrencyValue().getCurrencyCode().equalsIgnoreCase("SGD")) {
+            Assert.assertEquals(productCharge, c.getPrice());
+            break;
+          }
+        }
+      }
+      Assert.assertTrue(productFound);
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  @Test
+  public void testRetireProduct() {
+    Product product = productDAO.find(2L);
+    ProductBundle bundle = productBundleDAO.find(2L);
+    Entitlement e = new Entitlement();
+    e.setCreatedBy(getPortalUser());
+    e.setCreatedAt(new Date());
+    e.setUpdatedAt(new Date());
+    e.setUpdatedBy(getPortalUser());
+    e.setProductBundle(bundle);
+    e.setProduct(product);
+    e.setRevision(channelService.getFutureRevision(null));
+    entitlementDAO.save(e);
+
+    String response = productsController.retireProduct(product.getId().toString(), "true", map);
+    Assert.assertEquals("entitlementscheckfailed", response);
+  }
+
+  @Test
+  public void testListScales() {
+    try {
+      String[] serviceUsageTypeUomScale = {
+          "TB-MONTHS", "GB-MONTHS", "Bytes", "TB-Days", "GB-Days"
+      };
+
+      List<ServiceUsageTypeUomScale> scales = (List<ServiceUsageTypeUomScale>) productsController.listScales(
+          serviceDAO.find(6000L).getUuid(), "Bytes", map).get("modified");
+
+      for (int i = 0; i < scales.size(); i++) {
+        Assert.assertTrue(scales.get(i).getName().equalsIgnoreCase(serviceUsageTypeUomScale[i]));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail();
+    }
+  }
+
+  /*
+   * Description: Test edit product logo Author: Avinash ReviewedBy:Atul
+   */
+  @Test
+  public void testEditProductsLogo() throws Exception {
+
+    Product product = productService.locateProduct("1", false);
+    Assert.assertNull(product.getImagePath());
+    ProductLogoForm form = new ProductLogoForm(product);
+    MultipartFile logo = new MockMultipartFile("Product.jpeg", "Product.jpeg", "bytes", "ProductLogo".getBytes());
+    form.setLogo(logo);
+    BindingResult result = validate(form);
+    Assert.assertNotNull(result);
+    File currentDirectory = new File(new File(".").getAbsolutePath());
+    String currentDirectoryPath = "";
+    Configuration rootdir = configurationService
+        .locateConfigurationByName(Names.com_citrix_cpbm_portal_settings_images_uploadPath);
+    try {
+      currentDirectoryPath = currentDirectory.getCanonicalPath();
+    } catch (IOException e1) {
+      e1.printStackTrace();
+      Assert.fail();
+    }
+    rootdir.setValue(currentDirectoryPath);
+    configurationService.update(rootdir);
+    Assert.assertNull(product.getImagePath());
+    String bytes = "testBytes";
+    String path = currentDirectoryPath + "//testfile";
+    MultipartFile logoFile = new MockMultipartFile("test", path, "jpg", bytes.getBytes());
+    productsController.editProductLogo(form, result, request, map);
+    product = productService.locateProduct("1", false);
+    Assert.assertNotNull(product.getImagePath());
+    String productsAbsoluteDir = FilenameUtils.concat(currentDirectoryPath, "products");
+    Assert.assertEquals(product.getImagePath(), "products\\1\\Product.jpeg");
+    File dir = new File(productsAbsoluteDir);
+    try {
+      org.apache.commons.io.FileUtils.deleteDirectory(dir);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Test
+  public void testEditProduct1() throws Exception {
+
+    Product product = productsService.locateProductByCode("CODEsmallRunningVm2");
+
+    Long discriminatorId = 1L;
+
+    String jsonString = "{conversionFactor: " + 1 + ", operator: COMBINE, usageTypeId: " + 1L;
+    if (true) {
+      jsonString = jsonString + ", discriminatorVals: [ {discriminatorId: " + discriminatorId
+          + ", discriminatorValue: 125, operator: EQUAL_TO, discriminatorValueName: " + "Running VM" + " } ]";
+    }
+    jsonString = jsonString + " }";
+    org.json.JSONObject mediationJason = new org.json.JSONObject(jsonString);
+    String productMediationRules = "[" + mediationJason.toString() + "]";
+
+    ServiceInstance serviceInstance = serviceInstanceDao.find("1");
+    Service service = serviceInstance.getService();
+    Category category = productService.getCategory(1L);
+
+    ProductForm form = new ProductForm(product);
+    form.setProductMediationRules(productMediationRules);
+    form.setStartDate(new Date());
+    form.setServiceUUID(service.getUuid());
+    form.setServiceInstanceUUID(serviceInstanceDao.find(1L).getUuid());
+    form.setCategoryID(category.getId().toString());
+    form.setConversionFactor("1");
+    BindingResult result = validate(form);
+    Assert.assertNotNull(result);
+    String oldDescription = product.getDescription();
+    ProductRevision productRevision = productService.getProductRevision(product, channelService.getFutureRevision(null)
+        .getStartDate(), null);
+    List<MediationRule> mediationRules = productRevision.getMediationRules();
+    String newDescription = "New Description.";
+    product.setDescription(newDescription);
+    productsController.editProduct(form, result, map);
+    product = productsService.locateProductByCode("CODEsmallRunningVm2");
+    Assert.assertEquals(newDescription, product.getDescription());
+    Assert.assertNotSame(oldDescription, newDescription);
+  }
+}
