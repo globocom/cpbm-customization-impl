@@ -140,20 +140,6 @@
 	</build>
 	<repositories>
 		<repository>
-			<id>archiva.internal</id>
-			<url>http://cvs.globoi.com/archiva/repository/internal</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>archiva.snapshots</id>
-			<url>http://cvs.globoi.com/archiva/repository/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
 			<id>internal</id>
 			<name>Project Internal Maven Repository</name>
 			<layout>default</layout>
@@ -188,6 +174,20 @@
 			<id>org.ibiblio.mirrors</id>
 			<name>Maven mirror</name>
 			<url>http://mirrors.ibiblio.org/pub/mirrors/maven2</url>
+		</repository>
+		<repository>
+			<id>archiva.internal</id>
+			<url>http://cvs.globoi.com/archiva/repository/internal</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>archiva.snapshots</id>
+			<url>http://cvs.globoi.com/archiva/repository/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 		</repository>
 	</repositories>
 	<distributionManagement>
