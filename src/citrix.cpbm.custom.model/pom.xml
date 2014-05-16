@@ -2,7 +2,6 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>citrix.cpbm.custom.model</artifactId>
-	<groupId>globo</groupId>
 	<parent>
 		<groupId>com.citrix</groupId>
 		<artifactId>citrix.cpbm.custom.all</artifactId>
