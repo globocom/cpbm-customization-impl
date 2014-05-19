@@ -70,7 +70,7 @@ namespace :deploy do
   task :clean, :roles => :server do
      puts "Clean citrix.cpbm.custom.all ( model, common, portal )"
      set :deploy_dir, "/usr/share/vts3/custom_impls"
-     run("/bin/rm #{deploy_dir}/citrix.cpbm.custom*.jar")
+     run("if /bin/ls  #{deploy_dir}/citrix.cpbm.custom*.jar > /dev/null 2>&1; then /bin/rm #{deploy_dir}/citrix.cpbm.custom*.jar;fi")
   end
 
 end
