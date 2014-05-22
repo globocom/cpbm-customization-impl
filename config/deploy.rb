@@ -118,9 +118,9 @@ def get_file()
   return file
 end
 
-before("deploy:all", "deploy:clean")
-after("deploy:all", "virgo:restart")
-after("deploy:model", "virgo:restart")
-after("deploy:common", "virgo:restart")
-after("deploy:portal", "virgo:restart")
+# before("deploy:all", "deploy:clean")
+# after("deploy:all", "virgo:restart")
+# after("deploy:model", "virgo:restart")
+# after("deploy:common", "virgo:restart")
+# after("deploy:portal", "virgo:restart")
 
