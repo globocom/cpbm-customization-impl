@@ -12,9 +12,18 @@ desc "qa1 Environment"
 task :qa1 do
   puts "Deploying environment qa1"
   set :stage, "qa1"
-  set :user, 'root'
+  set :user, 'cpbm'
   role :server, "cittamp13lc05vldc02.globoi.com"
 end
+
+desc "prod Environment"
+task :prod do
+  puts "Deploying environment prod"
+  set :stage, "prod"
+  set :user, 'cpbm'
+  role :server, "rjebtcpbm01.globoi.com","rjebtcpbm02.globoi.com"
+end
+
 
 namespace :deploy do
   
