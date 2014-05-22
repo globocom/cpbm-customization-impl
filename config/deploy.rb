@@ -4,7 +4,7 @@ desc "dev Environment"
 task :dev do
   puts "Deploying environment dev"
   set :stage, "dev"
-  set :user, 'root'
+  set :user, 'cpbm'
   role :server, "cittamp13lc05vldc03.globoi.com"
 end
 
@@ -82,10 +82,36 @@ namespace :maven do
   end
 end
 
+namespace :virgo do
+  desc "service virgo restart"
+  task :restart do
+     puts "restart virgo"
+     stop
+     start
+  end
+  
+  desc "service virgo start"
+  task :start do
+     puts "starting cpbm"
+     run("sudo /etc/init.d/cloud-portal start")
+  end
+  
+  desc "service virgo stop"
+  task :stop do
+    puts "stopping cpbm"
+     run("sudo /etc/init.d/cloud-portal stop")
+  end
+end
+
+
 def get_file()
   file = `/bin/ls #{project_dir}/target/#{artifactId}*.jar`
   return file
 end
 
 before("deploy:all", "deploy:clean")
+after("deploy:all", "virgo:restart")
+after("deploy:model", "virgo:restart")
+after("deploy:common", "virgo:restart")
+after("deploy:portal", "virgo:restart")
 
