@@ -21,7 +21,8 @@ task :prod do
   puts "Deploying environment prod"
   set :stage, "prod"
   set :user, 'cpbm'
-  role :server, "rjebtcpbm01.globoi.com" ,"rjebtcpbm02.globoi.com"
+  #role :server, "rjebtcpbm01.globoi.com" ,"rjebtcpbm02.globoi.com"
+  role :server, "rjebtcpbm02.globoi.com"
 end
 
 
