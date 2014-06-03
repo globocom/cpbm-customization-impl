@@ -9,4 +9,16 @@ import com.citrix.cpbm.access.SubscriptionEntity;
 
 public interface Subscription extends SubscriptionEntity {
 
+	public String getEndpoint();
+	
+	public void setEndpoint(String endpoint);
+	
+	public String getCredentialUser();
+	
+	public void setCredentialUser(String credentialUser);
+	
+	public String getCredentialPassword();
+	
+	public void setCredentialPassword(String credentialPassword);
+
 }
