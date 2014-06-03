@@ -1,0 +1,37 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>citrix.cpbm.custom.model</artifactId>
+
+	<parent>
+		<groupId>com.citrix</groupId>
+		<artifactId>citrix.cpbm.custom.all</artifactId>
+		<version>2.2.1</version>
+		<relativePath>../citrix.cpbm.custom.all</relativePath>
+	</parent>
+	<dependencies>
+		<dependency>
+	      		<groupId>vmops</groupId>
+	      		<artifactId>citrix.cpbm.model</artifactId>
+	      		<version>${cpbm.version}</version>
+	      		<exclusions>
+	      			<exclusion>
+	      				<artifactId>
+	      					com.springsource.org.apache.commons.lang
+	      				</artifactId>
+	      				<groupId>org.apache.commons</groupId>
+	      			</exclusion>
+	      		</exclusions>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>${maven.jar.plugin.version-core}</version>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2013 Citrix Systems, Inc. Licensed under the BSD 2 license. See LICENSE for more details. -->
+<Workflows>
+  <Workflow name="credit-card-account-activation">
+    <Bucket name="identity-verification" order="1">
+      <Activity name="verifyMasterUserEmailActivity" ref="verifyMasterUserEmailActivity" />
+    </Bucket>
+    <Bucket name="billing-verification-and-accounts-creation" order="2">
+      <Activity name="collectCreditCardInfoActivity" ref="collectCreditCardInfoActivity" />
+      <Activity name="createOSSAccountActivity" ref="createOSSAccountActivity" />
+    </Bucket>    
+  </Workflow>
+  <Workflow name="trial-account-activation">
+    <Bucket name="identity-verification" order="1">
+      <Activity name="verifyMasterUserEmailActivity" ref="verifyMasterUserEmailActivity" />
+    </Bucket>
+    <Bucket name="accounts-creation" order="2">
+      <Activity name="createOSSAccountActivity" ref="createOSSAccountActivity" />
+    </Bucket>     
+  </Workflow>
+  <Workflow name="manual-account-activation">
+    <Bucket name="identity-verification" order="1">
+      <Activity name="verifyMasterUserEmailActivity" ref="verifyMasterUserEmailActivity" />
+    </Bucket>
+    <Bucket name="approval-and-accounts-creation" order="2">
+      <Activity name="createOSSAccountActivity" ref="createOSSAccountActivity" />
+      <Activity name="financeInternalApprovalActivity" ref="financeInternalApprovalActivity" />
+    </Bucket>     
+  </Workflow>
+  
+  <Workflow name="default-account-activation">
+    <Bucket name="identity-verification" order="1">
+      <Activity name="verifyMasterUserEmailActivity" ref="verifyMasterUserEmailActivity" />
+    </Bucket>
+    <Bucket name="accounts-creation" order="2">
+      <Activity name="createOSSAccountActivity" ref="createOSSAccountActivity" />
+    </Bucket>     
+  </Workflow>
+
+  <Workflow name="account-conversion-to-manual-activation-type">
+    <Bucket order="1">
+      <Activity name="financeInternalApprovalActivity" ref="financeInternalApprovalActivity" />
+    </Bucket>    
+  </Workflow>
+  <Workflow name="account-conversion-to-credit-card-payment">
+    <Bucket order="1">
+      <Activity name="verifyCreditCardInfoActivity" ref="verifyCreditCardInfoActivity" />
+    </Bucket>    
+  </Workflow>
+  
+  <Workflow name="pre-auth-required-subscription-activation">
+    <Bucket order="1">
+      <Activity name="subscription.preAuthActivity" ref="subscriptionPreAuthActivity" />
+    </Bucket>    
+  </Workflow>
+
+  <Workflow name="manual-activiation-type-payment-info-change">
+    <Bucket order="1">
+      <Activity name="financeInternalApprovalActivity" ref="financeInternalApprovalActivity" />
+    </Bucket>
+  </Workflow>
+
+<!-- Uncomment below Workflow definition to enable workflow for cloud service activation -->    
+<!--<Workflow name="cloud-service-activation-approval">
+    <Bucket order="1">
+      <Activity name="serviceActivationApprovalActivity" ref="serviceActivationApprovalActivity" />
+    </Bucket>
+  </Workflow> -->
+</Workflows>
