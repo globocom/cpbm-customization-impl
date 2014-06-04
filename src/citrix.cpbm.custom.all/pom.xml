@@ -180,34 +180,22 @@
 			<name>Maven mirror</name>
 			<url>http://mirrors.ibiblio.org/pub/mirrors/maven2</url>
 		</repository>
-		<repository>
-			<id>archiva.internal</id>
-			<url>http://cvs.globoi.com/archiva/repository/internal</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>archiva.snapshots</id>
-			<url>http://cvs.globoi.com/archiva/repository/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
 	</repositories>
-	<repository>
-		<id>libs.release.local</id>
-		<name>Artifactory Local Release Repository</name>
-		<url>
-			dav:http://artifactory.globoi.com/artifactory/libs-release-local/
-		</url>
-	</repository>
-	<snapshotRepository>
-		<id>libs.snapshot.local</id>
-		<name>Artifactory Local Snapshot Repository</name>
-		<url>
-			dav:http://artifactory.globoi.com/artifactory/libs-snapshot-local/
-		</url>
-	</snapshotRepository>
+	<distributionManagement>
+		<repository>
+			<id>libs.release.local</id>
+			<name>Artifactory Local Release Repository</name>
+			<url>
+      dav:http://artifactory.globoi.com/artifactory/libs-release-local/
+    </url>
+		</repository>
+		<snapshotRepository>
+			<id>libs.snapshot.local</id>
+			<name>Artifactory Local Snapshot Repository</name>
+			<url>
+      dav:http://artifactory.globoi.com/artifactory/libs-snapshot-local/
+    </url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
 
