@@ -5,13 +5,13 @@
 	<artifactId>citrix.cpbm.custom.all</artifactId>
 	<version>2.2.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-<modules>
-<module>../citrix.cpbm.custom.model</module>
-<module>../citrix.cpbm.custom.common</module>
-<module>../citrix.cpbm.custom.portal</module>
-</modules>
+	<modules>
+		<module>../citrix.cpbm.custom.model</module>
+		<module>../citrix.cpbm.custom.common</module>
+		<module>../citrix.cpbm.custom.portal</module>
+	</modules>
 
-         <properties>
+	<properties>
 		<maven.jar.plugin.version-core>2.3.2</maven.jar.plugin.version-core>
 		<wro4j.core.version>1.5.0</wro4j.core.version>
 		<log4j-extra.version>1.0</log4j-extra.version>
@@ -20,15 +20,15 @@
 		<liquibase.version>2.0.5</liquibase.version>
 		<css2fop.version>1.6.2</css2fop.version>
 		<fop.version>1.0</fop.version>
-		
+
 		<!-- Resource properties -->
 		<copyright.year>2011</copyright.year>
 		<cloud.portal.build.id>default</cloud.portal.build.id>
-    <portal.appresources.version>2.2.1</portal.appresources.version>
+		<portal.appresources.version>2.2.1</portal.appresources.version>
 
 	</properties>
 	<build>
-	    <extensions>
+		<extensions>
 			<extension>
 				<groupId>org.apache.maven.wagon</groupId>
 				<artifactId>wagon-webdav</artifactId>
@@ -195,17 +195,19 @@
 			</snapshots>
 		</repository>
 	</repositories>
-	<distributionManagement>
-		<repository>
-			<id>archiva.internal</id>
-			<name>Maven Internal Repository</name>
-			<url>dav:http://cvs.globoi.com/archiva/repository/internal/</url>
-		</repository>
-		<snapshotRepository>
-			<id>archiva.snapshots</id>
-			<name>Maven Internal Snapshots Repository</name>
-			<url>dav:http://cvs.globoi.com/archiva/repository/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
+	<repository>
+		<id>libs.release.local</id>
+		<name>Artifactory Local Release Repository</name>
+		<url>
+			dav:http://artifactory.globoi.com/artifactory/libs-release-local/
+		</url>
+	</repository>
+	<snapshotRepository>
+		<id>libs.snapshot.local</id>
+		<name>Artifactory Local Snapshot Repository</name>
+		<url>
+			dav:http://artifactory.globoi.com/artifactory/libs-snapshot-local/
+		</url>
+	</snapshotRepository>
 </project>
 

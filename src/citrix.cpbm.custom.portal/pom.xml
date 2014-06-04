@@ -17,6 +17,16 @@
 			<id>portal.site</id>
 			<name>Portal Project Website</name>
 		</site>
+		<repository>
+			<id>libs.release.local</id>
+			<name>Artifactory Local Release Repository</name>
+			<url>dav:http://artifactory.globoi.com/artifactory/libs-release-local/</url>
+		</repository>
+		<snapshotRepository>
+			<id>libs.snapshot.local</id>
+			<name>Artifactory Local Snapshot Repository</name>
+			<url>dav:http://artifactory.globoi.com/artifactory/libs-snapshot-local/</url>
+		</snapshotRepository>
 	</distributionManagement>
 	<dependencies>
 		<dependency>
@@ -119,7 +129,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-	    <extensions>
+		<extensions>
 			<extension>
 				<groupId>org.apache.maven.wagon</groupId>
 				<artifactId>wagon-webdav</artifactId>
