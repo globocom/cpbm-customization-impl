@@ -52,14 +52,18 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>archiva.internal</id>
-			<name>Maven Internal Repository</name>
-			<url>dav:http://cvs.globoi.com/archiva/repository/internal/</url>
+			<id>libs.release.local</id>
+			<name>Artifactory Local Release Repository</name>
+			<url>
+      dav:http://artifactory.globoi.com/artifactory/libs-release-local/
+    </url>
 		</repository>
 		<snapshotRepository>
-			<id>archiva.snapshots</id>
-			<name>Maven Internal Snapshots Repository</name>
-			<url>dav:http://cvs.globoi.com/archiva/repository/snapshots/</url>
+			<id>libs.snapshot.local</id>
+			<name>Artifactory Local Snapshot Repository</name>
+			<url>
+      dav:http://artifactory.globoi.com/artifactory/libs-snapshot-local/
+    </url>
 		</snapshotRepository>
 	</distributionManagement>
 </project>
