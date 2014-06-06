@@ -5,7 +5,7 @@ task :dev do
   puts "Deploying environment dev"
   set :stage, "dev"
   set :user, 'cpbm'
-  role :server, "cittamp13lc05vldc03.globoi.com"
+  role :server, "cittamp13lc05vldc03.globoi.com", "cittamp13lc05vldc031.globoi.com"
 end
 
 desc "qa1 Environment"
@@ -13,7 +13,7 @@ task :qa1 do
   puts "Deploying environment qa1"
   set :stage, "qa1"
   set :user, 'cpbm'
-  role :server, "cittamp13lc05vldc02.globoi.com"
+  role :server, "cittamp13lc05vldc02.globoi.com", "cittamp13lc05vldc021.globoi.com"
 end
 
 desc "prod Environment"
