@@ -25,6 +25,11 @@ task :prod do
   #role :server, "rjebtcpbm02.globoi.com"
 end
 
+before("deploy:all", "deploy:clean")
+# after("deploy:all", "virgo:restart")
+# after("deploy:model", "virgo:restart")
+# after("deploy:common", "virgo:restart")
+# after("deploy:portal", "virgo:restart")
 
 namespace :deploy do
   
@@ -118,10 +123,4 @@ def get_file()
   file = `/bin/ls #{project_dir}/target/#{artifactId}*.jar`
   return file
 end
-
-# before("deploy:all", "deploy:clean")
-# after("deploy:all", "virgo:restart")
-# after("deploy:model", "virgo:restart")
-# after("deploy:common", "virgo:restart")
-# after("deploy:portal", "virgo:restart")
 
