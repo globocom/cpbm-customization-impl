@@ -33,6 +33,16 @@ before("deploy:all", "deploy:clean")
 
 namespace :deploy do
   
+  desc "Deploy update code"
+  task :update_code, :roles => :server do
+    deploy.all
+  end
+  
+  desc "Deploy create_symlink"
+  task :create_symlink, :roles => :server do
+    puts "nothing to do..."
+  end
+  
   desc "Custom model deploy"
   task :model, :roles => :server do
      puts "Deploying citrix.cpbm.custom.model"
