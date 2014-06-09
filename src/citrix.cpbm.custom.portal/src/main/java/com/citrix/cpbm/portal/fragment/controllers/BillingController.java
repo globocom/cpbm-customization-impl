@@ -1,8 +1,8 @@
 /*
-*  Copyright © 2013 Citrix Systems, Inc.
-*  You may not use, copy, or modify this file except pursuant to a valid license agreement from
-*  Citrix Systems, Inc.
-*/ 
+ *  Copyright © 2013 Citrix Systems, Inc.
+ *  You may not use, copy, or modify this file except pursuant to a valid license agreement from
+ *  Citrix Systems, Inc.
+ */ 
 package com.citrix.cpbm.portal.fragment.controllers;
 
 import java.util.LinkedHashMap;
@@ -40,26 +40,26 @@ public class BillingController extends AbstractBillingController {
 
 	@Autowired
 	private BusinessTransactionService businessTransactionService;
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(com.citrix.cpbm.portal.fragment.controllers.BillingController.class);
 
-	@RequestMapping(value = "/subscriptions/showDetails", method = RequestMethod.GET)
+	@RequestMapping(value = "/subscriptions/showDetails", method = RequestMethod.POST)
 	public String showSubscriptionDetails(@RequestParam(value = "id", required = true) String uuid,
 			@RequestParam(value = "tenant", required = false) String tenantParam, ModelMap map) {
 		super.showSubscriptionDetails(uuid, tenantParam, map);
-		
+
 		logger.info("Entry overrided ShowSubscriptionDetails with Id:" + uuid);
-		
+
 		Subscription subscription = subscriptionService.locateSubscriptionByParam(uuid, true);
 		logger.info("Showing details for subscription [{}]", subscription.toString());
 
 		Map<String, String> customFieldMap = subscription.getCustomFieldMap();
 		//logger.info("customFieldMap: {}",customFieldMap.toString());
-		
+
 		Subscription subscription2 =  (Subscription) map.get("subscription");
 		Map<String, String> configurationMap = subscription2.getConfigurationMap();
 		configurationMap.putAll(customFieldMap);
-		
+
 		map.addAttribute("subscription", subscription2);
 
 		logger.info("Exit ShowSubscriptionDetails");
