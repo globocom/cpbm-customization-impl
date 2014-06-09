@@ -52,15 +52,18 @@ public class BillingController extends AbstractBillingController {
 
 		Subscription subscription = subscriptionService.locateSubscriptionByParam(uuid, true);
 		logger.info("Showing details for subscription [{}]", subscription.toString());
-
+		
+		Map<String, String> configurationProperties = (Map<String, String>) map.get("configurationProperties");
+		logger.info("configurationProperties before update: {}",configurationProperties.toString());
+		
 		Map<String, String> customFieldMap = subscription.getCustomFieldMap();
 		//logger.info("customFieldMap: {}",customFieldMap.toString());
-
-		Subscription subscription2 =  (Subscription) map.get("subscription");
-		Map<String, String> configurationMap = subscription2.getConfigurationMap();
-		configurationMap.putAll(customFieldMap);
-
-		map.addAttribute("subscription", subscription2);
+		
+		configurationProperties.putAll(customFieldMap);
+		
+		//logger.info("configurationProperties after update: {}",configurationProperties.toString());
+		
+		map.addAttribute("configurationProperties", configurationProperties);
 
 		logger.info("Exit ShowSubscriptionDetails");
 		return "billing.viewSubscription";
