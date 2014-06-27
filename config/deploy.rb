@@ -5,7 +5,7 @@ task :dev do
   puts "Deploying environment dev"
   set :stage, "dev"
   set :user, 'cpbm'
-  role :server, "cittamp13lc05vldc03.globoi.com", "cittamp13lc05vldc031.globoi.com"
+  role :server, "cittamp13lc05vldc03.globoi.com"
 end
 
 desc "qa1 Environment"
